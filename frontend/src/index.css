@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  /* Option A — Dark Arcane color palette */
+  --color-bg:        #0a0f1a;
+  --color-surface:   #0f172a;
+  --color-border:    #334155;
+  --color-primary:   #fbbf24;
+  --color-secondary: #38bdf8;
+  --color-success:   #34d399;
+  --color-danger:    #fb7185;
+  --color-text:      #e2e8f0;
+  --color-muted:     #94a3b8;
+
+  /* MTG color identity pips */
+  --color-mtg-w: #f9fafb;
+  --color-mtg-u: #3b82f6;
+  --color-mtg-b: #6b21a8;
+  --color-mtg-r: #ef4444;
+  --color-mtg-g: #22c55e;
+
+  /* Typography */
+  --font-heading: 'Cinzel', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+}
+
+:root {
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

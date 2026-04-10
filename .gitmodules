@@ -1,3 +1,0 @@
-[submodule "copilot/agents"]
-	path = copilot/agents
-	url = git@github.com:zsalerno17/copilot-agents.git
