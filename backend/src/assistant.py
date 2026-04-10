@@ -1,13 +1,12 @@
-"""AI-powered assistant for MTG Commander deck advice.
+"""DEPRECATED — replaced by gemini_assistant.py (Gemini 2.5 Flash).
 
-Uses the OpenAI Chat API when OPENAI_API_KEY is set; falls back to rule-based
-responses otherwise so the app is always usable without an API key.
+This file is retained only to avoid breaking any stale import paths.
+Do not add new functionality here.
 """
+raise ImportError(
+    "src/assistant.py is retired. Import from src/gemini_assistant instead."
+)
 
-from __future__ import annotations
-
-import os
-from typing import List, Optional, Tuple
 
 from .models import Card, Deck
 

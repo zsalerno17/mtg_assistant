@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -5,6 +6,8 @@ from dotenv import load_dotenv
 from routers import decks, collection, ai, analyses
 
 load_dotenv()
+
+logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI(title="MTG Assistant API", version="2.0.0")
 

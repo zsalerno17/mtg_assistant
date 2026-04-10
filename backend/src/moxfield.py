@@ -3,15 +3,15 @@
 import re
 from typing import Any, Dict, Optional
 
-import requests
+import cloudscraper
 
 from .models import Card, Deck
 
 MOXFIELD_API_BASE = "https://api2.moxfield.com/v2"
-REQUEST_HEADERS = {
-    "User-Agent": "MTGAssistant/1.0 (deck analysis tool)",
-    "Accept": "application/json",
-}
+
+
+def _scraper():
+    return cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "darwin", "mobile": False})
 
 
 def extract_deck_id(url: str) -> Optional[str]:
@@ -40,7 +40,8 @@ def get_deck(deck_id: str) -> Deck:
         ValueError: if the response cannot be parsed.
     """
     url = f"{MOXFIELD_API_BASE}/decks/all/{deck_id}"
-    response = requests.get(url, headers=REQUEST_HEADERS, timeout=30)
+    scraper = _scraper()
+    response = scraper.get(url, timeout=30)
     response.raise_for_status()
     return parse_moxfield_deck(response.json())
 

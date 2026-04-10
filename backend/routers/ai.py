@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 def _supabase():
-    return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_ANON_KEY"])
+    return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
 
 
 def _load_deck(moxfield_id: str):

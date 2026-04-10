@@ -6,15 +6,12 @@
 
 ## Current Sprint
 
-**Sprint 1 — Infrastructure & Auth scaffolding**
+**Sprint 2 — End-to-end verification + Deployment**
 
-- [x] Restructure repo: `backend/` (FastAPI + existing `src/`) and `frontend/` (Vite + React)
-- [x] Backend: `main.py`, routers (`decks`, `collection`, `ai`, `analyses`), `auth.py` middleware
-- [x] Backend: `src/gemini_assistant.py` (Gemini 2.5 Flash, replaces OpenAI)
-- [x] Backend: `.env`, `.env.example`, updated `requirements.txt`
-- [x] Frontend: Vite + React + Tailwind, Option A design tokens, Google Fonts
-- [x] Frontend: `AuthContext`, `ProtectedRoute`, page shells (`Login`, `Dashboard`, `Deck`, `Collection`)
-- [ ] **Next:** Add Supabase anon key + JWT secret to `backend/.env` → create DB tables → test Google login end-to-end
+- [ ] Run both servers locally, sign in with Google, and verify all 8 acceptance criteria below
+- [ ] Deploy backend to Render (set env vars: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET, GEMINI_API_KEY)
+- [ ] Deploy frontend to Vercel (set env vars: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL pointing to Render URL)
+- [ ] Add production URLs to Supabase: Redirect URLs + Site URL
 
 ---
 
@@ -53,7 +50,7 @@
 
 ## Phase 2: Auth + User System
 
-- [ ] Supabase: create `allowed_users(email TEXT PRIMARY KEY)` table — admin-managed allow-list
+- [x] Supabase: create `allowed_users(email TEXT PRIMARY KEY)` table — admin-managed allow-list
 - [x] FastAPI: JWT verification middleware using Supabase JWTs (`python-jose`)
 - [x] FastAPI: `require_allowed_user` dependency — checks JWT + `allowed_users` table; rejects unlisted emails with 403
 - [x] React: `AuthContext` — Supabase Google OAuth login/logout, session persistence across page loads
@@ -65,14 +62,14 @@
 
 > Reuse existing `src/` modules (models, collection, deck_analyzer, moxfield, scryfall) unchanged.
 
-- [ ] `POST /api/decks/fetch` — wraps `moxfield.get_deck()` + `parse_moxfield_deck()`; caches result in Supabase `decks` table
-- [ ] `POST /api/decks/analyze` — runs `deck_analyzer.analyze_deck()` + saves result to `analyses` table
-- [ ] `POST /api/collection/upload` — parses CSV via `parse_moxfield_csv()` + upserts to `collections` table per user
-- [ ] `GET /api/collection` — returns the authenticated user's stored collection
-- [ ] `POST /api/ai/strategy` — calls Gemini for strategy guide
-- [ ] `POST /api/ai/improvements` — calls Gemini for improvement suggestions (cross-referenced against user's collection)
-- [ ] `POST /api/ai/scenarios` — takes current deck + proposed adds/removes; returns structured before/after strategy diff
-- [ ] `GET /api/analyses/history` — returns last 10 analyses for the authenticated user (paginated)
+- [x] `POST /api/decks/fetch` — wraps `moxfield.get_deck()` + `parse_moxfield_deck()`; caches result in Supabase `decks` table
+- [x] `POST /api/decks/analyze` — runs `deck_analyzer.analyze_deck()` + saves result to `analyses` table
+- [x] `POST /api/collection/upload` — parses CSV via `parse_moxfield_csv()` + upserts to `collections` table per user
+- [x] `GET /api/collection` — returns the authenticated user's stored collection
+- [x] `POST /api/ai/strategy` — calls Gemini for strategy guide
+- [x] `POST /api/ai/improvements` — calls Gemini for improvement suggestions (cross-referenced against user's collection)
+- [x] `POST /api/ai/scenarios` — takes current deck + proposed adds/removes; returns structured before/after strategy diff
+- [x] `GET /api/analyses/history` — returns last 10 analyses for the authenticated user (paginated)
 
 ---
 
@@ -80,22 +77,22 @@
 
 > Build mockups of all 3 design options (A, B, C — see Design System below) before committing to full implementation. Confirm visual direction with mockups first.
 
-- [ ] Pages: `LoginPage`, `DashboardPage`, `DeckPage`, `CollectionPage`
-- [ ] `DeckPage` tabs: Overview | Collection Upgrades | Strategy | Improvements | Scenarios
-- [ ] Scenarios tab: form to input cards to add/remove → side-by-side before/after display (strategy changes, win conditions gained/lost, new weaknesses introduced)
-- [ ] `CollectionPage`: drag-and-drop CSV upload, card count display, search/filter
-- [ ] Responsive layout: mobile-first TailwindCSS — bottom nav on mobile, left sidebar on desktop (see Responsive Layout in Design System)
-- [ ] Charts: Recharts for mana curve + card type breakdowns (lighter than Plotly for React)
+- [x] Pages: `LoginPage`, `DashboardPage`, `DeckPage`, `CollectionPage`
+- [x] `DeckPage` tabs: Overview | Collection Upgrades | Strategy | Improvements | Scenarios
+- [x] Scenarios tab: form to input cards to add/remove → side-by-side before/after display (strategy changes, win conditions gained/lost, new weaknesses introduced)
+- [x] `CollectionPage`: drag-and-drop CSV upload, card count display, search/filter
+- [x] Responsive layout: mobile-first TailwindCSS — bottom nav on mobile, left sidebar on desktop (see Responsive Layout in Design System)
+- [x] Charts: Recharts for mana curve + card type breakdowns (lighter than Plotly for React)
 
 ---
 
 ## Phase 5: AI — Gemini 2.5 Flash
 
-- [ ] Create `backend/src/gemini_assistant.py` — replace OpenAI client with `google-generativeai` SDK
-- [ ] Increase response token budget to 2000+ tokens (was 900 with gpt-4o-mini; free tier supports this)
-- [ ] Include full decklist in prompt context (Gemini's 1M token window makes this viable; was omitted before)
-- [ ] Implement `explain_scenarios()` — structured prompt returning JSON: `{ "before": { game_plan, win_conditions, weaknesses }, "after": { game_plan, win_conditions, weaknesses, changes_summary } }`
-- [ ] Retire `src/assistant.py` once Gemini assistant is verified working
+- [x] Create `backend/src/gemini_assistant.py` — replace OpenAI client with `google-generativeai` SDK
+- [x] Increase response token budget to 2000+ tokens (was 900 with gpt-4o-mini; free tier supports this)
+- [x] Include full decklist in prompt context (Gemini's 1M token window makes this viable; was omitted before)
+- [x] Implement `explain_scenarios()` — structured prompt returning JSON: `{ "before": { game_plan, win_conditions, weaknesses }, "after": { game_plan, win_conditions, weaknesses, changes_summary } }`
+- [x] Retire `src/assistant.py` once Gemini assistant is verified working end-to-end
 
 ---
 
@@ -110,9 +107,26 @@
 | `analyses` | `id, user_id, deck_id, result_json, created_at` | Per-user analysis history |
 | `collections` | `user_id, cards_json, updated_at` | One row per user, updated on CSV upload |
 
-- [ ] Create all four tables in Supabase
-- [ ] Add Row Level Security (RLS) policies: users can read/write only their own `analyses` and `collections`; `decks` is shared-read for all authenticated users
-- [ ] Wire `GET /api/analyses/history` to paginate the `analyses` table (10 per page)
+- [x] Create all four tables in Supabase
+- [x] Add Row Level Security (RLS) policies: users can read/write only their own `analyses` and `collections`; `decks` is shared-read for all authenticated users
+- [x] Wire `GET /api/analyses/history` to paginate the `analyses` table (10 per page)
+
+---
+
+## Phase 7: Deployment
+
+**Backend → Render (free tier)**
+- [ ] Push repo to GitHub (if not already)
+- [ ] Create new Web Service on Render, point to `backend/` directory
+- [ ] Set build command: `pip install -r requirements.txt`
+- [ ] Set start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- [ ] Add env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET`, `GEMINI_API_KEY`, `ENVIRONMENT=production`
+- [ ] Update `main.py` CORS `allow_origins` to include the Vercel production URL
+
+**Frontend → Vercel (free tier)**
+- [ ] Import repo on Vercel, set root directory to `frontend/`
+- [ ] Add env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_BASE_URL` (Render URL)
+- [ ] Add Vercel production URL to Supabase Auth: Redirect URLs + Site URL
 
 ---
 

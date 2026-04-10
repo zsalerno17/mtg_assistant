@@ -4,14 +4,14 @@ from pydantic import BaseModel
 from supabase import create_client
 
 from auth import require_allowed_user
-from src.moxfield import extract_deck_id, get_deck, parse_moxfield_deck
+from src.moxfield import extract_deck_id, get_deck
 from src.deck_analyzer import analyze_deck
 
 router = APIRouter()
 
 
 def _supabase():
-    return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_ANON_KEY"])
+    return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
 
 
 class FetchDeckRequest(BaseModel):
@@ -27,7 +27,9 @@ def fetch_deck(body: FetchDeckRequest, user: dict = Depends(require_allowed_user
     """Fetch a deck from Moxfield and cache it in Supabase."""
     try:
         deck_id = extract_deck_id(body.url)
-    except ValueError:
+    except Exception:
+        deck_id = None
+    if not deck_id:
         raise HTTPException(status_code=400, detail="Invalid Moxfield URL or deck ID")
 
     sb = _supabase()
@@ -39,11 +41,9 @@ def fetch_deck(body: FetchDeckRequest, user: dict = Depends(require_allowed_user
 
     # Fetch fresh from Moxfield
     try:
-        raw = get_deck(deck_id)
+        deck = get_deck(deck_id)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Moxfield fetch failed: {str(e)}")
-
-    deck = parse_moxfield_deck(raw)
 
     # Serialize deck to dict for storage
     deck_data = {
@@ -70,10 +70,9 @@ def analyze(body: AnalyzeDeckRequest, user: dict = Depends(require_allowed_user)
 
     deck_data = cached.data[0]["data_json"]
 
-    # Rebuild deck object from cached data for analysis
+    # Rebuild deck object from Moxfield for analysis
     try:
-        raw = get_deck(body.moxfield_id)
-        deck = parse_moxfield_deck(raw)
+        deck = get_deck(body.moxfield_id)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not load deck for analysis: {str(e)}")
 
