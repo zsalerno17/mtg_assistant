@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import DeckPage from './pages/DeckPage'
 import CollectionPage from './pages/CollectionPage'
 import ProfilePage from './pages/ProfilePage'
+import IconMockupPage from './pages/IconMockupPage'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/mockup" element={<IconMockupPage />} />
           <Route
             path="/*"
             element={
