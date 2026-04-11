@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
+import { AVATAR_PRESETS, svgDataUrl } from '../lib/avatarPresets'
 
 export default function ProfilePage() {
   const { session, profile, refreshProfile, signOut } = useAuth()
@@ -11,6 +12,7 @@ export default function ProfilePage() {
   const [username, setUsername] = useState(profile?.username || '')
   const [avatarPreview, setAvatarPreview] = useState(null) // local file preview URL
   const [pendingFile, setPendingFile] = useState(null)     // File object awaiting save
+  const [selectedPresetId, setSelectedPresetId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
@@ -31,8 +33,18 @@ export default function ProfilePage() {
       return
     }
     setError(null)
+    setSelectedPresetId(null)
     setPendingFile(file)
     setAvatarPreview(URL.createObjectURL(file))
+  }
+
+  const handlePresetSelect = (preset) => {
+    const svgBlob = new Blob([preset.svg], { type: 'image/svg+xml' })
+    const svgFile = new File([svgBlob], `${preset.id}.svg`, { type: 'image/svg+xml' })
+    setError(null)
+    setSelectedPresetId(preset.id)
+    setPendingFile(svgFile)
+    setAvatarPreview(svgDataUrl(preset.svg))
   }
 
   const handleSave = async () => {
@@ -114,7 +126,7 @@ export default function ProfilePage() {
                 onClick={() => fileInputRef.current?.click()}
                 className="text-sm font-medium text-[var(--color-primary)] hover:underline"
               >
-                {displayAvatar ? 'Change photo' : 'Upload photo'}
+                {displayAvatar ? 'Upload your own' : 'Upload a photo'}
               </button>
               <p className="text-[var(--color-muted)] text-xs">
                 JPG, PNG, GIF — max 2 MB
@@ -126,6 +138,32 @@ export default function ProfilePage() {
                 className="hidden"
                 onChange={handleFileChange}
               />
+            </div>
+          </div>
+
+          {/* Preset icons */}
+          <div className="space-y-2">
+            <p className="text-[var(--color-muted)] text-xs">Or choose an icon:</p>
+            <div className="flex flex-wrap gap-2">
+              {AVATAR_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  title={preset.label}
+                  onClick={() => handlePresetSelect(preset)}
+                  className={`w-11 h-11 rounded-full overflow-hidden border-2 transition-all ${
+                    selectedPresetId === preset.id
+                      ? 'border-[var(--color-primary)] scale-110 shadow-[0_0_0_2px_var(--color-primary)]/30'
+                      : 'border-transparent hover:border-[var(--color-border)] hover:scale-105'
+                  }`}
+                >
+                  <img
+                    src={svgDataUrl(preset.svg)}
+                    alt={preset.label}
+                    className="w-full h-full"
+                  />
+                </button>
+              ))}
             </div>
           </div>
 

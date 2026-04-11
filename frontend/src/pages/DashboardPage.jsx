@@ -95,9 +95,12 @@ export default function DashboardPage() {
           <ul className="space-y-3">
             {history.map((item) => (
               <li key={item.id}>
-                <Link
-                  to={`/deck/${item.deck_id}`}
-                  className="block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-5 py-4 transition-all hover:border-[var(--color-primary)]/60 hover:shadow-md hover:shadow-amber-500/10 hover:bg-[#111827]"
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(`/deck/${item.deck_id}`)}
+                  onKeyDown={(e) => e.key === 'Enter' && navigate(`/deck/${item.deck_id}`)}
+                  className="block cursor-pointer bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-5 py-4 transition-all hover:border-[var(--color-primary)]/60 hover:shadow-md hover:shadow-amber-500/10 hover:bg-[#111827]"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[var(--color-text)] font-medium truncate">
@@ -125,7 +128,7 @@ export default function DashboardPage() {
                       </a>
                     )}
                   </div>
-                </Link>
+                </div>
               </li>
             ))}
           </ul>
