@@ -1,10 +1,20 @@
 /**
- * MTG creature archetype avatar icons — 8 silhouette-style SVGs.
- * Icons sourced from game-icons.net (CC-BY-3.0).
+ * MTG creature archetype avatar icons — 19 SVGs from game-icons.net (CC-BY-3.0).
+ * Paths are in iconAlternatives.js; this file wires them to React components.
  * Artists: Lorc (http://lorcblog.blogspot.com), Delapouite (https://delapouite.com)
  * License: https://creativecommons.org/licenses/by/3.0/
- * Each SVG fills the viewBox; size is controlled by className (e.g. w-6 h-6).
  */
+import { ICON_PATHS } from './iconAlternatives'
+
+// Paths are static, trusted data from game-icons.net — dangerouslySetInnerHTML is safe here.
+function makeIcon(iconKey) {
+  return function Icon({ className }) {
+    return (
+      <svg viewBox="0 0 512 512" fill="currentColor" className={className}
+        dangerouslySetInnerHTML={{ __html: ICON_PATHS[iconKey] }} />
+    )
+  }
+}
 
 function DragonIcon({ className }) {
   return (
@@ -72,20 +82,27 @@ function MerfolkIcon({ className }) {
 }
 
 export const CREATURE_ICONS = {
-  dragon:    DragonIcon,
-  goblin:    GoblinIcon,
-  wizard:    WizardIcon,
-  angel:     AngelIcon,
-  zombie:    ZombieIcon,
-  elf:       ElfIcon,
-  vampire:   VampireIcon,
-  merfolk:   MerfolkIcon,
+  dragon:           makeIcon('spiked-dragon-head'),
+  goblin:           makeIcon('goblin-head'),
+  wizard:           makeIcon('witch-flight'),
+  zombie:           makeIcon('shambling-zombie'),
+  elf:              makeIcon('elf-helmet'),
+  vampire:          makeIcon('resting-vampire'),
+  'vampire-bat':    makeIcon('evil-bat'),
+  knight:           makeIcon('black-knight-helm'),
+  'knight-mounted': makeIcon('mounted-knight'),
+  rogue:            makeIcon('rogue'),
+  minotaur:         makeIcon('minotaur'),
+  orc:              makeIcon('orc-head'),
+  dwarf:            makeIcon('dwarf-face'),
+  ninja:            makeIcon('ninja-head'),
+  samurai:          makeIcon('samurai-helmet'),
+  griffin:          makeIcon('griffin-symbol'),
+  wyvern:           makeIcon('wyvern'),
+  skeleton:         makeIcon('raise-skeleton'),
+  pirate:           makeIcon('pirate-captain'),
 }
 
-/**
- * Renders a creature icon by preset id inside a wrapper div.
- * Pass size classes via className (applied to the SVG).
- */
 export function CreaturePresetIcon({ id, className = 'w-6 h-6' }) {
   const Icon = CREATURE_ICONS[id]
   if (!Icon) return null

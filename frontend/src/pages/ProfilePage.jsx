@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
-import { AVATAR_PRESETS, CREATURE_PRESETS, isPresetUrl, urlToPresetId, presetIdToUrl, isCreaturePreset } from '../lib/avatarPresets'
+import { AVATAR_PRESETS, CREATURE_PRESETS, CREATURE_PRESET_MAP, isPresetUrl, urlToPresetId, presetIdToUrl, isCreaturePreset } from '../lib/avatarPresets'
 import { CreaturePresetIcon } from '../lib/creatureIcons'
 
 export default function ProfilePage() {
@@ -90,6 +90,18 @@ export default function ProfilePage() {
     }
   }
 
+  const renderCreatureAvatar = (id, sizeClass = 'w-20 h-20', iconClass = 'w-14 h-14') => {
+    const p = CREATURE_PRESET_MAP[id]
+    return (
+      <div
+        className={`${sizeClass} rounded-full flex items-center justify-center overflow-hidden`}
+        style={{ background: p?.bg ?? '#1e293b', color: p?.iconColor ?? '#94a3b8', border: '2px solid rgba(255,255,255,0.08)' }}
+      >
+        <CreaturePresetIcon id={id} className={iconClass} />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-lg mx-auto">
@@ -110,17 +122,13 @@ export default function ProfilePage() {
             <div className="relative shrink-0">
               {selectedPresetId ? (
                 isCreaturePreset(selectedPresetId) ? (
-                  <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
-                    <CreaturePresetIcon id={selectedPresetId} className="w-12 h-12 text-amber-400"/>
-                  </div>
+                  renderCreatureAvatar(selectedPresetId)
                 ) : (
                   <i className={`ms ms-${selectedPresetId} ms-cost ms-shadow`} style={{ fontSize: '5rem' }} aria-label={selectedPresetId}/>
                 )
               ) : isPresetUrl(displayAvatar) ? (
                 isCreaturePreset(urlToPresetId(displayAvatar)) ? (
-                  <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
-                    <CreaturePresetIcon id={urlToPresetId(displayAvatar)} className="w-12 h-12 text-amber-400"/>
-                  </div>
+                  renderCreatureAvatar(urlToPresetId(displayAvatar))
                 ) : (
                   <i className={`ms ms-${urlToPresetId(displayAvatar)} ms-cost ms-shadow`} style={{ fontSize: '5rem' }} aria-label={urlToPresetId(displayAvatar)}
                 />
@@ -192,13 +200,14 @@ export default function ProfilePage() {
                   type="button"
                   title={preset.label}
                   onClick={() => handlePresetSelect(preset)}
-                  className={`w-10 h-10 rounded-full bg-slate-800 border flex items-center justify-center transition-all outline-none ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden transition-all outline-none ${
                     selectedPresetId === preset.id
-                      ? 'border-amber-500/60 ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-110'
-                      : 'border-slate-600 opacity-80 hover:opacity-100 hover:scale-105 hover:border-slate-500'
+                      ? 'ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-110'
+                      : 'opacity-80 hover:opacity-100 hover:scale-105'
                   }`}
+                  style={{ background: preset.bg, color: preset.iconColor, border: '1px solid rgba(255,255,255,0.08)' }}
                 >
-                  <CreaturePresetIcon id={preset.id} className="w-6 h-6 text-amber-400"/>
+                  <CreaturePresetIcon id={preset.id} className="w-8 h-8"/>
                 </button>
               ))}
             </div>
