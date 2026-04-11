@@ -102,7 +102,8 @@ export default function Layout({ children }) {
           {/* Clickable profile area — navigates to /profile */}
           <button
             onClick={() => navigate('/profile')}
-            className="flex items-center gap-2 w-full px-2 py-1 rounded-lg hover:bg-[var(--color-bg)] transition-colors text-left"
+            className="flex items-center gap-2 w-full px-2 py-1 rounded-lg cursor-pointer hover:bg-[var(--color-surface)] hover:ring-1 hover:ring-[var(--color-border)] transition-all text-left"
+            title="Edit profile"
           >
             <UserAvatar email={email} avatarUrl={profile?.avatar_url} />
             {email && (

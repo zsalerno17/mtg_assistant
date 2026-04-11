@@ -25,7 +25,7 @@ See Phase 13 section below for full spec. See Commander Expertise Reference for 
 
 ## Recent Changes
 
-- **Phase 13 Stage 2 complete**: Strategy/Improvements prompts now request JSON from Gemini with validated fallbacks. Dedicated `StrategyTab`, `ImprovementsTab`, and `CollectionUpgradesTab` components replace the old markdown `GeminiTab`. No more walls of text — each section is a structured card/panel. Cache keys versioned to `strategy_v2` / `improvements_v2`.
+- **User profiles (username + avatar) added**: New `user_profiles` table + Supabase Storage `avatars` bucket (migration `004_user_profiles.sql`). `GET/PUT /api/users/profile` backend endpoints. `ProfilePage.jsx` — edit username, upload avatar (direct Supabase Storage upload). `AuthContext` now exposes `profile` + `refreshProfile`. Layout sidebar/mobile nav now shows real avatar and navigates to `/profile` instead of calling `signOut` directly (fixes the UX bug from backlog). Username shown in sidebar when set. Dedicated `StrategyTab`, `ImprovementsTab`, and `CollectionUpgradesTab` components replace the old markdown `GeminiTab`. No more walls of text — each section is a structured card/panel. Cache keys versioned to `strategy_v2` / `improvements_v2`.
 - **Improvements tab: paired swaps**: Previously cuts and additions were separate lists — the user had to mentally match which cut goes with which addition. Now the Gemini prompt returns `swaps: [{cut, add, reason, category}]` pairs. The UI shows each swap as a single card: "− Cut Card → + Add Card" with reason. `urgent_fixes` remain separate (no 1:1 cut needed, deck is missing a whole category). `additions` remain for cards to add that aren't paired with a specific cut. Swap pairs also show `owned` flag and `price_tier` on the "add" side. This mirrors the Collection Upgrades tab pattern (which already returns add/cut/reason triples from the rule-based engine).
 - **AI consistency improvements**: Gemini temperature lowered to 0.3 (from default ~1.0). Deck context now sends card types + CMC for each card, actual counts vs thresholds ("Ramp: 7 (need 10+)"), and color identity. Partner commanders now included in all context.
 - **Dual commander support**: `Deck.color_identity` now includes both commanders' colors. `analyze_deck()` stores both names. Frontend shows both commanders on Overview tab. Router saves partner data to DB.
@@ -43,7 +43,7 @@ See Phase 13 section below for full spec. See Commander Expertise Reference for 
 Full analysis in `.github/design-analysis.md`. Root causes: flat hierarchy + buried differentiators. Prioritized action items:
 
 **Critical (do first):**
-- [ ] **Profile button in mobile nav calls signOut directly** — UX bug, users accidentally sign out. Must navigate to a profile/settings view or show confirmation.
+- [x] **Profile button in mobile nav calls signOut directly** — Fixed: now navigates to `/profile`. Sign out moved to the Profile page.
 - [ ] **Collection Upgrades and Improvements tabs both call `api.getImprovements()`** — functional bug and IA problem. Merge or differentiate.
 - [ ] **DeckPage Overview: commander is not the hero** — restructure so commander + color identity is a visual hero element at top, weaknesses are prominent (not at the bottom of a long scroll). The weakness cards are the app's best UI — they're buried.
 

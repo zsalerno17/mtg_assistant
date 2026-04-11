@@ -147,16 +147,6 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {/* Email (read-only) */}
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-[var(--color-text)]">
-              Email
-            </label>
-            <p className="text-sm text-[var(--color-muted)] px-3 py-2 bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)]">
-              {email}
-            </p>
-          </div>
-
           {/* Error / success */}
           {error && (
             <p className="text-[var(--color-danger)] text-sm">{error}</p>
