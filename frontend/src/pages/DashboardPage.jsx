@@ -76,7 +76,7 @@ function ImportModal({ onClose, onImported }) {
             <button
               type="submit"
               disabled={loading || !url.trim()}
-              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
+              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 hover:shadow-[0_0_16px_rgba(251,191,36,0.3)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
             >
               {loading ? 'Importing…' : 'Import'}
             </button>
@@ -106,6 +106,37 @@ function ColorPips({ colors, size = '1.1rem' }) {
         )
       })}
     </div>
+  )
+}
+
+function DeckCardSkeleton() {
+  return (
+    <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 space-y-3">
+      <div className="skeleton h-4 rounded-md w-3/4" />
+      <div className="flex gap-1.5">
+        {[...Array(3)].map((_, i) => <div key={i} className="skeleton rounded-full w-5 h-5" />)}
+      </div>
+      <div className="skeleton h-3 rounded w-1/2" />
+      <div className="pt-1 flex items-center justify-between">
+        <div className="skeleton h-5 rounded-full w-20" />
+        <div className="skeleton h-3 rounded w-12" />
+      </div>
+    </div>
+  )
+}
+
+function DeckRowSkeleton() {
+  return (
+    <tr className="border-b border-[var(--color-border)]">
+      <td className="py-3 px-4"><div className="skeleton h-4 rounded w-32" /></td>
+      <td className="py-3 px-4"><div className="skeleton h-4 rounded w-24" /></td>
+      <td className="py-3 px-4">
+        <div className="flex gap-1">{[...Array(3)].map((_, i) => <div key={i} className="skeleton rounded-full w-4 h-4" />)}</div>
+      </td>
+      <td className="py-3 px-4"><div className="skeleton h-3 rounded w-16" /></td>
+      <td className="py-3 px-4"><div className="skeleton h-5 rounded-full w-20" /></td>
+      <td className="py-3 px-4"><div className="skeleton h-5 rounded w-14" /></td>
+    </tr>
   )
 }
 
@@ -346,10 +377,10 @@ export default function DashboardPage() {
           onImported={handleImported}
         />
       )}
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Page title */}
         <div className="mb-8">
-          <h1 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">Dashboard</h1>
+          <h1 className="font-[var(--font-heading)] text-2xl sm:text-3xl text-[var(--color-text)] tracking-wide mb-2">Dashboard</h1>
           <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
         </div>
 
@@ -358,7 +389,7 @@ export default function DashboardPage() {
           <h2 className="text-[var(--color-text)] text-lg font-medium">My Decks</h2>
           <button
             onClick={() => setShowImportModal(true)}
-            className="text-sm bg-[var(--color-primary)] text-[var(--color-bg)] px-4 py-1.5 rounded-lg font-semibold hover:brightness-110 transition-all shadow-md shadow-amber-500/20"
+            className="text-sm bg-[var(--color-primary)] text-[var(--color-bg)] px-4 py-1.5 rounded-lg font-semibold hover:brightness-110 hover:shadow-[0_0_16px_rgba(251,191,36,0.3)] active:scale-[0.97] transition-all shadow-md shadow-amber-500/20"
           >
             + Import Deck
           </button>
@@ -369,7 +400,27 @@ export default function DashboardPage() {
         )}
 
         {decksLoading ? (
-          <p className="text-[var(--color-muted)] text-sm">Loading decks…</p>
+          <>
+            {/* Mobile: card skeletons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+              {[...Array(3)].map((_, i) => <DeckCardSkeleton key={i} />)}
+            </div>
+            {/* Desktop: table skeleton */}
+            <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--color-border)]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                    {['Deck', 'Commander', 'Colors', 'Added', 'Status', 'Actions'].map(h => (
+                      <th key={h} className="py-3 px-4 text-[var(--color-muted)] text-xs font-medium uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-[var(--color-bg)]">
+                  {[...Array(4)].map((_, i) => <DeckRowSkeleton key={i} />)}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : decks.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">

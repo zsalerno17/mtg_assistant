@@ -117,7 +117,7 @@ export default function ProfilePage() {
         )}
         {/* Header */}
         <div className="mb-8">
-          <h2 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">
+          <h2 className="font-[var(--font-heading)] text-2xl sm:text-3xl text-[var(--color-text)] tracking-wide mb-2">
             Profile
           </h2>
           <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
@@ -254,7 +254,7 @@ export default function ProfilePage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-2.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-bg)] text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full py-2.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-bg)] text-sm font-semibold hover:opacity-90 hover:shadow-[0_0_16px_rgba(251,191,36,0.3)] disabled:opacity-50 transition-all"
           >
             {saving ? 'Saving…' : 'Save changes'}
           </button>

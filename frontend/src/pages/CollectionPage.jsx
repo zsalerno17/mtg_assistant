@@ -52,7 +52,7 @@ export default function CollectionPage() {
     <div className="min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h2 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">
+        <h2 className="font-[var(--font-heading)] text-2xl sm:text-3xl text-[var(--color-text)] tracking-wide mb-2">
           My Collection
         </h2>
         <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
@@ -125,7 +125,7 @@ export default function CollectionPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
             {filteredCards.map((card, i) => (
               <div
                 key={i}

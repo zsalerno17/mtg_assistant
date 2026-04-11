@@ -47,7 +47,7 @@ function ScenariosIcon() {
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
-  { label: 'Collection Upgrades', icon: UpgradeIcon },
+  { label: 'Collection Upgrades', icon: UpgradeIcon, mobileLabel: 'Upgrades' },
   { label: 'Strategy', icon: StrategyIcon },
   { label: 'Improvements', icon: ImprovementsIcon },
   { label: 'Scenarios', icon: ScenariosIcon },
@@ -183,6 +183,27 @@ function SectionLabel({ children, className = '' }) {
   )
 }
 
+function CommanderImage({ name }) {
+  const [error, setError] = useState(false)
+  if (!name || error) return null
+  const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image`
+  return (
+    <div
+      className="shrink-0 rounded-[7px] p-px shadow-lg shadow-amber-500/20"
+      style={{ background: 'linear-gradient(145deg, rgba(251,191,36,0.55) 0%, rgba(180,130,18,0.25) 50%, rgba(251,191,36,0.4) 100%)' }}
+    >
+      <img
+        src={url}
+        alt={name}
+        onError={() => setError(true)}
+        loading="lazy"
+        className="rounded-[6px] block object-cover"
+        style={{ width: 72, height: 100 }}
+      />
+    </div>
+  )
+}
+
 function OverviewTab({ deck, analysis, onTabChange }) {
   if (!deck || !analysis) return <p className="text-[var(--color-muted)] text-sm">Loading deck data…</p>
 
@@ -203,18 +224,28 @@ function OverviewTab({ deck, analysis, onTabChange }) {
       {/* ── Commander Hero ── */}
       <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-primary)]/20 rounded-xl px-6 py-5 hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
         <SectionLabel>{deck.partner ? 'Commanders' : 'Commander'}</SectionLabel>
-        <p className="text-[var(--color-primary)] font-[var(--font-heading)] text-2xl leading-snug">
-          {deck.commander?.name || 'Unknown'}
-          {deck.partner?.name && (
-            <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
-          )}
-          {deck.partner?.name && (
-            <span className="text-[var(--color-primary)]">{deck.partner.name}</span>
-          )}
-        </p>
-        <div className="flex items-center gap-3 mt-2 flex-wrap">
-          {commanderColors.length > 0 && <ColorPips colors={commanderColors} />}
-          <span className="text-[var(--color-muted)] text-sm">{deck.format} · {deck.name}</span>
+        <div className="flex items-center gap-5 mt-1">
+          {/* Card image(s) */}
+          <div className="flex gap-2 shrink-0">
+            <CommanderImage name={deck.commander?.name} />
+            {deck.partner?.name && <CommanderImage name={deck.partner.name} />}
+          </div>
+          {/* Text info */}
+          <div>
+            <p className="text-[var(--color-primary)] font-[var(--font-heading)] text-2xl leading-snug">
+              {deck.commander?.name || 'Unknown'}
+              {deck.partner?.name && (
+                <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
+              )}
+              {deck.partner?.name && (
+                <span className="text-[var(--color-primary)]">{deck.partner.name}</span>
+              )}
+            </p>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              {commanderColors.length > 0 && <ColorPips colors={commanderColors} />}
+              <span className="text-[var(--color-muted)] text-sm">{deck.format} · {deck.name}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -818,7 +849,7 @@ function ScenariosTab({ deckId }) {
           <button
             type="submit"
             disabled={loading || (!addInput.trim() && !removeInput.trim())}
-            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_rgba(251,191,36,0.35)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Analyzing…' : 'Analyze Scenario'}
           </button>
@@ -935,7 +966,7 @@ export default function DeckPage() {
           Dashboard
         </Link>
         <div className="min-w-0">
-          <h1 className="font-[var(--font-heading)] text-[var(--color-primary)] text-xl truncate leading-tight">
+          <h1 className="font-[var(--font-heading)] text-[var(--color-primary)] text-xl truncate leading-tight" style={{ textShadow: '0 0 24px rgba(251,191,36,0.3)' }}>
             {deckName}
           </h1>
           {analysis?.colors?.length > 0 && (
@@ -952,18 +983,23 @@ export default function DeckPage() {
       <div className="px-6 pt-0">
         {/* Tab bar */}
         <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] pt-2">
-          {TAB_CONFIG.map(({ label, icon: TabIcon }) => (
+          {TAB_CONFIG.map(({ label, icon: TabIcon, mobileLabel }) => (
             <button
               key={label}
               onClick={() => setActiveTab(label)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors active:scale-[0.97] ${
                 activeTab === label
                   ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
                   : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
               }`}
             >
               <TabIcon />
-              {label}
+              {mobileLabel ? (
+                <>
+                  <span className="sm:hidden">{mobileLabel}</span>
+                  <span className="hidden sm:inline">{label}</span>
+                </>
+              ) : label}
             </button>
           ))}
         </div>

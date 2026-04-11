@@ -7,7 +7,7 @@
 
 ## Current Status
 
-**Phase 13 fully complete.** Phase 14 + 15 planned, not started.
+**Phase 15 complete.** Phase 16 (rearchitect) also complete. All numbered phases done.
 
 **Next up in order:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
@@ -17,7 +17,8 @@
 5. [x] Quick win: Deck top bar commander name + color identity subtitle
 6. [x] Phase 14A: Dashboard deck grid + collection summary widget
 7. [x] Phase 14B: Onboarding panel (replaced by Phase 16)
-8. [ ] Phase 15: Design review (MTG aesthetic + desktop/mobile polish)
+8. [x] Phase 15: Design review (MTG aesthetic + desktop/mobile polish)
+9. [x] Phase 16: Rearchitect user flow (complete)
 9. [x] Phase 16: Rearchitect user flow (complete)
 
 ---
@@ -71,6 +72,17 @@ Existing analyses in `analyses` table are NOT in `user_decks`. On `GET /api/deck
 **Do NOT touch:** `supabase/migrations/004_user_profiles.sql`, or the profile/auth flow — settled, no changes needed.
 
 ---
+
+## Recent Changes (Phase 15 — April 2026)
+
+- **Scryfall commander image**: `CommanderImage` component added to `DeckPage.jsx` — shows small card image in the commander hero block with gold gradient border. `onError` fallback to text-only. Supports partner commanders (two images side by side).
+- **Background texture**: SVG `feTurbulence` noise layer (4% opacity) added to `body` background-image in `index.css` — eliminates flat paint wall feeling.
+- **Amber button glow**: `hover:shadow-[0_0_16px_rgba(251,191,36,0.3)]` added to all primary filled amber buttons in DeckPage, DashboardPage, ProfilePage.
+- **Deck name text glow**: `textShadow: '0 0 24px rgba(251,191,36,0.3)'` on the DeckPage top bar h1.
+- **Desktop layout**: Dashboard `max-w-4xl`; sidebar labels/brand/profile text now show at `xl` (1280px) breakpoint instead of `lg` (1024px); Collection grid adds 5th column at `xl`.
+- **Mobile polish**: "Collection Upgrades" tab abbreviated to "Upgrades" on screens < sm; page titles `text-2xl sm:text-3xl`; mobile nav active pill `bg-amber-500/10`; `active:scale-[0.97]` on mobile nav items and tab buttons.
+- **Shimmer skeletons**: `DeckCardSkeleton` + `DeckRowSkeleton` components replace "Loading decks…" text on Dashboard. `.skeleton` CSS class + `shimmer` keyframe added to `index.css`.
+- **Note**: DeckPage top bar "date" (spec item) skipped — no `analyzed_at` in the analysis response payload. To add it: expose `created_at` from `POST /api/decks/analyze` response and surface it on the top bar.
 
 ## Recent Changes (Phase 16 — April 2026)
 

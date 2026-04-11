@@ -86,7 +86,7 @@ function NavItem({ to, label, icon: Icon, exact }) {
       }
     >
       <Icon />
-      <span className="hidden lg:block">{label}</span>
+      <span className="hidden xl:block">{label}</span>
     </NavLink>
   )
 }
@@ -100,13 +100,13 @@ export default function Layout({ children }) {
   return (
     <div className="flex flex-col min-h-screen md:flex-row bg-[var(--color-bg)]">
       {/* ── Desktop sidebar (hidden on mobile) ── */}
-      <aside className="hidden md:flex flex-col w-16 lg:w-60 shrink-0 border-r border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-bg)] sticky top-0 h-screen">
+      <aside className="hidden md:flex flex-col w-16 xl:w-60 shrink-0 border-r border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-bg)] sticky top-0 h-screen">
         {/* Brand */}
         <div className="px-4 py-5 border-b border-[var(--color-border)]">
-          <span className="font-[var(--font-heading)] text-[var(--color-primary)] text-base hidden lg:block drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
+          <span className="font-[var(--font-heading)] text-[var(--color-primary)] text-base hidden xl:block drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
             MTG Assistant
           </span>
-          <span className="font-[var(--font-heading)] text-[var(--color-primary)] text-lg lg:hidden drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">M</span>
+          <span className="font-[var(--font-heading)] text-[var(--color-primary)] text-lg xl:hidden drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">M</span>
         </div>
 
         {/* Nav links */}
@@ -126,7 +126,7 @@ export default function Layout({ children }) {
           >
             <UserAvatar email={email} avatarUrl={profile?.avatar_url} />
             {email && (
-              <div className="hidden lg:block min-w-0">
+              <div className="hidden xl:block min-w-0">
                 {profile?.username && (
                   <p className="text-[var(--color-text)] text-xs font-medium truncate">{profile.username}</p>
                 )}
@@ -139,7 +139,7 @@ export default function Layout({ children }) {
             className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border-l-2 border-transparent text-[var(--color-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-surface)] transition-colors text-sm"
           >
             <SignOutIcon />
-            <span className="hidden lg:block">Sign out</span>
+            <span className="hidden xl:block">Sign out</span>
           </button>
         </div>
       </aside>
@@ -169,7 +169,7 @@ export default function Layout({ children }) {
         {/* Profile slot — navigates to profile page */}
         <button
           onClick={() => navigate('/profile')}
-          className="flex flex-col items-center gap-0.5 min-w-[64px] min-h-[56px] px-4 py-2 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-primary)] transition-colors justify-center"
+          className="flex flex-col items-center gap-0.5 min-w-[64px] min-h-[56px] px-4 py-2 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-primary)] transition-colors justify-center active:scale-[0.97]"
         >
           <UserAvatar email={email} avatarUrl={profile?.avatar_url} />
           <span className="text-xs">Profile</span>
