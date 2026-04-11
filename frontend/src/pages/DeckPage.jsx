@@ -199,13 +199,14 @@ function OverviewTab({ deck, analysis, onTabChange }) {
       {/* Key stats */}
       <div>
         <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Key Numbers</h3>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
           <StatBadge label="Cards" value={analysis.total_cards} />
           <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} warning={analysis.average_cmc > 3.5} healthy={typeof analysis.average_cmc === 'number' && analysis.average_cmc <= 3.0} />
           <StatBadge label="Lands" value={cardTypes['Lands'] || 0} warning={(cardTypes['Lands'] || 0) < 36} healthy={(cardTypes['Lands'] || 0) >= 36} />
           <StatBadge label="Ramp" value={analysis.ramp_count || 0} warning={(analysis.ramp_count || 0) < 10} healthy={(analysis.ramp_count || 0) >= 10} />
           <StatBadge label="Draw" value={analysis.draw_count || 0} warning={(analysis.draw_count || 0) < 10} healthy={(analysis.draw_count || 0) >= 10} />
           <StatBadge label="Removal" value={analysis.removal_count || 0} warning={(analysis.removal_count || 0) < 8} healthy={(analysis.removal_count || 0) >= 8} />
+          <StatBadge label="Wipes" value={analysis.board_wipe_count || 0} warning={(analysis.board_wipe_count || 0) < 2} healthy={(analysis.board_wipe_count || 0) >= 2} />
         </div>
       </div>
 
@@ -264,17 +265,18 @@ function OverviewTab({ deck, analysis, onTabChange }) {
           <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Themes</h3>
           <div className="flex flex-wrap gap-2">
             {analysis.themes.map((t) => {
-              const def = THEME_DEFINITIONS[t]
+              const name = typeof t === 'string' ? t : t.name
+              const count = typeof t === 'object' ? t.count : null
+              const def = typeof t === 'object' && t.definition ? t.definition : THEME_DEFINITIONS[name]
               return (
-                <span key={t} className="relative group">
+                <span key={name} className="relative group">
                   <span className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-secondary)] text-xs px-2.5 py-1 rounded-full cursor-help inline-block">
-                    {t}
+                    {name}{count != null ? ` (${count})` : ''}
                   </span>
                   {def && (
                     <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
-                      <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{t}</span>
+                      <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{name}</span>
                       <span className="block text-[var(--color-muted)] text-xs leading-relaxed">{def}</span>
-                      {/* Arrow */}
                       <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[#0f1d2e]" />
                     </span>
                   )}

@@ -92,7 +92,7 @@ def _ask(prompt: str) -> Optional[str]:
 
 def _deck_context(deck, analysis: dict) -> str:
     commander = deck.commander.name if deck.commander else "Unknown"
-    themes = ", ".join(analysis.get("themes", [])) or "None detected"
+    themes = ", ".join(analysis.get("theme_names", [])) or "None detected"
     # Handle both old string format and new structured dict format
     raw_weaknesses = analysis.get("weaknesses", [])
     weakness_labels = ", ".join(
@@ -217,7 +217,7 @@ Return this exact JSON structure:
 
 def _fallback_strategy(deck, analysis: dict) -> str:
     commander = deck.commander.name if deck.commander else "your commander"
-    themes = ", ".join(analysis.get("themes", [])) or "general value"
+    themes = ", ".join(analysis.get("theme_names", [])) or "general value"
     weaknesses = analysis.get("weaknesses", [])
     weakness_labels = [w["label"] if isinstance(w, dict) else w for w in weaknesses]
     weakness_text = "\n".join(f"- {w}" for w in weakness_labels) if weakness_labels else "- None identified"

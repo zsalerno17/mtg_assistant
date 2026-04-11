@@ -14,7 +14,60 @@ RECOMMENDED_LANDS = (36, 38)
 RECOMMENDED_RAMP = 10
 RECOMMENDED_DRAW = 10
 RECOMMENDED_REMOVAL = 8
+RECOMMENDED_BOARD_WIPES = 2
 HIGH_AVG_CMC_THRESHOLD = 3.5
+
+# Color-aware staple recommendations for weakness examples.
+# "*" = colorless (always legal in any deck).
+_COLOR_STAPLES = {
+    "ramp": {
+        "W": ["Smothering Tithe", "Knight of the White Orchid", "Archaeomancer's Map"],
+        "U": [],
+        "B": ["Dark Ritual", "Crypt Ghast", "Black Market Connections"],
+        "R": ["Dockside Extortionist", "Jeska's Will", "Curse of Opulence"],
+        "G": ["Cultivate", "Kodama's Reach", "Nature's Lore", "Llanowar Elves", "Birds of Paradise"],
+        "*": ["Sol Ring", "Arcane Signet", "Fellwar Stone", "Mind Stone"],
+    },
+    "draw": {
+        "W": ["Esper Sentinel", "Welcoming Vampire", "Mentor of the Meek"],
+        "U": ["Rhystic Study", "Mystic Remora", "Fact or Fiction"],
+        "B": ["Phyrexian Arena", "Sign in Blood", "Night's Whisper", "Read the Bones"],
+        "R": ["Faithless Looting", "Light Up the Stage"],
+        "G": ["Beast Whisperer", "Guardian Project", "Harmonize", "Sylvan Library"],
+        "*": ["Skullclamp"],
+    },
+    "removal": {
+        "W": ["Swords to Plowshares", "Path to Exile", "Generous Gift"],
+        "U": ["Reality Shift", "Rapid Hybridization", "Pongify"],
+        "B": ["Go for the Throat", "Infernal Grasp", "Feed the Swarm"],
+        "R": ["Chaos Warp", "Abrade", "Vandalblast"],
+        "G": ["Beast Within", "Nature's Claim"],
+        "*": [],
+    },
+    "board_wipes": {
+        "W": ["Wrath of God", "Farewell", "Austere Command"],
+        "U": ["Cyclonic Rift", "Flood of Tears"],
+        "B": ["Damnation", "Toxic Deluge", "Black Sun's Zenith"],
+        "R": ["Blasphemous Act", "Chain Reaction"],
+        "G": ["Bane of Progress"],
+        "*": ["Oblivion Stone", "Nevinyrral's Disk", "All Is Dust"],
+    },
+}
+
+
+def _get_color_filtered_examples(category: str, color_identity: List[str]) -> List[str]:
+    """Return up to 5 example cards filtered by deck's color identity."""
+    staples = _COLOR_STAPLES.get(category, {})
+    examples = list(staples.get("*", []))
+    for color in color_identity:
+        examples.extend(staples.get(color, []))
+    seen: set = set()
+    unique: List[str] = []
+    for card in examples:
+        if card not in seen:
+            seen.add(card)
+            unique.append(card)
+    return unique[:5]
 
 
 # ─── Public API ───────────────────────────────────────────────────────────────
@@ -36,8 +89,10 @@ def analyze_deck(deck: Deck) -> Dict:
         "ramp_count": count_ramp(all_cards),
         "draw_count": count_draw(all_cards),
         "removal_count": count_removal(all_cards),
+        "board_wipe_count": count_board_wipes(all_cards),
         "interaction_count": count_interaction(all_cards),
         "themes": themes,
+        "theme_names": [t["name"] for t in themes],
         "weaknesses": weaknesses,
     }
     partial["verdict"] = generate_deck_verdict(partial)
@@ -148,23 +203,33 @@ def count_mana_sources(cards: List[Card]) -> int:
             count += card.quantity
         else:
             oracle = card.oracle_text.lower()
-            if "add {" in oracle or "adds {" in oracle or "produces mana" in oracle:
+            if any(p in oracle for p in (
+                    "add {", "adds {", "add one mana", "add two mana",
+                    "add three mana", "add mana", "produces mana",
+                    "treasure token")):
                 count += card.quantity
     return count
 
 
 def count_ramp(cards: List[Card]) -> int:
-    """Count cards that accelerate mana (rocks, dorks, land search)."""
+    """Count mana acceleration: rocks/dorks/treasures (CMC ≤ 3) and land tutors (CMC ≤ 3)."""
     count = 0
     for card in cards:
         if card.is_land:
             continue
+        if card.cmc > 3:
+            continue
         oracle = card.oracle_text.lower()
         tl = card.type_line.lower()
-        # Mana rocks / enchantments / creatures that add mana
-        if "add {" in oracle or "adds {" in oracle:
+        # Mana rocks / dorks: "add {X}", "adds {X}", "add one/two/three mana"
+        if any(p in oracle for p in (
+                "add {", "adds {", "add one mana", "add two mana",
+                "add three mana", "add mana")):
             count += card.quantity
-        # Land tutors
+        # Treasure producers
+        elif "treasure token" in oracle:
+            count += card.quantity
+        # Land tutors (instants/sorceries that search for lands)
         elif ("sorcery" in tl or "instant" in tl) and (
             "search your library" in oracle and "land" in oracle
         ):
@@ -177,13 +242,16 @@ def count_draw(cards: List[Card]) -> int:
     draw_phrases = (
         "draw a card",
         "draw cards",
-        "draw two cards",
-        "draw three cards",
-        "draw x cards",
+        "draw two",
+        "draw three",
+        "draw x ",
         "draw that many",
+        "draw an additional",
     )
     count = 0
     for card in cards:
+        if card.is_land:
+            continue
         oracle = card.oracle_text.lower()
         if any(p in oracle for p in draw_phrases):
             count += card.quantity
@@ -191,34 +259,70 @@ def count_draw(cards: List[Card]) -> int:
 
 
 def count_removal(cards: List[Card]) -> int:
-    """Count single-target removal spells."""
-    removal_phrases = (
-        "destroy target",
-        "exile target",
-        "return target",
-        "deals damage to target creature",
-        "deals damage to any target",
+    """Count single-target removal (not bounce — bounce is unreliable in Commander)."""
+    count = 0
+    for card in cards:
+        if card.is_land:
+            continue
+        oracle = card.oracle_text.lower()
+        tl = card.type_line.lower()
+        # Direct destroy/exile
+        if "destroy target" in oracle or "exile target" in oracle:
+            count += card.quantity
+        # Damage-based removal
+        elif ("deals damage to any target" in oracle
+              or "deals damage to target creature" in oracle):
+            count += card.quantity
+        # Enchantment-based neutralization (Darksteel Mutation, Kenrith's Transformation)
+        elif "enchantment" in tl and "loses all" in oracle:
+            count += card.quantity
+        # Tuck effects (Chaos Warp, Oblation)
+        elif ("shuffle" in oracle and "into" in oracle
+              and "library" in oracle and "target" in oracle):
+            count += card.quantity
+    return count
+
+
+def count_board_wipes(cards: List[Card]) -> int:
+    """Count board-clearing effects (wraths, mass exile, mass bounce, mass damage)."""
+    wipe_phrases = (
+        "destroy all creatures",
+        "destroy all nonland",
+        "destroy all permanents",
+        "destroy all artifact",
+        "exile all",
+        "all creatures get -",
+        "return all creatures",
+        "return all nonland",
     )
     count = 0
     for card in cards:
+        if card.is_land:
+            continue
         oracle = card.oracle_text.lower()
-        if any(p in oracle for p in removal_phrases):
+        if any(p in oracle for p in wipe_phrases):
+            count += card.quantity
+        elif "damage to each creature" in oracle:
+            count += card.quantity
+        elif "-1/-1 counter" in oracle and "each creature" in oracle:
             count += card.quantity
     return count
 
 
 def count_interaction(cards: List[Card]) -> int:
-    """Count instants/sorceries that interact (removal + counterspells)."""
+    """Count instants/sorceries that interact (removal, counterspells, bounce)."""
     interaction_phrases = (
         "destroy target",
         "exile target",
-        "counter target spell",
-        "counter spell",
+        "return target",
+        "counter target",
         "deals damage to any target",
+        "deals damage to target creature",
     )
     count = 0
     for card in cards:
-        if "instant" not in card.type_line.lower() and "sorcery" not in card.type_line.lower():
+        tl = card.type_line.lower()
+        if "instant" not in tl and "sorcery" not in tl:
             continue
         oracle = card.oracle_text.lower()
         if any(p in oracle for p in interaction_phrases):
@@ -228,54 +332,146 @@ def count_interaction(cards: List[Card]) -> int:
 
 # ─── Theme & Weakness Detection ───────────────────────────────────────────────
 
-_THEME_KEYWORDS: Dict[str, List[str]] = {
-    "Tokens": ["create", "token", "populate"],
-    "Graveyard": ["graveyard", "return from", "flashback", "unearth", "mill"],
-    "Aristocrats": ["sacrifice", "dies", "when a creature dies"],
-    "Aggro": ["haste", "first strike", "double strike", "trample"],
-    "Control": ["counter target", "destroy all", "exile all", "return to hand"],
-    "Voltron": ["equipment", "aura", "enchant creature", "attach"],
-    "Spellslinger": ["whenever you cast", "instant or sorcery"],
-    "Landfall": ["landfall", "whenever a land enters"],
-    "Tribal": ["each other", "of the chosen type", "gains all abilities"],
-    "Combo": ["win the game", "infinite", "untap all"],
-}
-
 THEME_DEFINITIONS: Dict[str, str] = {
     "Tokens": "Generates creature tokens to overwhelm through wide board presence.",
     "Graveyard": "Uses the graveyard as a resource — reanimation, recursion, and flashback effects.",
     "Aristocrats": "Sacrifices creatures for value — death triggers, life drain, and card advantage.",
-    "Aggro": "Fast creatures with evasion and combat bonuses; aims to win through early pressure.",
-    "Control": "Answers threats with counterspells, wraths, and removal to dominate the late game.",
     "Voltron": "Grows one creature enormous through equipment or auras — usually the commander.",
     "Spellslinger": "Gets value from casting instants and sorceries — cantrips, triggers, storm-style payoffs.",
     "Landfall": "Triggers powerful effects whenever a land enters the battlefield.",
-    "Tribal": "Synergies between creatures of the same type — lords, shared abilities, tribal payoffs.",
-    "Combo": "Assembles specific card combinations to generate infinite loops or win the game immediately.",
+    "+1/+1 Counters": "Grows creatures with +1/+1 counters, proliferate, and counter synergies.",
+    "Enchantress": "Draws cards and gains value from casting enchantments.",
+    "Artifacts Matter": "Synergies around casting and controlling artifacts — affinity, triggers, and recursion.",
+}
+
+# Minimum card counts to declare a theme present.
+_THEME_THRESHOLDS: Dict[str, int] = {
+    "Tokens": 8,
+    "Graveyard": 7,
+    "Aristocrats": 8,
+    "Voltron": 8,
+    "Spellslinger": 3,
+    "Landfall": 6,
+    "+1/+1 Counters": 8,
+    "Enchantress": 2,
+    "Artifacts Matter": 2,
 }
 
 
-def identify_themes(deck: Deck) -> List[str]:
-    """Identify dominant strategies/themes in the deck."""
-    all_text = " ".join(
-        c.oracle_text.lower() + " " + c.type_line.lower() for c in deck.all_cards
-    )
-    themes = []
-    for theme, keywords in _THEME_KEYWORDS.items():
-        if sum(1 for kw in keywords if kw in all_text) >= 2:
-            themes.append(theme)
-    return themes
+def _card_fits_theme(card: Card, theme: str) -> bool:
+    """Return True if a single card contributes to the named theme."""
+    if card.is_land:
+        return False
+    oracle = card.oracle_text.lower()
+    tl = card.type_line.lower()
+
+    if theme == "Tokens":
+        return ("creature token" in oracle or "populate" in oracle
+                or ("twice" in oracle and "token" in oracle))
+    elif theme == "Graveyard":
+        return any(kw in oracle for kw in (
+            "from your graveyard", "from a graveyard", "flashback",
+            "unearth", "escape", "embalm", "encore",
+        )) or ("mill" in oracle)
+    elif theme == "Aristocrats":
+        return any(kw in oracle for kw in (
+            "sacrifice a creature", "sacrifice another",
+            "whenever a creature dies", "whenever a creature you control dies",
+            "when this creature dies",
+        ))
+    elif theme == "Voltron":
+        return ("equipment" in tl
+                or ("aura" in tl and "enchant creature" in oracle)
+                or "equipped creature" in oracle
+                or "enchanted creature gets" in oracle)
+    elif theme == "Spellslinger":
+        return any(kw in oracle for kw in (
+            "whenever you cast an instant or sorcery",
+            "whenever you cast a noncreature",
+            "magecraft",
+            "instant and sorcery cards",
+        ))
+    elif theme == "Landfall":
+        return ("landfall" in oracle
+                or "whenever a land enters the battlefield under your control" in oracle)
+    elif theme == "+1/+1 Counters":
+        return any(kw in oracle for kw in (
+            "put a +1/+1 counter", "+1/+1 counter on it",
+            "proliferate", "modular", "evolve",
+        ))
+    elif theme == "Enchantress":
+        return any(kw in oracle for kw in (
+            "whenever you cast an enchantment",
+            "whenever an enchantment enters",
+        ))
+    elif theme == "Artifacts Matter":
+        return any(kw in oracle for kw in (
+            "whenever you cast an artifact",
+            "whenever an artifact enters",
+            "affinity for artifacts",
+        ))
+    return False
+
+
+def identify_themes(deck: Deck) -> List[Dict]:
+    """Identify themes via per-card counting.
+
+    Returns a list of dicts: [{name, count, cards, definition}],
+    sorted by card count descending.
+    """
+    all_cards = deck.all_cards
+    non_lands = [c for c in all_cards if not c.is_land]
+    non_land_count = sum(c.quantity for c in non_lands)
+
+    detected: List[Dict] = []
+    for theme, threshold in _THEME_THRESHOLDS.items():
+        matching = [c.name for c in all_cards if _card_fits_theme(c, theme)]
+        if len(matching) < threshold:
+            continue
+
+        # Ratio checks for payoff-based themes
+        if theme == "Spellslinger" and non_land_count > 0:
+            inst_sorc = sum(
+                c.quantity for c in non_lands
+                if "instant" in c.type_line.lower() or "sorcery" in c.type_line.lower()
+            )
+            if inst_sorc / non_land_count < 0.30:
+                continue
+        elif theme == "Enchantress" and non_land_count > 0:
+            ench_count = sum(
+                c.quantity for c in non_lands if "enchantment" in c.type_line.lower()
+            )
+            if ench_count / non_land_count < 0.25:
+                continue
+        elif theme == "Artifacts Matter" and non_land_count > 0:
+            art_count = sum(
+                c.quantity for c in non_lands if "artifact" in c.type_line.lower()
+            )
+            if art_count / non_land_count < 0.30:
+                continue
+
+        detected.append({
+            "name": theme,
+            "count": len(matching),
+            "cards": matching[:10],
+            "definition": THEME_DEFINITIONS.get(theme, ""),
+        })
+
+    detected.sort(key=lambda t: t["count"], reverse=True)
+    return detected
 
 
 def identify_weaknesses(deck: Deck) -> List[Dict]:
-    """Return a list of structured weakness dicts with label, why, look_for, examples."""
+    """Return structured weakness dicts with color-filtered example suggestions."""
     all_cards = deck.all_cards
     card_types = categorize_card_types(all_cards)
     lands = card_types.get("Lands", 0)
     ramp = count_ramp(all_cards)
     draw = count_draw(all_cards)
     removal = count_removal(all_cards)
+    board_wipes = count_board_wipes(all_cards)
     avg_cmc = calculate_average_cmc(all_cards)
+    ci = deck.color_identity or []
 
     weaknesses = []
 
@@ -291,7 +487,7 @@ def identify_weaknesses(deck: Deck) -> List[Dict]:
             "label": f"High land count ({lands} — you may have too many)",
             "why": "Too many lands means fewer spells. Consider replacing some basics with ramp spells.",
             "look_for": "Ramp spells that also thin your deck, reducing flood risk.",
-            "examples": ["Cultivate", "Kodama's Reach", "Skyshroud Claim", "Nature's Lore"],
+            "examples": _get_color_filtered_examples("ramp", ci),
         })
 
     if ramp < RECOMMENDED_RAMP:
@@ -299,7 +495,7 @@ def identify_weaknesses(deck: Deck) -> List[Dict]:
             "label": f"Low ramp count ({ramp} — recommend {RECOMMENDED_RAMP}+ for Commander)",
             "why": "Ramp lets you play ahead of the curve and cast your threats before opponents can answer them.",
             "look_for": "2-mana rocks, land tutors, and mana dorks that fix colors and accelerate your game plan.",
-            "examples": ["Sol Ring", "Arcane Signet", "Cultivate", "Kodama's Reach", "Rampant Growth"],
+            "examples": _get_color_filtered_examples("ramp", ci),
         })
 
     if draw < RECOMMENDED_DRAW:
@@ -307,15 +503,23 @@ def identify_weaknesses(deck: Deck) -> List[Dict]:
             "label": f"Low card draw ({draw} — recommend {RECOMMENDED_DRAW}+ for Commander)",
             "why": "Card advantage is essential in a 100-card singleton format where consistency is low. Running out of cards means losing.",
             "look_for": "Repeatable draw engines, cantrips, and draw-on-attack effects that trigger regularly.",
-            "examples": ["Rhystic Study", "Phyrexian Arena", "Harmonize", "Sign in Blood", "Night's Whisper"],
+            "examples": _get_color_filtered_examples("draw", ci),
         })
 
     if removal < RECOMMENDED_REMOVAL:
         weaknesses.append({
             "label": f"Low removal ({removal} — recommend {RECOMMENDED_REMOVAL}+ for Commander)",
             "why": "With 3 opponents, threats will come from multiple directions. Insufficient answers lets dangerous permanents snowball.",
-            "look_for": "Efficient single-target removal, board wipes (1–2 minimum), and exile-based answers for indestructible threats.",
-            "examples": ["Swords to Plowshares", "Path to Exile", "Generous Gift", "Beast Within", "Chaos Warp"],
+            "look_for": "Efficient single-target removal, exile-based answers for indestructible threats.",
+            "examples": _get_color_filtered_examples("removal", ci),
+        })
+
+    if board_wipes < RECOMMENDED_BOARD_WIPES:
+        weaknesses.append({
+            "label": f"Low board wipes ({board_wipes} — recommend {RECOMMENDED_BOARD_WIPES}+ for Commander)",
+            "why": "Board wipes let you recover when opponents get ahead. Without them, a single player building a wide board can dominate.",
+            "look_for": "Mass removal that hits all creatures or all nonland permanents. Pair with indestructible threats to break symmetry.",
+            "examples": _get_color_filtered_examples("board_wipes", ci),
         })
 
     if avg_cmc > HIGH_AVG_CMC_THRESHOLD:
@@ -323,7 +527,7 @@ def identify_weaknesses(deck: Deck) -> List[Dict]:
             "label": f"High average CMC ({avg_cmc:.1f} — deck may be slow without extra ramp)",
             "why": "A high mana curve means you'll spend early turns doing little while faster decks develop boards.",
             "look_for": "Cheap interaction, early ramp pieces, and cards with alternative costs or flash to play defensively.",
-            "examples": ["Sol Ring", "Arcane Signet", "Lightning Greaves", "Swiftfoot Boots"],
+            "examples": _get_color_filtered_examples("ramp", ci),
         })
 
     return weaknesses
@@ -332,7 +536,7 @@ def identify_weaknesses(deck: Deck) -> List[Dict]:
 def generate_deck_verdict(analysis: Dict) -> str:
     """Generate a 2–3 sentence rule-based summary of the deck's strengths and top priorities."""
     commander = analysis.get("commander") or "This deck"
-    themes = analysis.get("themes", [])
+    themes = analysis.get("theme_names", [])
     weaknesses = analysis.get("weaknesses", [])
     avg_cmc = analysis.get("average_cmc", 0)
 
@@ -370,11 +574,10 @@ def generate_deck_verdict(analysis: Dict) -> str:
 
 
 def _evaluate_card(
-    card: Card, weaknesses: List, themes: List[str]
+    card: Card, weaknesses: List, themes: List[Dict]
 ) -> Optional[str]:
     """Return a reason string if *card* addresses a weakness or fits a theme."""
     oracle = card.oracle_text.lower()
-    tl = card.type_line.lower()
 
     # Normalise weaknesses to list of label strings for matching
     weakness_text = " ".join(
@@ -382,43 +585,67 @@ def _evaluate_card(
     )
 
     if "Low ramp" in weakness_text:
-        if "add {" in oracle or "adds {" in oracle or (
-            "search your library" in oracle and "land" in oracle
-        ):
+        if ("add {" in oracle or "adds {" in oracle or "add mana" in oracle
+                or "treasure token" in oracle
+                or ("search your library" in oracle and "land" in oracle)):
             return "Adds ramp (deck needs more ramp)"
 
     if "Low card draw" in weakness_text:
-        if any(p in oracle for p in ("draw a card", "draw cards", "draw two", "draw three")):
+        if any(p in oracle for p in (
+            "draw a card", "draw cards", "draw two", "draw three", "draw an additional",
+        )):
             return "Adds card draw (deck needs more draw)"
 
     if "Low removal" in weakness_text:
         if any(p in oracle for p in ("destroy target", "exile target")):
             return "Adds removal (deck needs more removal)"
 
+    if "Low board wipes" in weakness_text:
+        if any(p in oracle for p in (
+            "destroy all creatures", "destroy all nonland", "exile all",
+            "damage to each creature",
+        )):
+            return "Adds a board wipe (deck needs more wipes)"
+
     if "Low land count" in weakness_text and card.is_land:
         return "Adds a land (deck needs more lands)"
 
-    # Theme alignment
-    for theme in themes:
-        kws = _THEME_KEYWORDS.get(theme, [])
-        if any(kw in oracle or kw in tl for kw in kws):
-            return f"Fits deck theme: {theme}"
+    # Theme alignment — themes are now dicts with "name" key
+    theme_names = [t["name"] if isinstance(t, dict) else t for t in themes]
+    for theme_name in theme_names:
+        if _card_fits_theme(card, theme_name):
+            return f"Fits deck theme: {theme_name}"
 
     return None
 
 
 # Minimum oracle text length to consider a card as a non-essential cut candidate.
-# Very short oracle texts (e.g. "{T}: Add {G}.") are typically simple utility
-# cards that are core to most decks and should not be suggested as cuts.
 _MIN_ORACLE_TEXT_FOR_CUT = 40
 
 
 def _find_cut(deck: Deck, incoming: Card) -> Optional[Card]:
-    """Heuristically pick a card from the deck to replace with *incoming*."""
+    """Heuristically pick a card from the deck to replace with *incoming*.
+
+    Avoids cutting on-theme cards or cheap utility pieces.
+    """
+    themes = identify_themes(deck)
+    theme_names = [t["name"] if isinstance(t, dict) else t for t in themes]
+
+    def _is_on_theme(c: Card) -> bool:
+        return any(_card_fits_theme(c, tn) for tn in theme_names)
+
     candidates = [
         c for c in deck.mainboard
-        if not c.is_land and len(c.oracle_text) > _MIN_ORACLE_TEXT_FOR_CUT
+        if not c.is_land
+        and len(c.oracle_text) > _MIN_ORACLE_TEXT_FOR_CUT
+        and not _is_on_theme(c)
     ]
+    # Fallback: if every non-land is on-theme, allow all non-lands
+    if not candidates:
+        candidates = [
+            c for c in deck.mainboard
+            if not c.is_land and len(c.oracle_text) > _MIN_ORACLE_TEXT_FOR_CUT
+        ]
     if not candidates:
         return None
 

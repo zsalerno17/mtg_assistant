@@ -8,14 +8,16 @@
 
 **Phase 13 — Rule-Based Overhaul + Structured Content + Visual Polish**
 
-Stage 1 (in progress): Rule-based fixes in `backend/src/deck_analyzer.py`
-- [ ] Ramp detection rewrite (patterns + CMC ≤ 3 filter)
-- [ ] Draw detection rewrite (additional patterns)
-- [ ] Removal detection rewrite (remove bounce, add enchantment-based + tuck)
-- [ ] Board wipe detection (new function)
-- [ ] Theme detection rewrite (per-card counting, raised thresholds, new themes)
-- [ ] Color-filtered weakness examples
+Stage 1 (complete): Rule-based fixes in `backend/src/deck_analyzer.py`
+- [x] Ramp detection rewrite (patterns + CMC ≤ 3 filter)
+- [x] Draw detection rewrite (additional patterns)
+- [x] Removal detection rewrite (remove bounce, add enchantment-based + tuck)
+- [x] Board wipe detection (new function)
+- [x] Theme detection rewrite (per-card counting, raised thresholds, new themes)
+- [x] Color-filtered weakness examples
 - [ ] Wire `find_collection_improvements()` to new endpoint
+
+> **Stage 1 impact**: Ramp/draw/removal/wipe counts are now trustworthy (Arcane Signet, Birds of Paradise, Dockside detected; bounce no longer inflates removal). Themes show card counts and require meaningful thresholds (8+ cards for Tokens, not just 2 keywords in a blob). Weakness suggestions are filtered to the deck's actual colors — mono-Blue decks no longer see Cultivate recommended. Board wipes tracked as a new stat badge.
 
 See Phase 13 section below for full spec. See Commander Expertise Reference for detection patterns and staple lists.
 
@@ -23,10 +25,7 @@ See Phase 13 section below for full spec. See Commander Expertise Reference for 
 
 ## Recent Changes
 
-- **Phase 13 plan written**: Three-stage plan (rule-based overhaul → structured JSON → visual polish) with full spec
-- **Commander Expertise Reference added**: Detection patterns, per-color staple lists, theme thresholds, rule-vs-AI content split
-- **Phase 12 placeholder added**: Card image hover tooltips (backlog)
-- **Phase 9 complete**: All 4 design sprints (A/B/C/D) shipped — gradient backgrounds, sidebar polish, form/history redesign, stat badges, collection page
+- **Phase 13 Stage 1 complete**: Ramp/draw/removal/wipe detection rewritten, themes now per-card counted, weakness examples color-filtered, board wipe stat badge added. 29 tests pass. Users now see accurate stat counts and color-appropriate card suggestions.
 
 ---
 
@@ -461,30 +460,30 @@ Free tier Gemini hits 503s and rate limits regularly. Right now, every tab that 
 
 **`backend/src/deck_analyzer.py` changes:**
 
-- [ ] **Ramp detection rewrite** (`count_ramp`)
+- [x] **Ramp detection rewrite** (`count_ramp`)
   - Add patterns: `"add one mana"`, `"add mana"`, `"treasure token"`, `"create a treasure"`
   - Add CMC ≤ 3 filter — 5+ CMC mana sources don't count as ramp
   - Add land-tutor detection for instant/sorcery types: `"search your library"` + `"land"`
   - Test: Arcane Signet, Sol Ring, Birds of Paradise, Dockside Extortionist, Cultivate → all detected
   - Test: Gilded Lotus (CMC 5), Thran Dynamo (CMC 4) → NOT counted as ramp
 
-- [ ] **Draw detection rewrite** (`count_draw`)
+- [x] **Draw detection rewrite** (`count_draw`)
   - Add patterns: `"draw an additional card"`, `"put that card into your hand"`, `"draw that many"`, `"draw cards"`, `"draw two"`, `"draw three"`
   - Test: Phyrexian Arena → detected. Necropotence → detected.
 
-- [ ] **Removal detection rewrite** (`count_removal`)
+- [x] **Removal detection rewrite** (`count_removal`)
   - REMOVE `"return target"` pattern (bounce is not removal in Commander)
   - ADD `"becomes a"` pattern for enchantment-based neutralization (Darksteel Mutation, etc.)
   - ADD tuck pattern: `"shuffle"` + `"into"` + `"library"` (Chaos Warp, etc.)
   - Test: Swords to Plowshares → detected. Darksteel Mutation → detected. Chaos Warp → detected. Man-o'-War → NOT counted.
 
-- [ ] **NEW: Board wipe detection** (`count_board_wipes`)
+- [x] **NEW: Board wipe detection** (`count_board_wipes`)
   - New function, new field in analysis results
   - Patterns: `"destroy all creatures"`, `"destroy all nonland"`, `"destroy all permanents"`, `"exile all"`, `"damage to each creature"`, `"-X/-X"` on broad targets, `"return all"` + `"to their owners' hands"`
   - Add to weakness thresholds: < 2 triggers LOW_BOARD_WIPES weakness
   - Test: Wrath of God, Blasphemous Act, Toxic Deluge, Cyclonic Rift → all detected
 
-- [ ] **Theme detection rewrite** (`identify_themes`)
+- [x] **Theme detection rewrite** (`identify_themes`)
   - Switch from "keyword blob search" to per-card counting
   - Each card counted once per theme max
   - Return dict: `{theme_name: {count: N, cards: [names]}}` (not just a list of theme names)
@@ -492,7 +491,7 @@ Free tier Gemini hits 503s and rate limits regularly. Right now, every tab that 
   - Add missing themes: +1/+1 Counters, Enchantress, Artifacts-matter, Control, Aggro
   - Fix false positives: Treasure tokens ≠ Tokens theme; require `"creature token"` specifically
 
-- [ ] **Color-filtered weakness examples**
+- [x] **Color-filtered weakness examples**
   - `identify_weaknesses()` must accept `color_identity` parameter
   - Example suggestions filtered by deck's color identity
   - Use staple lists from Commander Expertise Reference section
