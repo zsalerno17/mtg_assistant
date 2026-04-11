@@ -1,9 +1,58 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
 import { api } from '../lib/api'
 
-const TABS = ['Overview', 'Collection Upgrades', 'Strategy', 'Improvements', 'Scenarios']
+function OverviewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+function UpgradeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <polyline points="17 11 12 6 7 11" />
+      <line x1="12" y1="6" x2="12" y2="18" />
+    </svg>
+  )
+}
+function StrategyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <circle cx="12" cy="12" r="10" />
+      <polygon points="10 8 16 12 10 16 10 8" />
+    </svg>
+  )
+}
+function ImprovementsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <polyline points="3 17 9 11 13 15 21 7" />
+      <polyline points="14 7 21 7 21 14" />
+    </svg>
+  )
+}
+function ScenariosIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </svg>
+  )
+}
+
+const TAB_CONFIG = [
+  { label: 'Overview', icon: OverviewIcon },
+  { label: 'Collection Upgrades', icon: UpgradeIcon },
+  { label: 'Strategy', icon: StrategyIcon },
+  { label: 'Improvements', icon: ImprovementsIcon },
+  { label: 'Scenarios', icon: ScenariosIcon },
+]
+const TABS = TAB_CONFIG.map(t => t.label)
 
 const THEME_DEFINITIONS = {
   Tokens: 'Generates creature tokens to overwhelm through wide board presence.',
@@ -77,10 +126,28 @@ function IconChevronDown({ className = 'w-3.5 h-3.5 shrink-0' }) {
   )
 }
 
-function StatBadge({ label, value, warning }) {
+function IconChevronLeft({ className = 'w-4 h-4 shrink-0' }) {
   return (
-    <div className={`bg-[var(--color-bg)] border rounded px-3 py-2 text-center ${warning ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]'}`}>
-      <div className={`text-xl font-[var(--font-mono)] font-bold ${warning ? 'text-[var(--color-danger)]' : 'text-[var(--color-primary)]'}`}>{value}</div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  )
+}
+
+function StatBadge({ label, value, warning, healthy }) {
+  const borderColor = warning
+    ? 'border-[var(--color-danger)]'
+    : healthy
+    ? 'border-[var(--color-success)]'
+    : 'border-[var(--color-border)]'
+  const textColor = warning
+    ? 'text-[var(--color-danger)]'
+    : healthy
+    ? 'text-[var(--color-success)]'
+    : 'text-[var(--color-primary)]'
+  return (
+    <div className={`bg-[var(--color-bg)] border rounded-lg px-4 py-3 text-center ${borderColor}`}>
+      <div className={`text-2xl font-[var(--font-mono)] font-bold ${textColor}`}>{value}</div>
       <div className="text-[var(--color-muted)] text-xs mt-0.5">{label}</div>
     </div>
   )
@@ -134,11 +201,11 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Key Numbers</h3>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           <StatBadge label="Cards" value={analysis.total_cards} />
-          <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} warning={analysis.average_cmc > 3.5} />
-          <StatBadge label="Lands" value={cardTypes['Lands'] || 0} warning={(cardTypes['Lands'] || 0) < 36} />
-          <StatBadge label="Ramp" value={analysis.ramp_count || 0} warning={(analysis.ramp_count || 0) < 10} />
-          <StatBadge label="Draw" value={analysis.draw_count || 0} warning={(analysis.draw_count || 0) < 10} />
-          <StatBadge label="Removal" value={analysis.removal_count || 0} warning={(analysis.removal_count || 0) < 8} />
+          <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} warning={analysis.average_cmc > 3.5} healthy={typeof analysis.average_cmc === 'number' && analysis.average_cmc <= 3.0} />
+          <StatBadge label="Lands" value={cardTypes['Lands'] || 0} warning={(cardTypes['Lands'] || 0) < 36} healthy={(cardTypes['Lands'] || 0) >= 36} />
+          <StatBadge label="Ramp" value={analysis.ramp_count || 0} warning={(analysis.ramp_count || 0) < 10} healthy={(analysis.ramp_count || 0) >= 10} />
+          <StatBadge label="Draw" value={analysis.draw_count || 0} warning={(analysis.draw_count || 0) < 10} healthy={(analysis.draw_count || 0) >= 10} />
+          <StatBadge label="Removal" value={analysis.removal_count || 0} warning={(analysis.removal_count || 0) < 8} healthy={(analysis.removal_count || 0) >= 8} />
         </div>
       </div>
 
@@ -152,11 +219,22 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                 <XAxis dataKey="cmc" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
+                  cursor={{ fill: 'rgba(251,191,36,0.08)' }}
                   contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 6 }}
                   labelStyle={{ color: '#e2e8f0' }}
                   itemStyle={{ color: '#fbbf24' }}
+                  formatter={(value) => [value, 'Cards']}
+                  labelFormatter={(label) => `CMC ${label}`}
                 />
-                <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                {typeof analysis.average_cmc === 'number' && (
+                  <ReferenceLine
+                    x={String(Math.round(analysis.average_cmc))}
+                    stroke="#94a3b8"
+                    strokeDasharray="3 3"
+                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: '#94a3b8', fontSize: 10, position: 'top' }}
+                  />
+                )}
+                <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={40}>
                   {manaCurveData.map((_, i) => (
                     <Cell key={i} fill="#fbbf24" opacity={0.85} />
                   ))}
@@ -172,9 +250,9 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Card Types</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {Object.entries(cardTypes).map(([type, count]) => (
-            <div key={type} className="flex justify-between items-center bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-3 py-2">
-              <span className="text-[var(--color-muted)] text-sm">{type}</span>
-              <span className="text-[var(--color-text)] font-[var(--font-mono)] text-sm">{count}</span>
+              <div key={type} className="flex justify-between items-center bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 transition-colors">
+                <span className="text-[var(--color-muted)] text-sm">{type}</span>
+                <span className="text-[var(--color-primary)] font-[var(--font-mono)] text-sm font-medium">{count}</span>
             </div>
           ))}
         </div>
@@ -185,17 +263,25 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <div>
           <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Themes</h3>
           <div className="flex flex-wrap gap-2">
-            {analysis.themes.map((t) => (
-              <span
-                key={t}
-                title={THEME_DEFINITIONS[t] || ''}
-                className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-secondary)] text-xs px-2.5 py-1 rounded-full cursor-help"
-              >
-                {t}
-              </span>
-            ))}
+            {analysis.themes.map((t) => {
+              const def = THEME_DEFINITIONS[t]
+              return (
+                <span key={t} className="relative group">
+                  <span className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-secondary)] text-xs px-2.5 py-1 rounded-full cursor-help inline-block">
+                    {t}
+                  </span>
+                  {def && (
+                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                      <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{t}</span>
+                      <span className="block text-[var(--color-muted)] text-xs leading-relaxed">{def}</span>
+                      {/* Arrow */}
+                      <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[#0f1d2e]" />
+                    </span>
+                  )}
+                </span>
+              )
+            })}
           </div>
-          <p className="text-[var(--color-muted)] text-xs mt-1.5">Hover a theme for its definition.</p>
         </div>
       )}
 
@@ -336,7 +422,7 @@ function ScenariosTab({ deckId }) {
             onChange={(e) => setAddInput(e.target.value)}
             placeholder={"Rhystic Study\nArcane Signet"}
             rows={5}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-success)] resize-none"
+            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-success)] focus:shadow-[0_0_0_3px_rgba(52,211,153,0.12)] transition-all resize-none"
           />
         </div>
         <div>
@@ -346,14 +432,14 @@ function ScenariosTab({ deckId }) {
             onChange={(e) => setRemoveInput(e.target.value)}
             placeholder={"Bad Card\nWeak Synergy"}
             rows={5}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-danger)] resize-none"
+            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-danger)] focus:shadow-[0_0_0_3px_rgba(251,113,133,0.12)] transition-all resize-none"
           />
         </div>
         <div className="sm:col-span-2">
           <button
             type="submit"
             disabled={loading || (!addInput.trim() && !removeInput.trim())}
-            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Analyzing…' : 'Analyze Scenario'}
           </button>
@@ -448,11 +534,12 @@ export default function DeckPage() {
   const deckName = deck?.name || deckId
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="min-h-screen">
       {/* Top bar */}
       <div className="border-b border-[var(--color-border)] px-6 py-4 flex items-center gap-4">
-        <Link to="/" className="text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors text-sm">
-          ← Dashboard
+        <Link to="/" className="flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors text-sm">
+          <IconChevronLeft />
+          Dashboard
         </Link>
         <h1 className="font-[var(--font-heading)] text-[var(--color-primary)] text-xl truncate">
           {deckName}
@@ -462,23 +549,24 @@ export default function DeckPage() {
       <div className="px-6 pt-0">
         {/* Tab bar */}
         <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] pt-2">
-          {TABS.map((tab) => (
+          {TAB_CONFIG.map(({ label, icon: TabIcon }) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab
+              key={label}
+              onClick={() => setActiveTab(label)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === label
                   ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
                   : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
               }`}
             >
-              {tab}
+              <TabIcon />
+              {label}
             </button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div className="max-w-3xl py-6">
+        <div className="max-w-5xl py-6">
           {loadError && (
             <p className="text-[var(--color-danger)] text-sm">Failed to load deck: {loadError}</p>
           )}

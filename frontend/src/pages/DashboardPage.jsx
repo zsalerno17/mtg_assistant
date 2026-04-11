@@ -36,14 +36,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-[var(--font-heading)] text-2xl text-[var(--color-primary)] mb-8">Dashboard</h1>
+        <div className="mb-8">
+          <h1 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">Dashboard</h1>
+          <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
+        </div>
         <h2 className="text-[var(--color-text)] text-lg font-medium mb-6">Analyze a Deck</h2>
 
         <form
           onSubmit={handleAnalyze}
-          className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-6 mb-8"
+          className="bg-gradient-to-br from-[var(--color-surface)] to-[#0c1321] border border-[var(--color-border)] rounded-xl p-6 mb-8 shadow-lg shadow-black/40 ring-1 ring-[var(--color-primary)]/8"
         >
           <label className="block text-[var(--color-muted)] text-sm mb-2">Moxfield Deck URL</label>
           <div className="flex gap-3">
@@ -53,12 +56,12 @@ export default function DashboardPage() {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://www.moxfield.com/decks/..."
               disabled={loading}
-              className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] disabled:opacity-50"
+              className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={loading || !url.trim()}
-              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
+              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
             >
               {loading ? 'Loading…' : 'Analyze'}
             </button>
@@ -78,16 +81,23 @@ export default function DashboardPage() {
         {historyLoading ? (
           <p className="text-[var(--color-muted)] text-sm">Loading history…</p>
         ) : history.length === 0 ? (
-          <p className="text-[var(--color-muted)] text-sm text-center py-8">
-            No decks analyzed yet. Paste a Moxfield URL above to get started.
-          </p>
+          <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 text-[var(--color-muted)] opacity-30">
+              <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+              <path d="M13 19l6-6-1-1-6 6" />
+              <path d="M14.5 14.5L19 19" />
+              <path d="M3 21l4-4" />
+            </svg>
+            <p className="text-[var(--color-text)] font-semibold text-sm">No decks analyzed yet</p>
+            <p className="text-[var(--color-muted)] text-xs text-center">Paste a Moxfield deck URL above to get started.</p>
+          </div>
         ) : (
           <ul className="space-y-3">
             {history.map((item) => (
               <li key={item.id}>
                 <Link
                   to={`/deck/${item.deck_id}`}
-                  className="block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-5 py-4 hover:border-[var(--color-primary)] transition-colors"
+                  className="block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-5 py-4 transition-all hover:border-[var(--color-primary)]/60 hover:shadow-md hover:shadow-amber-500/10 hover:bg-[#111827]"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[var(--color-text)] font-medium truncate">

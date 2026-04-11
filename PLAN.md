@@ -6,12 +6,27 @@
 
 ## Current Sprint
 
-**Sprint 2 — End-to-end verification + Deployment**
+**Phase 13 — Rule-Based Overhaul + Structured Content + Visual Polish**
 
-- [ ] Run both servers locally, sign in with Google, and verify all 8 acceptance criteria below
-- [ ] Deploy backend to Render (set env vars: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET, GEMINI_API_KEY)
-- [ ] Deploy frontend to Vercel (set env vars: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL pointing to Render URL)
-- [ ] Add production URLs to Supabase: Redirect URLs + Site URL
+Stage 1 (in progress): Rule-based fixes in `backend/src/deck_analyzer.py`
+- [ ] Ramp detection rewrite (patterns + CMC ≤ 3 filter)
+- [ ] Draw detection rewrite (additional patterns)
+- [ ] Removal detection rewrite (remove bounce, add enchantment-based + tuck)
+- [ ] Board wipe detection (new function)
+- [ ] Theme detection rewrite (per-card counting, raised thresholds, new themes)
+- [ ] Color-filtered weakness examples
+- [ ] Wire `find_collection_improvements()` to new endpoint
+
+See Phase 13 section below for full spec. See Commander Expertise Reference for detection patterns and staple lists.
+
+---
+
+## Recent Changes
+
+- **Phase 13 plan written**: Three-stage plan (rule-based overhaul → structured JSON → visual polish) with full spec
+- **Commander Expertise Reference added**: Detection patterns, per-color staple lists, theme thresholds, rule-vs-AI content split
+- **Phase 12 placeholder added**: Card image hover tooltips (backlog)
+- **Phase 9 complete**: All 4 design sprints (A/B/C/D) shipped — gradient backgrounds, sidebar polish, form/history redesign, stat badges, collection page
 
 ---
 
@@ -261,34 +276,124 @@ Free tier Gemini hits 503s and rate limits regularly. Right now, every tab that 
 > Backlog item 1. Goal: premium dark-arcane feel — visual hierarchy, depth, and MTG personality across all 4 pages. Run `@designer` agent to produce mockups before implementing.
 
 **Designer mockup phase (do first — implement only after reviewing):**
-- [ ] Run `@designer` with full context: all 4 page JSX files, design system (Option A palette + Cinzel/Inter/JetBrains Mono), and specific asks below
-- [ ] Review designer's mockup proposals; pick changes to implement
-- [ ] Record approved changes as implementation subtasks below
+- [x] Run `@designer` with full context — proposals delivered in chat
+- [x] Run `@designer` with full context — proposals delivered in chat
+- [x] Review designer's mockup proposals; pick changes to implement
+- [x] Record approved changes as implementation subtasks below
 
-**Dashboard page:**
-- [ ] Form card: add subtle gradient background / glow on the surface card; make "Analyze" CTA button more prominent
-- [ ] History list: deck name as primary label (after Phase 8); add MTG color pip indicators derived from commander color identity
-- [ ] Empty state: add personality — suggest a deck URL or short "how it works" blurb
-- [ ] Page heading: use Cinzel for "Dashboard" heading with amber underline accent
+---
 
-**DeckPage:**
-- [ ] Overview tab: `StatBadge` grid — increase size, add color coding beyond just red warnings (e.g. green for healthy counts)
-- [ ] Overview tab: weaknesses section — expandable cards with why/fix/examples (Phase 10 content, Phase 9 styles)
-- [ ] Overview tab: theme badges — add definition tooltip on hover
-- [ ] Mana curve chart: style the bar chart tooltip to match design system; add reference line at avg CMC
-- [ ] Tab bar: add subtle icons to each tab alongside text labels
-- [ ] Tab content area: increase `max-w` from `3xl` to a wider layout; use more of the screen on desktop
+### Implementation sprints (verify each in browser before moving on)
 
-**CollectionPage:**
-- [ ] Upload zone: add icon (cloud/upload SVG), improve typography hierarchy, add instructions link to Moxfield export
-- [ ] Collection grid: add card art placeholder color chips based on card color (future — optional in v1)
-- [ ] Stats bar above grid: show set breakdown or rarity distribution as a small horizontal bar chart
+**Sprint A — Global polish** (`index.css` + `Layout.jsx`) ✅ COMPLETE
+- [x] Background texture radial gradients on `body`
+- [x] Sidebar gradient bg + amber brand glow
+- [x] Active nav item: left amber border + amber/10 bg
+- [x] User initials avatar in sidebar (lg: only)
+- [x] Mobile bottom nav: min touch targets, backdrop-blur, Profile slot with initials
+- [x] Main content bottom padding `pb-[72px]`
 
-**Global:**
-- [ ] `Layout.jsx`: add left sidebar on desktop (persistent, icons + labels)
-- [ ] `Layout.jsx`: add bottom nav on mobile (4 icons: Home, Decks, Collection, Profile)
-- [ ] Add subtle page-level gradient or texture to break up the flat `#0a0f1a` background
-- [ ] Ensure all interactive elements have `focus-visible` ring using `--color-primary`
+**Sprint B — Dashboard** (`DashboardPage.jsx`) ✅ COMPLETE
+- [x] Page heading: Cinzel text-3xl + amber gradient rule
+- [x] Form card: gradient surface, ring, rounded-xl
+- [x] Analyze button: rounded-lg, amber shadow, active:scale, font-semibold
+- [x] History card hover: amber shadow, rounded-xl
+- [x] Empty state: sword SVG + bold label + helper copy
+
+**Sprint C — Deck Page** (`DeckPage.jsx`) ✅ COMPLETE
+- [x] Theme tooltip: CSS hover component (done — left-anchored, no overflow)
+- [x] `StatBadge`: larger (text-2xl, px-4 py-3), green `healthy` state, red warning, amber neutral
+- [x] Tab icons: 5 inline SVG icon components + `TAB_CONFIG`, icon+label in tab buttons
+- [x] Tab content `max-w-3xl` → `max-w-5xl`
+- [x] Mana curve: `ReferenceLine` at avg CMC, amber cursor fill, `maxBarSize=40`, formatted tooltip
+
+**Sprint D — Collection Page** (`CollectionPage.jsx`) ✅ COMPLETE
+- [x] Page heading: Cinzel text-3xl + amber gradient rule (matches Dashboard)
+- [x] Upload zone: cloud-upload SVG icon, stronger typography, "How to export" link, rounded-xl
+
+---
+
+### Phase 9 — Additional UI Polish (Sprint E — April 2026) ✅ COMPLETE
+
+- [x] **Body gradient unblocked**: removed `bg-[var(--color-bg)]` from all page wrapper divs so the ambient gradient texture from Sprint A is now actually visible
+- [x] **Body gradient opacity bumped**: amber `0.04 → 0.07`, sky `0.03 → 0.05` — more perceivable but still tasteful
+- [x] **Custom scrollbars**: thin 5px dark thumb on transparent track — removes browser default chrome in dark UI
+- [x] **Text selection highlight**: amber `rgba(251,191,36,0.25)` on `::selection`
+- [x] **Login Google button**: replaced broken `<span>G</span>` with accurate multi-color Google SVG icon; text "Continue with Google"; hover adds amber glow shadow
+- [x] **Input/textarea `rounded-lg`**: standardized all form elements (`rounded` → `rounded-lg`) across Dashboard, Collection (search + card grid), DeckPage (Scenarios textareas)
+- [x] **Amber focus glow**: `focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)]` + `transition-all` on URL input and collection search; color-coded glows on Scenarios textareas (green/red)
+- [x] **Collection card grid hover**: `hover:border-[var(--color-muted)]/60 transition-colors` on card items
+- [x] **Card types section hierarchy**: count value changed from `text-[var(--color-text)]` → `text-[var(--color-primary)] font-medium` — amber number stands out from muted label; added `rounded-lg` + hover
+- [x] **DeckPage back link**: replaced Unicode `←` with inline `IconChevronLeft` SVG component (icon-over-emoji principle)
+- [x] **Scenarios button**: `rounded → rounded-lg`, `font-medium → font-semibold tracking-wide`, `hover:opacity-90 → hover:brightness-110 active:scale-[0.98]`, added `shadow-md shadow-amber-500/20` — matches Analyze button style
+
+---
+
+### `index.css` — Background texture
+
+- [x] Add two fixed radial gradients to `body` to break up flat `#0a0f1a`:
+  ```css
+  body {
+    background-image:
+      radial-gradient(ellipse at 15% 40%, rgba(251, 191, 36, 0.04) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 15%, rgba(56, 189, 248, 0.03) 0%, transparent 45%);
+    background-attachment: fixed;
+  }
+  ```
+
+---
+
+### `Layout.jsx` — Sidebar + Bottom Nav
+
+- [ ] **Sidebar brand mark:** add amber text-glow via `drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]`; sidebar bg changes to `bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-bg)]`; width `w-16 lg:w-60`
+- [ ] **Active nav item:** replace `bg-[var(--color-surface)]` highlight with `border-l-2 border-[var(--color-primary)] bg-amber-500/10`; inactive items get `border-l-2 border-transparent` to prevent layout shift
+- [ ] **User avatar in sidebar:** small amber-tinted circle with 2-letter initials derived from `session.user.email`, shown only at `lg:` width, above sign-out button
+- [ ] **Mobile bottom nav touch targets:** minimum `min-w-[64px] min-h-[56px]` on each nav item; container `min-h-[72px]`; `backdrop-blur-sm bg-[var(--color-surface)]/95` on the nav bar
+- [ ] **Profile button on mobile bottom nav:** replace plain sign-out icon with a "Profile" slot — small initials circle + "Profile" label; tapping it signs out (sign-out behavior unchanged, just better affordance)
+- [ ] **Main content bottom padding:** change `pb-20` to `pb-[72px]` to match exact nav height
+
+---
+
+### `DashboardPage.jsx` — Form + History
+
+- [ ] **Page heading:** replace `text-2xl text-[var(--color-primary)]` with `text-3xl text-[var(--color-text)] tracking-wide` + amber gradient rule below (`h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent`); matches CollectionPage heading pattern
+- [ ] **Form card surface:** `bg-[var(--color-surface)]` → `bg-gradient-to-br from-[var(--color-surface)] to-[#0c1321]`; add `shadow-lg shadow-black/40 ring-1 ring-[var(--color-primary)]/8`; round to `rounded-xl`
+- [ ] **Analyze button:** `rounded` → `rounded-lg`; `hover:opacity-90` → `hover:brightness-110`; add `shadow-md shadow-amber-500/20 hover:shadow-amber-500/30 active:scale-[0.98]`; `font-medium` → `font-semibold tracking-wide`; min-width `100px`
+- [ ] **History card hover:** `hover:border-[var(--color-primary)]` → `hover:border-[var(--color-primary)]/60 hover:shadow-md hover:shadow-amber-500/10 hover:bg-[#111827]`; round to `rounded-xl`
+- [ ] **History card layout — deck name row** `[AFTER PHASE 8]`: primary label uses `item.deck_name` (falls back to `item.deck_id` in mono); "View on Moxfield ↗" as a sky-400 secondary link using `item.moxfield_url`; date pushed to `shrink-0` right column
+- [ ] **Empty state:** replace plain muted text with centered SVG sword icon (inline, ~40px, 30% opacity) + bold label "No decks analyzed yet" + 2-sentence helper copy in muted text; `max-w-xs mx-auto`; `py-16`
+
+---
+
+### `DeckPage.jsx` — Overview Tab
+
+- [ ] **`StatBadge` — size + green healthy state:** add `healthy` prop; `text-xl px-3 py-2` → `text-2xl px-4 py-3 rounded-lg`; green border/value when `healthy`, red when `warning`, amber when neutral; pass `healthy` to all 6 badges based on recommended thresholds (lands ≥ 36, ramp ≥ 10, draw ≥ 10, removal ≥ 8, avg CMC ≤ 3.0)
+- [ ] **Tab icons:** replace `const TABS = [...]` array with `TAB_CONFIG = [{ label, icon }]`; add 5 inline SVG icon components at top of file (`IconGrid` for Overview, `IconDoubleChevronUp` for Upgrades, `IconCompass` for Strategy, `IconWrench` for Improvements, `IconBranch` for Scenarios); render icon + label in each tab button with `gap-1.5`
+- [ ] **Tab content max-width:** `max-w-3xl` → `max-w-5xl`
+- [ ] **`WeaknessCard` component** `[READY NOW — degrades gracefully before Phase 10]`: new `<details>`-based expandable card; summary row shows `IconWarning` + label + `IconChevronDown` (rotates on open via `group-open:rotate-180`); expanded body shows `why`, `look_for`, and `examples` chips — all optional, renders nothing if fields absent; border `border-[var(--color-danger)]/35`; replaces current plain string list
+- [ ] **`ThemeTooltip` component** `[READY NOW]`: wraps each theme badge in a `relative group` span; on hover shows a `w-56` tooltip card (`bg-[#0f1d2e]`, `rounded-lg`, `shadow-xl shadow-black/60`) with theme name in sky-400 + 1-sentence definition; includes a CSS triangle arrow; `THEME_DEFINITIONS` static map covers: Tokens, Graveyard, Aggro, Control, Ramp, Combo, Voltron, Stax, Aristocrats, Enchantress, Spellslinger, Tribal; unknown themes get no tooltip (badge renders unchanged)
+- [ ] **Mana curve chart:** import `ReferenceLine` from recharts; add dashed amber reference line at `Math.round(average_cmc)` with `insideTopRight` label showing "avg X.X"; tooltip `cursor` → `rgba(251,191,36,0.06)` fill; bar `radius` → `[4,4,0,0]`; `maxBarSize={40}`; tooltip `formatter` shows "N cards" / "CMC N" labels
+
+---
+
+### `DeckPage.jsx` — Top Bar + General
+
+- [ ] **Top bar back link:** `← Dashboard` text-only link → add `IconChevronLeft` SVG inline before the text (consistent with icon-over-text principle)
+
+---
+
+### `CollectionPage.jsx` — Upload Zone + Heading
+
+- [ ] **Page heading:** same Cinzel + amber gradient rule pattern as Dashboard — `text-3xl text-[var(--color-text)] tracking-wide` + `h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent`
+- [ ] **Upload zone idle state:** add cloud-upload SVG icon (~40px, 50% opacity muted) centered above text; "Drop your Moxfield CSV here" → `text-[var(--color-text)] font-medium`; "or click to browse" stays muted; add "How to export from Moxfield ↗" sky-400 link below (stops click propagation so it doesn't re-trigger the file picker); `p-12` → `p-10`; `rounded-lg` → `rounded-xl`
+
+---
+
+### Deferred / out of scope for Phase 9
+
+- [ ] Collection grid color chips — deferred to v2 (needs Scryfall color data per card)
+- [ ] Stats bar / rarity chart above collection grid — deferred (needs rarity field in CSV parser)
+- [ ] MTG color pip indicators on history cards — deferred to Phase 10 (needs color identity in analysis result)
 - [x] Replace all Unicode emoji (⚠, ✓, ▸) with inline SVG icon components — `IconWarning`, `IconCheck`, `IconChevronDown` added to `DeckPage.jsx`; icon-over-emoji principle added to Design System
 
 ---
@@ -336,6 +441,118 @@ Free tier Gemini hits 503s and rate limits regularly. Right now, every tab that 
 
 ---
 
+## Phase 12: Card Image Hover Tooltips
+
+> Backlog item. When any card name appears in any tab, hovering shows the Scryfall card image.
+
+- [ ] Utility component `CardTooltip` — takes card name, fetches image from Scryfall on hover (cache with React Query or local map)
+- [ ] Integrate into all tabs where card names appear (Overview weaknesses, Improvements, Strategy, Collection Upgrades)
+- [ ] Mobile: tap-to-show with dismiss
+
+---
+
+## Phase 13: Rule-Based Overhaul + Structured Content + Visual Polish
+
+> Three-stage plan to fix the core data engine, convert Gemini "wall of text" tabs to structured JSON, and modernize the visual feel. See "MTG Commander Expertise Reference" section for all detection specs.
+
+### Stage 1 — Rule-Based Fixes (backend only)
+
+> Goal: make the numbers trustworthy and the examples color-correct. No frontend changes.
+
+**`backend/src/deck_analyzer.py` changes:**
+
+- [ ] **Ramp detection rewrite** (`count_ramp`)
+  - Add patterns: `"add one mana"`, `"add mana"`, `"treasure token"`, `"create a treasure"`
+  - Add CMC ≤ 3 filter — 5+ CMC mana sources don't count as ramp
+  - Add land-tutor detection for instant/sorcery types: `"search your library"` + `"land"`
+  - Test: Arcane Signet, Sol Ring, Birds of Paradise, Dockside Extortionist, Cultivate → all detected
+  - Test: Gilded Lotus (CMC 5), Thran Dynamo (CMC 4) → NOT counted as ramp
+
+- [ ] **Draw detection rewrite** (`count_draw`)
+  - Add patterns: `"draw an additional card"`, `"put that card into your hand"`, `"draw that many"`, `"draw cards"`, `"draw two"`, `"draw three"`
+  - Test: Phyrexian Arena → detected. Necropotence → detected.
+
+- [ ] **Removal detection rewrite** (`count_removal`)
+  - REMOVE `"return target"` pattern (bounce is not removal in Commander)
+  - ADD `"becomes a"` pattern for enchantment-based neutralization (Darksteel Mutation, etc.)
+  - ADD tuck pattern: `"shuffle"` + `"into"` + `"library"` (Chaos Warp, etc.)
+  - Test: Swords to Plowshares → detected. Darksteel Mutation → detected. Chaos Warp → detected. Man-o'-War → NOT counted.
+
+- [ ] **NEW: Board wipe detection** (`count_board_wipes`)
+  - New function, new field in analysis results
+  - Patterns: `"destroy all creatures"`, `"destroy all nonland"`, `"destroy all permanents"`, `"exile all"`, `"damage to each creature"`, `"-X/-X"` on broad targets, `"return all"` + `"to their owners' hands"`
+  - Add to weakness thresholds: < 2 triggers LOW_BOARD_WIPES weakness
+  - Test: Wrath of God, Blasphemous Act, Toxic Deluge, Cyclonic Rift → all detected
+
+- [ ] **Theme detection rewrite** (`identify_themes`)
+  - Switch from "keyword blob search" to per-card counting
+  - Each card counted once per theme max
+  - Return dict: `{theme_name: {count: N, cards: [names]}}` (not just a list of theme names)
+  - Raise thresholds per theme (see Commander Expertise Reference table)
+  - Add missing themes: +1/+1 Counters, Enchantress, Artifacts-matter, Control, Aggro
+  - Fix false positives: Treasure tokens ≠ Tokens theme; require `"creature token"` specifically
+
+- [ ] **Color-filtered weakness examples**
+  - `identify_weaknesses()` must accept `color_identity` parameter
+  - Example suggestions filtered by deck's color identity
+  - Use staple lists from Commander Expertise Reference section
+  - Test: mono-Blue deck → no Green ramp suggestions. Golgari deck → only B/G/colorless suggestions.
+
+- [ ] **Wire `find_collection_improvements()`**
+  - Improve `_evaluate_card()`: add quality scoring based on CMC + category fit
+  - Improve `_find_cut()`: never cut on-theme cards, prefer cutting highest CMC off-theme card
+  - Create new endpoint `/collection-upgrades` in `routers/ai.py` that calls this function
+  - Return structured data: `[{add: card, cut: card, reason: str, category: str}]`
+
+### Stage 2 — Structured Content (backend + frontend)
+
+> Goal: Gemini returns JSON, not markdown. Each tab gets a dedicated component that renders structured data.
+
+**Backend prompt changes (`gemini_assistant.py`):**
+
+- [ ] **Strategy prompt → JSON schema**
+  - Ask Gemini to return: `{game_plan: str, win_conditions: [{name, description}], key_cards: [{name, role}], early_game: str, mid_game: str, late_game: str, matchup_tips: [{against, advice}]}`
+  - Fallback returns same schema (rule-based template fills game_plan, omits win_conditions/matchup_tips)
+  - Validate JSON response; if Gemini returns non-JSON, use fallback
+
+- [ ] **Improvements prompt → JSON schema**
+  - Ask Gemini to return: `{cuts: [{card, reason}], additions: [{card, reason, category}], staples_to_buy: [{card, price_tier, reason}]}`
+  - Fallback: `find_collection_improvements()` → same schema for cuts/additions, empty staples_to_buy
+  - Validate JSON response
+
+- [ ] **Separate Collection Upgrades from Improvements**
+  - Collection Upgrades tab uses `/collection-upgrades` endpoint (rule-based, from Stage 1)
+  - Improvements tab uses `/improvements` endpoint (AI-enhanced)
+  - They no longer show identical content
+
+**Frontend component changes:**
+
+- [ ] **`StrategyTab` component** (replaces `GeminiTab` + `MarkdownBlock` for Strategy)
+  - Sections: Game Plan card, Win Conditions list, Key Cards grid, Game Phases accordion (Early/Mid/Late), Matchup Tips
+  - Each section is a styled card/panel, not a markdown dump
+
+- [ ] **`ImprovementsTab` component** (replaces `GeminiTab` for Improvements)
+  - Sections: Suggested Cuts list, Suggested Additions list (grouped by category), Staples to Buy
+  - Card names are interactive (hover → card image tooltip from Phase 12)
+
+- [ ] **`CollectionUpgradesTab` component** (replaces GeminiTab for Collection Upgrades)
+  - Shows `[{add, cut, reason, category}]` as swap cards with visual before→after layout
+  - Only appears if user has uploaded a collection; otherwise shows prompt to upload
+
+### Stage 3 — Visual Polish (frontend only)
+
+> Goal: Modern, polished feel — glass cards, motion, skeleton loaders, expressive stats.
+
+- [ ] **Glass card components** — `backdrop-blur`, semi-transparent backgrounds, subtle border glow on hover
+- [ ] **Hover lift transitions** — cards and panels lift slightly on hover (`transform: translateY(-2px)`, `box-shadow` increase)
+- [ ] **Skeleton loaders** — replace all spinners with shimmer skeletons matching the final content shape
+- [ ] **Gradient text** — section headings use subtle gradients (amber→gold for primary, sky→indigo for secondary)
+- [ ] **Entrance animations** — stagger-fade content on tab switch (Framer Motion or CSS `@keyframes`)
+- [ ] **StatBadge upgrade** — radial progress rings or mini bar charts instead of flat number badges
+- [ ] **Tab transitions** — smooth crossfade between tab content (not instant swap)
+
+---
+
 ## Acceptance Criteria
 
 Before considering a phase complete, verify:
@@ -348,6 +565,143 @@ Before considering a phase complete, verify:
 6. **History** — Analyze two decks, reload the app → both appear in analysis history
 7. **Mobile** — Open on phone → no horizontal scroll, readable text, all buttons are tappable
 8. **Multi-user isolation** — Two accounts → each user sees only their own collection and history
+
+---
+
+## MTG Commander Expertise Reference
+
+> Reference section for testing and developing the rule-based engine. All thresholds, staple lists, and detection patterns should be validated against this section. Updated as we learn from real deck testing.
+
+### Commander Format Fundamentals
+
+- 100-card singleton, 1 commander (sometimes 2 with Partner)
+- 3 opponents in a typical game — threats come from all directions
+- Games run 8-15 turns on average; early ramp is critical
+- Color identity restriction: every card must fit within the commander's color identity
+- Higher variance than 60-card formats — consistency tools (draw, tutors) are more important
+
+### Community-Consensus Thresholds
+
+| Category | Minimum | Good | Excellent | Notes |
+|---|---|---|---|---|
+| Lands | 36 | 37 | 38 | Below 33 is dangerous; above 42 floods |
+| Ramp (CMC ≤ 3) | 10 | 12 | 15 | Only count acceleration, not 5+ CMC rocks |
+| Card draw / advantage | 10 | 12 | 15 | Repeatable engines > one-shot effects |
+| Single-target removal | 8 | 10 | 12 | Must include mix of creature + noncreature answers |
+| Board wipes | 2 | 3 | 4 | Critical for recovering from falling behind |
+| Avg CMC (nonland) | — | ≤ 3.0 | ≤ 2.5 | Above 3.5 is slow; needs extra ramp to compensate |
+
+### Oracle Text Detection Patterns
+
+**Ramp (mana acceleration) — must cost ≤ 3 CMC to count as ramp:**
+- `"add {"` — Sol Ring, Llanowar Elves, most mana rocks
+- `"add one mana"` / `"add mana"` — Arcane Signet, Birds of Paradise, Bloom Tender
+- `"add {c}"` variations — Mind Stone, Fellwar Stone
+- `"treasure token"` / `"create a treasure"` — Dockside Extortionist, Smothering Tithe, Pitiless Plunderer
+- `"search your library"` + `"land"` (on instants/sorceries) — Cultivate, Kodama's Reach, Nature's Lore
+- `"mana dork"` heuristic: creature + (`"add {"` or `"add one mana"`) + CMC ≤ 2
+- **Exclude:** cards costing 4+ CMC are "mana sources" not "ramp" (Gilded Lotus, Thran Dynamo)
+
+**Card draw:**
+- `"draw a card"` — universal, catches most
+- `"draw cards"` / `"draw two"` / `"draw three"` / `"draw x"` — bulk draw
+- `"draw an additional card"` — Phyrexian Arena, Sylvan Library
+- `"draw that many"` — variable draw
+- `"put that card into your hand"` — Necropotence, Bolas's Citadel-style effects
+- `"look at the top"` + `"put into your hand"` — Impulse, Anticipate (minor card selection)
+
+**Single-target removal:**
+- `"destroy target"` — Go for the Throat, Beast Within, Generous Gift
+- `"exile target"` — Swords to Plowshares, Path to Exile, Reality Shift
+- `"deals damage to any target"` / `"deals damage to target creature"` — Bolt effects
+- `"becomes a"` (enchantment-based neutralization) — Darksteel Mutation, Kenrith's Transformation, Imprisoned in the Moon
+- `"shuffle"` + `"into"` + `"library"` — Chaos Warp, Oblation (tuck effects)
+- **Do NOT count:** `"return target"` (bounce) — bounce is not real removal in Commander; opponents replay the card
+
+**Board wipes:**
+- `"destroy all creatures"` — Wrath of God, Damnation, Supreme Verdict
+- `"destroy all nonland"` / `"destroy all permanents"` — Austere Command, Planar Cleansing
+- `"exile all"` — Farewell, Merciless Eviction
+- `"damage to each creature"` / `"deals X damage to each creature"` — Blasphemous Act, Chain Reaction
+- `"-X/-X"` + broad target (creatures, all, each) — Toxic Deluge, Black Sun's Zenith
+- `"return all"` + `"to their owners' hands"` — Cyclonic Rift (overloaded), Evacuation
+
+**Interaction (instants + sorceries that interact):**
+- Everything in removal above (on instant/sorcery type lines)
+- `"counter target spell"` — Counterspell, Swan Song, Arcane Denial
+- `"counter target"` (broader) — catches Negate, Dovin's Veto, etc.
+
+### Theme Detection — Card-Level Counting
+
+> Count individual **cards** that match, not keyword hits in a text blob. A single card counts once per theme max. Minimum card thresholds prevent false positives.
+
+| Theme | What to count | Min cards | False positive traps |
+|---|---|---|---|
+| **Tokens** | Cards that create creature tokens + anthem effects (`"creatures you control get +"`) | 8 | Treasure/Food/Clue tokens do NOT count — only creature tokens. Check for `"creature token"` specifically. |
+| **Aristocrats** | Sacrifice outlets (`"sacrifice a creature"`, `"sacrifice a permanent"`) + death triggers (`"when this creature dies"`, `"whenever a creature dies"`) + drain effects (`"each opponent loses"` + life context) | 8 | Fetch lands and `Sakura-Tribe Elder` have "sacrifice" — don't count lands as Aristocrats cards. Require creature/enchantment/artifact type. |
+| **Graveyard** | Cards interacting FROM graveyard (`"from your graveyard"`, `"flashback"`, `"unearth"`, `"escape"`, `"embalm"`, `"encore"`) + self-mill (`"mill"`, `"put into your graveyard from your library"`) | 7 | Generic "graveyard" mention alone (e.g. Bojuka Bog as graveyard hate) should not count — require FROM graveyard or filling it. |
+| **Voltron** | Equipment cards + Auras that target creatures (`"enchant creature"`) + cards that buff the equipped/enchanted creature (`"equipped creature gets"`, `"enchanted creature gets"`) | 8 | A deck with 2 Lightning Greaves and 1 Swiftfoot Boots is NOT Voltron — those are generic protection staples. |
+| **Spellslinger** | Payoffs (`"whenever you cast an instant or sorcery"`, `"magecraft"`) + instants/sorceries making up 30%+ of nonland cards | 3 payoffs + 30% ratio | Pure control decks run lots of instants but aren't spellslinger — require the payoff cards. |
+| **Tribal** | Creatures sharing a type at 60%+ of all creatures + lord effects (`"other [type] you control"`, `"[type] creatures you control get"`) | 60% + 2 lords/payoffs | Generic "creature" doesn't count — must share a specific subtype. |
+| **Landfall** | Cards with literal `"landfall"` keyword or `"whenever a land enters the battlefield under your control"` | 6 | Don't count lands themselves. |
+| **+1/+1 Counters** | `"put a +1/+1 counter"`, `"+1/+1 counter on it"`, `"proliferate"`, `"with X +1/+1 counters"`, `"modular"`, `"evolve"` | 8 | Cards that enter with a single +1/+1 counter (e.g. random creatures with `"enters with a +1/+1 counter"`) are only mildly thematic — weight payoffs higher. |
+| **Enchantress** | `"whenever you cast an enchantment"` payoffs + enchantments at 25%+ of nonland cards | 2 payoffs + 25% ratio | Don't tag just because Rhystic Study is an enchantment. |
+| **Artifacts matter** | `"whenever you cast an artifact"` / `"whenever an artifact enters"` payoffs + artifacts at 30%+ of nonland cards | 2 payoffs + 30% ratio | Mana rocks alone don't make a deck Artifacts-matter. |
+| **Control** | Counterspells (5+) + board wipes (3+) + low creature count (<15 nonland creatures) | Composite | A creature-heavy deck with a few counters is not Control. |
+| **Aggro** | Avg CMC ≤ 2.8 + creatures at 28+ + evasion/haste keywords on 10+ creatures | Composite | Fast decks that are combo, not aggro, may have low CMC — check creature density. |
+| **Combo** | **AI only — cannot be reliably detected rule-based.** Combo requires knowing which specific 2-3 card interactions produce infinite loops. | N/A | Never guess combo from keywords like `"untap all"`. Flag for AI. |
+
+### Color-Aware Staple Recommendations
+
+> When weakness examples suggest cards, filter by deck's color identity. Never suggest cards the player can't legally include.
+
+**Ramp staples by color:**
+- **W**: Smothering Tithe, Knight of the White Orchid, Archaeomancer's Map, Land Tax, Keeper of the Accord
+- **U**: (weak at ramp) → rely on artifacts: Sol Ring, Arcane Signet, Mind Stone, Fellwar Stone
+- **B**: Dark Ritual, Cabal Coffers + Urborg, Crypt Ghast, Black Market Connections
+- **R**: Dockside Extortionist, Jeska's Will, Birgi God of Storytelling, Curse of Opulence
+- **G**: Cultivate, Kodama's Reach, Nature's Lore, Three Visits, Llanowar Elves, Birds of Paradise, Sakura-Tribe Elder
+- **Colorless** (always legal): Sol Ring, Arcane Signet, Fellwar Stone, Mind Stone, Commander's Sphere, Thought Vessel
+
+**Draw staples by color:**
+- **W**: Esper Sentinel, Welcoming Vampire, Mentor of the Meek, Mangara the Diplomat
+- **U**: Rhystic Study, Mystic Remora, Fact or Fiction, Windfall, Consecrated Sphinx
+- **B**: Phyrexian Arena, Necropotence, Sign in Blood, Night's Whisper, Read the Bones, Black Market Connections
+- **R**: Faithless Looting, Jeska's Will, Impulse-draw (`"exile the top, you may play"` — Outpost Siege, Light Up the Stage)
+- **G**: Beast Whisperer, Guardian Project, Harmonize, Sylvan Library, Return of the Wildspeaker
+- **Colorless**: Skullclamp, The One Ring, Staff of Compleation
+
+**Removal staples by color:**
+- **W**: Swords to Plowshares, Path to Exile, Generous Gift, Darksteel Mutation, Farewell
+- **U**: Reality Shift, Rapid Hybridization, Pongify, Curse of the Swine, Cyclonic Rift
+- **B**: Go for the Throat, Infernal Grasp, Feed the Swarm, Deadly Rollick, Toxic Deluge
+- **R**: Chaos Warp, Blasphemous Act, Abrade, Vandalblast, By Force
+- **G**: Beast Within, Kenrith's Transformation, Nature's Claim, Bane of Progress
+- **Colorless**: Scour from Existence, Introduction to Annihilation, Unstable Obelisk
+
+**Board wipe staples by color:**
+- **W**: Wrath of God, Day of Judgment, Farewell, Austere Command, Vanquish the Horde
+- **U**: Cyclonic Rift, Flood of Tears, Wash Out
+- **B**: Damnation, Toxic Deluge, Mutilate, Black Sun's Zenith, Massacre Wurm (borderline)
+- **R**: Blasphemous Act, Chain Reaction, Star of Extinction
+- **G**: Ezuri's Predation, Bane of Progress (noncreature), The Great Aurora
+- **Colorless**: All Is Dust, Ugin the Spirit Dragon, Oblivion Stone, Nevinyrral's Disk
+
+### Rule-Based vs AI Content Split
+
+| Content | Source | Why |
+|---|---|---|
+| Resource counts (ramp/draw/removal/wipes) | Rule-based | Must be accurate — these are the core trust metrics |
+| Weaknesses + color-filtered examples | Rule-based | Fast, deterministic, examples must be playable in the deck's colors |
+| Theme detection + scores | Rule-based | Per-card counting with raised thresholds. Show card count per theme. |
+| Mulligan strategy | Rule-based template | Purely mathematical: avg CMC + ramp density + land count |
+| Game plan summary | Rule-based template, AI-enhanced | Template: "{Commander} is a {theme} deck that aims to {theme_goal}." AI refines. |
+| Win conditions | **AI only** | Requires knowing card interactions (e.g. "Dockside + Temur Sabertooth = infinite mana") |
+| Key cards | **AI only** | Requires understanding relative card power in context |
+| Matchup advice / game phases | **AI only** | Genuinely situational |
+| Collection upgrades list | Rule-based `find_collection_improvements()` | Already have the function — needs quality improvements + wiring to endpoint |
+| Staples to buy | **AI only** | Requires meta knowledge |
+| Suggested cuts | **AI only** with rule-based constraints | AI picks, we filter: never cut on-theme cards or ≤ 2 CMC utility |
 
 ---
 

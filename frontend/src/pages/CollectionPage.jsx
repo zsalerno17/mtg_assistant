@@ -49,19 +49,22 @@ export default function CollectionPage() {
     : []
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] p-6">
-      <h2 className="font-[var(--font-heading)] text-2xl text-[var(--color-primary)] mb-2">
-        My Collection
-      </h2>
-      <p className="text-[var(--color-muted)] text-sm mb-8">
-        Export your collection from Moxfield (Tools → Export → CSV) and upload it here.
-      </p>
+    <div className="min-h-screen p-6">
+      <div className="mb-8">
+        <h2 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">
+          My Collection
+        </h2>
+        <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
+        <p className="text-[var(--color-muted)] text-sm">
+          Export your collection from Moxfield and upload it here.
+        </p>
+      </div>
 
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${
+        className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
           dragOver
             ? 'border-[var(--color-primary)] bg-[var(--color-surface)]'
             : uploading
@@ -77,8 +80,22 @@ export default function CollectionPage() {
           </div>
         ) : (
           <>
-            <p className="text-[var(--color-muted)] mb-2">Drop your Moxfield CSV here</p>
-            <p className="text-[var(--color-muted)] text-sm">or click to browse</p>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50">
+              <polyline points="16 16 12 12 8 16" />
+              <line x1="12" y1="12" x2="12" y2="21" />
+              <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" />
+            </svg>
+            <p className="text-[var(--color-text)] font-medium mb-1">Drop your Moxfield CSV here</p>
+            <p className="text-[var(--color-muted)] text-sm mb-2">or click to browse</p>
+            <a
+              href="https://www.moxfield.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[var(--color-secondary)] text-xs hover:underline"
+            >
+              How to export from Moxfield ↗
+            </a>
           </>
         )}
         <input id="csv-input" type="file" accept=".csv,.txt" className="hidden" onChange={handleFileInput} />
@@ -103,7 +120,7 @@ export default function CollectionPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search cards…"
-              className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] w-48"
+              className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all w-48"
             />
           </div>
 
@@ -111,7 +128,7 @@ export default function CollectionPage() {
             {filteredCards.map((card, i) => (
               <div
                 key={i}
-                className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-2 flex items-center justify-between"
+                className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >
                 <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
                 <span className="text-[var(--color-muted)] font-[var(--font-mono)] text-xs ml-2 shrink-0">×{card.quantity}</span>
