@@ -4,7 +4,7 @@ load_dotenv()  # Must run before any module that reads os.environ
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import decks, collection, ai, analyses
+from routers import decks, collection, ai, analyses, users
 
 # Silence noisy third-party debug logs; keep WARNING+ for everything else
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +28,7 @@ app.include_router(decks.router, prefix="/api/decks", tags=["decks"])
 app.include_router(collection.router, prefix="/api/collection", tags=["collection"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(analyses.router, prefix="/api/analyses", tags=["analyses"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 
 @app.get("/health")

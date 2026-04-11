@@ -1,10 +1,21 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined) // undefined = loading
+  const [profile, setProfile] = useState(null)
+
+  const refreshProfile = useCallback(async () => {
+    try {
+      const p = await api.getProfile()
+      setProfile(p)
+    } catch {
+      setProfile(null)
+    }
+  }, [])
 
   useEffect(() => {
     // onAuthStateChange awaits client initialization (including parsing
@@ -13,9 +24,14 @@ export function AuthProvider({ children }) {
     // which can race and return null before init completes.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      if (session) {
+        refreshProfile()
+      } else {
+        setProfile(null)
+      }
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [refreshProfile])
 
   const signInWithGoogle = async () => {
     // Clear any stale PKCE code_verifier from a previous failed attempt.
@@ -36,7 +52,7 @@ export function AuthProvider({ children }) {
   const signOut = () => supabase.auth.signOut()
 
   return (
-    <AuthContext.Provider value={{ session, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ session, profile, refreshProfile, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   )

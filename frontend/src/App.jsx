@@ -7,6 +7,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage'
 import DashboardPage from './pages/DashboardPage'
 import DeckPage from './pages/DeckPage'
 import CollectionPage from './pages/CollectionPage'
+import ProfilePage from './pages/ProfilePage'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/deck/:deckId" element={<DeckPage />} />
                     <Route path="/collection" element={<CollectionPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

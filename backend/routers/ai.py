@@ -87,7 +87,7 @@ def improvements(body: ImprovementsRequest, user: dict = Depends(require_allowed
 
     # Improvements are user-collection-aware so cache key includes user_id
     cache_key = f"{body.moxfield_id}:{user['user_id']}"
-    cached = _get_cached(sb, cache_key, "improvements_v2")
+    cached = _get_cached(sb, cache_key, "improvements_v3")
     if cached:
         logger.info("ai_cache hit: improvements/%s", body.moxfield_id)
         try:
@@ -103,31 +103,69 @@ def improvements(body: ImprovementsRequest, user: dict = Depends(require_allowed
 
     result = get_improvement_suggestions(deck, analysis, collection_cards)
 
-    # --- Post-process: filter, cap, and add truthful owned flags ---
+    # --- Post-process: validate swaps, merge legacy cuts/additions, add truthful owned flags ---
     content = result["content"]
     mainboard_lower = {c.name.lower() for c in deck.mainboard}
     owned_lower = {c["name"].lower() for c in collection_cards} if collection_cards else set()
 
-    # Remove urgent_fixes / additions that are already in the deck
+    # Remove urgent_fixes that are already in the deck
     if content.get("urgent_fixes"):
         content["urgent_fixes"] = [
             f for f in content["urgent_fixes"]
             if f.get("card", "").lower() not in mainboard_lower
         ][:5]
-    if content.get("additions"):
-        content["additions"] = [
-            {**a, "owned": a.get("card", "").lower() in owned_lower}
-            for a in content["additions"]
-            if a.get("card", "").lower() not in mainboard_lower
-        ][:5]
-    if content.get("cuts"):
-        content["cuts"] = content["cuts"][:5]
-    if content.get("staples_to_buy"):
-        content["staples_to_buy"] = content["staples_to_buy"][:5]
+
+    # Process swaps: validate cut is in deck, add is not in deck, add owned flag
+    raw_swaps = list(content.get("swaps") or [])
+
+    # Backwards compat: merge old-format cuts + additions into swaps if Gemini returned old format
+    old_cuts = list(content.get("cuts") or [])
+    old_adds = list(content.get("additions") or [])
+    if old_cuts and not raw_swaps:
+        # Pair old cuts with old additions by index
+        for i, cut in enumerate(old_cuts):
+            if i < len(old_adds):
+                raw_swaps.append({
+                    "cut": cut.get("card", ""),
+                    "add": old_adds[i].get("card", ""),
+                    "reason": old_adds[i].get("reason", cut.get("reason", "")),
+                    "category": cut.get("type", "upgrade"),
+                    "price_tier": old_adds[i].get("price_tier", "mid"),
+                })
+        # Remaining additions that weren't paired become unpaired additions
+        unpaired_adds = old_adds[len(old_cuts):]
+    else:
+        unpaired_adds = old_adds
+
+    content.pop("cuts", None)
+
+    # Validate swaps: cut must be in deck, add must not be in deck
+    validated_swaps = []
+    for swap in raw_swaps:
+        cut_name = swap.get("cut", "").lower()
+        add_name = swap.get("add", "").lower()
+        if cut_name in mainboard_lower and add_name not in mainboard_lower:
+            swap["owned"] = add_name in owned_lower
+            validated_swaps.append(swap)
+    content["swaps"] = validated_swaps[:8]
+
+    # Merge any staples_to_buy into additions (backwards compat with old Gemini responses)
+    merged_additions = list(content.get("additions") or []) + unpaired_adds
+    for s in (content.get("staples_to_buy") or []):
+        if not any(a.get("card", "").lower() == s.get("card", "").lower() for a in merged_additions):
+            merged_additions.append(s)
+    content.pop("staples_to_buy", None)
+
+    # Filter out cards already in deck, add truthful owned flag
+    content["additions"] = [
+        {**a, "owned": a.get("card", "").lower() in owned_lower}
+        for a in merged_additions
+        if a.get("card", "").lower() not in mainboard_lower
+    ][:10]
 
     # Only cache AI-generated responses
     if result["ai_enhanced"] and content:
-        _set_cached(sb, cache_key, "improvements_v2", json.dumps(content))
+        _set_cached(sb, cache_key, "improvements_v3", json.dumps(content))
 
     return {"improvements": result["content"], "ai_enhanced": result["ai_enhanced"], "cached": False}
 

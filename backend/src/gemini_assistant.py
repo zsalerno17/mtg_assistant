@@ -64,6 +64,7 @@ def _ask(prompt: str) -> Optional[str]:
                 config=types.GenerateContentConfig(
                     system_instruction=_SYSTEM_INSTRUCTION,
                     max_output_tokens=16384,
+                    temperature=0.3,
                 ),
             )
             text = response.text
@@ -91,7 +92,13 @@ def _ask(prompt: str) -> Optional[str]:
 
 
 def _deck_context(deck, analysis: dict) -> str:
-    commander = deck.commander.name if deck.commander else "Unknown"
+    commanders = []
+    if deck.commander:
+        commanders.append(deck.commander.name)
+    if deck.partner:
+        commanders.append(deck.partner.name)
+    commander_str = " & ".join(commanders) if commanders else "Unknown"
+    colors = ", ".join(deck.color_identity) or "Colorless"
     themes = ", ".join(analysis.get("theme_names", [])) or "None detected"
     # Handle both old string format and new structured dict format
     raw_weaknesses = analysis.get("weaknesses", [])
@@ -99,19 +106,28 @@ def _deck_context(deck, analysis: dict) -> str:
         w["label"] if isinstance(w, dict) else w for w in raw_weaknesses
     ) or "None"
     card_types = analysis.get("card_types", {})
-    mainboard_names = [c.name for c in deck.mainboard]
+    ramp = analysis.get("ramp_count", 0)
+    draw = analysis.get("draw_count", 0)
+    removal = analysis.get("removal_count", 0)
+    wipes = analysis.get("board_wipe_count", 0)
+
+    # Build decklist with type info for better Gemini context
+    deck_lines = []
+    for c in deck.mainboard:
+        deck_lines.append(f"{c.name} [{c.type_line}] (CMC {c.cmc:.0f})")
 
     return f"""
-Commander: {commander}
+Commander: {commander_str}
+Color Identity: {colors}
 Format: {deck.format}
 Themes: {themes}
 Weaknesses: {weakness_labels}
 Average CMC: {analysis.get("average_cmc", "?")}
 Lands: {card_types.get("Lands", 0)} | Creatures: {card_types.get("Creatures", 0)} | Instants: {card_types.get("Instants", 0)} | Sorceries: {card_types.get("Sorceries", 0)}
-Ramp spells: {analysis.get("ramp_count", 0)} | Draw spells: {analysis.get("draw_count", 0)} | Removal: {analysis.get("removal_count", 0)}
+Ramp: {ramp} (need 10+) | Draw: {draw} (need 10+) | Removal: {removal} (need 8+) | Board Wipes: {wipes} (need 2+)
 
 Full decklist:
-{chr(10).join(mainboard_names)}
+{chr(10).join(deck_lines)}
 """.strip()
 
 
@@ -165,31 +181,28 @@ Cards the player owns (from their collection):
 {owned}
 
 IMPORTANT RULES:
-- urgent_fixes are cards to ADD to the deck that fix a critical weakness. Do NOT list cards already in the decklist above.
-- cuts are cards currently in the deck that should be removed. Include the card's type.
-- additions are cards to add that improve the deck overall. Do NOT list cards already in the decklist above.
-- Limit each category to the top 5 most impactful suggestions, ordered by priority.
+- urgent_fixes: cards to ADD that fix a critical gap (e.g. deck has 4 ramp but needs 10). No paired cut needed. Do NOT list cards already in the decklist above.
+- swaps: paired cut→add recommendations. Each swap has one card to CUT (must be in the decklist above) and one card to ADD (must NOT be in the decklist). Include why the add is better for this deck than the cut. Include a category and price_tier on the add side.
+- additions: unpaired cards to add that generally improve the deck (no specific cut). Do NOT list cards already in the decklist above. Include a price_tier for each.
+- Limit each category to the top 8 most impactful suggestions, ordered by priority.
 
 Return this exact JSON structure:
 {{
   "urgent_fixes": [
     {{"card": "Card Name", "reason": "Why adding this addresses a weakness", "category": "ramp|draw|removal|wipes|lands"}}
   ],
-  "cuts": [
-    {{"card": "Card Name", "reason": "Why this should be cut", "type": "creature|instant|sorcery|enchantment|artifact|land|planeswalker"}}
+  "swaps": [
+    {{"cut": "Card To Remove", "add": "Card To Add", "reason": "Why this swap improves the deck", "category": "ramp|draw|removal|synergy|upgrade", "price_tier": "budget|mid|premium"}}
   ],
   "additions": [
-    {{"card": "Card Name", "reason": "Why this improves the deck"}}
-  ],
-  "staples_to_buy": [
-    {{"card": "Card Name", "reason": "Why it's worth acquiring", "price_tier": "budget|mid|premium"}}
+    {{"card": "Card Name", "reason": "Why this improves the deck", "price_tier": "budget|mid|premium"}}
   ]
 }}
 """
     raw = _ask(prompt)
     if raw:
         parsed = _try_parse_json(raw)
-        if parsed and ("urgent_fixes" in parsed or "cuts" in parsed or "additions" in parsed):
+        if parsed and ("urgent_fixes" in parsed or "swaps" in parsed or "additions" in parsed):
             return {"content": parsed, "ai_enhanced": True}
     return {"content": _fallback_improvements(deck, analysis), "ai_enhanced": False}
 
@@ -296,26 +309,26 @@ def _fallback_improvements(deck, analysis: dict) -> dict:
     removal = analysis.get("removal_count", 0)
 
     urgent = []
-    staples = []
+    swaps = []
+    additions = []
 
     if ramp < 10:
         urgent.append({"card": "Sol Ring", "reason": "Deck needs more ramp sources (currently {})".format(ramp), "category": "ramp"})
-        staples.extend([
+        additions.extend([
             {"card": "Arcane Signet", "reason": "Efficient 2-mana rock that fixes colors", "price_tier": "budget"},
             {"card": "Cultivate", "reason": "Land ramp that fixes mana and thins the deck", "price_tier": "budget"},
         ])
     if draw < 10:
         urgent.append({"card": "Phyrexian Arena", "reason": "Deck needs more card draw (currently {})".format(draw), "category": "draw"})
-        staples.append({"card": "Rhystic Study", "reason": "One of the best draw engines in Commander", "price_tier": "premium"})
+        additions.append({"card": "Rhystic Study", "reason": "One of the best draw engines in Commander", "price_tier": "premium"})
     if removal < 8:
         urgent.append({"card": "Swords to Plowshares", "reason": "Deck needs more removal (currently {})".format(removal), "category": "removal"})
-        staples.append({"card": "Beast Within", "reason": "Versatile removal that hits any permanent", "price_tier": "budget"})
+        additions.append({"card": "Beast Within", "reason": "Versatile removal that hits any permanent", "price_tier": "budget"})
 
     return {
         "urgent_fixes": urgent,
-        "cuts": [],
-        "additions": [],
-        "staples_to_buy": staples,
+        "swaps": swaps,
+        "additions": additions,
     }
 
 

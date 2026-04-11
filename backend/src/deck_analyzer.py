@@ -78,8 +78,14 @@ def analyze_deck(deck: Deck) -> Dict:
     all_cards = deck.all_cards
     themes = identify_themes(deck)
     weaknesses = identify_weaknesses(deck)
+    commanders = []
+    if deck.commander:
+        commanders.append(deck.commander.name)
+    if deck.partner:
+        commanders.append(deck.partner.name)
+
     partial = {
-        "commander": deck.commander.name if deck.commander else None,
+        "commander": " & ".join(commanders) if commanders else None,
         "total_cards": deck.card_count,
         "mana_curve": build_mana_curve(all_cards),
         "average_cmc": calculate_average_cmc(all_cards),

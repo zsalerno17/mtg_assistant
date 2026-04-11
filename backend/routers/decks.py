@@ -52,6 +52,7 @@ def fetch_deck(body: FetchDeckRequest, user: dict = Depends(require_allowed_user
         "name": deck.name,
         "format": deck.format,
         "commander": {"name": deck.commander.name} if deck.commander else None,
+        "partner": {"name": deck.partner.name} if deck.partner else None,
         "mainboard": [{"name": c.name, "quantity": c.quantity} for c in deck.mainboard],
     }
 

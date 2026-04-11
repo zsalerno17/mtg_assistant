@@ -26,6 +26,9 @@ See Phase 13 section below for full spec. See Commander Expertise Reference for 
 ## Recent Changes
 
 - **Phase 13 Stage 2 complete**: Strategy/Improvements prompts now request JSON from Gemini with validated fallbacks. Dedicated `StrategyTab`, `ImprovementsTab`, and `CollectionUpgradesTab` components replace the old markdown `GeminiTab`. No more walls of text — each section is a structured card/panel. Cache keys versioned to `strategy_v2` / `improvements_v2`.
+- **Improvements tab: paired swaps**: Previously cuts and additions were separate lists — the user had to mentally match which cut goes with which addition. Now the Gemini prompt returns `swaps: [{cut, add, reason, category}]` pairs. The UI shows each swap as a single card: "− Cut Card → + Add Card" with reason. `urgent_fixes` remain separate (no 1:1 cut needed, deck is missing a whole category). `additions` remain for cards to add that aren't paired with a specific cut. Swap pairs also show `owned` flag and `price_tier` on the "add" side. This mirrors the Collection Upgrades tab pattern (which already returns add/cut/reason triples from the rule-based engine).
+- **AI consistency improvements**: Gemini temperature lowered to 0.3 (from default ~1.0). Deck context now sends card types + CMC for each card, actual counts vs thresholds ("Ramp: 7 (need 10+)"), and color identity. Partner commanders now included in all context.
+- **Dual commander support**: `Deck.color_identity` now includes both commanders' colors. `analyze_deck()` stores both names. Frontend shows both commanders on Overview tab. Router saves partner data to DB.
 - **Cached results banner + Force Re-analyze**: When a deck hasn't changed on Moxfield, users see a clear "cached results" indicator with a Force Re-analyze button. The `/analyze` endpoint now accepts `force: true` to bypass deduplication, enabling testing without clearing the DB.
 - **Collection Upgrades tab wired to rule-based engine**: New `/api/ai/collection-upgrades` endpoint runs `find_collection_improvements()` against the user's uploaded collection. The tab now shows structured swap cards (+ Add / − Cut with reason) instead of a duplicate Gemini call — instant, no AI quota needed.
 - **Phase 13 Stage 1 complete**: Ramp/draw/removal/wipe detection rewritten, themes now per-card counted, weakness examples color-filtered, board wipe stat badge added. 29 tests pass. Users now see accurate stat counts and color-appropriate card suggestions.
@@ -544,6 +547,7 @@ An ordered array — engine walks through each rule until the tie is broken.
 > Backlog item. When any card name appears in any tab, hovering shows the Scryfall card image.
 
 - [ ] Utility component `CardTooltip` — takes card name, fetches image from Scryfall on hover (cache with React Query or local map)
+- [ ] Clicking a card name should link out to a useful external page (TCGPlayer for pricing/buying, or Scryfall for detailed card info). Consider: Scryfall link as default, TCGPlayer link as "Buy" action.
 - [ ] Integrate into all tabs where card names appear (Overview weaknesses, Improvements, Strategy, Collection Upgrades)
 - [ ] Mobile: tap-to-show with dismiss
 

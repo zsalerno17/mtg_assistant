@@ -46,6 +46,17 @@ export const api = {
   getCollectionUpgrades: (moxfield_id) =>
     apiFetch('/api/ai/collection-upgrades', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
 
+  /** Get the authenticated user's profile (username, avatar_url). */
+  getProfile: () =>
+    apiFetch('/api/users/profile'),
+
+  /** Update the authenticated user's profile. Only provided fields are changed. */
+  updateProfile: ({ username, avatar_url } = {}) =>
+    apiFetch('/api/users/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ username: username ?? null, avatar_url: avatar_url ?? null }),
+    }),
+
   /** Get Gemini before/after scenario analysis for proposed card swaps. */
   getScenarios: (moxfield_id, cards_to_add, cards_to_remove) =>
     apiFetch('/api/ai/scenarios', {

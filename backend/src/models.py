@@ -64,9 +64,12 @@ class Deck:
 
     @property
     def color_identity(self) -> List[str]:
+        colors = set()
         if self.commander:
-            return self.commander.color_identity
-        return []
+            colors.update(self.commander.color_identity)
+        if self.partner:
+            colors.update(self.partner.color_identity)
+        return sorted(colors)
 
     def __repr__(self) -> str:
         commander_name = self.commander.name if self.commander else "No Commander"

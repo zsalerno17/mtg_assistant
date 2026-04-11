@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const NAV_ITEMS = [
@@ -35,10 +35,17 @@ function SignOutIcon() {
   )
 }
 
-function UserAvatar({ email }) {
-  const initials = email
-    ? email.slice(0, 2).toUpperCase()
-    : '?'
+function UserAvatar({ email, avatarUrl }) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt="Profile"
+        className="w-8 h-8 rounded-full object-cover border border-amber-500/30 shrink-0"
+      />
+    )
+  }
+  const initials = email ? email.slice(0, 2).toUpperCase() : '?'
   return (
     <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
       <span className="text-[var(--color-primary)] text-xs font-semibold font-[var(--font-mono)]">{initials}</span>
@@ -67,7 +74,8 @@ function NavItem({ to, label, icon: Icon, exact }) {
 
 /** Wraps page content with responsive nav: bottom bar on mobile, sidebar on desktop. */
 export default function Layout({ children }) {
-  const { session, signOut } = useAuth()
+  const { session, profile, signOut } = useAuth()
+  const navigate = useNavigate()
   const email = session?.user?.email || ''
 
   return (
@@ -89,14 +97,23 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        {/* User / sign out */}
+        {/* User / profile / sign out */}
         <div className="p-3 border-t border-[var(--color-border)] space-y-2">
-          {email && (
-            <div className="hidden lg:flex items-center gap-2 px-2 py-1">
-              <UserAvatar email={email} />
-              <p className="text-[var(--color-muted)] text-xs truncate">{email}</p>
-            </div>
-          )}
+          {/* Clickable profile area — navigates to /profile */}
+          <button
+            onClick={() => navigate('/profile')}
+            className="flex items-center gap-2 w-full px-2 py-1 rounded-lg hover:bg-[var(--color-bg)] transition-colors text-left"
+          >
+            <UserAvatar email={email} avatarUrl={profile?.avatar_url} />
+            {email && (
+              <div className="hidden lg:block min-w-0">
+                {profile?.username && (
+                  <p className="text-[var(--color-text)] text-xs font-medium truncate">{profile.username}</p>
+                )}
+                <p className="text-[var(--color-muted)] text-xs truncate">{email}</p>
+              </div>
+            )}
+          </button>
           <button
             onClick={signOut}
             className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border-l-2 border-transparent text-[var(--color-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-surface)] transition-colors text-sm"
@@ -129,12 +146,12 @@ export default function Layout({ children }) {
             <span className="text-xs">{label}</span>
           </NavLink>
         ))}
-        {/* Profile slot — shows initials, taps to sign out */}
+        {/* Profile slot — navigates to profile page */}
         <button
-          onClick={signOut}
-          className="flex flex-col items-center gap-0.5 min-w-[64px] min-h-[56px] px-4 py-2 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors justify-center"
+          onClick={() => navigate('/profile')}
+          className="flex flex-col items-center gap-0.5 min-w-[64px] min-h-[56px] px-4 py-2 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-primary)] transition-colors justify-center"
         >
-          <UserAvatar email={email} />
+          <UserAvatar email={email} avatarUrl={profile?.avatar_url} />
           <span className="text-xs">Profile</span>
         </button>
       </nav>

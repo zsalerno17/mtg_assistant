@@ -189,9 +189,12 @@ function OverviewTab({ deck, analysis, onTabChange }) {
 
       {/* Commander */}
       <div>
-        <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Commander</h3>
+        <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">
+          {deck.partner ? 'Commanders' : 'Commander'}
+        </h3>
         <p className="text-[var(--color-primary)] font-[var(--font-heading)] text-xl">
           {deck.commander?.name || 'Unknown'}
+          {deck.partner?.name && ` & ${deck.partner.name}`}
         </p>
         <p className="text-[var(--color-muted)] text-sm mt-0.5">{deck.format} · {deck.name}</p>
       </div>
@@ -483,17 +486,9 @@ function ImprovementsTab({ deckId }) {
     removal: 'text-red-400',
     wipes: 'text-orange-400',
     lands: 'text-amber-400',
+    synergy: 'text-purple-400',
+    upgrade: 'text-sky-400',
   }
-
-  // Group cuts by card type
-  const cutsByType = {}
-  ;(data.cuts || []).forEach((cut) => {
-    const type = cut.type || 'other'
-    if (!cutsByType[type]) cutsByType[type] = []
-    cutsByType[type].push(cut)
-  })
-  const typeOrder = ['creature', 'instant', 'sorcery', 'enchantment', 'artifact', 'planeswalker', 'land', 'other']
-  const sortedTypes = typeOrder.filter((t) => cutsByType[t]?.length)
 
   const renderShowMore = (key, total) => {
     if (total <= MAX_VISIBLE) return null
@@ -537,82 +532,101 @@ function ImprovementsTab({ deckId }) {
         </div>
       )}
 
-      {/* Suggested Cuts — grouped by card type */}
-      {sortedTypes.length > 0 && (
+      {/* Recommended Swaps — paired cut → add */}
+      {data.swaps?.length > 0 && (
         <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Suggested Cuts</h3>
-          <div className="space-y-4">
-            {sortedTypes.map((type) => {
-              const items = cutsByType[type]
-              const visibleKey = `cuts_${type}`
-              const visible = expanded[visibleKey] ? items : items.slice(0, MAX_VISIBLE)
-              return (
-                <div key={type}>
-                  <p className="text-[var(--color-muted)] text-xs font-semibold uppercase tracking-wider mb-1.5 capitalize">{type}s</p>
-                  <div className="space-y-2">
-                    {visible.map((cut, i) => (
-                      <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
-                        <span className="text-[var(--color-danger)] text-sm font-bold">−</span>
-                        <div className="flex-1">
-                          <span className="text-[var(--color-text)] font-semibold text-sm">{cut.card}</span>
-                          <p className="text-[var(--color-muted)] text-xs mt-0.5">{cut.reason}</p>
-                        </div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-1">Recommended Swaps</h3>
+          <p className="text-[var(--color-muted)] text-xs mb-3">Paired cut → add recommendations to improve your deck.</p>
+          <div className="space-y-2">
+            {(expanded['swaps'] ? data.swaps : data.swaps.slice(0, MAX_VISIBLE)).map((swap, i) => (
+              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[var(--color-danger)] font-semibold text-sm">− {swap.cut}</span>
+                  <span className="text-[var(--color-muted)] text-xs">→</span>
+                  <span className="text-[var(--color-success)] font-semibold text-sm">+ {swap.add}</span>
+                  {swap.owned && (
+                    <span className="text-[var(--color-success)] text-xs">✓ owned</span>
+                  )}
+                  {swap.category && (
+                    <span className={`text-[10px] font-medium uppercase ${categoryColors[swap.category] || 'text-[var(--color-muted)]'}`}>
+                      {swap.category}
+                    </span>
+                  )}
+                  {!swap.owned && swap.price_tier && (
+                    <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${
+                      swap.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : swap.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
+                    }`}>
+                      {swap.price_tier}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[var(--color-muted)] text-xs mt-1">{swap.reason}</p>
+              </div>
+            ))}
+          </div>
+          {renderShowMore('swaps', data.swaps.length)}
+        </div>
+      )}
+
+      {/* Cards to Add — unpaired additions, split by owned vs need to buy */}
+      {data.additions?.length > 0 && (() => {
+        const ownedCards = data.additions.filter(a => a.owned === true)
+        const buyCards = data.additions.filter(a => !a.owned)
+        return (
+          <div>
+            <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Cards to Add</h3>
+
+            {ownedCards.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[var(--color-success)] text-xs font-semibold uppercase tracking-wider mb-1.5">In Your Collection</p>
+                <div className="space-y-2">
+                  {(expanded['additions_owned'] ? ownedCards : ownedCards.slice(0, MAX_VISIBLE)).map((add, i) => (
+                    <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-success)]/20 rounded-lg px-4 py-3 flex items-start gap-3">
+                      <span className="text-[var(--color-success)] text-sm font-bold">+</span>
+                      <div className="flex-1">
+                        <span className="text-[var(--color-text)] font-semibold text-sm">{add.card}</span>
+                        <span className="ml-2 text-[var(--color-success)] text-xs">✓ owned</span>
+                        <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
                       </div>
-                    ))}
-                  </div>
-                  {renderShowMore(visibleKey, items.length)}
+                    </div>
+                  ))}
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Suggested Additions */}
-      {data.additions?.length > 0 && (
-        <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Suggested Additions</h3>
-          <div className="space-y-2">
-            {(expanded['additions'] ? data.additions : data.additions.slice(0, MAX_VISIBLE)).map((add, i) => (
-              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
-                <span className="text-[var(--color-success)] text-sm font-bold">+</span>
-                <div className="flex-1">
-                  <span className="text-[var(--color-text)] font-semibold text-sm">{add.card}</span>
-                  {add.owned === true && <span className="ml-2 text-[var(--color-success)] text-xs">✓ owned</span>}
-                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
-                </div>
+                {renderShowMore('additions_owned', ownedCards.length)}
               </div>
-            ))}
-          </div>
-          {renderShowMore('additions', data.additions.length)}
-        </div>
-      )}
+            )}
 
-      {/* Staples to Buy */}
-      {data.staples_to_buy?.length > 0 && (
-        <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Worth Acquiring</h3>
-          <div className="space-y-2">
-            {(expanded['staples'] ? data.staples_to_buy : data.staples_to_buy.slice(0, MAX_VISIBLE)).map((s, i) => (
-              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
-                <span className={`text-xs font-medium uppercase mt-0.5 ${
-                  s.price_tier === 'budget' ? 'text-green-400' : s.price_tier === 'premium' ? 'text-amber-400' : 'text-sky-400'
-                }`}>
-                  {s.price_tier || '$'}
-                </span>
-                <div className="flex-1">
-                  <span className="text-[var(--color-text)] font-semibold text-sm">{s.card}</span>
-                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{s.reason}</p>
+            {buyCards.length > 0 && (
+              <div>
+                <p className="text-[var(--color-muted)] text-xs font-semibold uppercase tracking-wider mb-1.5">Worth Acquiring</p>
+                <div className="space-y-2">
+                  {(expanded['additions_buy'] ? buyCards : buyCards.slice(0, MAX_VISIBLE)).map((add, i) => (
+                    <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
+                      <span className="text-[var(--color-success)] text-sm font-bold">+</span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[var(--color-text)] font-semibold text-sm">{add.card}</span>
+                          {add.price_tier && (
+                            <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${
+                              add.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : add.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
+                            }`}>
+                              {add.price_tier}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+                {renderShowMore('additions_buy', buyCards.length)}
               </div>
-            ))}
+            )}
           </div>
-          {renderShowMore('staples', data.staples_to_buy.length)}
-        </div>
-      )}
+        )
+      })()}
 
       {/* Empty state */}
-      {!data.urgent_fixes?.length && !data.cuts?.length && !data.additions?.length && !data.staples_to_buy?.length && (
+      {!data.urgent_fixes?.length && !data.swaps?.length && !data.additions?.length && (
         <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
           <IconCheck className="w-8 h-8 text-[var(--color-success)]" />
           <p className="text-[var(--color-text)] font-semibold text-sm">Deck looks solid!</p>
