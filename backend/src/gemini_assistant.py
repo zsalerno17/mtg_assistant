@@ -116,51 +116,81 @@ Full decklist:
 
 
 def get_strategy_advice(deck, analysis: dict) -> dict:
-    """Returns {content: str, ai_enhanced: bool}."""
+    """Returns {content: dict, ai_enhanced: bool}. Content is a structured JSON object."""
     context = _deck_context(deck, analysis)
     prompt = f"""
 Analyze this Commander deck and provide a comprehensive strategy guide.
+Return ONLY a valid JSON object — no markdown, no explanation outside the JSON.
 
 {context}
 
-Cover these sections with headers:
-## Game Plan
-## Win Conditions
-## Mulligan Strategy
-## Key Cards
-## Matchup Advice (general)
-## Early / Mid / Late Game Priorities
+Return this exact JSON structure:
+{{
+  "game_plan": "2-3 sentence overview of the deck's primary strategy",
+  "win_conditions": [
+    {{"name": "Win con name", "description": "How it wins"}}
+  ],
+  "key_cards": [
+    {{"name": "Card Name", "role": "What this card does for the deck"}}
+  ],
+  "early_game": "Early game priorities (turns 1-3)",
+  "mid_game": "Mid game priorities (turns 4-6)",
+  "late_game": "Late game priorities (turns 7+)",
+  "mulligan": "Mulligan strategy — what to keep, what to ship",
+  "matchup_tips": [
+    {{"against": "Archetype or strategy", "advice": "How to play against it"}}
+  ]
+}}
 """
-    result = _ask(prompt)
-    if result:
-        return {"content": result, "ai_enhanced": True}
+    raw = _ask(prompt)
+    if raw:
+        parsed = _try_parse_json(raw)
+        if parsed and "game_plan" in parsed:
+            return {"content": parsed, "ai_enhanced": True}
     return {"content": _fallback_strategy(deck, analysis), "ai_enhanced": False}
 
 
 def get_improvement_suggestions(deck, analysis: dict, collection_cards: list[dict]) -> dict:
-    """Returns {content: str, ai_enhanced: bool}."""
+    """Returns {content: dict, ai_enhanced: bool}. Content is a structured JSON object."""
     context = _deck_context(deck, analysis)
     owned = ", ".join(c["name"] for c in collection_cards[:100]) if collection_cards else "Not provided"
 
     prompt = f"""
 Suggest improvements for this Commander deck. Prioritise cards the player already owns.
+Return ONLY a valid JSON object — no markdown, no explanation outside the JSON.
 
 {context}
 
 Cards the player owns (from their collection):
 {owned}
 
-Structure your response with:
-## Urgent Fixes (address weaknesses first)
-## Collection Pickups (owned cards that fit)
-## High-Impact Staples (cards worth acquiring)
-## Suggested Cuts (what to remove to make room)
+IMPORTANT RULES:
+- urgent_fixes are cards to ADD to the deck that fix a critical weakness. Do NOT list cards already in the decklist above.
+- cuts are cards currently in the deck that should be removed. Include the card's type.
+- additions are cards to add that improve the deck overall. Do NOT list cards already in the decklist above.
+- Limit each category to the top 5 most impactful suggestions, ordered by priority.
 
-For each suggestion explain WHY it improves the deck.
+Return this exact JSON structure:
+{{
+  "urgent_fixes": [
+    {{"card": "Card Name", "reason": "Why adding this addresses a weakness", "category": "ramp|draw|removal|wipes|lands"}}
+  ],
+  "cuts": [
+    {{"card": "Card Name", "reason": "Why this should be cut", "type": "creature|instant|sorcery|enchantment|artifact|land|planeswalker"}}
+  ],
+  "additions": [
+    {{"card": "Card Name", "reason": "Why this improves the deck"}}
+  ],
+  "staples_to_buy": [
+    {{"card": "Card Name", "reason": "Why it's worth acquiring", "price_tier": "budget|mid|premium"}}
+  ]
+}}
 """
-    result = _ask(prompt)
-    if result:
-        return {"content": result, "ai_enhanced": True}
+    raw = _ask(prompt)
+    if raw:
+        parsed = _try_parse_json(raw)
+        if parsed and ("urgent_fixes" in parsed or "cuts" in parsed or "additions" in parsed):
+            return {"content": parsed, "ai_enhanced": True}
     return {"content": _fallback_improvements(deck, analysis), "ai_enhanced": False}
 
 
@@ -213,74 +243,80 @@ Return this exact JSON structure:
     return _fallback_scenarios(deck, analysis, cards_to_add, cards_to_remove)
 
 
+# --- JSON parsing helper ---
+
+def _try_parse_json(raw: str) -> Optional[dict]:
+    """Try to extract a JSON object from Gemini's response."""
+    try:
+        clean = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        return json.loads(clean)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
 # --- Rule-based fallbacks (used when Gemini is unavailable or rate-limited) ---
 
-def _fallback_strategy(deck, analysis: dict) -> str:
+def _fallback_strategy(deck, analysis: dict) -> dict:
     commander = deck.commander.name if deck.commander else "your commander"
     themes = ", ".join(analysis.get("theme_names", [])) or "general value"
     weaknesses = analysis.get("weaknesses", [])
     weakness_labels = [w["label"] if isinstance(w, dict) else w for w in weaknesses]
-    weakness_text = "\n".join(f"- {w}" for w in weakness_labels) if weakness_labels else "- None identified"
     ramp = analysis.get("ramp_count", 0)
     draw = analysis.get("draw_count", 0)
     removal = analysis.get("removal_count", 0)
     avg_cmc = analysis.get("average_cmc", 0)
 
     mulligan = (
-        f"With an average CMC of {avg_cmc:.1f}, keep hands with at least 3 lands and 1–2 ramp sources."
+        f"With an average CMC of {avg_cmc:.1f}, keep hands with at least 3 lands and 1-2 ramp sources."
         if avg_cmc >= 3.5
         else f"With a relatively low average CMC of {avg_cmc:.1f}, you can keep most 2-land hands if they have early plays."
     )
 
-    return f"""## Game Plan
-This deck is built around **{commander}** and focuses on {themes}. The goal is to leverage your commander's strengths to generate consistent advantage and close out games.
-
-## Win Conditions
-Play to your commander's abilities and the deck's primary theme ({themes}). Look to establish board dominance through your key synergies and overwhelm opponents in the mid-to-late game.
-
-## Mulligan Strategy
-{mulligan} Prioritize hands that can play into your theme early. With {ramp} ramp sources in the deck, you need to see at least one per opening hand in high-CMC decks.
-
-## Key Numbers to Know
-- **Ramp:** {ramp} ({"adequate" if ramp >= 10 else "below the recommended 10+ for Commander"})
-- **Card Draw:** {draw} ({"adequate" if draw >= 10 else "below the recommended 10+ for Commander"})
-- **Removal:** {removal} ({"adequate" if removal >= 8 else "below the recommended 8+ for Commander"})
-
-## Weaknesses to Address
-{weakness_text}
-"""
+    return {
+        "game_plan": f"This deck is built around {commander} and focuses on {themes}. Leverage your commander's strengths to generate consistent advantage and close out games.",
+        "win_conditions": [
+            {"name": "Commander synergy", "description": f"Use {commander} to drive the deck's {themes} strategy"}
+        ],
+        "key_cards": [],
+        "early_game": f"Prioritize ramp and fixing. With {ramp} ramp sources, you need to see at least one per opening hand.",
+        "mid_game": f"Deploy your key synergy pieces and commander. Use your {removal} removal spells to handle the biggest threats.",
+        "late_game": f"Leverage card advantage ({draw} draw sources) to grind out value and close the game with your primary theme.",
+        "mulligan": mulligan,
+        "matchup_tips": [
+            {"against": "Aggro", "advice": "Prioritize early blockers and removal. Don't let them snowball before you set up."},
+            {"against": "Control", "advice": "Don't overextend into board wipes. Bait countermagic with less critical spells."},
+        ],
+    }
 
 
-def _fallback_improvements(deck, analysis: dict) -> str:
+def _fallback_improvements(deck, analysis: dict) -> dict:
     weaknesses = analysis.get("weaknesses", [])
-    weakness_labels = [w["label"] if isinstance(w, dict) else w for w in weaknesses]
-    urgent = "\n".join(f"- Address: {w}" for w in weakness_labels) if weakness_labels else "- Deck looks solid overall"
     ramp = analysis.get("ramp_count", 0)
     draw = analysis.get("draw_count", 0)
     removal = analysis.get("removal_count", 0)
 
-    ramp_advice = (
-        "\n### Ramp\n- Sol Ring, Arcane Signet, Cultivate, Kodama's Reach, Rampant Growth\n- Target: 10+ ramp sources\n"
-        if ramp < 10 else ""
-    )
-    draw_advice = (
-        "\n### Card Draw\n- Rhystic Study, Phyrexian Arena, Painful Truths, Sign in Blood, Night's Whisper\n- Target: 10+ draw effects\n"
-        if draw < 10 else ""
-    )
-    removal_advice = (
-        "\n### Removal\n- Swords to Plowshares, Path to Exile, Beast Within, Generous Gift, Chaos Warp\n- Target: 8+ removal spells\n"
-        if removal < 8 else ""
-    )
+    urgent = []
+    staples = []
 
-    return f"""## Urgent Fixes
-{urgent}
-## Priority Additions
-{ramp_advice}{draw_advice}{removal_advice}
-## General Advice
-- Ensure 36–38 lands for consistent mana
-- Include 10+ ramp sources and 10+ card draw effects
-- Add 8–10 removal spells
-"""
+    if ramp < 10:
+        urgent.append({"card": "Sol Ring", "reason": "Deck needs more ramp sources (currently {})".format(ramp), "category": "ramp"})
+        staples.extend([
+            {"card": "Arcane Signet", "reason": "Efficient 2-mana rock that fixes colors", "price_tier": "budget"},
+            {"card": "Cultivate", "reason": "Land ramp that fixes mana and thins the deck", "price_tier": "budget"},
+        ])
+    if draw < 10:
+        urgent.append({"card": "Phyrexian Arena", "reason": "Deck needs more card draw (currently {})".format(draw), "category": "draw"})
+        staples.append({"card": "Rhystic Study", "reason": "One of the best draw engines in Commander", "price_tier": "premium"})
+    if removal < 8:
+        urgent.append({"card": "Swords to Plowshares", "reason": "Deck needs more removal (currently {})".format(removal), "category": "removal"})
+        staples.append({"card": "Beast Within", "reason": "Versatile removal that hits any permanent", "price_tier": "budget"})
+
+    return {
+        "urgent_fixes": urgent,
+        "cuts": [],
+        "additions": [],
+        "staples_to_buy": staples,
+    }
 
 
 def _fallback_scenarios(deck, analysis: dict, adds: list[str], removes: list[str]) -> dict:

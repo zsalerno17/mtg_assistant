@@ -333,55 +333,365 @@ function OverviewTab({ deck, analysis, onTabChange }) {
   )
 }
 
-function GeminiTab({ deckId, fetcher, cacheKey }) {
-  const [content, setContent] = useState(null)
-  const [aiEnhanced, setAiEnhanced] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [loaded, setLoaded] = useState(false)
-
-  const load = useCallback(async () => {
-    if (loaded || loading) return
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetcher(deckId)
-      setContent(data.content)
-      setAiEnhanced(data.aiEnhanced)
-      setLoaded(true)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [deckId, fetcher, loaded, loading])
-
-  // Load on mount
-  useEffect(() => { load() }, [load])
-
-  if (loading) return <LoadingSpinner />
-  if (error) return (
-    <div className="py-8 text-center">
-      <p className="text-[var(--color-danger)] text-sm mb-3">{error}</p>
-      <button onClick={() => { setLoaded(false); load() }} className="text-[var(--color-secondary)] text-sm hover:underline">
-        Retry
-      </button>
+function AiSourceBadge({ aiEnhanced }) {
+  if (aiEnhanced === null || aiEnhanced === undefined) return null
+  return (
+    <div className="flex items-center gap-1.5 mb-5">
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+        aiEnhanced ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'
+      }`} />
+      <span className="text-[var(--color-muted)] text-xs">
+        {aiEnhanced ? 'AI-generated analysis' : 'Rule-based analysis — AI quota unavailable'}
+      </span>
     </div>
   )
-  if (!content) return null
+}
+
+function StrategyTab({ deckId }) {
+  const [data, setData] = useState(null)
+  const [aiEnhanced, setAiEnhanced] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api.getStrategy(deckId)
+      .then((res) => {
+        setData(res.strategy)
+        setAiEnhanced(res.ai_enhanced ?? false)
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [deckId])
+
+  if (loading) return <LoadingSpinner />
+  if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
+  if (!data) return null
+
   return (
-    <div>
-      {aiEnhanced !== null && (
-        <div className="flex items-center gap-1.5 mb-5">
-          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            aiEnhanced ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'
-          }`} />
-          <span className="text-[var(--color-muted)] text-xs">
-            {aiEnhanced ? 'AI-generated analysis' : 'Rule-based analysis — AI quota unavailable'}
-          </span>
+    <div className="space-y-6">
+      <AiSourceBadge aiEnhanced={aiEnhanced} />
+
+      {/* Game Plan */}
+      {data.game_plan && (
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-5">
+          <h3 className="text-[var(--color-primary)] font-[var(--font-heading)] text-sm uppercase tracking-wider mb-2">Game Plan</h3>
+          <p className="text-[var(--color-text)] text-sm leading-relaxed">{data.game_plan}</p>
         </div>
       )}
-      <MarkdownBlock text={content} />
+
+      {/* Win Conditions */}
+      {data.win_conditions?.length > 0 && (
+        <div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Win Conditions</h3>
+          <div className="space-y-2">
+            {data.win_conditions.map((wc, i) => (
+              <div key={i} className="flex items-start gap-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+                <IconCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 shrink-0" />
+                <div>
+                  <span className="text-[var(--color-text)] font-semibold text-sm">{wc.name}</span>
+                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{wc.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Key Cards */}
+      {data.key_cards?.length > 0 && (
+        <div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Key Cards</h3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {data.key_cards.map((kc, i) => (
+              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+                <span className="text-[var(--color-primary)] font-semibold text-sm">{kc.name}</span>
+                <p className="text-[var(--color-muted)] text-xs mt-0.5">{kc.role}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Game Phases */}
+      {(data.early_game || data.mid_game || data.late_game) && (
+        <div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Game Phases</h3>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[['Early Game', data.early_game], ['Mid Game', data.mid_game], ['Late Game', data.late_game]].map(([label, text]) => text && (
+              <div key={label} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+                <p className="text-[var(--color-secondary)] text-xs font-semibold uppercase tracking-wider mb-1">{label}</p>
+                <p className="text-[var(--color-text)] text-sm leading-relaxed">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Mulligan */}
+      {data.mulligan && (
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-5">
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Mulligan Strategy</h3>
+          <p className="text-[var(--color-text)] text-sm leading-relaxed">{data.mulligan}</p>
+        </div>
+      )}
+
+      {/* Matchup Tips */}
+      {data.matchup_tips?.length > 0 && (
+        <div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Matchup Tips</h3>
+          <div className="space-y-2">
+            {data.matchup_tips.map((tip, i) => (
+              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+                <span className="text-[var(--color-primary)] font-semibold text-sm">vs {tip.against}</span>
+                <p className="text-[var(--color-muted)] text-xs mt-0.5">{tip.advice}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ImprovementsTab({ deckId }) {
+  const [data, setData] = useState(null)
+  const [aiEnhanced, setAiEnhanced] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [expanded, setExpanded] = useState({})
+
+  const toggle = (key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))
+  const MAX_VISIBLE = 5
+
+  useEffect(() => {
+    api.getImprovements(deckId)
+      .then((res) => {
+        setData(res.improvements)
+        setAiEnhanced(res.ai_enhanced ?? false)
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [deckId])
+
+  if (loading) return <LoadingSpinner />
+  if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
+  if (!data) return null
+
+  const categoryColors = {
+    ramp: 'text-green-400',
+    draw: 'text-sky-400',
+    removal: 'text-red-400',
+    wipes: 'text-orange-400',
+    lands: 'text-amber-400',
+  }
+
+  // Group cuts by card type
+  const cutsByType = {}
+  ;(data.cuts || []).forEach((cut) => {
+    const type = cut.type || 'other'
+    if (!cutsByType[type]) cutsByType[type] = []
+    cutsByType[type].push(cut)
+  })
+  const typeOrder = ['creature', 'instant', 'sorcery', 'enchantment', 'artifact', 'planeswalker', 'land', 'other']
+  const sortedTypes = typeOrder.filter((t) => cutsByType[t]?.length)
+
+  const renderShowMore = (key, total) => {
+    if (total <= MAX_VISIBLE) return null
+    return (
+      <button
+        onClick={() => toggle(key)}
+        className="text-[var(--color-secondary)] text-xs hover:underline mt-1"
+      >
+        {expanded[key] ? 'Show less' : `Show all ${total}`}
+      </button>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <AiSourceBadge aiEnhanced={aiEnhanced} />
+
+      {/* Weakness Fixes — cards to ADD */}
+      {data.urgent_fixes?.length > 0 && (
+        <div>
+          <h3 className="text-[var(--color-danger)] text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <IconWarning className="w-3.5 h-3.5" />
+            Weakness Fixes
+          </h3>
+          <p className="text-[var(--color-muted)] text-xs mb-3">Cards to add that address critical gaps in your deck.</p>
+          <div className="space-y-2">
+            {(expanded['fixes'] ? data.urgent_fixes : data.urgent_fixes.slice(0, MAX_VISIBLE)).map((fix, i) => (
+              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-danger)]/30 rounded-lg px-4 py-3 flex items-start gap-3">
+                <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
+                <div className="flex-1">
+                  <span className="text-[var(--color-text)] font-semibold text-sm">{fix.card}</span>
+                  <span className={`ml-2 text-xs font-medium uppercase ${categoryColors[fix.category] || 'text-[var(--color-muted)]'}`}>
+                    {fix.category}
+                  </span>
+                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{fix.reason}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {renderShowMore('fixes', data.urgent_fixes.length)}
+        </div>
+      )}
+
+      {/* Suggested Cuts — grouped by card type */}
+      {sortedTypes.length > 0 && (
+        <div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Suggested Cuts</h3>
+          <div className="space-y-4">
+            {sortedTypes.map((type) => {
+              const items = cutsByType[type]
+              const visibleKey = `cuts_${type}`
+              const visible = expanded[visibleKey] ? items : items.slice(0, MAX_VISIBLE)
+              return (
+                <div key={type}>
+                  <p className="text-[var(--color-muted)] text-xs font-semibold uppercase tracking-wider mb-1.5 capitalize">{type}s</p>
+                  <div className="space-y-2">
+                    {visible.map((cut, i) => (
+                      <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
+                        <span className="text-[var(--color-danger)] text-sm font-bold">−</span>
+                        <div className="flex-1">
+                          <span className="text-[var(--color-text)] font-semibold text-sm">{cut.card}</span>
+                          <p className="text-[var(--color-muted)] text-xs mt-0.5">{cut.reason}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {renderShowMore(visibleKey, items.length)}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Suggested Additions */}
+      {data.additions?.length > 0 && (
+        <div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Suggested Additions</h3>
+          <div className="space-y-2">
+            {(expanded['additions'] ? data.additions : data.additions.slice(0, MAX_VISIBLE)).map((add, i) => (
+              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
+                <span className="text-[var(--color-success)] text-sm font-bold">+</span>
+                <div className="flex-1">
+                  <span className="text-[var(--color-text)] font-semibold text-sm">{add.card}</span>
+                  {add.owned === true && <span className="ml-2 text-[var(--color-success)] text-xs">✓ owned</span>}
+                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {renderShowMore('additions', data.additions.length)}
+        </div>
+      )}
+
+      {/* Staples to Buy */}
+      {data.staples_to_buy?.length > 0 && (
+        <div>
+          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Worth Acquiring</h3>
+          <div className="space-y-2">
+            {(expanded['staples'] ? data.staples_to_buy : data.staples_to_buy.slice(0, MAX_VISIBLE)).map((s, i) => (
+              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
+                <span className={`text-xs font-medium uppercase mt-0.5 ${
+                  s.price_tier === 'budget' ? 'text-green-400' : s.price_tier === 'premium' ? 'text-amber-400' : 'text-sky-400'
+                }`}>
+                  {s.price_tier || '$'}
+                </span>
+                <div className="flex-1">
+                  <span className="text-[var(--color-text)] font-semibold text-sm">{s.card}</span>
+                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{s.reason}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {renderShowMore('staples', data.staples_to_buy.length)}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!data.urgent_fixes?.length && !data.cuts?.length && !data.additions?.length && !data.staples_to_buy?.length && (
+        <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
+          <IconCheck className="w-8 h-8 text-[var(--color-success)]" />
+          <p className="text-[var(--color-text)] font-semibold text-sm">Deck looks solid!</p>
+          <p className="text-[var(--color-muted)] text-xs text-center">No urgent improvements identified.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CollectionUpgradesTab({ deckId }) {
+  const [upgrades, setUpgrades] = useState(null)
+  const [hasCollection, setHasCollection] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api.getCollectionUpgrades(deckId)
+      .then((data) => {
+        setUpgrades(data.upgrades)
+        setHasCollection(data.has_collection)
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [deckId])
+
+  if (loading) return <LoadingSpinner />
+  if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
+
+  if (!hasCollection) {
+    return (
+      <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
+        <UpgradeIcon />
+        <p className="text-[var(--color-text)] font-semibold text-sm">No collection uploaded</p>
+        <p className="text-[var(--color-muted)] text-xs text-center">
+          Upload your Moxfield collection CSV on the{' '}
+          <Link to="/collection" className="text-[var(--color-secondary)] hover:underline">Collection page</Link>{' '}
+          to see upgrade suggestions from cards you already own.
+        </p>
+      </div>
+    )
+  }
+
+  if (!upgrades?.length) {
+    return (
+      <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
+        <IconCheck className="w-8 h-8 text-[var(--color-success)]" />
+        <p className="text-[var(--color-text)] font-semibold text-sm">No upgrades found</p>
+        <p className="text-[var(--color-muted)] text-xs text-center">
+          Your collection doesn't have obvious upgrades for this deck based on its current weaknesses and themes.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[var(--color-muted)] text-sm mb-4">
+        {upgrades.length} card{upgrades.length !== 1 ? 's' : ''} from your collection could improve this deck.
+      </p>
+      {upgrades.map((u, i) => (
+        <div
+          key={i}
+          className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-5 py-4 flex items-start gap-4"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[var(--color-success)] font-semibold text-sm">+ {u.add}</span>
+              {u.cut && (
+                <>
+                  <span className="text-[var(--color-muted)] text-xs">for</span>
+                  <span className="text-[var(--color-danger)] font-semibold text-sm">− {u.cut}</span>
+                </>
+              )}
+            </div>
+            <p className="text-[var(--color-muted)] text-xs mt-1">{u.reason}</p>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -606,27 +916,15 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Strategy' && (
-            <GeminiTab
-              deckId={deckId}
-              fetcher={(id) => api.getStrategy(id).then(d => ({ content: d.strategy, aiEnhanced: d.ai_enhanced ?? false }))}
-              cacheKey="strategy"
-            />
+            <StrategyTab deckId={deckId} />
           )}
 
           {activeTab === 'Improvements' && (
-            <GeminiTab
-              deckId={deckId}
-              fetcher={(id) => api.getImprovements(id).then(d => ({ content: d.improvements, aiEnhanced: d.ai_enhanced ?? false }))}
-              cacheKey="improvements"
-            />
+            <ImprovementsTab deckId={deckId} />
           )}
 
           {activeTab === 'Collection Upgrades' && (
-            <GeminiTab
-              deckId={deckId}
-              fetcher={(id) => api.getImprovements(id).then(d => ({ content: d.improvements, aiEnhanced: d.ai_enhanced ?? false }))}
-              cacheKey="upgrades"
-            />
+            <CollectionUpgradesTab deckId={deckId} />
           )}
 
           {activeTab === 'Scenarios' && (

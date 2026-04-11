@@ -110,7 +110,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3 mt-1">
                     {item.result_json?.themes?.length > 0 && (
                       <p className="text-[var(--color-muted)] text-xs">
-                        {item.result_json.themes.slice(0, 3).join(' · ')}
+                        {item.result_json.themes.slice(0, 3).map(t => typeof t === 'string' ? t : t.name).join(' · ')}
                       </p>
                     )}
                     {item.moxfield_url && (

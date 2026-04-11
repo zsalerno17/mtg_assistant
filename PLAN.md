@@ -15,7 +15,7 @@ Stage 1 (complete): Rule-based fixes in `backend/src/deck_analyzer.py`
 - [x] Board wipe detection (new function)
 - [x] Theme detection rewrite (per-card counting, raised thresholds, new themes)
 - [x] Color-filtered weakness examples
-- [ ] Wire `find_collection_improvements()` to new endpoint
+- [x] Wire `find_collection_improvements()` to new endpoint
 
 > **Stage 1 impact**: Ramp/draw/removal/wipe counts are now trustworthy (Arcane Signet, Birds of Paradise, Dockside detected; bounce no longer inflates removal). Themes show card counts and require meaningful thresholds (8+ cards for Tokens, not just 2 keywords in a blob). Weakness suggestions are filtered to the deck's actual colors — mono-Blue decks no longer see Cultivate recommended. Board wipes tracked as a new stat badge.
 
@@ -25,6 +25,9 @@ See Phase 13 section below for full spec. See Commander Expertise Reference for 
 
 ## Recent Changes
 
+- **Phase 13 Stage 2 complete**: Strategy/Improvements prompts now request JSON from Gemini with validated fallbacks. Dedicated `StrategyTab`, `ImprovementsTab`, and `CollectionUpgradesTab` components replace the old markdown `GeminiTab`. No more walls of text — each section is a structured card/panel. Cache keys versioned to `strategy_v2` / `improvements_v2`.
+- **Cached results banner + Force Re-analyze**: When a deck hasn't changed on Moxfield, users see a clear "cached results" indicator with a Force Re-analyze button. The `/analyze` endpoint now accepts `force: true` to bypass deduplication, enabling testing without clearing the DB.
+- **Collection Upgrades tab wired to rule-based engine**: New `/api/ai/collection-upgrades` endpoint runs `find_collection_improvements()` against the user's uploaded collection. The tab now shows structured swap cards (+ Add / − Cut with reason) instead of a duplicate Gemini call — instant, no AI quota needed.
 - **Phase 13 Stage 1 complete**: Ramp/draw/removal/wipe detection rewritten, themes now per-card counted, weakness examples color-filtered, board wipe stat badge added. 29 tests pass. Users now see accurate stat counts and color-appropriate card suggestions.
 - **Full UI/UX design analysis complete** (see `.github/design-analysis.md`): Covers all 4 pages + Layout shell. Root causes identified: flat hierarchy and buried differentiators. Key findings below.
 
@@ -132,6 +135,90 @@ Free tier Gemini hits 503s and rate limits regularly. Right now, every tab that 
 - Log all Gemini 503/429 errors server-side. Consider a simple in-memory cooldown: if Gemini returned 503, skip attempting Gemini calls for the next 60 seconds for that process.
 - Backend: wrap all `_ask()` calls with a retry-with-backoff (1 retry, 2s delay) before falling back. This handles transient 503s without making the user wait long.
 - Do not expose Gemini errors to the user — always show useful content. The error message should only communicate "AI advice not available right now" if they explicitly requested AI enhancement.
+
+---
+
+## Future Work — Commander Gauntlet League Tracking
+
+> Researched April 2026. **Do not start until Phase 13 + Backlog items are complete.**
+
+### Context
+Four friends play weekly Commander on SpellTable. Current league rules: Win=3pts, First elimination=1pt, Last eliminated=1pt, voted Entrance bonus=1pt. 6-week season with custom titles, player personas/superstar names, and tiebreakers. Full rules in chat history.
+
+> **League setup must be fully customizable.** Rules, point values, and scoring categories can change season-to-season. Nothing should be hardcoded.
+
+### App Landscape Research Findings (April 2026)
+
+**No existing app covers this use case.** The closest options:
+
+| App | What it does | Why it's not enough |
+|---|---|---|
+| Commander Companion | Pod logging, win/loss, basic group stats | No custom scoring formulas, no seasons, no voted bonus points |
+| Melee.gg / Topdeck.gg | Tournament brackets, standings, configurable pod scoring | Tournament-oriented (overkill), no voted bonus points, no titles/achievements |
+| Archidekt | Deck building + basic win/loss log | No multiplayer pod tracking, no league features |
+| SpellTable | Webcam play platform | No public API, minimal game history, no league management |
+| Discord bots | DIY scoreboard via slash commands | No MTG-specific logic, requires custom bot hosting |
+
+**Verdict: Greenfield build on existing Supabase + FastAPI + React stack.** No integration shortcut exists.
+
+### What NOT to Build
+- **Life tracker** — SpellTable handles this during games. Don't replicate it.
+- **SpellTable integration** — No public API exists, Wizards hasn't announced one. Do not attempt.
+- **In-app group chat** — Discord already handles this better. Use Discord incoming webhooks to post session summaries after results are logged (20 lines of code, no bot permissions needed).
+- **Deck building** — Moxfield already handles this.
+
+### Recommended Data Model (Supabase)
+
+The key to customizability is `scoring_config` JSONB on the `seasons` table. All point values and scoring categories live there — the scoring engine reads them at calculation time, never hardcoded.
+
+```
+players          → id, display_name, persona (superstar name), email
+seasons          → id, name, start_date, end_date, scoring_config JSONB, tiebreaker_config JSONB
+sessions         → id, season_id, date, notes, screenshot_url
+pod_results      → id, session_id, player_id, placement (1-4), scoring_flags JSONB
+                   (flags are freeform keys matching scoring_config — e.g. {"first_elim": true, "entrance_winner": true})
+awards           → id, session_id, player_id, title TEXT (e.g. "Villain of the Week"), description TEXT
+season_standings → computed view: player_id + dynamically summed points from scoring_config
+```
+
+**`scoring_config` example (JSONB on `seasons`):**
+```json
+{
+  "win":           { "label": "Win",            "points": 3, "type": "placement", "placement": 1 },
+  "first_elim":    { "label": "First Blood",    "points": 1, "type": "flag" },
+  "last_elim":     { "label": "Last Stand",     "points": 1, "type": "flag" },
+  "entrance":      { "label": "WWE Entrance",   "points": 1, "type": "voted" }
+}
+```
+
+To change the rules for a new season: create a new `seasons` row with a different `scoring_config`. Old seasons retain their original config; standings are always computed against the config that was active when the season was created.
+
+**`tiebreaker_config` example:**
+```json
+["wins", "head_to_head_elims", "final_duel"]
+```
+An ordered array — engine walks through each rule until the tie is broken.
+
+**Season setup UI:**
+- "New Season" form: season name, dates, and a rule builder where you can add/remove/edit scoring categories (label, point value, type: placement / flag / voted)
+- Changing point values mid-season is allowed but flagged with a warning ("This will recalculate all existing session results for this season")
+
+### Feature Build List (Phase 14 candidate)
+- [ ] `seasons` + `sessions` + `pod_results` + `awards` tables (new migration)
+- [ ] **Season setup UI** — create a season with a configurable rule builder (add/remove scoring categories, set point values, set tiebreaker order)
+- [ ] `POST /api/league/seasons` — create/update a season with `scoring_config` + `tiebreaker_config`
+- [ ] `POST /api/league/sessions` — log a session result (players, placement order, freeform `scoring_flags` matching the season's config)
+- [ ] `GET /api/league/standings/{season_id}` — dynamically scores standings using the season's `scoring_config`; applies `tiebreaker_config` for sort order
+- [ ] Session entry UI — 4-player pod form: pick players, set placement order, toggle scoring flags (rendered from `scoring_config`, not hardcoded), vote on any "voted" category, add award titles
+- [ ] Standings page — season leaderboard table with columns dynamically generated from `scoring_config` labels
+- [ ] Awards history — per-session awards feed ("The Betrayer", "Comeback Kid", etc.)
+- [ ] Player profile page — superstar name, persona, career stats, season history
+- [ ] Discord webhook — post formatted session summary to group Discord after logging
+- [ ] Screenshot upload — Supabase Storage, attached to session
+- [ ] Tiebreaker logic — walks `tiebreaker_config` array; prompts for final duel result if still tied after all rules
+
+### Effort Estimate
+~2–3 weeks part-time for a functional V1. DB schema + scoring logic is simple; most effort is in the session entry UI (voting mechanism) and standings display.
 
 ---
 
@@ -515,40 +602,41 @@ Free tier Gemini hits 503s and rate limits regularly. Right now, every tab that 
   - Create new endpoint `/collection-upgrades` in `routers/ai.py` that calls this function
   - Return structured data: `[{add: card, cut: card, reason: str, category: str}]`
 
-### Stage 2 — Structured Content (backend + frontend)
+### Stage 2 (complete) — Structured Content (backend + frontend)
 
 > Goal: Gemini returns JSON, not markdown. Each tab gets a dedicated component that renders structured data.
 
 **Backend prompt changes (`gemini_assistant.py`):**
 
-- [ ] **Strategy prompt → JSON schema**
+- [x] **Strategy prompt → JSON schema**
   - Ask Gemini to return: `{game_plan: str, win_conditions: [{name, description}], key_cards: [{name, role}], early_game: str, mid_game: str, late_game: str, matchup_tips: [{against, advice}]}`
   - Fallback returns same schema (rule-based template fills game_plan, omits win_conditions/matchup_tips)
   - Validate JSON response; if Gemini returns non-JSON, use fallback
 
-- [ ] **Improvements prompt → JSON schema**
+- [x] **Improvements prompt → JSON schema**
   - Ask Gemini to return: `{cuts: [{card, reason}], additions: [{card, reason, category}], staples_to_buy: [{card, price_tier, reason}]}`
-  - Fallback: `find_collection_improvements()` → same schema for cuts/additions, empty staples_to_buy
+  - Fallback: rule-based template with same schema, empty cuts/additions
   - Validate JSON response
 
-- [ ] **Separate Collection Upgrades from Improvements**
+- [x] **Separate Collection Upgrades from Improvements**
   - Collection Upgrades tab uses `/collection-upgrades` endpoint (rule-based, from Stage 1)
   - Improvements tab uses `/improvements` endpoint (AI-enhanced)
   - They no longer show identical content
 
 **Frontend component changes:**
 
-- [ ] **`StrategyTab` component** (replaces `GeminiTab` + `MarkdownBlock` for Strategy)
+- [x] **`StrategyTab` component** (replaces `GeminiTab` + `MarkdownBlock` for Strategy)
   - Sections: Game Plan card, Win Conditions list, Key Cards grid, Game Phases accordion (Early/Mid/Late), Matchup Tips
   - Each section is a styled card/panel, not a markdown dump
 
-- [ ] **`ImprovementsTab` component** (replaces `GeminiTab` for Improvements)
-  - Sections: Suggested Cuts list, Suggested Additions list (grouped by category), Staples to Buy
-  - Card names are interactive (hover → card image tooltip from Phase 12)
+- [x] **`ImprovementsTab` component** (replaces `GeminiTab` for Improvements)
+  - Sections: Urgent Fixes (color-coded by category), Suggested Cuts, Suggested Additions (with owned badge), Staples to Buy (with price tier)
 
-- [ ] **`CollectionUpgradesTab` component** (replaces GeminiTab for Collection Upgrades)
-  - Shows `[{add, cut, reason, category}]` as swap cards with visual before→after layout
+- [x] **`CollectionUpgradesTab` component** (replaces GeminiTab for Collection Upgrades)
+  - Shows `[{add, cut, reason}]` as swap cards with + Add / − Cut layout
   - Only appears if user has uploaded a collection; otherwise shows prompt to upload
+
+> **Stage 2 impact**: Strategy and Improvements tabs now render as structured card-based UIs instead of walls of Gemini markdown. Strategy shows Game Plan, Win Conditions, Key Cards, Game Phases, Mulligan, and Matchup Tips as separate panels. Improvements shows categorized urgent fixes, cuts, additions (with "owned" badges), and a staples-to-buy section with price tiers. Collection Upgrades is its own dedicated rule-based tab — instant results, no AI needed.
 
 ### Stage 3 — Visual Polish (frontend only)
 

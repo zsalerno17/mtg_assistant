@@ -42,6 +42,10 @@ export const api = {
   getImprovements: (moxfield_id) =>
     apiFetch('/api/ai/improvements', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
 
+  /** Get rule-based collection upgrade suggestions (cards you own that could improve the deck). */
+  getCollectionUpgrades: (moxfield_id) =>
+    apiFetch('/api/ai/collection-upgrades', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
+
   /** Get Gemini before/after scenario analysis for proposed card swaps. */
   getScenarios: (moxfield_id, cards_to_add, cards_to_remove) =>
     apiFetch('/api/ai/scenarios', {
