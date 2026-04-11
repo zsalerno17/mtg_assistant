@@ -21,14 +21,14 @@ async def upload_collection(
     content = (await file.read()).decode("utf-8")
 
     if file.filename and file.filename.endswith(".csv"):
-        cards = parse_moxfield_csv(content)
+        collection = parse_moxfield_csv(content)
     else:
-        cards = parse_text_list(content)
+        collection = parse_text_list(content)
 
-    if not cards:
+    if not collection.cards:
         raise HTTPException(status_code=400, detail="No cards parsed from file. Check the format.")
 
-    cards_data = [{"name": c.name, "quantity": c.quantity} for c in cards]
+    cards_data = [{"name": c.name, "quantity": c.quantity} for c in collection.cards]
 
     sb = _supabase()
     sb.table("collections").upsert(

@@ -89,19 +89,32 @@ export default function DashboardPage() {
                   to={`/deck/${item.deck_id}`}
                   className="block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-5 py-4 hover:border-[var(--color-primary)] transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[var(--color-text)] font-medium font-[var(--font-mono)] text-sm">
-                      {item.deck_id}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[var(--color-text)] font-medium truncate">
+                      {item.deck_name || item.deck_id}
                     </span>
-                    <span className="text-[var(--color-muted)] text-xs">
+                    <span className="text-[var(--color-muted)] text-xs shrink-0">
                       {new Date(item.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  {item.result_json?.themes?.length > 0 && (
-                    <p className="text-[var(--color-muted)] text-xs mt-1">
-                      {item.result_json.themes.slice(0, 3).join(' · ')}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-3 mt-1">
+                    {item.result_json?.themes?.length > 0 && (
+                      <p className="text-[var(--color-muted)] text-xs">
+                        {item.result_json.themes.slice(0, 3).join(' · ')}
+                      </p>
+                    )}
+                    {item.moxfield_url && (
+                      <a
+                        href={item.moxfield_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[var(--color-secondary)] text-xs hover:underline shrink-0 ml-auto"
+                      >
+                        Moxfield ↗
+                      </a>
+                    )}
+                  </div>
                 </Link>
               </li>
             ))}

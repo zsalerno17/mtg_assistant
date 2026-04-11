@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from supabase import create_client
 
 from auth import require_allowed_user
-from src.moxfield import extract_deck_id, get_deck
+from src.moxfield import extract_deck_id, get_deck, get_deck_with_meta
 from src.deck_analyzer import analyze_deck
 
 router = APIRouter()
@@ -61,27 +61,57 @@ def fetch_deck(body: FetchDeckRequest, user: dict = Depends(require_allowed_user
 
 @router.post("/analyze")
 def analyze(body: AnalyzeDeckRequest, user: dict = Depends(require_allowed_user)):
-    """Run deck analysis and save result to user's analysis history."""
+    """Run deck analysis and save result to user's analysis history.
+
+    Deduplication: if the user already has an analysis for this deck and
+    Moxfield reports the deck hasn't changed, returns the cached result immediately.
+    """
     sb = _supabase()
 
-    cached = sb.table("decks").select("*").eq("moxfield_id", body.moxfield_id).execute()
-    if not cached.data:
+    cached_deck = sb.table("decks").select("data_json").eq("moxfield_id", body.moxfield_id).execute()
+    if not cached_deck.data:
         raise HTTPException(status_code=404, detail="Deck not found. Fetch it first.")
 
-    deck_data = cached.data[0]["data_json"]
+    # Check for an existing analysis for this user + deck
+    existing = (
+        sb.table("analyses")
+        .select("id, result_json, deck_updated_at")
+        .eq("user_id", user["user_id"])
+        .eq("deck_id", body.moxfield_id)
+        .execute()
+    )
 
-    # Rebuild deck object from Moxfield for analysis
+    # Re-fetch from Moxfield for fresh deck data and lastUpdatedAtUtc
     try:
-        deck = get_deck(body.moxfield_id)
+        deck, last_updated_at = get_deck_with_meta(body.moxfield_id)
     except Exception as e:
+        # If Moxfield is down but we have an existing analysis, return it
+        if existing.data:
+            return {"analysis": existing.data[0]["result_json"], "cached": True}
         raise HTTPException(status_code=502, detail=f"Could not load deck for analysis: {str(e)}")
 
+    # Return cached analysis if deck content hasn't changed
+    if existing.data and existing.data[0].get("deck_updated_at") == last_updated_at:
+        return {"analysis": existing.data[0]["result_json"], "cached": True}
+
+    # Run fresh analysis
     result = analyze_deck(deck)
 
-    sb.table("analyses").insert({
+    moxfield_url = f"https://www.moxfield.com/decks/{body.moxfield_id}"
+    deck_name = deck.name or cached_deck.data[0]["data_json"].get("name", body.moxfield_id)
+
+    row = {
         "user_id": user["user_id"],
         "deck_id": body.moxfield_id,
         "result_json": result,
-    }).execute()
+        "deck_name": deck_name,
+        "moxfield_url": moxfield_url,
+        "deck_updated_at": last_updated_at,
+    }
 
-    return {"analysis": result}
+    if existing.data:
+        sb.table("analyses").update(row).eq("id", existing.data[0]["id"]).execute()
+    else:
+        sb.table("analyses").insert(row).execute()
+
+    return {"analysis": result, "cached": False}

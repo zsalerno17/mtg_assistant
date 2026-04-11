@@ -24,7 +24,7 @@ def get_history(
 
     result = (
         sb.table("analyses")
-        .select("id, deck_id, result_json, created_at")
+        .select("id, deck_id, deck_name, moxfield_url, deck_updated_at, result_json, created_at")
         .eq("user_id", user["user_id"])
         .order("created_at", desc=True)
         .range(offset, offset + page_size - 1)

@@ -1,13 +1,15 @@
 import logging
+from dotenv import load_dotenv
+load_dotenv()  # Must run before any module that reads os.environ
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-
 from routers import decks, collection, ai, analyses
 
-load_dotenv()
-
-logging.basicConfig(level=logging.DEBUG)
+# Silence noisy third-party debug logs; keep WARNING+ for everything else
+logging.basicConfig(level=logging.INFO)
+for noisy in ("hpack", "httpcore", "httpx", "h2"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 
 app = FastAPI(title="MTG Assistant API", version="2.0.0")
 

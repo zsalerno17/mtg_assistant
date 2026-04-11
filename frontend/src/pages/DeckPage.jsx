@@ -5,6 +5,19 @@ import { api } from '../lib/api'
 
 const TABS = ['Overview', 'Collection Upgrades', 'Strategy', 'Improvements', 'Scenarios']
 
+const THEME_DEFINITIONS = {
+  Tokens: 'Generates creature tokens to overwhelm through wide board presence.',
+  Graveyard: 'Uses the graveyard as a resource — reanimation, recursion, and flashback effects.',
+  Aristocrats: 'Sacrifices creatures for value — death triggers, life drain, and card advantage.',
+  Aggro: 'Fast creatures with evasion and combat bonuses; aims to win through early pressure.',
+  Control: 'Answers threats with counterspells, wraths, and removal to dominate the late game.',
+  Voltron: 'Grows one creature enormous through equipment or auras — usually the commander.',
+  Spellslinger: 'Gets value from casting instants and sorceries — cantrips, triggers, storm-style payoffs.',
+  Landfall: 'Triggers powerful effects whenever a land enters the battlefield.',
+  Tribal: 'Synergies between creatures of the same type — lords, shared abilities, tribal payoffs.',
+  Combo: 'Assembles specific card combinations to generate infinite loops or win the game immediately.',
+}
+
 // Simple markdown → HTML-like renderer for Gemini output
 function MarkdownBlock({ text }) {
   if (!text) return null
@@ -38,6 +51,32 @@ function LoadingSpinner() {
   )
 }
 
+function IconWarning({ className = 'w-4 h-4 shrink-0' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  )
+}
+
+function IconCheck({ className = 'w-3.5 h-3.5 shrink-0' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+function IconChevronDown({ className = 'w-3.5 h-3.5 shrink-0' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
+
 function StatBadge({ label, value, warning }) {
   return (
     <div className={`bg-[var(--color-bg)] border rounded px-3 py-2 text-center ${warning ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]'}`}>
@@ -47,7 +86,7 @@ function StatBadge({ label, value, warning }) {
   )
 }
 
-function OverviewTab({ deck, analysis }) {
+function OverviewTab({ deck, analysis, onTabChange }) {
   if (!deck || !analysis) return <p className="text-[var(--color-muted)] text-sm">Loading deck data…</p>
 
   const manaCurveData = Object.entries(analysis.mana_curve || {})
@@ -58,6 +97,29 @@ function OverviewTab({ deck, analysis }) {
 
   return (
     <div className="space-y-6">
+      {/* Deck verdict */}
+      {analysis.verdict && (
+        <div className="bg-[var(--color-surface)] border border-[var(--color-primary)] border-opacity-40 rounded-lg px-4 py-3">
+          <p className="text-[var(--color-text)] text-sm leading-relaxed">{analysis.verdict}</p>
+        </div>
+      )}
+
+      {/* Differentiator callout */}
+      <div className="flex gap-3 flex-wrap">
+        <button
+          onClick={() => onTabChange?.('Strategy')}
+          className="text-[var(--color-secondary)] text-xs border border-[var(--color-secondary)] border-opacity-40 rounded px-3 py-1.5 hover:bg-[var(--color-surface)] transition-colors"
+        >
+          AI Strategy Guide →
+        </button>
+        <button
+          onClick={() => onTabChange?.('Collection Upgrades')}
+          className="text-[var(--color-secondary)] text-xs border border-[var(--color-secondary)] border-opacity-40 rounded px-3 py-1.5 hover:bg-[var(--color-surface)] transition-colors"
+        >
+          Upgrade with Your Collection →
+        </button>
+      </div>
+
       {/* Commander */}
       <div>
         <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Commander</h3>
@@ -124,9 +186,16 @@ function OverviewTab({ deck, analysis }) {
           <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Themes</h3>
           <div className="flex flex-wrap gap-2">
             {analysis.themes.map((t) => (
-              <span key={t} className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-secondary)] text-xs px-2.5 py-1 rounded-full">{t}</span>
+              <span
+                key={t}
+                title={THEME_DEFINITIONS[t] || ''}
+                className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-secondary)] text-xs px-2.5 py-1 rounded-full cursor-help"
+              >
+                {t}
+              </span>
             ))}
           </div>
+          <p className="text-[var(--color-muted)] text-xs mt-1.5">Hover a theme for its definition.</p>
         </div>
       )}
 
@@ -134,13 +203,42 @@ function OverviewTab({ deck, analysis }) {
       {analysis.weaknesses?.length > 0 && (
         <div>
           <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Identified Weaknesses</h3>
-          <ul className="space-y-1">
-            {analysis.weaknesses.map((w) => (
-              <li key={w} className="text-[var(--color-danger)] text-sm flex gap-2">
-                <span>⚠</span><span>{w}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-2">
+            {analysis.weaknesses.map((w, i) => {
+              const label = typeof w === 'string' ? w : w.label
+              const isStructured = typeof w === 'object' && w !== null
+              return isStructured ? (
+                <details key={i} className="group bg-[var(--color-bg)] border border-[var(--color-danger)] border-opacity-40 rounded-lg">
+                  <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer list-none text-[var(--color-danger)] text-sm select-none">
+                    <IconWarning />
+                    <span className="flex-1">{label}</span>
+                    <span className="transition-transform group-open:rotate-180">
+                      <IconChevronDown className="w-3.5 h-3.5 shrink-0 text-[var(--color-muted)]" />
+                    </span>
+                  </summary>
+                  <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[var(--color-border)]">
+                    <p className="text-[var(--color-muted)] text-sm">{w.why}</p>
+                    <p className="text-[var(--color-text)] text-sm">
+                      <span className="text-[var(--color-muted)] font-medium">Look for: </span>{w.look_for}
+                    </p>
+                    {w.examples?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {w.examples.map((ex) => (
+                          <span key={ex} className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] text-xs px-2 py-0.5 rounded">
+                            {ex}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </details>
+              ) : (
+                <div key={i} className="flex items-center gap-2 text-[var(--color-danger)] text-sm px-1">
+                  <IconWarning /><span>{label}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -149,6 +247,7 @@ function OverviewTab({ deck, analysis }) {
 
 function GeminiTab({ deckId, fetcher, cacheKey }) {
   const [content, setContent] = useState(null)
+  const [aiEnhanced, setAiEnhanced] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [loaded, setLoaded] = useState(false)
@@ -159,7 +258,8 @@ function GeminiTab({ deckId, fetcher, cacheKey }) {
     setError(null)
     try {
       const data = await fetcher(deckId)
-      setContent(data)
+      setContent(data.content)
+      setAiEnhanced(data.aiEnhanced)
       setLoaded(true)
     } catch (err) {
       setError(err.message)
@@ -181,7 +281,21 @@ function GeminiTab({ deckId, fetcher, cacheKey }) {
     </div>
   )
   if (!content) return null
-  return <MarkdownBlock text={content} />
+  return (
+    <div>
+      {aiEnhanced !== null && (
+        <div className="flex items-center gap-1.5 mb-5">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            aiEnhanced ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'
+          }`} />
+          <span className="text-[var(--color-muted)] text-xs">
+            {aiEnhanced ? 'AI-generated analysis' : 'Rule-based analysis — AI quota unavailable'}
+          </span>
+        </div>
+      )}
+      <MarkdownBlock text={content} />
+    </div>
+  )
 }
 
 function ScenariosTab({ deckId }) {
@@ -262,13 +376,13 @@ function ScenariosTab({ deckId }) {
               {result.before?.win_conditions?.length > 0 && (
                 <div>
                   <p className="text-[var(--color-muted)] text-xs mb-1">Win Conditions</p>
-                  <ul className="space-y-1">{result.before.win_conditions.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex gap-2"><span className="text-[var(--color-success)]">✓</span>{w}</li>)}</ul>
+                  <ul className="space-y-1">{result.before.win_conditions.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-success)]" />{w}</li>)}</ul>
                 </div>
               )}
               {result.before?.key_weaknesses?.length > 0 && (
                 <div>
                   <p className="text-[var(--color-muted)] text-xs mb-1">Weaknesses</p>
-                  <ul className="space-y-1">{result.before.key_weaknesses.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex gap-2"><span className="text-[var(--color-danger)]">⚠</span>{w}</li>)}</ul>
+                  <ul className="space-y-1">{result.before.key_weaknesses.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconWarning className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-danger)]" />{w}</li>)}</ul>
                 </div>
               )}
             </div>
@@ -284,13 +398,13 @@ function ScenariosTab({ deckId }) {
               {result.after?.win_conditions?.length > 0 && (
                 <div>
                   <p className="text-[var(--color-muted)] text-xs mb-1">Win Conditions</p>
-                  <ul className="space-y-1">{result.after.win_conditions.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex gap-2"><span className="text-[var(--color-success)]">✓</span>{w}</li>)}</ul>
+                  <ul className="space-y-1">{result.after.win_conditions.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-success)]" />{w}</li>)}</ul>
                 </div>
               )}
               {result.after?.key_weaknesses?.length > 0 && (
                 <div>
                   <p className="text-[var(--color-muted)] text-xs mb-1">Weaknesses</p>
-                  <ul className="space-y-1">{result.after.key_weaknesses.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex gap-2"><span className="text-[var(--color-danger)]">⚠</span>{w}</li>)}</ul>
+                  <ul className="space-y-1">{result.after.key_weaknesses.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconWarning className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-danger)]" />{w}</li>)}</ul>
                 </div>
               )}
               {result.after?.changes_summary && (
@@ -370,13 +484,13 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Overview' && (
-            <OverviewTab deck={deck} analysis={analysis} />
+            <OverviewTab deck={deck} analysis={analysis} onTabChange={setActiveTab} />
           )}
 
           {activeTab === 'Strategy' && (
             <GeminiTab
               deckId={deckId}
-              fetcher={(id) => api.getStrategy(id).then(d => d.strategy)}
+              fetcher={(id) => api.getStrategy(id).then(d => ({ content: d.strategy, aiEnhanced: d.ai_enhanced ?? false }))}
               cacheKey="strategy"
             />
           )}
@@ -384,7 +498,7 @@ export default function DeckPage() {
           {activeTab === 'Improvements' && (
             <GeminiTab
               deckId={deckId}
-              fetcher={(id) => api.getImprovements(id).then(d => d.improvements)}
+              fetcher={(id) => api.getImprovements(id).then(d => ({ content: d.improvements, aiEnhanced: d.ai_enhanced ?? false }))}
               cacheKey="improvements"
             />
           )}
@@ -392,7 +506,7 @@ export default function DeckPage() {
           {activeTab === 'Collection Upgrades' && (
             <GeminiTab
               deckId={deckId}
-              fetcher={(id) => api.getImprovements(id).then(d => d.improvements)}
+              fetcher={(id) => api.getImprovements(id).then(d => ({ content: d.improvements, aiEnhanced: d.ai_enhanced ?? false }))}
               cacheKey="upgrades"
             />
           )}

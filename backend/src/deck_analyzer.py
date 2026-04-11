@@ -23,7 +23,10 @@ HIGH_AVG_CMC_THRESHOLD = 3.5
 def analyze_deck(deck: Deck) -> Dict:
     """Analyse a Commander deck and return a comprehensive metrics dict."""
     all_cards = deck.all_cards
-    return {
+    themes = identify_themes(deck)
+    weaknesses = identify_weaknesses(deck)
+    partial = {
+        "commander": deck.commander.name if deck.commander else None,
         "total_cards": deck.card_count,
         "mana_curve": build_mana_curve(all_cards),
         "average_cmc": calculate_average_cmc(all_cards),
@@ -34,9 +37,11 @@ def analyze_deck(deck: Deck) -> Dict:
         "draw_count": count_draw(all_cards),
         "removal_count": count_removal(all_cards),
         "interaction_count": count_interaction(all_cards),
-        "themes": identify_themes(deck),
-        "weaknesses": identify_weaknesses(deck),
+        "themes": themes,
+        "weaknesses": weaknesses,
     }
+    partial["verdict"] = generate_deck_verdict(partial)
+    return partial
 
 
 def find_collection_improvements(
@@ -236,6 +241,19 @@ _THEME_KEYWORDS: Dict[str, List[str]] = {
     "Combo": ["win the game", "infinite", "untap all"],
 }
 
+THEME_DEFINITIONS: Dict[str, str] = {
+    "Tokens": "Generates creature tokens to overwhelm through wide board presence.",
+    "Graveyard": "Uses the graveyard as a resource — reanimation, recursion, and flashback effects.",
+    "Aristocrats": "Sacrifices creatures for value — death triggers, life drain, and card advantage.",
+    "Aggro": "Fast creatures with evasion and combat bonuses; aims to win through early pressure.",
+    "Control": "Answers threats with counterspells, wraths, and removal to dominate the late game.",
+    "Voltron": "Grows one creature enormous through equipment or auras — usually the commander.",
+    "Spellslinger": "Gets value from casting instants and sorceries — cantrips, triggers, storm-style payoffs.",
+    "Landfall": "Triggers powerful effects whenever a land enters the battlefield.",
+    "Tribal": "Synergies between creatures of the same type — lords, shared abilities, tribal payoffs.",
+    "Combo": "Assembles specific card combinations to generate infinite loops or win the game immediately.",
+}
+
 
 def identify_themes(deck: Deck) -> List[str]:
     """Identify dominant strategies/themes in the deck."""
@@ -249,8 +267,8 @@ def identify_themes(deck: Deck) -> List[str]:
     return themes
 
 
-def identify_weaknesses(deck: Deck) -> List[str]:
-    """Return a list of human-readable weakness descriptions."""
+def identify_weaknesses(deck: Deck) -> List[Dict]:
+    """Return a list of structured weakness dicts with label, why, look_for, examples."""
     all_cards = deck.all_cards
     card_types = categorize_card_types(all_cards)
     lands = card_types.get("Lands", 0)
@@ -262,60 +280,122 @@ def identify_weaknesses(deck: Deck) -> List[str]:
     weaknesses = []
 
     if lands < RECOMMENDED_LANDS[0]:
-        weaknesses.append(
-            f"Low land count ({lands} — recommend {RECOMMENDED_LANDS[0]}–{RECOMMENDED_LANDS[1]})"
-        )
+        weaknesses.append({
+            "label": f"Low land count ({lands} — recommend {RECOMMENDED_LANDS[0]}–{RECOMMENDED_LANDS[1]})",
+            "why": "Consistent mana is the foundation of Commander. Too few lands leads to mana screw and missed turns.",
+            "look_for": "Basic lands, utility lands, and dual lands that fit your color identity.",
+            "examples": ["Command Tower", "Exotic Orchard", "Terramorphic Expanse", "Evolving Wilds"],
+        })
     elif lands > 42:
-        weaknesses.append(f"High land count ({lands} — you may have too many)")
+        weaknesses.append({
+            "label": f"High land count ({lands} — you may have too many)",
+            "why": "Too many lands means fewer spells. Consider replacing some basics with ramp spells.",
+            "look_for": "Ramp spells that also thin your deck, reducing flood risk.",
+            "examples": ["Cultivate", "Kodama's Reach", "Skyshroud Claim", "Nature's Lore"],
+        })
 
     if ramp < RECOMMENDED_RAMP:
-        weaknesses.append(
-            f"Low ramp count ({ramp} — recommend {RECOMMENDED_RAMP}+ for Commander)"
-        )
+        weaknesses.append({
+            "label": f"Low ramp count ({ramp} — recommend {RECOMMENDED_RAMP}+ for Commander)",
+            "why": "Ramp lets you play ahead of the curve and cast your threats before opponents can answer them.",
+            "look_for": "2-mana rocks, land tutors, and mana dorks that fix colors and accelerate your game plan.",
+            "examples": ["Sol Ring", "Arcane Signet", "Cultivate", "Kodama's Reach", "Rampant Growth"],
+        })
 
     if draw < RECOMMENDED_DRAW:
-        weaknesses.append(
-            f"Low card draw ({draw} — recommend {RECOMMENDED_DRAW}+ for Commander)"
-        )
+        weaknesses.append({
+            "label": f"Low card draw ({draw} — recommend {RECOMMENDED_DRAW}+ for Commander)",
+            "why": "Card advantage is essential in a 100-card singleton format where consistency is low. Running out of cards means losing.",
+            "look_for": "Repeatable draw engines, cantrips, and draw-on-attack effects that trigger regularly.",
+            "examples": ["Rhystic Study", "Phyrexian Arena", "Harmonize", "Sign in Blood", "Night's Whisper"],
+        })
 
     if removal < RECOMMENDED_REMOVAL:
-        weaknesses.append(
-            f"Low removal ({removal} — recommend {RECOMMENDED_REMOVAL}+ for Commander)"
-        )
+        weaknesses.append({
+            "label": f"Low removal ({removal} — recommend {RECOMMENDED_REMOVAL}+ for Commander)",
+            "why": "With 3 opponents, threats will come from multiple directions. Insufficient answers lets dangerous permanents snowball.",
+            "look_for": "Efficient single-target removal, board wipes (1–2 minimum), and exile-based answers for indestructible threats.",
+            "examples": ["Swords to Plowshares", "Path to Exile", "Generous Gift", "Beast Within", "Chaos Warp"],
+        })
 
     if avg_cmc > HIGH_AVG_CMC_THRESHOLD:
-        weaknesses.append(
-            f"High average CMC ({avg_cmc:.1f} — deck may be slow without extra ramp)"
-        )
+        weaknesses.append({
+            "label": f"High average CMC ({avg_cmc:.1f} — deck may be slow without extra ramp)",
+            "why": "A high mana curve means you'll spend early turns doing little while faster decks develop boards.",
+            "look_for": "Cheap interaction, early ramp pieces, and cards with alternative costs or flash to play defensively.",
+            "examples": ["Sol Ring", "Arcane Signet", "Lightning Greaves", "Swiftfoot Boots"],
+        })
 
     return weaknesses
+
+
+def generate_deck_verdict(analysis: Dict) -> str:
+    """Generate a 2–3 sentence rule-based summary of the deck's strengths and top priorities."""
+    commander = analysis.get("commander") or "This deck"
+    themes = analysis.get("themes", [])
+    weaknesses = analysis.get("weaknesses", [])
+    avg_cmc = analysis.get("average_cmc", 0)
+
+    # Theme sentence
+    if len(themes) >= 2:
+        theme_str = f"{themes[0]} and {themes[1]}"
+    elif len(themes) == 1:
+        theme_str = themes[0]
+    else:
+        theme_str = None
+
+    if theme_str:
+        theme_sentence = f"{commander} leans into {theme_str} strategies."
+    else:
+        theme_sentence = f"{commander} is a versatile commander without a dominant detected theme."
+
+    # Weakness sentence — get labels (handle both string and dict formats)
+    weakness_labels = [
+        w["label"] if isinstance(w, dict) else w for w in weaknesses[:2]
+    ]
+    if weakness_labels:
+        weakness_sentence = f"Top priorities to address: {' and '.join(weakness_labels)}."
+    else:
+        weakness_sentence = "The deck has a solid foundation across all key metrics."
+
+    # Optional CMC note
+    cmc_note = ""
+    if avg_cmc > HIGH_AVG_CMC_THRESHOLD:
+        cmc_note = f" At {avg_cmc:.1f} average CMC, prioritize early ramp to hit threats on curve."
+
+    return f"{theme_sentence} {weakness_sentence}{cmc_note}"
 
 
 # ─── Private helpers ──────────────────────────────────────────────────────────
 
 
 def _evaluate_card(
-    card: Card, weaknesses: List[str], themes: List[str]
+    card: Card, weaknesses: List, themes: List[str]
 ) -> Optional[str]:
     """Return a reason string if *card* addresses a weakness or fits a theme."""
     oracle = card.oracle_text.lower()
     tl = card.type_line.lower()
 
-    if "Low ramp" in " ".join(weaknesses):
+    # Normalise weaknesses to list of label strings for matching
+    weakness_text = " ".join(
+        w["label"] if isinstance(w, dict) else w for w in weaknesses
+    )
+
+    if "Low ramp" in weakness_text:
         if "add {" in oracle or "adds {" in oracle or (
             "search your library" in oracle and "land" in oracle
         ):
             return "Adds ramp (deck needs more ramp)"
 
-    if "Low card draw" in " ".join(weaknesses):
+    if "Low card draw" in weakness_text:
         if any(p in oracle for p in ("draw a card", "draw cards", "draw two", "draw three")):
             return "Adds card draw (deck needs more draw)"
 
-    if "Low removal" in " ".join(weaknesses):
+    if "Low removal" in weakness_text:
         if any(p in oracle for p in ("destroy target", "exile target")):
             return "Adds removal (deck needs more removal)"
 
-    if "Low land count" in " ".join(weaknesses) and card.is_land:
+    if "Low land count" in weakness_text and card.is_land:
         return "Adds a land (deck needs more lands)"
 
     # Theme alignment

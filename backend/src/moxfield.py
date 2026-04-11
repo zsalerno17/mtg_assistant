@@ -46,6 +46,22 @@ def get_deck(deck_id: str) -> Deck:
     return parse_moxfield_deck(response.json())
 
 
+def get_deck_with_meta(deck_id: str):
+    """Fetch a deck from Moxfield and return (Deck, last_updated_at) tuple.
+
+    last_updated_at is the ISO string from Moxfield's lastUpdatedAtUtc field,
+    used for change detection in the analysis dedup logic.
+    """
+    url = f"{MOXFIELD_API_BASE}/decks/all/{deck_id}"
+    scraper = _scraper()
+    response = scraper.get(url, timeout=30)
+    response.raise_for_status()
+    data = response.json()
+    deck = parse_moxfield_deck(data)
+    last_updated_at = data.get("lastUpdatedAtUtc") or data.get("updatedAt") or ""
+    return deck, last_updated_at
+
+
 def parse_moxfield_deck(data: Dict[str, Any]) -> Deck:
     """Parse a Moxfield deck API response dict into a Deck object."""
     deck_id = data.get("publicId") or data.get("id", "")
