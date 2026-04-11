@@ -7,9 +7,9 @@
 
 ## Current Status
 
-**Phase 15 complete.** Phase 16 (rearchitect) also complete. All numbered phases done.
+**Phase 16 complete.** All original phases done. Working through gap phases (17–21) in order.
 
-**Next up in order:**
+**Completed:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
 2. [x] Quick win: Dashboard form ring `/8` → `/20`
 3. [x] Quick win: Collection page `max-w-4xl` + remove `max-h-[480px]` scroll cap
@@ -19,7 +19,14 @@
 7. [x] Phase 14B: Onboarding panel (replaced by Phase 16)
 8. [x] Phase 15: Design review (MTG aesthetic + desktop/mobile polish)
 9. [x] Phase 16: Rearchitect user flow (complete)
-9. [x] Phase 16: Rearchitect user flow (complete)
+
+**Next up (gap phases):**
+- [ ] Phase 17: Cleanup + quick backend fixes (verdict in history, remove mockup page)
+- [ ] Phase 18: Scenarios tab rule-based fallback (`scenarios_fallback()`)
+- [ ] Phase 19: Collection improvements quality (`_evaluate_card()` + cut logic)
+- [ ] Phase 20: Card tooltip (Scryfall image on hover)
+- [ ] Phase 21: StatBadge visual upgrade (radial progress rings)
+- [ ] Phase 22: Deployment (Render + Vercel)
 
 ---
 
@@ -99,17 +106,16 @@ Existing analyses in `analyses` table are NOT in `user_decks`. On `GET /api/deck
 
 ## Open Items & Known Gaps
 
-> Items discovered during code audit (April 11) that are genuinely open despite being marked complete in old docs.
+> All gaps have been promoted to planned phases. See Phases 17–21 below.
 
-- [ ] **Deck top bar** — no commander name or color identity shown. DeckPage top bar is just back link + deck name. Planned in backlog, never implemented.
-- [ ] **`scenarios_fallback()`** — Phase 11 item. Scenarios tab shows Gemini-only result with no stat diff. Rule-based ramp±N / avgCMC±X diff table not built.
-- [ ] **`CardTooltip` component** — Phase 12 item. Hovering card names anywhere in the app does not show card images. Not started.
-- [ ] **Skeleton loaders** — Phase 13 Stage 3 deferred item. All loading states still use `<LoadingSpinner />` text spinners, not shimmer skeletons.
-- [ ] **StatBadge radial progress rings** — Phase 13 Stage 3 deferred. Grid layout was fixed; the visual upgrade to rings/mini-bars was not done.
-- [ ] **Cleanup** — remove `/mockup` route from `App.jsx`, delete `IconMockupPage.jsx`, remove orphaned old icon functions from `creatureIcons.jsx`
-- [ ] **`verdict` in history** — `GET /api/analyses/history` does not include `verdict` in response. Deck cards in history cannot show a preview sentence.
-- [ ] **`find_collection_improvements()` quality improvements** — `_evaluate_card()` quality scoring and `_find_cut()` never-cut-on-theme logic from Phase 13 Stage 1 spec were deferred.
-- [ ] **Phase 7 deployment** — Backend (Render) and Frontend (Vercel) still need to be deployed. Tracked in Phase 7 below.
+- [x] **Deck top bar** — commander name + color pips subtitle added. Done as quick win (pre-Phase 15).
+- [x] **Skeleton loaders** — Shimmer `DeckCardSkeleton` + `DeckRowSkeleton` on Dashboard. `.skeleton` CSS class added. Done in Phase 15.
+- [ ] **`scenarios_fallback()`** → Phase 18
+- [ ] **`CardTooltip` component** → Phase 20
+- [ ] **StatBadge radial progress rings** → Phase 21
+- [ ] **Cleanup + `verdict` in history** → Phase 17
+- [ ] **`find_collection_improvements()` quality** → Phase 19
+- [ ] **Deployment** → Phase 22
 
 ---
 
@@ -262,9 +268,189 @@ Existing analyses in `analyses` table are NOT in `user_decks`. On `GET /api/deck
 
 ---
 
+## Phase 17 — Cleanup + Quick Backend Fixes
+
+> Start after Phase 16. Small scope, no new API surface. Do first.
+
+### Goal
+Remove dead code and fix the one known data gap that affects existing UI.
+
+### Tasks
+
+**Frontend cleanup:**
+- Remove `/mockup` route from `App.jsx`
+- Delete `frontend/src/pages/IconMockupPage.jsx`
+- Remove orphaned old icon functions from `frontend/src/lib/creatureIcons.jsx` (any functions no longer referenced after mockup page is removed)
+
+**Backend fix — `verdict` in history:**
+- `GET /api/analyses/history` currently does not include `verdict` in its response payload
+- Add `verdict` to the history response so Dashboard deck cards can show a one-line preview sentence
+- `verdict` already exists in `result_json` stored in the `analyses` table — just needs to be surfaced in the serialized response
+- File: `backend/routers/analyses.py`
+
+**Frontend update:**
+- After backend fix, add a `verdict` line to each deck card on the Dashboard (truncated to 1–2 lines, muted text style)
+
+### What NOT to change
+- Do not alter the `analyses` table schema
+- Do not change how analysis results are computed or stored
+
+---
+
+## Phase 18 — Scenarios Tab: Rule-Based Fallback
+
+> Start after Phase 17.
+
+### Goal
+The Scenarios tab currently shows Gemini-only output with no quantitative before/after diff. When AI is rate-limited or unavailable, the tab shows an error or nothing useful. Add a `scenarios_fallback()` function that computes a stat diff table from the deck data alone.
+
+### What to build
+
+**Backend (`backend/src/deck_analyzer.py` or new `scenarios.py`):**
+
+`scenarios_fallback(deck, adds: list[str], removes: list[str]) → dict`
+
+Returns a structured before/after diff:
+```python
+{
+  "before": { "land_count": int, "ramp_count": int, "draw_count": int, "avg_cmc": float },
+  "after":  { "land_count": int, "ramp_count": int, "draw_count": int, "avg_cmc": float },
+  "delta":  { "land_count": int, "ramp_count": int, "draw_count": int, "avg_cmc": float },
+  "verdict": str  # e.g. "Adding 2 ramp pieces improves acceleration. Avg CMC drops 0.12."
+}
+```
+
+Logic:
+- **Ramp delta**: count adds/removes matching ramp detection patterns (CMC ≤ 3, `"add {"` / `"search your library"` + `"land"`)
+- **Draw delta**: count adds/removes matching draw patterns (`"draw a card"` etc.)
+- **Avg CMC delta**: recalculate after applying adds/removes to the card list
+- **Land delta**: count land adds/removes
+- **Verdict**: 1–2 sentence plain-English summary of the net effect (template-driven, not AI)
+
+**Backend (`backend/routers/ai.py`):**
+- `POST /api/ai/scenarios`: if Gemini call succeeds, return AI result as before
+- If Gemini is rate-limited or fails, call `scenarios_fallback()` and return result with `"ai_enhanced": false`
+
+**Frontend (`frontend/src/pages/DeckPage.jsx` — ScenariosTab):**
+- If response has `ai_enhanced: false`, show the rule-based diff table instead of (or in addition to) prose
+- Diff table: 4 rows (Lands, Ramp, Card Draw, Avg CMC), 3 columns (Before / After / Δ), amber highlight on changed rows
+- Show `verdict` summary sentence above or below the table
+- AI-enhanced indicator dot (already exists in codebase) — show gray/off when rule-based
+
+### Files to touch
+- `backend/src/deck_analyzer.py` (add `scenarios_fallback()`)
+- `backend/routers/ai.py` (wire fallback)
+- `frontend/src/pages/DeckPage.jsx` (ScenariosTab diff table)
+
+---
+
+## Phase 19 — Collection Improvements Quality
+
+> Start after Phase 18.
+
+### Goal
+`find_collection_improvements()` currently uses basic scoring that over-recommends cards the user already owns on-theme, and its cut logic doesn't account for cards that should never be cut (commander staples, on-theme cards). Fix both.
+
+### What to build
+
+**`_evaluate_card()` quality scoring (`backend/src/collection.py`):**
+
+Current behavior: all owned cards matching a category (ramp/draw/removal/wipe) get equal weight.
+
+Improved scoring should rank suggestions by:
+1. **CMC efficiency** — prefer lower CMC for ramp/draw (Sol Ring > Gilded Lotus for ramp)
+2. **Unconditional vs. conditional** — "destroy target creature" > "destroy target nonblack creature"
+3. **Repeatable vs. one-shot** — repeatable draw (Rhystic Study) > one-shot (Divination)
+4. Score as a float 0.0–1.0; return top N by score per category
+
+Implementation: add a `score: float` field to each suggestion. Simple heuristics only — no AI.
+
+**`_find_cut()` never-cut logic (`backend/src/collection.py`):**
+
+Current behavior: any card can be suggested as a cut.
+
+Improved logic:
+- Never suggest cutting a card that matches the deck's theme keywords (e.g. theme is "token generation" → don't cut "Anointed Procession")
+- Never suggest cutting the commander(s)
+- Prefer cutting cards with the highest CMC that don't match any deck category (dead weight)
+- Add a `never_cut_reason: str | None` field to the cut suggestion for transparency
+
+### Files to touch
+- `backend/src/collection.py` (`_evaluate_card`, `_find_cut`)
+- No frontend changes needed — the Collection Upgrades tab already renders suggestions correctly
+
+---
+
+## Phase 20 — Card Tooltip (Scryfall Image on Hover)
+
+> Start after Phase 19. Highest user-facing polish of the remaining gap phases.
+
+### Goal
+Hovering any card name anywhere in the app shows a floating Scryfall card image popup. This is standard behavior on Moxfield, EDHREC, and Scryfall itself.
+
+### What to build
+
+**`CardTooltip` component (`frontend/src/components/CardTooltip.jsx`):**
+- Wraps a card name string
+- On hover: fetches `https://api.scryfall.com/cards/named?exact={name}&format=image` and shows image in a floating tooltip
+- Tooltip positions above or below the hovered text depending on viewport position (flip if near bottom edge)
+- Image: `width: 146px, height: 204px` (standard card thumbnail size), rounded-lg, drop-shadow
+- Loading state: small shimmer placeholder 146×204
+- Error/not-found state: show card name text only (no tooltip) — `onError` fallback
+- Cache fetched image URLs in a module-level `Map` to avoid redundant Scryfall requests per session (simple in-memory cache, not localStorage)
+- Delay tooltip appearance by ~300ms on hover to avoid flicker on accidental mouseovers
+
+**Usage — apply to card names in:**
+1. `DeckPage.jsx` — Improvements tab swap cards (cut/add names)
+2. `DeckPage.jsx` — Collection Upgrades tab suggestion cards
+3. `DeckPage.jsx` — Overview tab commander names (already has Scryfall image, but wrap the text too)
+
+**Scryfall rate limiting:**
+- Scryfall requests: max 10/sec per their guidelines. With 300ms hover delay this is naturally rate-limited.
+- Do NOT pre-fetch all card images on page load. Only fetch on hover.
+
+### Files to touch
+- Create `frontend/src/components/CardTooltip.jsx`
+- `frontend/src/pages/DeckPage.jsx` (wrap card name strings in relevant tabs)
+
+---
+
+## Phase 21 — StatBadge Visual Upgrade (Radial Progress Rings)
+
+> Start after Phase 20. Pure visual polish, no logic changes.
+
+### Goal
+The StatBadge grid on DeckPage Overview currently shows plain count numbers. Upgrade to visual radial progress rings that show how close each stat is to the recommended threshold.
+
+### What to build
+
+**Updated `StatBadge` component (inline in `DeckPage.jsx` or extracted to `components/StatBadge.jsx`):**
+
+Replace the plain number display with a small SVG radial ring:
+- Ring fills proportionally based on `current / target` (cap at 100%)
+- Colors: green (≥ target), amber (75–99% of target), rose (< 75% of target)
+- Center text: current count (e.g. "12")
+- Below ring: category label (e.g. "Ramp"), target label (e.g. "/ 10")
+- Size: ~64×64px per badge (fits in current grid)
+- CSS `stroke-dasharray` + `stroke-dashoffset` animation on mount (300ms ease-out)
+
+**Thresholds to use (from Commander Expertise Reference in this doc):**
+- Lands: target 37
+- Ramp: target 10
+- Card Draw: target 10
+- Single Removal: target 8
+- Board Wipes: target 2
+- Avg CMC: inverted scale — target ≤ 3.0 (ring fills as CMC approaches 0; empty if ≥ 3.5)
+
+### Files to touch
+- `frontend/src/pages/DeckPage.jsx` (StatBadge section in Overview tab)
+- Optionally extract to `frontend/src/components/StatBadge.jsx`
+
+---
+
 ## Future Work — Commander Gauntlet League Tracker
 
-> Do not start until Phase 15 is complete. Low priority.
+> Do not start until Phases 17–21 are complete (or explicitly deprioritized). Low priority.
 
 ### Summary
 Four friends play weekly Commander on SpellTable. Custom league with configurable scoring (Win=3pts, First elim=1pt, Last elim=1pt, voted Entrance=1pt), 6-week seasons, custom titles.
@@ -291,9 +477,9 @@ players    → id, display_name, persona, email
 
 ---
 
-## Phase 7 — Deployment (parked)
+## Phase 22 — Deployment
 
-> Not urgent for ~5 users on localhost. Pick this up when ready to share more widely.
+> Do after Phase 21. Backend to Render, frontend to Vercel.
 
 **Backend → Render:**
 - [ ] Push repo to GitHub
