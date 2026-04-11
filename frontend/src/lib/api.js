@@ -89,4 +89,11 @@ export const api = {
 
   /** Get collection card count + last updated timestamp (lightweight — no full card data). */
   getCollectionSummary: () => apiFetch('/api/collection/summary'),
+
+  /** Add a Moxfield deck to the user's library (no analysis). */
+  addToLibrary: (url) =>
+    apiFetch('/api/decks/library', { method: 'POST', body: JSON.stringify({ url }) }),
+
+  /** Get the user's deck library with analysis status for each deck. */
+  getDeckLibrary: () => apiFetch('/api/decks/library'),
 }

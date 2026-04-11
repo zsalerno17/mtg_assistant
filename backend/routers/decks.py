@@ -23,6 +23,10 @@ class AnalyzeDeckRequest(BaseModel):
     force: bool = False
 
 
+class AddToLibraryRequest(BaseModel):
+    url: str
+
+
 @router.post("/fetch")
 def fetch_deck(body: FetchDeckRequest, user: dict = Depends(require_allowed_user)):
     """Fetch a deck from Moxfield and cache it in Supabase."""
@@ -117,3 +121,116 @@ def analyze(body: AnalyzeDeckRequest, user: dict = Depends(require_allowed_user)
         sb.table("analyses").insert(row).execute()
 
     return {"analysis": result, "cached": False}
+
+
+@router.post("/library")
+def add_to_library(body: AddToLibraryRequest, user: dict = Depends(require_allowed_user)):
+    """Add a deck to the user's library. No AI analysis — just stores deck metadata.
+
+    Idempotent: adding the same deck twice updates the name but does not create a duplicate.
+    """
+    try:
+        deck_id = extract_deck_id(body.url)
+    except Exception:
+        deck_id = None
+    if not deck_id:
+        raise HTTPException(status_code=400, detail="Invalid Moxfield URL or deck ID")
+
+    sb = _supabase()
+
+    # Ensure deck data is in the global cache (required for future analysis)
+    cached = sb.table("decks").select("data_json").eq("moxfield_id", deck_id).execute()
+    if cached.data:
+        deck_data = cached.data[0]["data_json"]
+    else:
+        try:
+            deck = get_deck(deck_id)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Moxfield fetch failed: {str(e)}")
+        deck_data = {
+            "id": deck.id,
+            "name": deck.name,
+            "format": deck.format,
+            "commander": {"name": deck.commander.name} if deck.commander else None,
+            "partner": {"name": deck.partner.name} if deck.partner else None,
+            "mainboard": [{"name": c.name, "quantity": c.quantity} for c in deck.mainboard],
+        }
+        sb.table("decks").insert({"moxfield_id": deck_id, "data_json": deck_data}).execute()
+
+    moxfield_url = f"https://www.moxfield.com/decks/{deck_id}"
+    deck_name = deck_data.get("name") or deck_id
+
+    row = {
+        "user_id": user["user_id"],
+        "moxfield_id": deck_id,
+        "deck_name": deck_name,
+        "moxfield_url": moxfield_url,
+    }
+    sb.table("user_decks").upsert(row, on_conflict="user_id,moxfield_id").execute()
+
+    return {"moxfield_id": deck_id, "deck_name": deck_name}
+
+
+@router.get("/library")
+def get_library(user: dict = Depends(require_allowed_user)):
+    """Return the user's deck library with analysis status.
+
+    Backwards-compatible: analyses that exist before the user_decks table was
+    added are included as synthetic library entries so existing users don't lose
+    access to their decks.
+    """
+    sb = _supabase()
+    user_id = user["user_id"]
+
+    # Fetch user's library rows and all their analyses in parallel
+    decks_res = sb.table("user_decks").select("*").eq("user_id", user_id).execute()
+    analyses_res = sb.table("analyses").select("*").eq("user_id", user_id).execute()
+
+    user_decks = decks_res.data or []
+    analyses = analyses_res.data or []
+
+    # Index analyses by deck_id, keeping only the most recent per deck
+    analyses_by_deck: dict = {}
+    for a in analyses:
+        deck_id = a["deck_id"]
+        if deck_id not in analyses_by_deck or a["created_at"] > analyses_by_deck[deck_id]["created_at"]:
+            analyses_by_deck[deck_id] = a
+
+    user_deck_ids = {d["moxfield_id"] for d in user_decks}
+
+    result = []
+
+    # Library decks with optional analysis overlay
+    for deck in user_decks:
+        mid = deck["moxfield_id"]
+        analysis = analyses_by_deck.get(mid)
+        rj = analysis["result_json"] if analysis else {}
+        result.append({
+            "moxfield_id": mid,
+            "deck_name": deck["deck_name"],
+            "moxfield_url": deck["moxfield_url"],
+            "added_at": deck["added_at"],
+            "analyzed": analysis is not None,
+            "commander": rj.get("commander"),
+            "colors": rj.get("colors") or rj.get("color_identity"),
+            "themes": rj.get("themes", []),
+        })
+
+    # Backwards-compat: include analyses that have no user_decks entry
+    for deck_id, analysis in analyses_by_deck.items():
+        if deck_id in user_deck_ids:
+            continue
+        rj = analysis["result_json"]
+        result.append({
+            "moxfield_id": deck_id,
+            "deck_name": analysis.get("deck_name") or deck_id,
+            "moxfield_url": analysis.get("moxfield_url"),
+            "added_at": analysis["created_at"],
+            "analyzed": True,
+            "commander": rj.get("commander"),
+            "colors": rj.get("colors") or rj.get("color_identity"),
+            "themes": rj.get("themes", []),
+        })
+
+    result.sort(key=lambda x: x.get("added_at") or "", reverse=True)
+    return {"decks": result}

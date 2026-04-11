@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
 import { AVATAR_PRESETS, CREATURE_PRESETS, CREATURE_PRESET_MAP, isPresetUrl, urlToPresetId, presetIdToUrl, isCreaturePreset } from '../lib/avatarPresets'
@@ -7,6 +8,8 @@ import { CreaturePresetIcon } from '../lib/creatureIcons'
 
 export default function ProfilePage() {
   const { session, profile, refreshProfile, signOut } = useAuth()
+  const [searchParams] = useSearchParams()
+  const isFirstTime = searchParams.get('firstTime') === '1'
   const userId = session?.user?.id
   const email = session?.user?.email || ''
 
@@ -105,6 +108,13 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-lg mx-auto">
+        {/* First-time welcome banner */}
+        {isFirstTime && (
+          <div className="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4">
+            <p className="font-[var(--font-heading)] text-[var(--color-primary)] text-sm tracking-wide mb-1">Welcome to MTG Assistant!</p>
+            <p className="text-[var(--color-muted)] text-xs">Pick a username and avatar, then head to the dashboard to import your first deck.</p>
+          </div>
+        )}
         {/* Header */}
         <div className="mb-8">
           <h2 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">

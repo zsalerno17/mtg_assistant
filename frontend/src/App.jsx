@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import DeckPage from './pages/DeckPage'
 import CollectionPage from './pages/CollectionPage'
 import ProfilePage from './pages/ProfilePage'
+import ImportDeckPage from './pages/ImportDeckPage'
 import IconMockupPage from './pages/IconMockupPage'
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
                     <Route path="/deck/:deckId" element={<DeckPage />} />
                     <Route path="/collection" element={<CollectionPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/decks/import" element={<ImportDeckPage />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

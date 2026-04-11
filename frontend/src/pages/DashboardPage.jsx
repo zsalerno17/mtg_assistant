@@ -2,6 +2,91 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 
+function ImportModal({ onClose, onImported }) {
+  const [url, setUrl] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const trimmed = url.trim()
+    if (!trimmed) return
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await api.addToLibrary(trimmed)
+      onImported(result)
+    } catch (err) {
+      setError(err.message)
+      setLoading(false)
+    }
+  }
+
+  // Close on backdrop click
+  const handleBackdrop = (e) => {
+    if (e.target === e.currentTarget) onClose()
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      onClick={handleBackdrop}
+    >
+      <div className="w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-2xl shadow-black/60">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-[var(--font-heading)] text-[var(--color-text)] text-lg tracking-wide">Import Deck</h3>
+          <button
+            onClick={onClose}
+            className="text-[var(--color-muted)] hover:text-[var(--color-text)] text-xl leading-none transition-colors"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <p className="text-[var(--color-muted)] text-xs mb-4">
+          Paste a public Moxfield deck URL. No analysis runs yet — analyze from the dashboard when you're ready.
+        </p>
+        <form onSubmit={handleSubmit}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://www.moxfield.com/decks/..."
+            disabled={loading}
+            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all disabled:opacity-50 mb-3"
+          />
+          {error && (
+            <p className="mb-3 text-[var(--color-danger)] text-xs">{error}</p>
+          )}
+          <div className="flex gap-3 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !url.trim()}
+              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
+            >
+              {loading ? 'Importing…' : 'Import'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 const MANA_SYMBOL_IDS = new Set(['W', 'U', 'B', 'R', 'G', 'C'])
 
 function ColorPips({ colors, size = '1.1rem' }) {
@@ -24,64 +109,68 @@ function ColorPips({ colors, size = '1.1rem' }) {
   )
 }
 
-function DeckCard({ item, onClick }) {
-  const colors = item.result_json?.colors || item.result_json?.color_identity
-  const commander = item.result_json?.commander
-  const themes = item.result_json?.themes || []
-  const themeLabels = themes.slice(0, 3).map(t => typeof t === 'string' ? t : t?.name).filter(Boolean)
-  const date = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+function StatusBadge({ analyzed }) {
+  return analyzed ? (
+    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
+      Analyzed
+    </span>
+  ) : (
+    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-bg)] text-[var(--color-muted)] border border-[var(--color-border)] whitespace-nowrap">
+      Not analyzed
+    </span>
+  )
+}
+
+// Mobile card view for a single deck
+function DeckCard({ item, onAnalyze, analyzingId }) {
+  const navigate = useNavigate()
+  const isAnalyzing = analyzingId === item.moxfield_id
+  const date = new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className="group cursor-pointer bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 flex flex-col gap-3 transition-all hover:border-[var(--color-primary)]/60 hover:shadow-lg hover:shadow-amber-500/10 hover:bg-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50"
-    >
+    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 flex flex-col gap-3">
       {/* Header: name + date */}
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-[var(--font-heading)] text-[var(--color-text)] text-sm leading-snug line-clamp-2 flex-1">
-          {item.deck_name || item.deck_id}
+          {item.deck_name}
         </h3>
         <span className="text-[var(--color-muted)] text-xs shrink-0 pt-0.5">{date}</span>
       </div>
 
-      {/* Color pips */}
-      {colors?.length > 0 && <ColorPips colors={colors} size="1rem" />}
+      {/* Color pips (only if analyzed) */}
+      {item.colors?.length > 0 && <ColorPips colors={item.colors} size="1rem" />}
 
       {/* Commander */}
-      {commander && (
-        <p className="text-[var(--color-muted)] text-xs truncate">
-          {commander}
-        </p>
+      {item.commander && (
+        <p className="text-[var(--color-muted)] text-xs truncate">{item.commander}</p>
       )}
 
-      {/* Theme tags */}
-      {themeLabels.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {themeLabels.map((t) => (
-            <span
-              key={t}
-              className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-muted)] truncate max-w-[120px]"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Status */}
+      <StatusBadge analyzed={item.analyzed} />
 
-      {/* Footer: View Analysis */}
+      {/* Footer actions */}
       <div className="mt-auto pt-1 flex items-center justify-between">
-        <span className="text-[var(--color-secondary)] text-xs group-hover:underline">
-          View Analysis →
-        </span>
+        {item.analyzed ? (
+          <button
+            onClick={() => navigate(`/deck/${item.moxfield_id}`)}
+            className="text-[var(--color-secondary)] text-xs hover:underline"
+          >
+            View Analysis →
+          </button>
+        ) : (
+          <button
+            onClick={() => onAnalyze(item.moxfield_id)}
+            disabled={!!analyzingId}
+            className="text-[var(--color-primary)] text-xs font-medium hover:underline disabled:opacity-40"
+          >
+            {isAnalyzing ? 'Analyzing…' : 'Analyze →'}
+          </button>
+        )}
         {item.moxfield_url && (
           <a
             href={item.moxfield_url}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
             className="text-[var(--color-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
           >
             Moxfield ↗
@@ -89,6 +178,76 @@ function DeckCard({ item, onClick }) {
         )}
       </div>
     </div>
+  )
+}
+
+// Desktop table row
+function DeckTableRow({ item, onAnalyze, analyzingId }) {
+  const navigate = useNavigate()
+  const isAnalyzing = analyzingId === item.moxfield_id
+  const date = new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+
+  return (
+    <tr className="border-b border-[var(--color-border)] hover:bg-[var(--color-surface)]/60 transition-colors">
+      {/* Deck name */}
+      <td className="py-3 px-4">
+        <span className="font-[var(--font-heading)] text-[var(--color-text)] text-sm leading-snug line-clamp-1">
+          {item.deck_name}
+        </span>
+      </td>
+      {/* Commander */}
+      <td className="py-3 px-4">
+        <span className="text-[var(--color-muted)] text-xs truncate max-w-[160px] block">
+          {item.commander || <span className="opacity-30">—</span>}
+        </span>
+      </td>
+      {/* Colors */}
+      <td className="py-3 px-4">
+        {item.colors?.length > 0
+          ? <ColorPips colors={item.colors} size="0.95rem" />
+          : <span className="text-[var(--color-muted)] opacity-30 text-xs">—</span>
+        }
+      </td>
+      {/* Date */}
+      <td className="py-3 px-4">
+        <span className="text-[var(--color-muted)] text-xs">{date}</span>
+      </td>
+      {/* Status */}
+      <td className="py-3 px-4">
+        <StatusBadge analyzed={item.analyzed} />
+      </td>
+      {/* Actions */}
+      <td className="py-3 px-4">
+        <div className="flex items-center gap-3">
+          {item.analyzed ? (
+            <button
+              onClick={() => navigate(`/deck/${item.moxfield_id}`)}
+              className="text-[var(--color-secondary)] text-xs hover:underline whitespace-nowrap"
+            >
+              View Analysis →
+            </button>
+          ) : (
+            <button
+              onClick={() => onAnalyze(item.moxfield_id)}
+              disabled={!!analyzingId}
+              className="text-[var(--color-primary)] text-xs font-medium hover:underline disabled:opacity-40 whitespace-nowrap"
+            >
+              {isAnalyzing ? 'Analyzing…' : 'Analyze'}
+            </button>
+          )}
+          {item.moxfield_url && (
+            <a
+              href={item.moxfield_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--color-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
+            >
+              Moxfield ↗
+            </a>
+          )}
+        </div>
+      </td>
+    </tr>
   )
 }
 
@@ -137,20 +296,23 @@ function CollectionSummaryWidget({ summary, loading }) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const urlInputRef = useRef(null)
-  const [url, setUrl] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [history, setHistory] = useState([])
-  const [historyLoading, setHistoryLoading] = useState(true)
+  const [decks, setDecks] = useState([])
+  const [decksLoading, setDecksLoading] = useState(true)
   const [collectionSummary, setCollectionSummary] = useState(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
+  const [analyzingId, setAnalyzingId] = useState(null)
+  const [analyzeError, setAnalyzeError] = useState(null)
+  const [showImportModal, setShowImportModal] = useState(false)
+
+  const loadDecks = () => {
+    api.getDeckLibrary()
+      .then(data => setDecks(data.decks || []))
+      .catch(() => setDecks([]))
+      .finally(() => setDecksLoading(false))
+  }
 
   useEffect(() => {
-    api.getAnalysisHistory()
-      .then(data => setHistory(data.analyses || []))
-      .catch(() => setHistory([]))
-      .finally(() => setHistoryLoading(false))
+    loadDecks()
 
     api.getCollectionSummary()
       .then(data => setCollectionSummary(data))
@@ -158,92 +320,58 @@ export default function DashboardPage() {
       .finally(() => setSummaryLoading(false))
   }, [])
 
-  // Deduplicate history: keep only the most recent analysis per deck_id
-  const dedupedDecks = Object.values(
-    history.reduce((acc, item) => {
-      if (!acc[item.deck_id] || new Date(item.created_at) > new Date(acc[item.deck_id].created_at)) {
-        acc[item.deck_id] = item
-      }
-      return acc
-    }, {})
-  ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-  const handleAnalyze = async (e) => {
-    e.preventDefault()
-    const trimmed = url.trim()
-    if (!trimmed) return
-    setLoading(true)
-    setError(null)
-    try {
-      const fetchResult = await api.fetchDeck(trimmed)
-      const analysis = await api.analyzeDeck(fetchResult.deck_id)
-      navigate(`/deck/${fetchResult.deck_id}`, {
-        state: { deck: fetchResult.data, analysis: analysis.analysis },
-      })
-    } catch (err) {
-      setError(err.message)
-      setLoading(false)
-    }
+  const handleImported = () => {
+    setShowImportModal(false)
+    setDecksLoading(true)
+    loadDecks()
   }
 
-  const focusUrlInput = () => {
-    urlInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    urlInputRef.current?.focus()
+  const handleAnalyze = async (moxfieldId) => {
+    setAnalyzingId(moxfieldId)
+    setAnalyzeError(null)
+    try {
+      const result = await api.analyzeDeck(moxfieldId)
+      navigate(`/deck/${moxfieldId}`, { state: { analysis: result.analysis } })
+    } catch (err) {
+      setAnalyzeError(err.message)
+      setAnalyzingId(null)
+    }
   }
 
   return (
     <div className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto">
+      {showImportModal && (
+        <ImportModal
+          onClose={() => setShowImportModal(false)}
+          onImported={handleImported}
+        />
+      )}
+      <div className="max-w-5xl mx-auto">
+        {/* Page title */}
         <div className="mb-8">
           <h1 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">Dashboard</h1>
           <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
         </div>
-        <h2 className="text-[var(--color-text)] text-lg font-medium mb-6">Analyze a Deck</h2>
-
-        <form
-          onSubmit={handleAnalyze}
-          className="bg-gradient-to-br from-[var(--color-surface)] to-[#0c1321] border border-[var(--color-border)] rounded-xl p-6 mb-8 shadow-lg shadow-black/40 ring-1 ring-[rgba(251,191,36,0.25)]"
-        >
-          <label className="block text-[var(--color-muted)] text-sm mb-2">Moxfield Deck URL</label>
-          <div className="flex gap-3">
-            <input
-              ref={urlInputRef}
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.moxfield.com/decks/..."
-              disabled={loading}
-              className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={loading || !url.trim()}
-              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
-            >
-              {loading ? 'Loading…' : 'Analyze'}
-            </button>
-          </div>
-          {error && (
-            <p className="mt-3 text-[var(--color-danger)] text-sm">{error}</p>
-          )}
-        </form>
 
         {/* Section header */}
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-[var(--color-text)] text-lg font-medium">My Decks</h2>
-          {dedupedDecks.length > 0 && (
-            <button
-              onClick={focusUrlInput}
-              className="text-sm text-[var(--color-secondary)] hover:underline"
-            >
-              + Add New Deck
-            </button>
-          )}
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="text-sm bg-[var(--color-primary)] text-[var(--color-bg)] px-4 py-1.5 rounded-lg font-semibold hover:brightness-110 transition-all shadow-md shadow-amber-500/20"
+          >
+            + Import Deck
+          </button>
         </div>
 
-        {historyLoading ? (
+        {analyzeError && (
+          <p className="mb-4 text-[var(--color-danger)] text-sm">{analyzeError}</p>
+        )}
+
+        {decksLoading ? (
           <p className="text-[var(--color-muted)] text-sm">Loading decks…</p>
-        ) : dedupedDecks.length === 0 ? (
+        ) : decks.length === 0 ? (
+          /* Empty state */
           <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 text-[var(--color-muted)] opacity-30">
               <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
@@ -251,19 +379,49 @@ export default function DashboardPage() {
               <path d="M14.5 14.5L19 19" />
               <path d="M3 21l4-4" />
             </svg>
-            <p className="text-[var(--color-text)] font-semibold text-sm">No decks analyzed yet</p>
-            <p className="text-[var(--color-muted)] text-xs text-center">Paste a Moxfield deck URL above to get started.</p>
+            <p className="text-[var(--color-text)] font-semibold text-sm">No decks in your library yet</p>
+            <p className="text-[var(--color-muted)] text-xs text-center">Click <span className="text-[var(--color-primary)] font-medium">+ Import Deck</span> above to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {dedupedDecks.map((item) => (
-              <DeckCard
-                key={item.deck_id}
-                item={item}
-                onClick={() => navigate(`/deck/${item.deck_id}`)}
-              />
-            ))}
-          </div>
+          <>
+            {/* Mobile: card grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+              {decks.map((item) => (
+                <DeckCard
+                  key={item.moxfield_id}
+                  item={item}
+                  onAnalyze={handleAnalyze}
+                  analyzingId={analyzingId}
+                />
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--color-border)]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                    <th className="py-3 px-4 text-[var(--color-muted)] text-xs font-medium uppercase tracking-wider">Deck</th>
+                    <th className="py-3 px-4 text-[var(--color-muted)] text-xs font-medium uppercase tracking-wider">Commander</th>
+                    <th className="py-3 px-4 text-[var(--color-muted)] text-xs font-medium uppercase tracking-wider">Colors</th>
+                    <th className="py-3 px-4 text-[var(--color-muted)] text-xs font-medium uppercase tracking-wider">Added</th>
+                    <th className="py-3 px-4 text-[var(--color-muted)] text-xs font-medium uppercase tracking-wider">Status</th>
+                    <th className="py-3 px-4 text-[var(--color-muted)] text-xs font-medium uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-[var(--color-bg)]">
+                  {decks.map((item) => (
+                    <DeckTableRow
+                      key={item.moxfield_id}
+                      item={item}
+                      onAnalyze={handleAnalyze}
+                      analyzingId={analyzingId}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Collection summary widget */}

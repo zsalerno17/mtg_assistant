@@ -16,10 +16,72 @@
 4. [x] Quick win: Login page personality (MTG pips, better tagline)
 5. [x] Quick win: Deck top bar commander name + color identity subtitle
 6. [x] Phase 14A: Dashboard deck grid + collection summary widget
-7. [ ] Phase 14B: Onboarding panel
+7. [x] Phase 14B: Onboarding panel (replaced by Phase 16)
 8. [ ] Phase 15: Design review (MTG aesthetic + desktop/mobile polish)
+9. [x] Phase 16: Rearchitect user flow (complete)
 
-**Do NOT touch:** `supabase/migrations/004_user_profiles.sql`, `ProfilePage.jsx`, or the profile/auth flow — settled, no changes needed.
+---
+
+## Phase 16 Spec — User Flow Rearchitect
+
+### Goal
+Correct the onboarding flow: load decks first, analyze later. New user flow:
+`Login → Profile setup (if first time) → Import decks → Upload collection → Analyze`
+
+### New user flow
+1. **First login**: `AuthContext` detects `profile.username === null` → redirect to `/profile` with a "first time" banner
+2. **Import decks**: Dashboard has NO URL form. "Import Deck" button → `/decks/import` page (just Moxfield URL paste + one-click import, no AI)
+3. **Upload collection**: `/collection` page (unchanged)
+4. **Analyze**: From dashboard, each deck card has an **Analyze** button (or **View Analysis** if already analyzed). Clicking Analyze runs Gemini and navigates to `/deck/{id}`.
+
+### DB change
+New `user_decks` table (migration `005_user_decks.sql`):
+```sql
+create table user_decks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  moxfield_id text not null,
+  deck_name text,
+  moxfield_url text,
+  added_at timestamptz default now(),
+  unique(user_id, moxfield_id)
+);
+alter table user_decks enable row level security;
+create policy "Users see own decks" on user_decks for all using (auth.uid() = user_id);
+```
+
+### Backend changes
+- `POST /api/decks/library` — adds a deck to user's library (calls existing `/fetch` internally, saves to `user_decks`). Returns deck row.
+- `GET /api/decks/library` — returns user's `user_decks` rows joined with latest `analyses` row per deck (to know if analyzed + get analysis metadata).
+- Existing `/fetch` and `/analyze` endpoints unchanged.
+
+### Frontend changes
+- `AuthContext`: after `refreshProfile`, if `profile.username === null` AND current path is not `/profile`, redirect to `/profile`. ProfilePage gets a `?firstTime=1` query param to show welcome banner.
+- New `ImportDeckPage` (`/decks/import`): URL input + "Import Deck" button → calls `api.addToLibrary(url)` → success shows "Deck added! View in dashboard" link. No AI.
+- `DashboardPage`: Remove URL form entirely. "Import Deck" button in section header → navigates to `/decks/import`. Dashboard reads from `api.getDeckLibrary()`. Responsive layout: **table on desktop** (deck name, commander, colors, date added, analyzed status, actions), **cards on mobile** (current grid). Each row/card has "Analyze" or "View Analysis" button.
+- `api.js`: add `addToLibrary(url)`, `getDeckLibrary()`.
+- `App.jsx`: add route `/decks/import`.
+- Remove `OnboardingPanel` from dashboard (replaced by profile redirect + empty state in deck library).
+
+### Backwards compatibility
+Existing analyses in `analyses` table are NOT in `user_decks`. On `GET /api/decks/library`, also backfill: if analyses exist for this user that have no corresponding `user_decks` row, include them as synthetic library entries (or just migrate them on first load). Decision: **include analyses as fallback** in library response so existing users don't lose their decks.
+
+
+
+**Do NOT touch:** `supabase/migrations/004_user_profiles.sql`, or the profile/auth flow — settled, no changes needed.
+
+---
+
+## Recent Changes (Phase 16 — April 2026)
+
+- **DB**: Created `supabase/migrations/005_user_decks.sql` — `user_decks` table with RLS. **Must be run in Supabase SQL editor before new import features work.**
+- **Backend** (`backend/routers/decks.py`): Added `POST /api/decks/library` (import deck, no AI) and `GET /api/decks/library` (user's deck library + analysis status, backwards-compat with old analyses).
+- **Frontend** (`api.js`): Added `addToLibrary(url)` and `getDeckLibrary()`.
+- **ProtectedRoute**: Added profile redirect — if `profile.username === null`, redirect to `/profile?firstTime=1`.
+- **ProfilePage**: Added `?firstTime=1` welcome banner.
+- **ImportDeckPage** (`/decks/import`): New page — URL form only, calls `addToLibrary`, no AI.
+- **App.jsx**: Added `/decks/import` route.
+- **DashboardPage**: Full rewrite — removed URL form + OnboardingPanel. Now reads from `getDeckLibrary()`. Responsive: card grid on mobile (< md), table on desktop (md+). Each deck has "Analyze" (not yet analyzed) or "View Analysis →" (already analyzed) action.
 
 ---
 
@@ -68,6 +130,7 @@
 
 ## Recent Changes
 
+- **Phase 14B complete** (April 2026): OnboardingPanel added to DashboardPage. Shown when `dedupedDecks.length === 0 && collectionSummary.count === 0 && !localStorage.mtg_onboarding_dismissed`. Two-step checklist (analyze deck, upload collection), amber accent, glass card style, dismissible via × (writes localStorage). No new API calls — reuses already-fetched state.
 - **Phase 14A complete** (April 2026): Dashboard replaced flat history list with responsive `grid-cols-1/2/3` deck grid. History deduplicated by `deck_id` (most recent per deck). Each card shows: deck name (Cinzel), color pips, commander, up to 3 theme tags, last analyzed date, "View Analysis →" + Moxfield link. "Add New Deck" button focuses URL input. Collection summary widget below grid shows card count + last updated, or nudge to upload CSV. Backend: added `GET /api/collection/summary` endpoint (count + last_updated, no full card data). Frontend: `api.getCollectionSummary()` added.
 - **Quick wins 4 & 5 completed** (April 2026): Login page now has mana pip row (W/U/B/R/G) + "Know your deck. Command your game." tagline. Deck top bar now shows commander name + color pips subtitle below deck name.
 - **Quick wins completed** (April 2026): ColorPips on Dashboard history items; form ring opacity `/8`→`/20`; Collection page `max-w-4xl` wrapper + removed `max-h-[480px]` scroll cap.
