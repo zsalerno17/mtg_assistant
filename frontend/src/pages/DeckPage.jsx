@@ -153,31 +153,22 @@ function StatBadge({ label, value, warning, healthy }) {
   )
 }
 
-// MTG color identity pip colors
-const COLOR_PIP_STYLES = {
-  W: { bg: 'bg-[var(--color-mtg-w)]', label: 'W' },
-  U: { bg: 'bg-[var(--color-mtg-u)]', label: 'U' },
-  B: { bg: 'bg-[var(--color-mtg-b)]', label: 'B' },
-  R: { bg: 'bg-[var(--color-mtg-r)]', label: 'R' },
-  G: { bg: 'bg-[var(--color-mtg-g)]', label: 'G' },
-  C: { bg: 'bg-[var(--color-muted)]', label: 'C' },
-}
+const MANA_SYMBOL_IDS = new Set(['W', 'U', 'B', 'R', 'G', 'C'])
 
-function ColorPips({ colors }) {
+function ColorPips({ colors, size = '1.25rem' }) {
   if (!colors?.length) return null
   return (
-    <div className="flex gap-1.5 items-center">
+    <div className="flex gap-1 items-center">
       {colors.map((c) => {
-        const pip = COLOR_PIP_STYLES[c.toUpperCase()]
-        if (!pip) return null
+        const id = c.toUpperCase()
+        if (!MANA_SYMBOL_IDS.has(id)) return null
         return (
-          <span
+          <i
             key={c}
-            title={c}
-            className={`w-5 h-5 rounded-full ${pip.bg} border border-black/20 shrink-0 flex items-center justify-center text-[9px] font-bold text-black/70`}
-          >
-            {pip.label}
-          </span>
+            className={`ms ms-${id.toLowerCase()} ms-cost ms-shadow`}
+            style={{ fontSize: size }}
+            aria-label={id}
+          />
         )
       })}
     </div>
@@ -938,14 +929,24 @@ export default function DeckPage() {
   return (
     <div className="min-h-screen">
       {/* Top bar */}
-      <div className="border-b border-[var(--color-border)] px-6 py-4 flex items-center gap-4">
-        <Link to="/" className="flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors text-sm">
+      <div className="border-b border-[var(--color-border)] px-6 py-3 flex items-center gap-4">
+        <Link to="/" className="flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors text-sm shrink-0">
           <IconChevronLeft />
           Dashboard
         </Link>
-        <h1 className="font-[var(--font-heading)] text-[var(--color-primary)] text-xl truncate">
-          {deckName}
-        </h1>
+        <div className="min-w-0">
+          <h1 className="font-[var(--font-heading)] text-[var(--color-primary)] text-xl truncate leading-tight">
+            {deckName}
+          </h1>
+          {analysis?.colors?.length > 0 && (
+            <div className="flex items-center gap-2 mt-0.5">
+              <ColorPips colors={analysis.colors} size="0.9rem" />
+              {analysis.commander && (
+                <span className="text-[var(--color-muted)] text-xs truncate">{analysis.commander}</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="px-6 pt-0">

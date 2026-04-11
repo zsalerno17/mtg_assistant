@@ -23,12 +23,21 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
-      <h1 className="font-[var(--font-heading)] text-4xl text-[var(--color-primary)] mb-2 tracking-wide">
+      <h1 className="font-[var(--font-heading)] text-5xl text-[var(--color-primary)] mb-3 tracking-wide">
         MTG Assistant
       </h1>
-      <p className="text-[var(--color-muted)] mb-10 text-center max-w-sm">
-        Deck recommendations, play strategies, and scenario analysis — powered by your Moxfield collection.
+
+      {/* Mana pip row */}
+      <div className="flex gap-2 mb-4">
+        {['w','u','b','r','g'].map(c => (
+          <i key={c} className={`ms ms-${c} ms-cost ms-shadow`} style={{ fontSize: '1.5rem' }} aria-label={c} />
+        ))}
+      </div>
+
+      <p className="text-[var(--color-muted)] mb-10 text-center max-w-xs text-sm">
+        Know your deck. Command your game.
       </p>
+
       <button
         onClick={signInWithGoogle}
         className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-lg hover:shadow-amber-500/10 transition-all"

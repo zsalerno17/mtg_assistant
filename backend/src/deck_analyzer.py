@@ -86,6 +86,7 @@ def analyze_deck(deck: Deck) -> Dict:
 
     partial = {
         "commander": " & ".join(commanders) if commanders else None,
+        "colors": list(deck.color_identity),
         "total_cards": deck.card_count,
         "mana_curve": build_mana_curve(all_cards),
         "average_cmc": calculate_average_cmc(all_cards),

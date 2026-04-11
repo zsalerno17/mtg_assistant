@@ -50,6 +50,7 @@ export default function CollectionPage() {
 
   return (
     <div className="min-h-screen p-6">
+      <div className="max-w-4xl mx-auto">
       <div className="mb-8">
         <h2 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">
           My Collection
@@ -124,7 +125,7 @@ export default function CollectionPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[480px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {filteredCards.map((card, i) => (
               <div
                 key={i}
@@ -141,6 +142,7 @@ export default function CollectionPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }

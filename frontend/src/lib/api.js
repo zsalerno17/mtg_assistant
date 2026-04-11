@@ -86,4 +86,7 @@ export const api = {
 
   /** Get paginated analysis history for the current user. */
   getAnalysisHistory: (page = 1) => apiFetch(`/api/analyses/history?page=${page}`),
+
+  /** Get collection card count + last updated timestamp (lightweight — no full card data). */
+  getCollectionSummary: () => apiFetch('/api/collection/summary'),
 }

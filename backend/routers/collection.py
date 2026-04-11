@@ -49,3 +49,17 @@ def get_collection(user: dict = Depends(require_allowed_user)):
         return {"cards": [], "updated_at": None}
 
     return {"cards": result.data[0]["cards_json"], "updated_at": result.data[0]["updated_at"]}
+
+
+@router.get("/summary")
+def get_collection_summary(user: dict = Depends(require_allowed_user)):
+    """Return card count and last updated timestamp without fetching all card data."""
+    sb = _supabase()
+    result = sb.table("collections").select("cards_json, updated_at").eq("user_id", user["user_id"]).execute()
+
+    if not result.data:
+        return {"count": 0, "last_updated": None}
+
+    cards = result.data[0]["cards_json"] or []
+    count = sum(c.get("quantity", 1) for c in cards)
+    return {"count": count, "last_updated": result.data[0]["updated_at"]}
