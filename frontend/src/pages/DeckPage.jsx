@@ -153,6 +153,45 @@ function StatBadge({ label, value, warning, healthy }) {
   )
 }
 
+// MTG color identity pip colors
+const COLOR_PIP_STYLES = {
+  W: { bg: 'bg-[var(--color-mtg-w)]', label: 'W' },
+  U: { bg: 'bg-[var(--color-mtg-u)]', label: 'U' },
+  B: { bg: 'bg-[var(--color-mtg-b)]', label: 'B' },
+  R: { bg: 'bg-[var(--color-mtg-r)]', label: 'R' },
+  G: { bg: 'bg-[var(--color-mtg-g)]', label: 'G' },
+  C: { bg: 'bg-[var(--color-muted)]', label: 'C' },
+}
+
+function ColorPips({ colors }) {
+  if (!colors?.length) return null
+  return (
+    <div className="flex gap-1.5 items-center">
+      {colors.map((c) => {
+        const pip = COLOR_PIP_STYLES[c.toUpperCase()]
+        if (!pip) return null
+        return (
+          <span
+            key={c}
+            title={c}
+            className={`w-5 h-5 rounded-full ${pip.bg} border border-black/20 shrink-0 flex items-center justify-center text-[9px] font-bold text-black/70`}
+          >
+            {pip.label}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function SectionLabel({ children, className = '' }) {
+  return (
+    <h3 className={`font-[var(--font-heading)] text-[var(--color-muted)] text-[10px] uppercase tracking-widest mb-2 ${className}`}>
+      {children}
+    </h3>
+  )
+}
+
 function OverviewTab({ deck, analysis, onTabChange }) {
   if (!deck || !analysis) return <p className="text-[var(--color-muted)] text-sm">Loading deck data…</p>
 
@@ -161,48 +200,44 @@ function OverviewTab({ deck, analysis, onTabChange }) {
     .sort((a, b) => parseInt(a.cmc) - parseInt(b.cmc))
 
   const cardTypes = analysis.card_types || {}
+  // Derive color identity from commanders if available
+  const commanderColors = [
+    ...(deck.commander?.color_identity || []),
+    ...(deck.partner?.color_identity || []),
+  ]
 
   return (
     <div className="space-y-6">
-      {/* Deck verdict */}
+
+      {/* ── Commander Hero ── */}
+      <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-primary)]/20 rounded-xl px-6 py-5 hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
+        <SectionLabel>{deck.partner ? 'Commanders' : 'Commander'}</SectionLabel>
+        <p className="text-[var(--color-primary)] font-[var(--font-heading)] text-2xl leading-snug">
+          {deck.commander?.name || 'Unknown'}
+          {deck.partner?.name && (
+            <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
+          )}
+          {deck.partner?.name && (
+            <span className="text-[var(--color-primary)]">{deck.partner.name}</span>
+          )}
+        </p>
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {commanderColors.length > 0 && <ColorPips colors={commanderColors} />}
+          <span className="text-[var(--color-muted)] text-sm">{deck.format} · {deck.name}</span>
+        </div>
+      </div>
+
+      {/* ── Deck Verdict ── */}
       {analysis.verdict && (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-primary)] border-opacity-40 rounded-lg px-4 py-3">
+        <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4">
           <p className="text-[var(--color-text)] text-sm leading-relaxed">{analysis.verdict}</p>
         </div>
       )}
 
-      {/* Differentiator callout */}
-      <div className="flex gap-3 flex-wrap">
-        <button
-          onClick={() => onTabChange?.('Strategy')}
-          className="text-[var(--color-secondary)] text-xs border border-[var(--color-secondary)] border-opacity-40 rounded px-3 py-1.5 hover:bg-[var(--color-surface)] transition-colors"
-        >
-          AI Strategy Guide →
-        </button>
-        <button
-          onClick={() => onTabChange?.('Collection Upgrades')}
-          className="text-[var(--color-secondary)] text-xs border border-[var(--color-secondary)] border-opacity-40 rounded px-3 py-1.5 hover:bg-[var(--color-surface)] transition-colors"
-        >
-          Upgrade with Your Collection →
-        </button>
-      </div>
-
-      {/* Commander */}
+      {/* ── Key Stats ── */}
       <div>
-        <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">
-          {deck.partner ? 'Commanders' : 'Commander'}
-        </h3>
-        <p className="text-[var(--color-primary)] font-[var(--font-heading)] text-xl">
-          {deck.commander?.name || 'Unknown'}
-          {deck.partner?.name && ` & ${deck.partner.name}`}
-        </p>
-        <p className="text-[var(--color-muted)] text-sm mt-0.5">{deck.format} · {deck.name}</p>
-      </div>
-
-      {/* Key stats */}
-      <div>
-        <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Key Numbers</h3>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
+        <SectionLabel className="mb-3">Key Numbers</SectionLabel>
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-7">
           <StatBadge label="Cards" value={analysis.total_cards} />
           <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} warning={analysis.average_cmc > 3.5} healthy={typeof analysis.average_cmc === 'number' && analysis.average_cmc <= 3.0} />
           <StatBadge label="Lands" value={cardTypes['Lands'] || 0} warning={(cardTypes['Lands'] || 0) < 36} healthy={(cardTypes['Lands'] || 0) >= 36} />
@@ -213,11 +248,87 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
       </div>
 
-      {/* Mana curve */}
+      {/* ── Weaknesses (moved up — key differentiator) ── */}
+      {analysis.weaknesses?.length > 0 && (
+        <div>
+          <SectionLabel className="mb-3 text-[var(--color-danger)]">
+            <span className="flex items-center gap-1.5">
+              <IconWarning className="w-3 h-3" />
+              Identified Weaknesses
+            </span>
+          </SectionLabel>
+          <div className="space-y-2">
+            {analysis.weaknesses.map((w, i) => {
+              const label = typeof w === 'string' ? w : w.label
+              const isStructured = typeof w === 'object' && w !== null
+              return isStructured ? (
+                <details key={i} className="group bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/35 rounded-xl hover:border-[var(--color-danger)]/60 transition-colors">
+                  <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer list-none text-[var(--color-danger)] text-sm select-none">
+                    <IconWarning />
+                    <span className="flex-1">{label}</span>
+                    <span className="transition-transform group-open:rotate-180">
+                      <IconChevronDown className="w-3.5 h-3.5 shrink-0 text-[var(--color-muted)]" />
+                    </span>
+                  </summary>
+                  <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[var(--color-border)]">
+                    <p className="text-[var(--color-muted)] text-sm">{w.why}</p>
+                    <p className="text-[var(--color-text)] text-sm">
+                      <span className="text-[var(--color-muted)] font-medium">Look for: </span>{w.look_for}
+                    </p>
+                    {w.examples?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {w.examples.map((ex) => (
+                          <span key={ex} className="bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] text-xs px-2 py-0.5 rounded">
+                            {ex}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </details>
+              ) : (
+                <div key={i} className="flex items-center gap-2 text-[var(--color-danger)] text-sm px-1">
+                  <IconWarning /><span>{label}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Themes ── */}
+      {analysis.themes?.length > 0 && (
+        <div>
+          <SectionLabel className="mb-2">Themes</SectionLabel>
+          <div className="flex flex-wrap gap-2">
+            {analysis.themes.map((t) => {
+              const name = typeof t === 'string' ? t : t.name
+              const count = typeof t === 'object' ? t.count : null
+              const def = typeof t === 'object' && t.definition ? t.definition : THEME_DEFINITIONS[name]
+              return (
+                <span key={name} className="relative group">
+                  <span className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-secondary)] text-xs px-2.5 py-1 rounded-full cursor-help inline-block hover:border-[var(--color-secondary)]/50 transition-colors">
+                    {name}{count != null ? ` (${count})` : ''}
+                  </span>
+                  {def && (
+                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                      <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{name}</span>
+                      <span className="block text-[var(--color-muted)] text-xs leading-relaxed">{def}</span>
+                      <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[#0f1d2e]" />
+                    </span>
+                  )}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Mana Curve ── */}
       {manaCurveData.length > 0 && (
         <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Mana Curve</h3>
-          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4">
+          <SectionLabel className="mb-3">Mana Curve</SectionLabel>
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={manaCurveData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <XAxis dataKey="cmc" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -249,89 +360,40 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
       )}
 
-      {/* Card types */}
+      {/* ── Card Types ── */}
       <div>
-        <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Card Types</h3>
+        <SectionLabel className="mb-3">Card Types</SectionLabel>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {Object.entries(cardTypes).map(([type, count]) => (
-              <div key={type} className="flex justify-between items-center bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 transition-colors">
-                <span className="text-[var(--color-muted)] text-sm">{type}</span>
-                <span className="text-[var(--color-primary)] font-[var(--font-mono)] text-sm font-medium">{count}</span>
+            <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all duration-150">
+              <span className="text-[var(--color-muted)] text-sm">{type}</span>
+              <span className="text-[var(--color-primary)] font-[var(--font-mono)] text-sm font-medium">{count}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Themes */}
-      {analysis.themes?.length > 0 && (
-        <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Themes</h3>
-          <div className="flex flex-wrap gap-2">
-            {analysis.themes.map((t) => {
-              const name = typeof t === 'string' ? t : t.name
-              const count = typeof t === 'object' ? t.count : null
-              const def = typeof t === 'object' && t.definition ? t.definition : THEME_DEFINITIONS[name]
-              return (
-                <span key={name} className="relative group">
-                  <span className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-secondary)] text-xs px-2.5 py-1 rounded-full cursor-help inline-block">
-                    {name}{count != null ? ` (${count})` : ''}
-                  </span>
-                  {def && (
-                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
-                      <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{name}</span>
-                      <span className="block text-[var(--color-muted)] text-xs leading-relaxed">{def}</span>
-                      <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[#0f1d2e]" />
-                    </span>
-                  )}
-                </span>
-              )
-            })}
-          </div>
+      {/* ── What else can you do? (Differentiator section) ── */}
+      <div className="border-t border-[var(--color-border)] pt-5">
+        <SectionLabel className="mb-3">Explore Further</SectionLabel>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            onClick={() => onTabChange?.('Strategy')}
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-secondary)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-secondary)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/5 transition-all duration-200"
+          >
+            <p className="text-[var(--color-secondary)] font-semibold text-sm">AI Strategy Guide →</p>
+            <p className="text-[var(--color-muted)] text-xs mt-0.5">Game plan, win conditions, mulligan advice, matchup tips</p>
+          </button>
+          <button
+            onClick={() => onTabChange?.('Collection Upgrades')}
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/5 transition-all duration-200"
+          >
+            <p className="text-[var(--color-success)] font-semibold text-sm">Upgrade with Your Collection →</p>
+            <p className="text-[var(--color-muted)] text-xs mt-0.5">Cards you already own that would strengthen this deck</p>
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Weaknesses */}
-      {analysis.weaknesses?.length > 0 && (
-        <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Identified Weaknesses</h3>
-          <div className="space-y-2">
-            {analysis.weaknesses.map((w, i) => {
-              const label = typeof w === 'string' ? w : w.label
-              const isStructured = typeof w === 'object' && w !== null
-              return isStructured ? (
-                <details key={i} className="group bg-[var(--color-bg)] border border-[var(--color-danger)] border-opacity-40 rounded-lg">
-                  <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer list-none text-[var(--color-danger)] text-sm select-none">
-                    <IconWarning />
-                    <span className="flex-1">{label}</span>
-                    <span className="transition-transform group-open:rotate-180">
-                      <IconChevronDown className="w-3.5 h-3.5 shrink-0 text-[var(--color-muted)]" />
-                    </span>
-                  </summary>
-                  <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[var(--color-border)]">
-                    <p className="text-[var(--color-muted)] text-sm">{w.why}</p>
-                    <p className="text-[var(--color-text)] text-sm">
-                      <span className="text-[var(--color-muted)] font-medium">Look for: </span>{w.look_for}
-                    </p>
-                    {w.examples?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {w.examples.map((ex) => (
-                          <span key={ex} className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] text-xs px-2 py-0.5 rounded">
-                            {ex}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </details>
-              ) : (
-                <div key={i} className="flex items-center gap-2 text-[var(--color-danger)] text-sm px-1">
-                  <IconWarning /><span>{label}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -376,8 +438,8 @@ function StrategyTab({ deckId }) {
 
       {/* Game Plan */}
       {data.game_plan && (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-5">
-          <h3 className="text-[var(--color-primary)] font-[var(--font-heading)] text-sm uppercase tracking-wider mb-2">Game Plan</h3>
+        <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-5">
+          <SectionLabel className="mb-2 text-[var(--color-primary)]">{/* Cinzel amber for featured section */}Game Plan</SectionLabel>
           <p className="text-[var(--color-text)] text-sm leading-relaxed">{data.game_plan}</p>
         </div>
       )}
@@ -385,10 +447,10 @@ function StrategyTab({ deckId }) {
       {/* Win Conditions */}
       {data.win_conditions?.length > 0 && (
         <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Win Conditions</h3>
+          <SectionLabel className="mb-3">Win Conditions</SectionLabel>
           <div className="space-y-2">
             {data.win_conditions.map((wc, i) => (
-              <div key={i} className="flex items-start gap-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+              <div key={i} className="flex items-start gap-2 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <IconCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 shrink-0" />
                 <div>
                   <span className="text-[var(--color-text)] font-semibold text-sm">{wc.name}</span>
@@ -403,10 +465,10 @@ function StrategyTab({ deckId }) {
       {/* Key Cards */}
       {data.key_cards?.length > 0 && (
         <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Key Cards</h3>
+          <SectionLabel className="mb-3">Key Cards</SectionLabel>
           <div className="grid gap-2 sm:grid-cols-2">
             {data.key_cards.map((kc, i) => (
-              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-primary)] font-semibold text-sm">{kc.name}</span>
                 <p className="text-[var(--color-muted)] text-xs mt-0.5">{kc.role}</p>
               </div>
@@ -418,11 +480,11 @@ function StrategyTab({ deckId }) {
       {/* Game Phases */}
       {(data.early_game || data.mid_game || data.late_game) && (
         <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Game Phases</h3>
+          <SectionLabel className="mb-3">Game Phases</SectionLabel>
           <div className="grid gap-3 sm:grid-cols-3">
             {[['Early Game', data.early_game], ['Mid Game', data.mid_game], ['Late Game', data.late_game]].map(([label, text]) => text && (
-              <div key={label} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
-                <p className="text-[var(--color-secondary)] text-xs font-semibold uppercase tracking-wider mb-1">{label}</p>
+              <div key={label} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3">
+                <p className="text-[var(--color-secondary)] font-[var(--font-heading)] text-[10px] uppercase tracking-widest mb-1">{label}</p>
                 <p className="text-[var(--color-text)] text-sm leading-relaxed">{text}</p>
               </div>
             ))}
@@ -432,8 +494,8 @@ function StrategyTab({ deckId }) {
 
       {/* Mulligan */}
       {data.mulligan && (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-5">
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Mulligan Strategy</h3>
+        <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-5">
+          <SectionLabel className="mb-2">Mulligan Strategy</SectionLabel>
           <p className="text-[var(--color-text)] text-sm leading-relaxed">{data.mulligan}</p>
         </div>
       )}
@@ -441,10 +503,10 @@ function StrategyTab({ deckId }) {
       {/* Matchup Tips */}
       {data.matchup_tips?.length > 0 && (
         <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Matchup Tips</h3>
+          <SectionLabel className="mb-3">Matchup Tips</SectionLabel>
           <div className="space-y-2">
             {data.matchup_tips.map((tip, i) => (
-              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-primary)] font-semibold text-sm">vs {tip.against}</span>
                 <p className="text-[var(--color-muted)] text-xs mt-0.5">{tip.advice}</p>
               </div>
@@ -509,14 +571,14 @@ function ImprovementsTab({ deckId }) {
       {/* Weakness Fixes — cards to ADD */}
       {data.urgent_fixes?.length > 0 && (
         <div>
-          <h3 className="text-[var(--color-danger)] text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <h3 className="font-[var(--font-heading)] text-[var(--color-danger)] text-[10px] uppercase tracking-widest mb-1 flex items-center gap-1.5">
             <IconWarning className="w-3.5 h-3.5" />
             Weakness Fixes
           </h3>
           <p className="text-[var(--color-muted)] text-xs mb-3">Cards to add that address critical gaps in your deck.</p>
           <div className="space-y-2">
             {(expanded['fixes'] ? data.urgent_fixes : data.urgent_fixes.slice(0, MAX_VISIBLE)).map((fix, i) => (
-              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-danger)]/30 rounded-lg px-4 py-3 flex items-start gap-3">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/30 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-[var(--color-danger)]/50 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
                 <div className="flex-1">
                   <span className="text-[var(--color-text)] font-semibold text-sm">{fix.card}</span>
@@ -535,11 +597,11 @@ function ImprovementsTab({ deckId }) {
       {/* Recommended Swaps — paired cut → add */}
       {data.swaps?.length > 0 && (
         <div>
-          <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-1">Recommended Swaps</h3>
+          <SectionLabel className="mb-1">Recommended Swaps</SectionLabel>
           <p className="text-[var(--color-muted)] text-xs mb-3">Paired cut → add recommendations to improve your deck.</p>
           <div className="space-y-2">
             {(expanded['swaps'] ? data.swaps : data.swaps.slice(0, MAX_VISIBLE)).map((swap, i) => (
-              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[var(--color-danger)] font-semibold text-sm">− {swap.cut}</span>
                   <span className="text-[var(--color-muted)] text-xs">→</span>
@@ -574,14 +636,14 @@ function ImprovementsTab({ deckId }) {
         const buyCards = data.additions.filter(a => !a.owned)
         return (
           <div>
-            <h3 className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-3">Cards to Add</h3>
+            <SectionLabel className="mb-3">Cards to Add</SectionLabel>
 
             {ownedCards.length > 0 && (
               <div className="mb-4">
-                <p className="text-[var(--color-success)] text-xs font-semibold uppercase tracking-wider mb-1.5">In Your Collection</p>
+                <p className="font-[var(--font-heading)] text-[var(--color-success)] text-[10px] font-semibold uppercase tracking-widest mb-1.5">In Your Collection</p>
                 <div className="space-y-2">
                   {(expanded['additions_owned'] ? ownedCards : ownedCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-success)]/20 rounded-lg px-4 py-3 flex items-start gap-3">
+                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <span className="text-[var(--color-text)] font-semibold text-sm">{add.card}</span>
@@ -597,10 +659,10 @@ function ImprovementsTab({ deckId }) {
 
             {buyCards.length > 0 && (
               <div>
-                <p className="text-[var(--color-muted)] text-xs font-semibold uppercase tracking-wider mb-1.5">Worth Acquiring</p>
+                <p className="font-[var(--font-heading)] text-[var(--color-muted)] text-[10px] font-semibold uppercase tracking-widest mb-1.5">Worth Acquiring</p>
                 <div className="space-y-2">
                   {(expanded['additions_buy'] ? buyCards : buyCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex items-start gap-3">
+                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -690,7 +752,7 @@ function CollectionUpgradesTab({ deckId }) {
       {upgrades.map((u, i) => (
         <div
           key={i}
-          className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-5 py-4 flex items-start gap-4"
+          className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150"
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -779,7 +841,7 @@ function ScenariosTab({ deckId }) {
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Before */}
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-5">
-            <h3 className="text-[var(--color-muted)] font-semibold text-sm uppercase tracking-wider mb-4">Before</h3>
+            <h3 className="font-[var(--font-heading)] text-[var(--color-muted)] text-[10px] font-semibold uppercase tracking-widest mb-4">Before</h3>
             <div className="space-y-3">
               <div>
                 <p className="text-[var(--color-muted)] text-xs mb-1">Game Plan</p>
@@ -801,7 +863,7 @@ function ScenariosTab({ deckId }) {
           </div>
           {/* After */}
           <div className="bg-[var(--color-bg)] border border-[var(--color-secondary)] rounded-lg p-5">
-            <h3 className="text-[var(--color-secondary)] font-semibold text-sm uppercase tracking-wider mb-4">After Changes</h3>
+            <h3 className="font-[var(--font-heading)] text-[var(--color-secondary)] text-[10px] font-semibold uppercase tracking-widest mb-4">After Changes</h3>
             <div className="space-y-3">
               <div>
                 <p className="text-[var(--color-muted)] text-xs mb-1">Game Plan</p>
@@ -906,7 +968,7 @@ export default function DeckPage() {
         </div>
 
         {/* Tab content */}
-        <div className="max-w-5xl py-6">
+        <div key={activeTab} className="max-w-5xl py-6 tab-content">
           {isCached && (
             <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
               <span className="text-[var(--color-muted)] text-sm">

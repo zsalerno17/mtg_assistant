@@ -56,15 +56,29 @@ async def update_profile(body: ProfileUpdate, user: dict = Depends(require_allow
                 detail="Username must be 3–20 characters: letters, numbers, hyphens, and underscores only.",
             )
 
-    # Validate avatar_url is from our Supabase Storage (prevent storing arbitrary external URLs)
+    # Validate avatar_url is either a mana preset string or a Supabase Storage URL
+    VALID_PRESET_IDS = {
+        # Mana symbols (mana-font)
+        "w", "u", "b", "r", "g", "c", "x", "s", "e", "p", "chaos", "tap", "planeswalker",
+        # Creature archetypes (inline SVG)
+        "dragon", "goblin", "wizard", "angel", "zombie", "elf", "vampire", "merfolk",
+    }
     if body.avatar_url is not None:
-        supabase_url = os.environ.get("SUPABASE_URL", "")
-        allowed_prefix = f"{supabase_url}/storage/v1/object/public/avatars/"
-        if not body.avatar_url.startswith(allowed_prefix):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="avatar_url must be a Supabase Storage URL in the avatars bucket.",
-            )
+        if body.avatar_url.startswith("preset:"):
+            preset_id = body.avatar_url[len("preset:"):]
+            if preset_id not in VALID_PRESET_IDS:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Unknown preset id '{preset_id}'.",
+                )
+        else:
+            supabase_url = os.environ.get("SUPABASE_URL", "")
+            allowed_prefix = f"{supabase_url}/storage/v1/object/public/avatars/"
+            if not body.avatar_url.startswith(allowed_prefix):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="avatar_url must be a Supabase Storage URL in the avatars bucket.",
+                )
         if len(body.avatar_url) > 500:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

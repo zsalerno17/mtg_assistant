@@ -4,6 +4,21 @@
 
 ---
 
+## Session Status (as of April 11, 2026)
+
+**Phase 13 is fully complete** — all three stages done, build clean, backend healthy.
+
+**Next up (pick up here):** Backlog quick-wins in order:
+1. Add `ColorPips` to Dashboard history items (`DashboardPage.jsx`) — component already exists in `DeckPage.jsx`, just needs import + wiring to `result_json.colors`
+2. Dashboard form ring: `ring-[color-primary]/8` → `/20` (one-line Tailwind change)
+3. Collection page: `max-w-4xl mx-auto` container + remove `max-h-[480px]` scroll box
+4. Login page personality (MTG color pips, better tagline)
+5. Fix remaining critical backlog: Collection Upgrades + Improvements tabs both calling `api.getImprovements()` — merge or differentiate
+
+**Do NOT touch:** `supabase/migrations/004_user_profiles.sql`, `ProfilePage.jsx`, or the profile/auth flow — these are owned by a separate chat session.
+
+---
+
 ## Current Sprint
 
 **Phase 13 — Rule-Based Overhaul + Structured Content + Visual Polish**
@@ -19,6 +34,26 @@ Stage 1 (complete): Rule-based fixes in `backend/src/deck_analyzer.py`
 
 > **Stage 1 impact**: Ramp/draw/removal/wipe counts are now trustworthy (Arcane Signet, Birds of Paradise, Dockside detected; bounce no longer inflates removal). Themes show card counts and require meaningful thresholds (8+ cards for Tokens, not just 2 keywords in a blob). Weakness suggestions are filtered to the deck's actual colors — mono-Blue decks no longer see Cultivate recommended. Board wipes tracked as a new stat badge.
 
+Stage 2 (complete): Structured JSON prompts + dedicated tab components
+- [x] Dedicated `StrategyTab`, `ImprovementsTab`, `CollectionUpgradesTab` components (no more markdown walls)
+- [x] Improvements tab: paired swaps (`swaps: [{cut, add, reason, category}]`) — cut/add shown as single card
+- [x] Gemini temperature lowered to 0.3; deck context includes card types + CMC + actual counts vs thresholds
+- [x] Dual commander support: both commanders included in color identity and context
+- [x] Cached results banner + Force Re-analyze button
+
+> **Stage 2 impact**: Deck analysis information is now structured and scannable — no more walls of markdown text. The Improvements tab pairs each cut with its replacement so users can make decisions directly. Cached results mean returning to a deck is instant, and the Force Re-analyze button gives control back to the user.
+
+Stage 3 (complete): Visual polish + structural hierarchy fixes
+- [x] Commander as visual hero element at top of Overview tab (large Cinzel name, MTG color identity pips, glass card treatment)
+- [x] Weaknesses moved above mana curve on Overview — the app's differentiator is no longer buried
+- [x] "Explore Further" section replaces ghost tab-navigation buttons with real descriptive cards
+- [x] `SectionLabel` component: Cinzel font + `tracking-widest` applied to all section headers across all tabs
+- [x] Glass card treatment (`bg-surface/80 backdrop-blur-sm`) + hover lift across all tab cards
+- [x] Tab fade animation (0.18s CSS `fadeIn`) on tab switch — no Framer Motion dependency
+- [x] StatBadge grid fix: `grid-cols-4 sm:grid-cols-7` (was 3-col, causing orphan badge on mobile)
+
+> **Stage 3 impact**: The Overview tab now leads with the commander as a visual anchor — large Cinzel name, MTG color identity pips, and an amber-glowing glass card. Weaknesses are elevated above the mana curve (they're the app's differentiator, not a footnote). Cinzel section headers across all tabs instantly raise perceived quality from developer UI to crafted product. Cards lift on hover, and tab switches fade in with a subtle entrance animation.
+
 See Phase 13 section below for full spec. See Commander Expertise Reference for detection patterns and staple lists.
 
 ---
@@ -32,6 +67,7 @@ See Phase 13 section below for full spec. See Commander Expertise Reference for 
 - **Cached results banner + Force Re-analyze**: When a deck hasn't changed on Moxfield, users see a clear "cached results" indicator with a Force Re-analyze button. The `/analyze` endpoint now accepts `force: true` to bypass deduplication, enabling testing without clearing the DB.
 - **Collection Upgrades tab wired to rule-based engine**: New `/api/ai/collection-upgrades` endpoint runs `find_collection_improvements()` against the user's uploaded collection. The tab now shows structured swap cards (+ Add / − Cut with reason) instead of a duplicate Gemini call — instant, no AI quota needed.
 - **Phase 13 Stage 1 complete**: Ramp/draw/removal/wipe detection rewritten, themes now per-card counted, weakness examples color-filtered, board wipe stat badge added. 29 tests pass. Users now see accurate stat counts and color-appropriate card suggestions.
+- **Phase 13 Stage 3 complete**: Commander hero block, Cinzel section headers, glass cards + hover lift, tab fade animation, StatBadge grid fix. All three tracks from the design analysis implemented. DeckPage now leads with the commander as a visual hero and surfaces weaknesses above the fold.
 - **Full UI/UX design analysis complete** (see `.github/design-analysis.md`): Covers all 4 pages + Layout shell. Root causes identified: flat hierarchy and buried differentiators. Key findings below.
 
 ---
@@ -45,14 +81,14 @@ Full analysis in `.github/design-analysis.md`. Root causes: flat hierarchy + bur
 **Critical (do first):**
 - [x] **Profile button in mobile nav calls signOut directly** — Fixed: now navigates to `/profile`. Sign out moved to the Profile page.
 - [ ] **Collection Upgrades and Improvements tabs both call `api.getImprovements()`** — functional bug and IA problem. Merge or differentiate.
-- [ ] **DeckPage Overview: commander is not the hero** — restructure so commander + color identity is a visual hero element at top, weaknesses are prominent (not at the bottom of a long scroll). The weakness cards are the app's best UI — they're buried.
+- [x] **DeckPage Overview: commander is not the hero** — Fixed: commander hero block at top with Cinzel name, MTG color identity pips, glass card + amber border glow. Weaknesses moved above mana curve.
 
 **High impact, low effort:**
-- [ ] Switch all `text-xs uppercase tracking-wider` section labels to Cinzel font — instant premium feel.
-- [ ] Add color identity pips to Dashboard history items (MTG W/U/B/R/G dots) using `result_json.colors`.
+- [x] Switch all `text-xs uppercase tracking-wider` section labels to Cinzel font — done via `SectionLabel` component across all tabs.
+- [x] StatBadge grid: fixed `grid-cols-4 sm:grid-cols-7` — orphan badge on mobile resolved.
+- [ ] Add color identity pips to Dashboard history items (MTG W/U/B/R/G dots) using `result_json.colors` — `ColorPips` component already exists in DeckPage, easy to reuse.
 - [ ] Dashboard form ring: increase `ring-[color-primary]/8` → `/20` or `/25`. Form is primary CTA, currently has invisible ring.
 - [ ] Collection page: add `max-w-4xl mx-auto` container, remove `max-h-[480px]` fixed scroll box.
-- [ ] StatBadge grid: fix `grid-cols-3 sm:grid-cols-7` → orphan on mobile. Use 4-col or group badges logically.
 
 **Medium:**
 - [ ] Login page personality — add MTG color pips, better tagline, subtle background texture.

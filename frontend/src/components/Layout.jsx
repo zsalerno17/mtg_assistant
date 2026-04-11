@@ -1,5 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { isPresetUrl, urlToPresetId, isCreaturePreset } from '../lib/avatarPresets'
+import { CreaturePresetIcon } from '../lib/creatureIcons'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: HomeIcon, exact: true },
@@ -36,6 +38,23 @@ function SignOutIcon() {
 }
 
 function UserAvatar({ email, avatarUrl }) {
+  if (avatarUrl && isPresetUrl(avatarUrl)) {
+    const id = urlToPresetId(avatarUrl)
+    if (isCreaturePreset(id)) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0">
+          <CreaturePresetIcon id={id} className="w-5 h-5 text-amber-400"/>
+        </div>
+      )
+    }
+    return (
+      <i
+        className={`ms ms-${id} ms-cost ms-shadow shrink-0`}
+        style={{ fontSize: '2rem' }}
+        aria-label="profile icon"
+      />
+    )
+  }
   if (avatarUrl) {
     return (
       <img

@@ -2,7 +2,8 @@ import { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
-import { AVATAR_PRESETS, svgDataUrl } from '../lib/avatarPresets'
+import { AVATAR_PRESETS, CREATURE_PRESETS, isPresetUrl, urlToPresetId, presetIdToUrl, isCreaturePreset } from '../lib/avatarPresets'
+import { CreaturePresetIcon } from '../lib/creatureIcons'
 
 export default function ProfilePage() {
   const { session, profile, refreshProfile, signOut } = useAuth()
@@ -39,12 +40,10 @@ export default function ProfilePage() {
   }
 
   const handlePresetSelect = (preset) => {
-    const svgBlob = new Blob([preset.svg], { type: 'image/svg+xml' })
-    const svgFile = new File([svgBlob], `${preset.id}.svg`, { type: 'image/svg+xml' })
     setError(null)
     setSelectedPresetId(preset.id)
-    setPendingFile(svgFile)
-    setAvatarPreview(svgDataUrl(preset.svg))
+    setPendingFile(null)
+    setAvatarPreview(null)
   }
 
   const handleSave = async () => {
@@ -55,8 +54,10 @@ export default function ProfilePage() {
     try {
       let avatarUrl = profile?.avatar_url || null
 
-      // Upload new avatar to Supabase Storage if one was selected
-      if (pendingFile && userId) {
+      // Preset: store the preset ID directly — no file upload needed
+      if (selectedPresetId) {
+        avatarUrl = presetIdToUrl(selectedPresetId)
+      } else if (pendingFile && userId) {
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(userId, pendingFile, { upsert: true, contentType: pendingFile.type })
@@ -71,6 +72,7 @@ export default function ProfilePage() {
         setAvatarPreview(null)
         setPendingFile(null)
       }
+      // (no else needed — preset case handled above)
 
       // Save profile to backend
       await api.updateProfile({
@@ -106,7 +108,24 @@ export default function ProfilePage() {
           {/* Avatar */}
           <div className="flex items-center gap-5">
             <div className="relative shrink-0">
-              {displayAvatar ? (
+              {selectedPresetId ? (
+                isCreaturePreset(selectedPresetId) ? (
+                  <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
+                    <CreaturePresetIcon id={selectedPresetId} className="w-12 h-12 text-amber-400"/>
+                  </div>
+                ) : (
+                  <i className={`ms ms-${selectedPresetId} ms-cost ms-shadow`} style={{ fontSize: '5rem' }} aria-label={selectedPresetId}/>
+                )
+              ) : isPresetUrl(displayAvatar) ? (
+                isCreaturePreset(urlToPresetId(displayAvatar)) ? (
+                  <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
+                    <CreaturePresetIcon id={urlToPresetId(displayAvatar)} className="w-12 h-12 text-amber-400"/>
+                  </div>
+                ) : (
+                  <i className={`ms ms-${urlToPresetId(displayAvatar)} ms-cost ms-shadow`} style={{ fontSize: '5rem' }} aria-label={urlToPresetId(displayAvatar)}
+                />
+                )
+              ) : displayAvatar ? (
                 <img
                   src={displayAvatar}
                   alt="Profile"
@@ -141,9 +160,9 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Preset icons */}
+          {/* Preset icons — mana symbols */}
           <div className="space-y-2">
-            <p className="text-[var(--color-muted)] text-xs">Or choose an icon:</p>
+            <p className="text-[var(--color-muted)] text-xs">Mana symbols</p>
             <div className="flex flex-wrap gap-2">
               {AVATAR_PRESETS.map((preset) => (
                 <button
@@ -151,17 +170,35 @@ export default function ProfilePage() {
                   type="button"
                   title={preset.label}
                   onClick={() => handlePresetSelect(preset)}
-                  className={`w-11 h-11 rounded-full overflow-hidden border-2 transition-all ${
+                  className={`flex items-center justify-center transition-all outline-none rounded-full ${
                     selectedPresetId === preset.id
-                      ? 'border-[var(--color-primary)] scale-110 shadow-[0_0_0_2px_var(--color-primary)]/30'
-                      : 'border-transparent hover:border-[var(--color-border)] hover:scale-105'
+                      ? 'ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-110'
+                      : 'opacity-80 hover:opacity-100 hover:scale-105'
                   }`}
                 >
-                  <img
-                    src={svgDataUrl(preset.svg)}
-                    alt={preset.label}
-                    className="w-full h-full"
-                  />
+                  <i className={`ms ms-${preset.id} ms-cost ms-shadow`} style={{ fontSize: '2.5rem' }} aria-hidden="true"/>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Preset icons — creature archetypes */}
+          <div className="space-y-2">
+            <p className="text-[var(--color-muted)] text-xs">Characters</p>
+            <div className="flex flex-wrap gap-2">
+              {CREATURE_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  title={preset.label}
+                  onClick={() => handlePresetSelect(preset)}
+                  className={`w-10 h-10 rounded-full bg-slate-800 border flex items-center justify-center transition-all outline-none ${
+                    selectedPresetId === preset.id
+                      ? 'border-amber-500/60 ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-110'
+                      : 'border-slate-600 opacity-80 hover:opacity-100 hover:scale-105 hover:border-slate-500'
+                  }`}
+                >
+                  <CreaturePresetIcon id={preset.id} className="w-6 h-6 text-amber-400"/>
                 </button>
               ))}
             </div>
