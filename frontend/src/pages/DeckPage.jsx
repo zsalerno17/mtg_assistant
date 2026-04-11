@@ -518,6 +518,8 @@ export default function DeckPage() {
   const [deck, setDeck] = useState(location.state?.deck || null)
   const [analysis, setAnalysis] = useState(location.state?.analysis || null)
   const [loadError, setLoadError] = useState(null)
+  const [isCached, setIsCached] = useState(false)
+  const [reanalyzing, setReanalyzing] = useState(false)
 
   useEffect(() => {
     if (deck && analysis) return // already have data from navigate state
@@ -529,9 +531,21 @@ export default function DeckPage() {
       .then(([fetchResult, analyzeResult]) => {
         setDeck(fetchResult.data)
         setAnalysis(analyzeResult.analysis)
+        setIsCached(analyzeResult.cached === true)
       })
       .catch((err) => setLoadError(err.message))
   }, [deckId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleReanalyze = useCallback(() => {
+    setReanalyzing(true)
+    api.analyzeDeck(deckId, { force: true })
+      .then((result) => {
+        setAnalysis(result.analysis)
+        setIsCached(false)
+      })
+      .catch((err) => setLoadError(err.message))
+      .finally(() => setReanalyzing(false))
+  }, [deckId])
 
   const deckName = deck?.name || deckId
 
@@ -569,6 +583,20 @@ export default function DeckPage() {
 
         {/* Tab content */}
         <div className="max-w-5xl py-6">
+          {isCached && (
+            <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+              <span className="text-[var(--color-muted)] text-sm">
+                Showing cached results — deck hasn't changed on Moxfield.
+              </span>
+              <button
+                onClick={handleReanalyze}
+                disabled={reanalyzing}
+                className="ml-auto text-xs font-medium px-3 py-1 rounded-md bg-[var(--color-primary)]/15 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/25 transition-colors disabled:opacity-50"
+              >
+                {reanalyzing ? 'Re-analyzing…' : 'Force Re-analyze'}
+              </button>
+            </div>
+          )}
           {loadError && (
             <p className="text-[var(--color-danger)] text-sm">Failed to load deck: {loadError}</p>
           )}

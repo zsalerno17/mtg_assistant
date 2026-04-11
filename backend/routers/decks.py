@@ -20,6 +20,7 @@ class FetchDeckRequest(BaseModel):
 
 class AnalyzeDeckRequest(BaseModel):
     moxfield_id: str
+    force: bool = False
 
 
 @router.post("/fetch")
@@ -90,8 +91,8 @@ def analyze(body: AnalyzeDeckRequest, user: dict = Depends(require_allowed_user)
             return {"analysis": existing.data[0]["result_json"], "cached": True}
         raise HTTPException(status_code=502, detail=f"Could not load deck for analysis: {str(e)}")
 
-    # Return cached analysis if deck content hasn't changed
-    if existing.data and existing.data[0].get("deck_updated_at") == last_updated_at:
+    # Return cached analysis if deck content hasn't changed (unless force re-analysis requested)
+    if not body.force and existing.data and existing.data[0].get("deck_updated_at") == last_updated_at:
         return {"analysis": existing.data[0]["result_json"], "cached": True}
 
     # Run fresh analysis

@@ -26,27 +26,39 @@ See Phase 13 section below for full spec. See Commander Expertise Reference for 
 ## Recent Changes
 
 - **Phase 13 Stage 1 complete**: Ramp/draw/removal/wipe detection rewritten, themes now per-card counted, weakness examples color-filtered, board wipe stat badge added. 29 tests pass. Users now see accurate stat counts and color-appropriate card suggestions.
+- **Full UI/UX design analysis complete** (see `.github/design-analysis.md`): Covers all 4 pages + Layout shell. Root causes identified: flat hierarchy and buried differentiators. Key findings below.
 
 ---
 
 ## Backlog — High Priority
 
-### 1. Design Refresh (run @designer agent)
+### 1. Design Refresh — Analysis Complete, Implementation Ready
 
-The current UI implements the Option A palette correctly but feels flat — colors are applied but the layouts lack visual hierarchy, depth, and the premium MTG feel we're going for. A design review pass is needed before shipping to users.
+Full analysis in `.github/design-analysis.md`. Root causes: flat hierarchy + buried differentiators. Prioritized action items:
 
-**Scope for designer review:**
-- Dashboard: the URL form and analysis history list feel like a plain CRUD app. Needs personality.
-- DeckPage: tab content areas feel cramped. Key numbers (mana curve stats) need better visual hierarchy.
-- CollectionPage: the drag-drop upload area is functional but boring.
-- General: needs more use of depth (gradients, subtle glows, card shadows), better spacing rhythm, and polish consistent with a premium dark-mode tool.
+**Critical (do first):**
+- [ ] **Profile button in mobile nav calls signOut directly** — UX bug, users accidentally sign out. Must navigate to a profile/settings view or show confirmation.
+- [ ] **Collection Upgrades and Improvements tabs both call `api.getImprovements()`** — functional bug and IA problem. Merge or differentiate.
+- [ ] **DeckPage Overview: commander is not the hero** — restructure so commander + color identity is a visual hero element at top, weaknesses are prominent (not at the bottom of a long scroll). The weakness cards are the app's best UI — they're buried.
 
-**Ask the @designer agent:**
-- Full UI/UX review of all 4 pages against the Option A design system
-- Propose specific layout and visual changes (not brand new designs — refinements to what exists)
-- Consider whether Cinzel is being under-used as the heading font
-- Consider adding MTG color pip indicators on deck cards in the history list and overview
-- Evaluate whether the current tab design communicates the app's differentiators clearly
+**High impact, low effort:**
+- [ ] Switch all `text-xs uppercase tracking-wider` section labels to Cinzel font — instant premium feel.
+- [ ] Add color identity pips to Dashboard history items (MTG W/U/B/R/G dots) using `result_json.colors`.
+- [ ] Dashboard form ring: increase `ring-[color-primary]/8` → `/20` or `/25`. Form is primary CTA, currently has invisible ring.
+- [ ] Collection page: add `max-w-4xl mx-auto` container, remove `max-h-[480px]` fixed scroll box.
+- [ ] StatBadge grid: fix `grid-cols-3 sm:grid-cols-7` → orphan on mobile. Use 4-col or group badges logically.
+
+**Medium:**
+- [ ] Login page personality — add MTG color pips, better tagline, subtle background texture.
+- [ ] Deck top bar: add commander name + color identity as subtitle under deck name.
+
+**What's already good — don't change:**
+- Option A palette is correct
+- Weakness `<details>` cards (why/look_for/examples) are the best component in the app
+- StatBadge red/green health semantics
+- Mana curve chart
+- Theme pill tooltips
+- Mobile responsive shell structure
 
 ---
 
@@ -541,6 +553,8 @@ Free tier Gemini hits 503s and rate limits regularly. Right now, every tab that 
 ### Stage 3 — Visual Polish (frontend only)
 
 > Goal: Modern, polished feel — glass cards, motion, skeleton loaders, expressive stats.
+>
+> **Before implementing this stage, read `.github/design-analysis.md` in full.** That document contains a complete page-by-page UX/design diagnosis (all 4 pages + Layout shell), a prioritized list of changes with rationale, and explicit callouts of what's already good and should not change. The visual polish work here should be informed by that analysis — several items in the analysis (Cinzel section headers, StatBadge grid fix, form ring opacity, commander-as-hero restructure on DeckPage) are prerequisites that should be resolved before or alongside the motion/skeleton work below.
 
 - [ ] **Glass card components** — `backdrop-blur`, semi-transparent backgrounds, subtle border glow on hover
 - [ ] **Hover lift transitions** — cards and panels lift slightly on hover (`transform: translateY(-2px)`, `box-shadow` increase)

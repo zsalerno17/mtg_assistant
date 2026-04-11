@@ -31,8 +31,8 @@ export const api = {
     apiFetch('/api/decks/fetch', { method: 'POST', body: JSON.stringify({ url }) }),
 
   /** Run deck analysis and save to analysis history. */
-  analyzeDeck: (moxfield_id) =>
-    apiFetch('/api/decks/analyze', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
+  analyzeDeck: (moxfield_id, { force = false } = {}) =>
+    apiFetch('/api/decks/analyze', { method: 'POST', body: JSON.stringify({ moxfield_id, force }) }),
 
   /** Get Gemini strategy advice for a deck. */
   getStrategy: (moxfield_id) =>
