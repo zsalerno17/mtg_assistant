@@ -235,6 +235,17 @@ def get_library(user: dict = Depends(require_allowed_user)):
 
     user_deck_ids = {d["moxfield_id"] for d in user_decks}
 
+    # Pre-fetch cached deck data for color identity on unanalyzed decks
+    all_deck_ids = list(user_deck_ids)
+    cached_decks_map = {}
+    if all_deck_ids:
+        try:
+            cached = sb.table("decks").select("moxfield_id, data_json").in_("moxfield_id", all_deck_ids).execute()
+            for row in (cached.data or []):
+                cached_decks_map[row["moxfield_id"]] = row.get("data_json") or {}
+        except Exception:
+            pass
+
     result = []
 
     # Library decks with optional analysis overlay
@@ -242,6 +253,21 @@ def get_library(user: dict = Depends(require_allowed_user)):
         mid = deck["moxfield_id"]
         analysis = analyses_by_deck.get(mid)
         rj = analysis["result_json"] if analysis else {}
+
+        # Get colors: prefer analysis, fall back to cached deck commander color_identity
+        colors = rj.get("colors") or rj.get("color_identity")
+        if not colors:
+            dj = cached_decks_map.get(mid, {})
+            ci = set()
+            for key in ("commander", "partner"):
+                obj = dj.get(key)
+                if obj and isinstance(obj, dict):
+                    for c in (obj.get("color_identity") or []):
+                        ci.add(c)
+            if ci:
+                order = ["W", "U", "B", "R", "G"]
+                colors = [c for c in order if c in ci]
+
         result.append({
             "moxfield_id": mid,
             "deck_name": deck["deck_name"],
@@ -252,7 +278,7 @@ def get_library(user: dict = Depends(require_allowed_user)):
             "commander_image_uri": deck.get("commander_image_uri"),
             "partner_image_uri": deck.get("partner_image_uri"),
             "format": deck.get("format", "commander"),
-            "colors": rj.get("colors") or rj.get("color_identity"),
+            "colors": colors,
             "themes": rj.get("themes", []),
             "verdict": rj.get("verdict"),
             "power_level": rj.get("power_level"),

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import Layout from '../components/Layout'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -11,6 +10,7 @@ export default function LogGamePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
 
   const [league, setLeague] = useState(null)
   const [members, setMembers] = useState([])
@@ -24,6 +24,9 @@ export default function LogGamePage() {
   const [spicyPlayWinnerId, setSpicyPlayWinnerId] = useState('')
   const [entranceWinnerId, setEntranceWinnerId] = useState('')
   const [notes, setNotes] = useState('')
+
+  // Pod size (determines placement options)
+  const [podSize, setPodSize] = useState(4)
 
   // Player results (keyed by member_id)
   const [results, setResults] = useState({})
@@ -45,6 +48,10 @@ export default function LogGamePage() {
       setLeague(leagueData.league)
       setMembers(membersData.members || [])
       setMyDecks(decksData.decks || [])
+      
+      // Default pod size to number of members (clamped 2-10)
+      const memberCount = membersData.members?.length || 4
+      setPodSize(Math.max(2, Math.min(10, memberCount)))
 
       // Auto-increment game number
       const lastGame = gamesData.games?.[0]
@@ -142,8 +149,16 @@ export default function LogGamePage() {
         results: gameResults,
       })
 
-      // Navigate back to league page
-      navigate(`/leagues/${leagueId}`)
+      // Find the winner's name for the success message
+      const winnerResult = gameResults.find(r => r.earned_win)
+      const winnerMember = winnerResult ? members.find(m => m.id === winnerResult.member_id) : null
+      const winnerName = winnerMember?.superstar_name || 'The champion'
+      
+      setSuccess(`Game logged! ${winnerName} claims victory!`)
+      setSaving(false)
+      
+      // Navigate after a brief celebration
+      setTimeout(() => navigate(`/leagues/${leagueId}`), 2000)
     } catch (err) {
       setError(err.message)
       setSaving(false)
@@ -152,22 +167,19 @@ export default function LogGamePage() {
 
   if (loading) {
     return (
-      <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-secondary">Loading...</div>
+          <div className="text-[var(--color-muted)]">Loading...</div>
         </div>
-      </Layout>
     )
   }
 
   return (
-    <Layout>
       <div className="max-w-[900px] mx-auto px-8 py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-brand font-bold text-primary mb-2">
+          <h1 className="text-3xl font-brand font-bold text-[var(--color-text)] mb-2">
             Log Game Session
           </h1>
-          <p className="text-secondary">{league?.name}</p>
+          <p className="text-[var(--color-muted)]">{league?.name}</p>
         </div>
 
         {error && (
@@ -176,112 +188,147 @@ export default function LogGamePage() {
           </div>
         )}
 
+        {success && (
+          <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-6 py-4 rounded-lg mb-6 text-center">
+            <div className="text-2xl font-brand font-bold mb-1">{success}</div>
+            <div className="text-sm text-green-400/70">Redirecting to league page...</div>
+          </div>
+        )}
+
+        {!success && (
+
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Game Metadata */}
-          <div className="bg-surface border border-accent/30 rounded-xl p-6">
-            <h2 className="text-lg font-brand font-bold text-primary mb-4">
+          <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
+            <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">
               Game Details
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
+                <label htmlFor="game-number" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                   Game Number
                 </label>
                 <input
+                  id="game-number"
                   type="number"
                   min="1"
                   value={gameNumber}
                   onChange={(e) => setGameNumber(e.target.value)}
                   required
-                  className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
+                <label htmlFor="played-at" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                   Date & Time
                 </label>
                 <input
+                  id="played-at"
                   type="datetime-local"
                   value={playedAt}
                   onChange={(e) => setPlayedAt(e.target.value)}
                   required
-                  className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 />
               </div>
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-secondary mb-1.5">
+              <label htmlFor="screenshot-url" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                 Screenshot URL (optional)
               </label>
               <input
+                id="screenshot-url"
                 type="url"
                 value={screenshotUrl}
                 onChange={(e) => setScreenshotUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
               />
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-secondary mb-1.5">
+              <label htmlFor="game-notes" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                 Notes (optional)
               </label>
               <textarea
+                id="game-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
               />
             </div>
           </div>
 
           {/* Player Results */}
-          <div className="bg-surface border border-accent/30 rounded-xl p-6">
-            <h2 className="text-lg font-brand font-bold text-primary mb-4">
-              Player Results
-            </h2>
+          <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-brand font-bold text-[var(--color-text)]">
+                Player Results
+              </h2>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-[var(--color-muted)]">Pod size:</label>
+                <select
+                  value={podSize}
+                  onChange={(e) => setPodSize(Number(e.target.value))}
+                  className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                >
+                  {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                    <option key={n} value={n}>{n} players</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="space-y-4">
-              {members.map((member) => (
+              {members.map((member) => {
+                const placement = results[member.id]?.placement ? Number(results[member.id].placement) : null
+                const placementPts = placement === 1 ? 3 : placement === 2 ? 2 : placement === 3 ? 1 : 0
+                const entrancePts = member.id === entranceWinnerId ? 1 : 0
+                const totalPreview = placement ? placementPts + entrancePts : null
+                
+                return (
                 <div
                   key={member.id}
-                  className="bg-black/20 rounded-lg p-4 grid grid-cols-3 gap-4 items-start"
+                  className="bg-[var(--color-surface)]/40 rounded-lg p-4"
                 >
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
                   <div>
-                    <div className="font-medium text-primary mb-1">
+                    <div className="font-medium text-[var(--color-text)] mb-1">
                       {member.superstar_name}
                     </div>
-                    <div className="text-xs text-secondary">
+                    <div className="text-xs text-[var(--color-muted)]">
                       @{member.user_profiles?.display_name}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-secondary mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--color-muted)] mb-1.5">
                       Placement
                     </label>
                     <select
                       value={results[member.id]?.placement || ''}
                       onChange={(e) => updateResult(member.id, 'placement', e.target.value)}
-                      className="w-full bg-black/40 border border-accent/30 rounded-lg px-3 py-2 text-sm text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                      className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                     >
                       <option value="">—</option>
-                      <option value="1">1st (Winner)</option>
-                      <option value="2">2nd</option>
-                      <option value="3">3rd</option>
-                      <option value="4">4th (First Out)</option>
+                      {Array.from({ length: podSize }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>
+                          {n === 1 ? '1st (Winner)' : n === podSize ? `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'} (Last Out)` : `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-secondary mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--color-muted)] mb-1.5">
                       Deck (optional)
                     </label>
                     {member.user_id === session?.user?.id ? (
                       <select
                         value={results[member.id]?.deck_id || ''}
                         onChange={(e) => updateResult(member.id, 'deck_id', e.target.value)}
-                        className="w-full bg-black/40 border border-accent/30 rounded-lg px-3 py-2 text-sm text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                       >
                         <option value="">—</option>
                         {myDecks.map((deck) => (
@@ -291,35 +338,48 @@ export default function LogGamePage() {
                         ))}
                       </select>
                     ) : (
-                      <div className="text-xs text-secondary italic py-2">
+                      <div className="text-xs text-[var(--color-muted)] italic py-2">
                         Only the deck owner can select
                       </div>
                     )}
                   </div>
+                  </div>
+                  {/* Live Points Preview */}
+                  {totalPreview !== null && (
+                    <div className="mt-2 pt-2 border-t border-[var(--color-primary)]/10 flex items-center gap-3 text-xs">
+                      <span className="text-[var(--color-muted)]">
+                        {placement === 1 ? '1st → 3 pts' : placement === 2 ? '2nd → 2 pts' : placement === 3 ? '3rd → 1 pt' : `${placement}th → 0 pts`}
+                      </span>
+                      {entrancePts > 0 && <span className="text-yellow-400">+1 entrance</span>}
+                      <span className="ml-auto font-bold text-[var(--color-primary)]">{totalPreview} pts total</span>
+                    </div>
+                  )}
                 </div>
-              ))}
+                )
+              })}
             </div>
 
-            <div className="mt-4 text-xs text-secondary">
+            <div className="mt-4 text-xs text-[var(--color-muted)]">
               <strong>Points awarded automatically:</strong> 1st = 3pts, 2nd = 2pts, 3rd = 1pt, 4th+ = 0pts. Entrance bonus = +1pt.
             </div>
           </div>
 
           {/* Special Awards */}
-          <div className="bg-surface border border-accent/30 rounded-xl p-6">
-            <h2 className="text-lg font-brand font-bold text-primary mb-4">
+          <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
+            <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">
               Special Awards
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  🎤 WWE Entrance of the Week (+1pt)
+                <label htmlFor="entrance-winner" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  WWE Entrance of the Week (+1pt)
                 </label>
                 <select
+                  id="entrance-winner"
                   value={entranceWinnerId}
                   onChange={(e) => setEntranceWinnerId(e.target.value)}
-                  className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 >
                   <option value="">— No winner —</option>
                   {members.map((member) => (
@@ -331,26 +391,28 @@ export default function LogGamePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  🔥 Spicy Play of the Week
+                <label htmlFor="spicy-play" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  Spicy Play of the Week
                 </label>
                 <textarea
+                  id="spicy-play"
                   value={spicyPlayDescription}
                   onChange={(e) => setSpicyPlayDescription(e.target.value)}
                   placeholder="Describe the most unhinged, creative, or devastating play..."
                   rows={2}
-                  className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
+                <label htmlFor="spicy-player" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                   Spicy Play Player
                 </label>
                 <select
+                  id="spicy-player"
                   value={spicyPlayWinnerId}
                   onChange={(e) => setSpicyPlayWinnerId(e.target.value)}
-                  className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 >
                   <option value="">— No winner —</option>
                   {members.map((member) => (
@@ -368,7 +430,7 @@ export default function LogGamePage() {
             <button
               type="button"
               onClick={() => navigate(`/leagues/${leagueId}`)}
-              className="text-secondary hover:text-primary"
+              className="text-[var(--color-muted)] hover:text-[var(--color-text)]"
             >
               Cancel
             </button>
@@ -381,7 +443,7 @@ export default function LogGamePage() {
             </button>
           </div>
         </form>
+        )}
       </div>
-    </Layout>
   )
 }

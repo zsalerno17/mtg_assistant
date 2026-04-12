@@ -200,6 +200,24 @@ export default function TopNavbar() {
             <span className="text-xs font-medium">Home</span>
           </NavLink>
           <NavLink
+            to="/leagues"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all min-w-[72px] ${
+                isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'
+              }`
+            }
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+              <path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7" />
+              <path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7" />
+              <path d="M4 22h16" />
+              <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 19.24 7 20" />
+              <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 19.24 17 20" />
+              <path d="M18 2H6v7a6 6 0 0012 0V2z" />
+            </svg>
+            <span className="text-xs font-medium">Leagues</span>
+          </NavLink>
+          <NavLink
             to="/collection"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all min-w-[72px] ${

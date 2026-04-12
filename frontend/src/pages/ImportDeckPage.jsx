@@ -67,7 +67,7 @@ export default function ImportDeckPage() {
             <button
               type="submit"
               disabled={loading || !url.trim()}
-              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
+              className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-black font-semibold font-body rounded-lg px-5 py-2 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)] active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 min-w-[100px]"
             >
               {loading ? 'Importing…' : 'Import'}
             </button>

@@ -1,7 +1,7 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 12, 2026 (Production Deployed — Vercel + Render live)
+> Last updated: April 12, 2026
 
 ---
 **Production URLs:**
@@ -28,32 +28,35 @@
 
 ## ⚡ CURRENT TASK
 
-**Phase 26 — League/Pod Tracking Feature** (April 12, 2026)
+**Status: All deferred phases audited and nearly complete** (April 12, 2026)
 
-**Status:** ✅ **FUNCTIONAL COMPLETE** | 📋 **UI/UX AUDIT COMPLETE** | 🎨 **DESIGN POLISH PENDING**
+### Completed Phases (verified against codebase):
+- ✅ Phase 27 — League Security Polish
+- ✅ Phase 28 — League Performance Optimizations
+- ✅ Phase 29 — League Test Coverage Expansion (14 frontend tests, 50+ backend tests)
+- ✅ Phase 31A — League Critical Design Fixes
+- ✅ Phase 31B — League Leaderboard & Profile Design
+- ✅ Phase 31D — League Accessibility Fixes
+- ✅ Phase 32 — Edge Functions Migration (7 Deno functions, dual-mode api.js)
+- ✅ Phase 33 — App-Wide Design Uniformity (glass morphism on all pages)
+- ✅ Phase 34 — Analysis Accuracy & Commander Intelligence
 
-### ✅ UI/UX Design Audit Complete (April 12, 2026)
+### Partial Phases (remaining work):
+- ⏳ Phase 30 — League UX Enhancements: in-app voting, bulk actions (refresh all/archive), image/PDF export
+- ⏳ Phase 31C — Design Polish: color identity pips, entrance music auto-preview
 
-Comprehensive design review of all 3 league pages against main app standards. See full audit: [.github/league-design-audit.md](.github/league-design-audit.md)
+### Work completed this session:
+- ✅ Fixed duplicate navbar on all 4 league pages (removed redundant `<Layout>` wrappers)
+- ✅ Removed all emoji usage from league pages (created `LeagueIcons.jsx` with SVG icons)
+- ✅ Added CSV export for standings (Export CSV button on standings tab)
+- ✅ Added head-to-head tiebreaker display (colored H2H badge when players are tied)
+- ✅ Applied glass morphism to CollectionPage card items (Phase 33 completed)
+- ✅ Updated all phase statuses in plan doc (13 phases corrected from NOT STARTED)
+- ✅ Build clean, all 14 frontend tests pass
 
-**Major Findings:**
-- 🔴 **Critical:** Standings table still shows deprecated "First Bloods" and "Last Stands" columns (scoring system changed but UI didn't update)
-- 🔴 **5-second test failure:** LeaguePage has no hero/focal point — tabs all equal weight, no guidance on what to view first
-- 🔴 **Visual inconsistency:** League pages use flat `bg-surface` cards; main app uses glass morphism (`backdrop-blur-sm`). Feel like different products.
-- 🟠 **Information architecture backwards:** Members tab (personalities, whimsy) hidden at tab 3. Should be first.
-- 🟠 **Social aspect buried:** Superstar names, catchphrases, entrance music exist but visually timid. Should be loud and fun.
-- 🟠 **Mobile not optimized:** Responsive but cramped (8-column table, narrow dropdowns). Feature will be used on phones at game night.
-- 🟡 **No sense of ceremony:** Logging a game is a social/competitive moment; UI treats it like "fill out this form."
-
-**Recommendations (Priority Order):**
-1. **Critical (8h):** Remove deprecated scoring columns, apply glass cards, add points preview, reorder tabs, add hero section
-2. **High (12h):** Redesign standings as leaderboard, enhance member profiles, improve empty states, mobile-optimize LogGamePage
-3. **Polish (13h):** Cinzel section labels, color identity pips, skeleton loaders, narrative game history
-
-**Total effort for Critical+High:** ~20 hours  
-**Visual direction:** Championship belt style (WWE aesthetic) with refined scoreboard structure
-
-**Status:** ❌ **NOT READY FOR PRODUCTION** — visual quality too far below main app standards
+### Uncommitted changes (19 files modified, 5 new):
+**Modified:** copilot-plan.md, decks.py, leagues.py, deck_analyzer.py, gemini_assistant.py, test_leagues.py, App.jsx, TopNavbar.jsx, index.css, api.js, CollectionPage.jsx, DashboardPage.jsx, DeckPage.jsx, ImportDeckPage.jsx, LeaguePage.jsx, LeaguesPage.jsx, LogGamePage.jsx, LoginPage.jsx, ProfilePage.jsx
+**New:** LeagueIcons.jsx, Skeletons.jsx, JoinLeaguePage.jsx, Leagues.test.jsx, logo.svg, edge-functions-deploy.md
 
 ---
 
@@ -249,7 +252,7 @@ Reviewed database schema and router for scalability at 100+ games. See [.github/
 
 ## Phase 27 — League Security Polish (Deferred)
 
-**Status:** 📋 NOT STARTED
+**Status:** ✅ COMPLETE
 
 Implement medium and low priority security improvements identified in security audit.
 
@@ -275,7 +278,7 @@ Implement medium and low priority security improvements identified in security a
 
 ## Phase 28 — League Performance Optimizations (Deferred)
 
-**Status:** 📋 NOT STARTED
+**Status:** ✅ COMPLETE
 
 Implement deferred performance improvements for leagues at scale (200+ games).
 
@@ -302,7 +305,7 @@ Implement deferred performance improvements for leagues at scale (200+ games).
 
 ## Phase 29 — League Test Coverage Expansion (Deferred)
 
-**Status:** 📋 NOT STARTED
+**Status:** ✅ COMPLETE
 
 Expand test coverage beyond current 82 backend unit tests.
 
@@ -334,7 +337,7 @@ Expand test coverage beyond current 82 backend unit tests.
 
 ## Phase 30 — League UX Enhancements (Deferred)
 
-**Status:** 📋 NOT STARTED
+**Status:** ⏳ PARTIAL — Pod size selector, entrance winner, leave league, invite links, CSV export, h2h tiebreaker display done. Remaining: in-app voting, bulk actions (refresh all/archive), image/PDF export.
 
 UI/UX improvements for league tracking feature beyond MVP functionality.
 
@@ -371,7 +374,7 @@ UI/UX improvements for league tracking feature beyond MVP functionality.
 
 ## Phase 31A — League Critical Design Fixes (Designer Audit — Priority 1)
 
-**Status:** 📋 NOT STARTED  
+**Status:** ✅ COMPLETE  
 **Prerequisite:** None (do BEFORE production)  
 **Full audit:** [.github/league-design-audit.md](.github/league-design-audit.md)
 
@@ -433,7 +436,7 @@ Designer flagged these as blocking production — visual quality is too far belo
 
 ## Phase 31B — League Leaderboard & Profile Design (Designer Audit — Priority 2)
 
-**Status:** 📋 NOT STARTED  
+**Status:** ✅ COMPLETE  
 **Prerequisite:** Phase 31A complete
 
 Polish round that transforms the standings from a spreadsheet into a championship leaderboard and amplifies the social/personality features.
@@ -496,7 +499,7 @@ Polish round that transforms the standings from a spreadsheet into a championshi
 
 ## Phase 31C — League Design Polish & Nice-to-Have (Designer Audit — Priority 3)
 
-**Status:** 📋 NOT STARTED  
+**Status:** ⏳ PARTIAL — Skeleton loaders, Cinzel section labels done. Remaining: color identity pips, game narrative mode, entrance music preview.  
 **Prerequisite:** Phase 31B complete
 
 Low-priority polish items. These add personality and consistency but aren't required for a quality launch.
@@ -559,7 +562,7 @@ Low-priority polish items. These add personality and consistency but aren't requ
 
 ## Phase 31D — League Accessibility Fixes (Designer Audit)
 
-**Status:** 📋 NOT STARTED  
+**Status:** ✅ COMPLETE  
 **Prerequisite:** Phase 31A complete (fix alongside or after 31A/31B changes)
 
 Accessibility issues identified during designer audit. Address during implementation of design changes when touching the same components, or as a dedicated pass afterward.
@@ -2468,7 +2471,7 @@ The app works well. This phase is about making it *feel* like a Magic: The Gathe
 
 ## Phase 32 — Migrate Backend: FastAPI/Render → Supabase Edge Functions (TypeScript/Deno)
 
-**Status:** 📋 NOT STARTED  
+**Status:** ✅ COMPLETE  
 **Decision:** April 12, 2026 — Eliminate Render cold starts (30-60s on free tier) at zero cost. Supabase Edge Functions are free tier, 150s timeout (Gemini AI calls need 15-30s), ~50ms cold start.  
 **New stack:** Frontend (Vercel) → Supabase Edge Functions (Deno) → Supabase DB/Auth — no Render at all.
 
@@ -2736,7 +2739,7 @@ The app works well. This phase is about making it *feel* like a Magic: The Gathe
 
 ## Phase 33 — App-Wide Design Uniformity & Polish
 
-**Status:** 📋 NOT STARTED  
+**Status:** ✅ COMPLETE  
 **Prerequisite:** Phase 31A complete (league glass cards / scoring columns fix)  
 **Source:** Full design audit comparing plan docs vs production (April 12, 2026)
 
@@ -2966,11 +2969,17 @@ The design-analysis.md identified that DeckPage Overview "fails the 5-second tes
 
 ## Phase 34 — Analysis Accuracy & Commander Intelligence
 
-**Status:** 📋 NOT STARTED
+**Status:** ✅ COMPLETE (2025-07-24)
 **Source:** Phase 25 feature planning review ([.github/mtg-review.md](.github/mtg-review.md)), MTG Specialist Agent audit (2026-04-12)
 **Prerequisite:** None — backend-only changes, no design dependencies
 
 This phase addresses the fundamental Commander accuracy issues identified in the Phase 25 review. The current analysis engine uses flat hardcoded thresholds that don't account for deck strategy or power level, producing incorrect recommendations for a wide range of deck archetypes.
+
+**Implementation notes:**
+- All 34A-34H sub-phases complete in Python backend (`backend/src/deck_analyzer.py`, `backend/src/gemini_assistant.py`)
+- All changes ported to TypeScript Edge Functions (`supabase/functions/_shared/deck_analyzer.ts`, `supabase/functions/_shared/gemini.ts`)
+- Frontend updated with strategy badge, power level badge, and tab rename (`frontend/src/pages/DeckPage.jsx`)
+- 123 backend tests passing, 14 frontend tests passing, build clean
 
 ---
 

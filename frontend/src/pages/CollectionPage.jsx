@@ -97,7 +97,7 @@ export default function CollectionPage() {
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
           dragOver
-            ? 'border-[var(--color-primary)] bg-[var(--color-surface)]'
+            ? 'border-[var(--color-primary)] bg-[var(--color-surface)]/80 backdrop-blur-sm'
             : uploading
             ? 'border-[var(--color-muted)] opacity-60'
             : 'border-[var(--color-border)] hover:border-[var(--color-muted)]'
@@ -179,7 +179,7 @@ export default function CollectionPage() {
             {filteredCards.map((card, i) => (
               <div
                 key={i}
-                className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
+                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >
                 <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
                 <span className="text-[var(--color-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>

@@ -48,7 +48,7 @@ function ScenariosIcon() {
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
-  { label: 'Collection Upgrades', icon: UpgradeIcon, mobileLabel: 'Upgrades' },
+  { label: 'Upgrades', icon: UpgradeIcon, mobileLabel: 'Upgrades' },
   { label: 'Strategy', icon: StrategyIcon },
   { label: 'Improvements', icon: ImprovementsIcon },
   { label: 'Scenarios', icon: ScenariosIcon },
@@ -335,6 +335,16 @@ function OverviewTab({ deck, analysis, onTabChange }) {
             </p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               {commanderColors.length > 0 && <ColorPips colors={commanderColors} />}
+              {analysis.strategy && (
+                <span className="bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-secondary)]/20 font-semibold capitalize">
+                  {analysis.strategy}
+                </span>
+              )}
+              {analysis.power_level != null && (
+                <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold">
+                  Power {analysis.power_level}/10
+                </span>
+              )}
               <span className="text-[var(--color-muted)] text-sm font-heading">{deck.format} · {deck.name}</span>
             </div>
           </div>
@@ -501,7 +511,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
             <p className="text-[var(--color-muted)] text-xs mt-0.5">Game plan, win conditions, mulligan advice, matchup tips</p>
           </button>
           <button
-            onClick={() => onTabChange?.('Collection Upgrades')}
+            onClick={() => onTabChange?.('Upgrades')}
             className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/5 transition-all duration-200"
           >
             <p className="text-[var(--color-success)] font-semibold text-sm">Upgrade with Your Collection →</p>
@@ -879,8 +889,10 @@ function CollectionUpgradesTab({ deckId }) {
 
   return (
     <div className="space-y-4">
+      <SectionLabel className="mb-1">From My Collection</SectionLabel>
       <p className="text-[var(--color-muted)] text-sm mb-4">
         {upgrades.raw.length} upgrade{upgrades.raw.length !== 1 ? 's' : ''} from your collection.
+        Check the <span className="text-[var(--color-secondary)]">Improvements</span> tab for additional suggestions including cards to purchase.
       </p>
       {Object.entries(upgrades.grouped).map(([cutKey, options]) => {
         const hasCut = cutKey !== '_no_cut'
@@ -1587,7 +1599,7 @@ export default function DeckPage() {
             <ImprovementsTab deckId={deckId} />
           )}
 
-          {activeTab === 'Collection Upgrades' && (
+          {activeTab === 'Upgrades' && (
             <CollectionUpgradesTab deckId={deckId} />
           )}
 

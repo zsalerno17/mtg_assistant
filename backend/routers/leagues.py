@@ -448,6 +448,148 @@ async def update_member(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.delete("/{league_id}/members/me")
+async def leave_league(
+    league_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
+    """Leave a league. Creator cannot leave (must delete league instead)."""
+    try:
+        # Verify membership
+        member_id = await verify_league_membership(league_id, user_id, supabase)
+        
+        # Check if user is the creator
+        league = supabase.table("leagues") \
+            .select("created_by") \
+            .eq("id", league_id) \
+            .single() \
+            .execute()
+        
+        if league.data["created_by"] == user_id:
+            raise HTTPException(
+                status_code=400,
+                detail="League creator cannot leave. Delete the league instead."
+            )
+        
+        # Delete the membership (game results are preserved for historical accuracy)
+        supabase.table("league_members") \
+            .delete() \
+            .eq("id", member_id) \
+            .execute()
+        
+        return {"message": "Successfully left the league"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============================================================================
+# LEAGUE INVITE LINKS
+# ============================================================================
+
+@router.post("/{league_id}/invite")
+async def generate_invite_link(
+    league_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
+    """Generate an invite token for a league (creator only)."""
+    try:
+        # Verify creator
+        league = supabase.table("leagues") \
+            .select("created_by") \
+            .eq("id", league_id) \
+            .single() \
+            .execute()
+        
+        if league.data["created_by"] != user_id:
+            raise HTTPException(status_code=403, detail="Only league creator can generate invite links")
+        
+        import secrets
+        token = secrets.token_urlsafe(32)
+        
+        # Store invite token
+        result = supabase.table("league_invites").insert({
+            "league_id": league_id,
+            "token": token,
+            "created_by": user_id,
+        }).execute()
+        
+        return {"token": token, "invite": result.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/join/{invite_token}")
+async def join_via_invite(
+    invite_token: str,
+    member: MemberJoin,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
+    """Join a league using an invite token."""
+    try:
+        # Look up the invite
+        invite = supabase.table("league_invites") \
+            .select("league_id, expires_at, used_count, max_uses") \
+            .eq("token", invite_token) \
+            .single() \
+            .execute()
+        
+        if not invite.data:
+            raise HTTPException(status_code=404, detail="Invalid invite link")
+        
+        league_id = invite.data["league_id"]
+        
+        # Check expiration
+        if invite.data.get("expires_at"):
+            from datetime import datetime as dt
+            expires = dt.fromisoformat(invite.data["expires_at"].replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) > expires:
+                raise HTTPException(status_code=410, detail="Invite link has expired")
+        
+        # Check max uses
+        if invite.data.get("max_uses") and invite.data.get("used_count", 0) >= invite.data["max_uses"]:
+            raise HTTPException(status_code=410, detail="Invite link has reached maximum uses")
+        
+        # Check if already a member
+        existing = supabase.table("league_members") \
+            .select("id") \
+            .eq("league_id", league_id) \
+            .eq("user_id", user_id) \
+            .execute()
+        
+        if existing.data:
+            raise HTTPException(status_code=400, detail="Already a member of this league")
+        
+        # Join the league
+        result = supabase.table("league_members").insert({
+            "league_id": league_id,
+            "user_id": user_id,
+            "superstar_name": member.superstar_name,
+            "entrance_music_url": str(member.entrance_music_url) if member.entrance_music_url else None,
+            "catchphrase": member.catchphrase,
+        }).execute()
+        
+        # Increment used_count
+        supabase.table("league_invites") \
+            .update({"used_count": (invite.data.get("used_count", 0) or 0) + 1}) \
+            .eq("token", invite_token) \
+            .execute()
+        
+        return {"member": result.data[0], "league_id": league_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        if "duplicate" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Already a member of this league")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ============================================================================
 # GAME LOGGING
 # ============================================================================

@@ -100,6 +100,8 @@ def _deck_context(deck, analysis: dict) -> str:
     commander_str = " & ".join(commanders) if commanders else "Unknown"
     colors = ", ".join(deck.color_identity) or "Colorless"
     themes = ", ".join(analysis.get("theme_names", [])) or "None detected"
+    strategy = analysis.get("strategy", "midrange")
+    power_level = analysis.get("power_level")
     # Handle both old string format and new structured dict format
     raw_weaknesses = analysis.get("weaknesses", [])
     weakness_labels = ", ".join(
@@ -110,21 +112,32 @@ def _deck_context(deck, analysis: dict) -> str:
     draw = analysis.get("draw_count", 0)
     removal = analysis.get("removal_count", 0)
     wipes = analysis.get("board_wipe_count", 0)
+    fast_mana = analysis.get("fast_mana_count", 0)
+    exile_removal = analysis.get("exile_removal_count", 0)
+    tutors = analysis.get("tutor_count", 0)
+    counterspells = analysis.get("counterspell_count", 0)
 
     # Build decklist with type info for better Gemini context
     deck_lines = []
     for c in deck.mainboard:
         deck_lines.append(f"{c.name} [{c.type_line}] (CMC {c.cmc:.0f})")
 
+    power_str = f"{power_level}/10" if power_level is not None else "Unknown"
+
     return f"""
+You are analyzing a **{strategy}** deck at power level **{power_str}**.
+
 Commander: {commander_str}
 Color Identity: {colors}
 Format: {deck.format}
+Strategy: {strategy}
+Power Level: {power_str}
 Themes: {themes}
 Weaknesses: {weakness_labels}
 Average CMC: {analysis.get("average_cmc", "?")}
 Lands: {card_types.get("Lands", 0)} | Creatures: {card_types.get("Creatures", 0)} | Instants: {card_types.get("Instants", 0)} | Sorceries: {card_types.get("Sorceries", 0)}
-Ramp: {ramp} (need 10+) | Draw: {draw} (need 10+) | Removal: {removal} (need 8+) | Board Wipes: {wipes} (need 2+)
+Ramp: {ramp} | Draw: {draw} | Removal: {removal} (exile-based: {exile_removal}) | Board Wipes: {wipes}
+Fast Mana: {fast_mana} | Tutors: {tutors} | Counterspells: {counterspells}
 
 Full decklist:
 {chr(10).join(deck_lines)}

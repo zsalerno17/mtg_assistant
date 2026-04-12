@@ -179,7 +179,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
         <span className="text-[var(--color-muted)] text-xs shrink-0 pt-0.5">{date}</span>
       </div>
 
-      {/* Color pips (only if analyzed) */}
+      {/* Color pips */}
       {item.colors?.length > 0 && <ColorPips colors={item.colors} size="1rem" />}
 
       {/* Commander */}
@@ -499,7 +499,7 @@ export default function DashboardPage() {
         {/* Stats grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {/* Total Decks */}
-          <div className="stat-card stat-card-1 bg-gradient-to-br from-[var(--color-surface)] to-[#1a202e] border border-[var(--color-border)] rounded-[10px] p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
+          <div className="stat-card stat-card-1 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
             <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Total Decks</p>
             <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
               {decksLoading ? '—' : decks.length}
@@ -507,7 +507,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Analyzed Decks */}
-          <div className="stat-card stat-card-2 bg-gradient-to-br from-[var(--color-surface)] to-[#1a202e] border border-[var(--color-border)] rounded-[10px] p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
+          <div className="stat-card stat-card-2 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
             <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Analyzed</p>
             <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
               {decksLoading ? '—' : decks.filter(d => d.analyzed).length}
@@ -515,7 +515,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Average Power Level */}
-          <div className="stat-card stat-card-3 bg-gradient-to-br from-[var(--color-surface)] to-[#1a202e] border border-[var(--color-border)] rounded-[10px] p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
+          <div className="stat-card stat-card-3 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
             <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Avg Power</p>
             <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
               {decksLoading ? '—' : 
@@ -527,7 +527,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Collection Cards */}
-          <div className="stat-card stat-card-4 bg-gradient-to-br from-[var(--color-surface)] to-[#1a202e] border border-[var(--color-border)] rounded-[10px] p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
+          <div className="stat-card stat-card-4 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
             <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Collection</p>
             <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
               {summaryLoading ? '—' : collectionSummary?.count?.toLocaleString() || '0'}
@@ -540,7 +540,7 @@ export default function DashboardPage() {
           <h2 className="text-[var(--color-text)] text-[18px] font-semibold font-heading tracking-[-0.01em]">Your Decks</h2>
           <button
             onClick={() => setShowImportModal(true)}
-            className="font-body text-sm bg-gradient-to-br from-[var(--color-primary)] to-[#f59e0b] text-black px-5 py-[11px] rounded-lg font-semibold hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(251,191,36,0.35)] transition-all shadow-[0_2px_12px_rgba(251,191,36,0.25)]"
+            className="font-body text-sm bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-black px-5 py-2.5 rounded-lg font-semibold hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)] active:translate-y-0 transition-all"
           >
             + Import Deck
           </button>

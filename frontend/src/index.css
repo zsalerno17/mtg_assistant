@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/*
+ * Border-radius convention:
+ *   rounded-xl  (12px) — cards, containers, modals
+ *   rounded-lg  (8px)  — buttons, inputs, dropdowns
+ *   rounded-[7px]      — small badges, nav pills, avatar squares
+ *   rounded-full       — circular avatars only
+ */
+
 @theme {
   /* Refined Variant — Phase 24 color palette */
   --color-bg:        #0a0f1a;  /* Deep background */

@@ -220,7 +220,7 @@ class TestGameResultValidation:
 class TestGameLoggingWorkflow:
     """Test the complete game logging workflow end-to-end."""
     
-    @patch('routers.leagues.get_supabase_client')
+    @patch('routers.leagues.get_user_supabase_client')
     @patch('routers.leagues.require_user_id')
     def test_log_standard_4player_game(self, mock_auth, mock_get_supabase, mock_supabase, sample_league_id):
         """Test logging a standard 4-player game with awards."""
@@ -289,7 +289,7 @@ class TestGameLoggingWorkflow:
         )
         
         assert game.screenshot_url is not None
-        assert game.screenshot_url.startswith("https://")
+        assert str(game.screenshot_url).startswith("https://")
 
 
 # ============================================================================
@@ -299,7 +299,7 @@ class TestGameLoggingWorkflow:
 class TestRLSPolicies:
     """Test row-level security policies via membership checks."""
     
-    @patch('routers.leagues.get_supabase_client')
+    @patch('routers.leagues.get_user_supabase_client')
     @patch('routers.leagues.require_user_id')
     def test_non_member_cannot_view_league(self, mock_auth, mock_get_supabase, mock_supabase):
         """Non-members should get 403 when trying to view league."""
@@ -324,7 +324,7 @@ class TestRLSPolicies:
         
         assert exc_info.value.status_code == 403
     
-    @patch('routers.leagues.get_supabase_client')
+    @patch('routers.leagues.get_user_supabase_client')
     @patch('routers.leagues.require_user_id')
     def test_member_can_view_league(self, mock_auth, mock_get_supabase, mock_supabase):
         """Members should be able to view league details."""
@@ -342,7 +342,7 @@ class TestRLSPolicies:
         
         assert len(membership_check.data) > 0
     
-    @patch('routers.leagues.get_supabase_client')
+    @patch('routers.leagues.get_user_supabase_client')
     @patch('routers.leagues.require_user_id')
     def test_non_member_cannot_log_game(self, mock_auth, mock_get_supabase, mock_supabase):
         """Non-members should not be able to log games."""
@@ -363,7 +363,7 @@ class TestRLSPolicies:
         
         assert exc_info.value.status_code == 403
     
-    @patch('routers.leagues.get_supabase_client')
+    @patch('routers.leagues.get_user_supabase_client')
     @patch('routers.leagues.require_user_id')
     def test_only_creator_can_update_league(self, mock_auth, mock_get_supabase, mock_supabase):
         """Only league creator can update league settings."""
@@ -386,7 +386,7 @@ class TestRLSPolicies:
         
         assert exc_info.value.status_code == 403
     
-    @patch('routers.leagues.get_supabase_client')
+    @patch('routers.leagues.get_user_supabase_client')
     @patch('routers.leagues.require_user_id')
     def test_user_can_only_update_own_member_profile(self, mock_auth, mock_get_supabase, mock_supabase):
         """Users can only update their own member profile."""
@@ -704,3 +704,132 @@ class TestMemberProfiles:
         long_name = "A" * 100
         member = MemberJoin(superstar_name=long_name)
         assert len(member.superstar_name) == 100
+
+
+# ============================================================================
+# PHASE 27: SECURITY POLISH TESTS
+# ============================================================================
+
+class TestTextSanitization:
+    """Tests for HTML tag stripping and length enforcement."""
+
+    def test_html_tags_stripped_from_league_name(self):
+        """HTML tags should be stripped from league name."""
+        league = LeagueCreate(
+            name="<script>alert('xss')</script>My League",
+            season_start=date(2026, 1, 1),
+            season_end=date(2026, 6, 1),
+        )
+        assert "<script>" not in league.name
+        assert "alert('xss')" in league.name  # text content preserved
+
+    def test_html_tags_stripped_from_description(self):
+        """HTML tags should be stripped from description."""
+        league = LeagueCreate(
+            name="My League",
+            description="<b>Bold</b> <img src=x onerror=alert(1)> text",
+            season_start=date(2026, 1, 1),
+            season_end=date(2026, 6, 1),
+        )
+        assert "<b>" not in league.description
+        assert "<img" not in league.description
+
+    def test_html_tags_stripped_from_catchphrase(self):
+        """Catchphrase HTML should be stripped."""
+        member = MemberJoin(
+            superstar_name="Test",
+            catchphrase="<marquee>Scrolling!</marquee>",
+        )
+        assert "<marquee>" not in member.catchphrase
+
+    def test_none_values_preserved(self):
+        """None values should remain None after sanitization."""
+        league = LeagueCreate(
+            name="My League",
+            season_start=date(2026, 1, 1),
+            season_end=date(2026, 6, 1),
+        )
+        assert league.description is None
+
+
+class TestDateRangeValidation:
+    """Tests for season_end > season_start validation."""
+
+    def test_valid_date_range(self):
+        league = LeagueCreate(
+            name="Valid League",
+            season_start=date(2026, 1, 1),
+            season_end=date(2026, 6, 1),
+        )
+        assert league.season_start < league.season_end
+
+    def test_invalid_date_range_end_before_start(self):
+        with pytest.raises(ValueError, match="season_end must be after season_start"):
+            LeagueCreate(
+                name="Bad League",
+                season_start=date(2026, 6, 1),
+                season_end=date(2026, 1, 1),
+            )
+
+    def test_invalid_date_range_same_day(self):
+        with pytest.raises(ValueError, match="season_end must be after season_start"):
+            LeagueCreate(
+                name="Same Day",
+                season_start=date(2026, 3, 15),
+                season_end=date(2026, 3, 15),
+            )
+
+
+class TestRateLimiting:
+    """Tests for game logging rate limit."""
+
+    def test_rate_limit_import(self):
+        from routers.leagues import check_game_rate_limit, _game_log_timestamps
+        # Clear any existing state
+        _game_log_timestamps.clear()
+        # Should not raise for first call
+        check_game_rate_limit("test-league")
+
+    def test_rate_limit_exceeds(self):
+        from routers.leagues import check_game_rate_limit, _game_log_timestamps, GAME_LOG_RATE_LIMIT
+        import time
+        _game_log_timestamps.clear()
+        league_id = "rate-test-league"
+        # Fill up to the limit
+        _game_log_timestamps[league_id] = [time.time()] * GAME_LOG_RATE_LIMIT
+        with pytest.raises(HTTPException) as exc_info:
+            check_game_rate_limit(league_id)
+        assert exc_info.value.status_code == 429
+
+
+class TestTimezoneHandling:
+    """Tests for UTC timezone normalization."""
+
+    def test_naive_datetime_gets_utc(self):
+        game = GameLog(
+            game_number=1,
+            played_at=datetime(2026, 4, 12, 20, 0, 0),
+        )
+        assert game.played_at.tzinfo is not None
+
+    def test_none_played_at_preserved(self):
+        game = GameLog(game_number=1)
+        assert game.played_at is None
+
+
+class TestGameNoteSanitization:
+    """Tests for game field sanitization."""
+
+    def test_spicy_play_sanitized(self):
+        game = GameLog(
+            game_number=1,
+            spicy_play_description="<script>evil()</script>Great play!",
+        )
+        assert "<script>" not in game.spicy_play_description
+
+    def test_notes_sanitized(self):
+        game = GameLog(
+            game_number=1,
+            notes="<img src=x onerror=alert(1)>Fun game",
+        )
+        assert "<img" not in game.notes

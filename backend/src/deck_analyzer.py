@@ -77,17 +77,25 @@ def analyze_deck(deck: Deck) -> Dict:
     """Analyse a Commander deck and return a comprehensive metrics dict."""
     all_cards = deck.all_cards
     themes = identify_themes(deck)
-    weaknesses = identify_weaknesses(deck)
+    weaknesses_raw = identify_weaknesses(deck)
     commanders = []
     if deck.commander:
         commanders.append(deck.commander.name)
     if deck.partner:
         commanders.append(deck.partner.name)
 
+    strategy = classify_strategy(deck)
+    power_level = calculate_power_level(deck)
+
+    # Recalculate weaknesses with dynamic thresholds
+    weaknesses = identify_weaknesses(deck, strategy=strategy, power_level=power_level)
+
     partial = {
         "commander": " & ".join(commanders) if commanders else None,
         "colors": list(deck.color_identity),
         "total_cards": deck.card_count,
+        "strategy": strategy,
+        "power_level": power_level,
         "mana_curve": build_mana_curve(all_cards),
         "average_cmc": calculate_average_cmc(all_cards),
         "card_types": categorize_card_types(all_cards),
@@ -98,6 +106,10 @@ def analyze_deck(deck: Deck) -> Dict:
         "removal_count": count_removal(all_cards),
         "board_wipe_count": count_board_wipes(all_cards),
         "interaction_count": count_interaction(all_cards),
+        "tutor_count": count_tutors(all_cards),
+        "counterspell_count": count_counterspells(all_cards),
+        "fast_mana_count": count_fast_mana(all_cards),
+        "exile_removal_count": count_exile_removal(all_cards),
         "themes": themes,
         "theme_names": [t["name"] for t in themes],
         "weaknesses": weaknesses,
@@ -433,6 +445,255 @@ def count_interaction(cards: List[Card]) -> int:
     return count
 
 
+def count_tutors(cards: List[Card]) -> int:
+    """Count tutor effects (search library for non-land cards)."""
+    count = 0
+    for card in cards:
+        if card.is_land:
+            continue
+        oracle = card.oracle_text.lower()
+        if "search your library" in oracle:
+            # Exclude land-only tutors (those are ramp, not combo tutors)
+            if "land" in oracle and not any(kw in oracle for kw in ("card", "creature", "instant", "sorcery", "artifact", "enchantment")):
+                continue
+            count += card.quantity
+    return count
+
+
+def count_counterspells(cards: List[Card]) -> int:
+    """Count counterspell effects."""
+    count = 0
+    for card in cards:
+        if card.is_land:
+            continue
+        oracle = card.oracle_text.lower()
+        if "counter target" in oracle and ("spell" in oracle or "ability" in oracle):
+            count += card.quantity
+    return count
+
+
+def count_fast_mana(cards: List[Card]) -> int:
+    """Count fast mana (CMC <= 1 non-land mana producers + specific premium rocks)."""
+    _FAST_MANA_NAMES = {
+        "sol ring", "mana crypt", "mana vault", "chrome mox", "mox diamond",
+        "jeweled lotus", "lotus petal", "simian spirit guide", "elvish spirit guide",
+        "dark ritual", "cabal ritual", "rite of flame", "desperate ritual",
+        "pyretic ritual", "seething song",
+    }
+    count = 0
+    for card in cards:
+        if card.is_land:
+            continue
+        if card.name.lower() in _FAST_MANA_NAMES:
+            count += card.quantity
+        elif card.cmc <= 1:
+            oracle = card.oracle_text.lower()
+            tl = card.type_line.lower()
+            # 0-1 CMC mana dorks
+            if "creature" in tl and ("add {" in oracle or "add one mana" in oracle):
+                count += card.quantity
+    return count
+
+
+def count_stax_pieces(cards: List[Card]) -> int:
+    """Count stax / hatebear effects."""
+    _STAX_PHRASES = (
+        "opponents can't",
+        "each opponent",
+        "players can't",
+        "nonland permanent an opponent",
+        "costs {1} more",
+        "costs {2} more",
+        "rule of law",
+        "can't cast more than",
+        "can't search",
+    )
+    _STAX_NAMES = {
+        "thalia, guardian of thraben", "drannith magistrate",
+        "eidolon of the great revel", "archon of emeria",
+        "collector ouphe", "null rod", "stony silence",
+        "rest in peace", "grafdigger's cage", "torpor orb",
+        "cursed totem", "winter orb", "static orb",
+        "blood moon", "back to basics", "stranglehold",
+    }
+    count = 0
+    for card in cards:
+        if card.is_land:
+            continue
+        if card.name.lower() in _STAX_NAMES:
+            count += card.quantity
+            continue
+        oracle = card.oracle_text.lower()
+        if any(p in oracle for p in _STAX_PHRASES):
+            count += card.quantity
+    return count
+
+
+def count_token_generators(cards: List[Card]) -> int:
+    """Count cards that create creature tokens."""
+    count = 0
+    for card in cards:
+        if card.is_land:
+            continue
+        oracle = card.oracle_text.lower()
+        if "creature token" in oracle or "populate" in oracle:
+            count += card.quantity
+    return count
+
+
+def count_exile_removal(cards: List[Card]) -> int:
+    """Count exile-based single-target removal."""
+    count = 0
+    for card in cards:
+        if card.is_land:
+            continue
+        oracle = card.oracle_text.lower()
+        if "exile target" in oracle:
+            count += card.quantity
+    return count
+
+
+# ─── Strategy Classification ──────────────────────────────────────────────────
+
+STRATEGY_CATEGORIES = ("aggro", "tokens", "combo", "midrange", "control", "stax", "ramp")
+
+
+def classify_strategy(deck: Deck) -> str:
+    """Classify a Commander deck into a primary strategy archetype.
+
+    Uses heuristic signals from card composition. Returned value is one of:
+    aggro, tokens, combo, midrange, control, stax, ramp.
+    """
+    all_cards = deck.all_cards
+    non_lands = [c for c in all_cards if not c.is_land]
+    avg_cmc = calculate_average_cmc(all_cards)
+
+    tutor_count = count_tutors(all_cards)
+    counter_count = count_counterspells(all_cards)
+    fast_mana_count = count_fast_mana(all_cards)
+    token_count = count_token_generators(all_cards)
+    stax_count = count_stax_pieces(all_cards)
+    draw_count = count_draw(all_cards)
+
+    # Count creatures vs noncreature spells
+    creature_count = sum(c.quantity for c in non_lands if c.is_creature)
+    instant_sorcery_count = sum(
+        c.quantity for c in non_lands
+        if "instant" in c.type_line.lower() or "sorcery" in c.type_line.lower()
+    )
+
+    # Score each strategy
+    scores: Dict[str, float] = {s: 0.0 for s in STRATEGY_CATEGORIES}
+
+    # Combo signals
+    scores["combo"] += tutor_count * 1.5
+    scores["combo"] += fast_mana_count * 1.0
+    if avg_cmc <= 2.5:
+        scores["combo"] += 3.0
+
+    # Control signals
+    scores["control"] += counter_count * 2.0
+    scores["control"] += draw_count * 0.3
+    if instant_sorcery_count > creature_count:
+        scores["control"] += 3.0
+
+    # Stax signals
+    scores["stax"] += stax_count * 3.0
+
+    # Token signals
+    scores["tokens"] += token_count * 1.5
+    if token_count >= 8:
+        scores["tokens"] += 3.0
+
+    # Aggro signals
+    if avg_cmc <= 2.8:
+        scores["aggro"] += 3.0
+    if creature_count >= 30:
+        scores["aggro"] += 3.0
+    scores["aggro"] += creature_count * 0.1
+
+    # Ramp signals
+    ramp_count = count_ramp(all_cards)
+    if avg_cmc >= 3.8:
+        scores["ramp"] += 3.0
+    scores["ramp"] += ramp_count * 0.5
+    if ramp_count >= 14:
+        scores["ramp"] += 3.0
+
+    # Midrange is the default fallback — gets minor bonus for balanced builds
+    scores["midrange"] += 2.0  # slight baseline
+    if 2.8 < avg_cmc < 3.8:
+        scores["midrange"] += 2.0
+    if 20 <= creature_count <= 30:
+        scores["midrange"] += 1.0
+
+    return max(scores, key=scores.get)
+
+
+# ─── Power Level Detection ────────────────────────────────────────────────────
+
+
+def calculate_power_level(deck: Deck) -> int:
+    """Calculate a 4-10 power level score for a Commander deck.
+
+    Additive from a base of 4, capped at 10.
+    """
+    all_cards = deck.all_cards
+    avg_cmc = calculate_average_cmc(all_cards)
+
+    fast_mana = count_fast_mana(all_cards)
+    tutors = count_tutors(all_cards)
+    counters = count_counterspells(all_cards)
+    draw = count_draw(all_cards)
+    interaction = count_interaction(all_cards)
+
+    score = 4.0
+
+    # Fast mana: +0.5 each, max +2
+    score += min(fast_mana * 0.5, 2.0)
+
+    # Tutors: +0.4 each, max +2
+    score += min(tutors * 0.4, 2.0)
+
+    # Counterspells: +0.3 each, max +1.5
+    score += min(counters * 0.3, 1.5)
+
+    # CMC efficiency
+    if avg_cmc <= 2.5:
+        score += 1.0
+    elif avg_cmc >= 4.0:
+        score -= 1.0
+
+    # Card draw density
+    if draw >= 12:
+        score += 0.5
+
+    # Interaction density
+    if interaction >= 15:
+        score += 0.5
+
+    return max(4, min(10, round(score)))
+
+
+# ─── Dynamic Thresholds ──────────────────────────────────────────────────────
+
+# (min, max) recommended counts by strategy
+_STRATEGY_THRESHOLDS: Dict[str, Dict[str, Tuple[int, int]]] = {
+    "aggro":    {"ramp": (6, 8),   "draw": (8, 10),  "removal": (6, 8),   "lands": (33, 35)},
+    "tokens":   {"ramp": (8, 10),  "draw": (8, 10),  "removal": (7, 9),   "lands": (34, 36)},
+    "combo":    {"ramp": (12, 16), "draw": (14, 18), "removal": (8, 10),  "lands": (30, 33)},
+    "midrange": {"ramp": (10, 12), "draw": (10, 12), "removal": (9, 11),  "lands": (36, 38)},
+    "control":  {"ramp": (8, 10),  "draw": (14, 18), "removal": (12, 15), "lands": (36, 38)},
+    "stax":     {"ramp": (8, 10),  "draw": (10, 12), "removal": (10, 12), "lands": (34, 36)},
+    "ramp":     {"ramp": (14, 18), "draw": (10, 12), "removal": (8, 10),  "lands": (38, 42)},
+}
+
+
+def get_thresholds(strategy: str) -> Dict[str, Tuple[int, int]]:
+    """Return recommended count ranges for a given strategy."""
+    return _STRATEGY_THRESHOLDS.get(strategy, _STRATEGY_THRESHOLDS["midrange"])
+
+
 # ─── Theme & Weakness Detection ───────────────────────────────────────────────
 
 THEME_DEFINITIONS: Dict[str, str] = {
@@ -450,7 +711,7 @@ THEME_DEFINITIONS: Dict[str, str] = {
 # Minimum card counts to declare a theme present.
 _THEME_THRESHOLDS: Dict[str, int] = {
     "Tokens": 8,
-    "Graveyard": 7,
+    "Graveyard": 6,
     "Aristocrats": 8,
     "Voltron": 8,
     "Spellslinger": 3,
@@ -459,6 +720,9 @@ _THEME_THRESHOLDS: Dict[str, int] = {
     "Enchantress": 2,
     "Artifacts Matter": 2,
 }
+
+# Minimum percentage of non-land cards that must match a theme (density gate)
+_THEME_DENSITY_MIN = 0.08
 
 
 def _card_fits_theme(card: Card, theme: str) -> bool:
@@ -469,6 +733,7 @@ def _card_fits_theme(card: Card, theme: str) -> bool:
     tl = card.type_line.lower()
 
     if theme == "Tokens":
+        # Only count creature token production, not incidental Clue/Food/Treasure tokens
         return ("creature token" in oracle or "populate" in oracle
                 or ("twice" in oracle and "token" in oracle))
     elif theme == "Graveyard":
@@ -532,6 +797,10 @@ def identify_themes(deck: Deck) -> List[Dict]:
         if len(matching) < threshold:
             continue
 
+        # Density gate: theme cards must be >= 8% of non-land cards
+        if non_land_count > 0 and len(matching) / non_land_count < _THEME_DENSITY_MIN:
+            continue
+
         # Ratio checks for payoff-based themes
         if theme == "Spellslinger" and non_land_count > 0:
             inst_sorc = sum(
@@ -564,8 +833,12 @@ def identify_themes(deck: Deck) -> List[Dict]:
     return detected
 
 
-def identify_weaknesses(deck: Deck) -> List[Dict]:
-    """Return structured weakness dicts with color-filtered example suggestions."""
+def identify_weaknesses(deck: Deck, strategy: Optional[str] = None, power_level: Optional[int] = None) -> List[Dict]:
+    """Return structured weakness dicts with color-filtered example suggestions.
+
+    If strategy is provided, uses dynamic thresholds. Otherwise falls back to
+    static defaults for backwards compatibility.
+    """
     all_cards = deck.all_cards
     card_types = categorize_card_types(all_cards)
     lands = card_types.get("Lands", 0)
@@ -574,18 +847,32 @@ def identify_weaknesses(deck: Deck) -> List[Dict]:
     removal = count_removal(all_cards)
     board_wipes = count_board_wipes(all_cards)
     avg_cmc = calculate_average_cmc(all_cards)
+    exile_removal = count_exile_removal(all_cards)
     ci = deck.color_identity or []
+
+    # Dynamic thresholds based on strategy, or static defaults
+    if strategy:
+        thresholds = get_thresholds(strategy)
+        rec_ramp = thresholds["ramp"][0]
+        rec_draw = thresholds["draw"][0]
+        rec_removal = thresholds["removal"][0]
+        rec_lands = thresholds["lands"]
+    else:
+        rec_ramp = RECOMMENDED_RAMP
+        rec_draw = RECOMMENDED_DRAW
+        rec_removal = RECOMMENDED_REMOVAL
+        rec_lands = RECOMMENDED_LANDS
 
     weaknesses = []
 
-    if lands < RECOMMENDED_LANDS[0]:
+    if lands < rec_lands[0]:
         weaknesses.append({
-            "label": f"Low land count ({lands} — recommend {RECOMMENDED_LANDS[0]}–{RECOMMENDED_LANDS[1]})",
+            "label": f"Low land count ({lands} — recommend {rec_lands[0]}–{rec_lands[1]})",
             "why": "Consistent mana is the foundation of Commander. Too few lands leads to mana screw and missed turns.",
             "look_for": "Basic lands, utility lands, and dual lands that fit your color identity.",
             "examples": ["Command Tower", "Exotic Orchard", "Terramorphic Expanse", "Evolving Wilds"],
         })
-    elif lands > 42:
+    elif lands > rec_lands[1] + 4:
         weaknesses.append({
             "label": f"High land count ({lands} — you may have too many)",
             "why": "Too many lands means fewer spells. Consider replacing some basics with ramp spells.",
@@ -593,27 +880,36 @@ def identify_weaknesses(deck: Deck) -> List[Dict]:
             "examples": _get_color_filtered_examples("ramp", ci),
         })
 
-    if ramp < RECOMMENDED_RAMP:
+    if ramp < rec_ramp:
         weaknesses.append({
-            "label": f"Low ramp count ({ramp} — recommend {RECOMMENDED_RAMP}+ for Commander)",
+            "label": f"Low ramp count ({ramp} — recommend {rec_ramp}+ for {strategy or 'Commander'})",
             "why": "Ramp lets you play ahead of the curve and cast your threats before opponents can answer them.",
             "look_for": "2-mana rocks, land tutors, and mana dorks that fix colors and accelerate your game plan.",
             "examples": _get_color_filtered_examples("ramp", ci),
         })
 
-    if draw < RECOMMENDED_DRAW:
+    if draw < rec_draw:
         weaknesses.append({
-            "label": f"Low card draw ({draw} — recommend {RECOMMENDED_DRAW}+ for Commander)",
+            "label": f"Low card draw ({draw} — recommend {rec_draw}+ for {strategy or 'Commander'})",
             "why": "Card advantage is essential in a 100-card singleton format where consistency is low. Running out of cards means losing.",
             "look_for": "Repeatable draw engines, cantrips, and draw-on-attack effects that trigger regularly.",
             "examples": _get_color_filtered_examples("draw", ci),
         })
 
-    if removal < RECOMMENDED_REMOVAL:
+    if removal < rec_removal:
         weaknesses.append({
-            "label": f"Low removal ({removal} — recommend {RECOMMENDED_REMOVAL}+ for Commander)",
+            "label": f"Low removal ({removal} — recommend {rec_removal}+ for {strategy or 'Commander'})",
             "why": "With 3 opponents, threats will come from multiple directions. Insufficient answers lets dangerous permanents snowball.",
             "look_for": "Efficient single-target removal, exile-based answers for indestructible threats.",
+            "examples": _get_color_filtered_examples("removal", ci),
+        })
+
+    # Exile removal quality check (Phase 34D)
+    if exile_removal < 3 and removal >= rec_removal:
+        weaknesses.append({
+            "label": f"Low exile-based removal ({exile_removal} exile effects — mostly destroy)",
+            "why": "Destroy-based removal doesn't handle indestructible, undying, or death-trigger threats. Exile answers these cleanly.",
+            "look_for": "Exile-based spot removal like Swords to Plowshares, Path to Exile, Generous Gift, Chaos Warp.",
             "examples": _get_color_filtered_examples("removal", ci),
         })
 
@@ -642,21 +938,32 @@ def generate_deck_verdict(analysis: Dict) -> str:
     themes = analysis.get("theme_names", [])
     weaknesses = analysis.get("weaknesses", [])
     avg_cmc = analysis.get("average_cmc", 0)
+    strategy = analysis.get("strategy")
+    power_level = analysis.get("power_level")
 
-    # Theme sentence
-    if len(themes) >= 2:
-        theme_str = f"{themes[0]} and {themes[1]}"
-    elif len(themes) == 1:
-        theme_str = themes[0]
+    # Strategy + theme sentence
+    if strategy:
+        strategy_label = strategy.capitalize()
+        if len(themes) >= 2:
+            theme_sentence = f"{commander} is a {strategy_label} deck leaning into {themes[0]} and {themes[1]} strategies."
+        elif len(themes) == 1:
+            theme_sentence = f"{commander} is a {strategy_label} deck with a {themes[0]} theme."
+        else:
+            theme_sentence = f"{commander} is a {strategy_label} deck."
     else:
-        theme_str = None
+        if len(themes) >= 2:
+            theme_sentence = f"{commander} leans into {themes[0]} and {themes[1]} strategies."
+        elif len(themes) == 1:
+            theme_sentence = f"{commander} leans into {themes[0]} strategies."
+        else:
+            theme_sentence = f"{commander} is a versatile commander without a dominant detected theme."
 
-    if theme_str:
-        theme_sentence = f"{commander} leans into {theme_str} strategies."
-    else:
-        theme_sentence = f"{commander} is a versatile commander without a dominant detected theme."
+    # Power level note
+    power_note = ""
+    if power_level is not None:
+        power_note = f" Power level: {power_level}/10."
 
-    # Weakness sentence — get labels (handle both string and dict formats)
+    # Weakness sentence
     weakness_labels = [
         w["label"] if isinstance(w, dict) else w for w in weaknesses[:2]
     ]
@@ -670,7 +977,7 @@ def generate_deck_verdict(analysis: Dict) -> str:
     if avg_cmc > HIGH_AVG_CMC_THRESHOLD:
         cmc_note = f" At {avg_cmc:.1f} average CMC, prioritize early ramp to hit threats on curve."
 
-    return f"{theme_sentence} {weakness_sentence}{cmc_note}"
+    return f"{theme_sentence}{power_note} {weakness_sentence}{cmc_note}"
 
 
 # ─── Private helpers ──────────────────────────────────────────────────────────
