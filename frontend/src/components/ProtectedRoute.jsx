@@ -9,7 +9,7 @@ export default function ProtectedRoute({ children }) {
     // Still loading session from Supabase
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--color-bg)]">
-        <div className="text-[var(--color-muted)] font-[var(--font-mono)]">Loading...</div>
+        <div className="text-[var(--color-muted)] font-mono">Loading...</div>
       </div>
     )
   }

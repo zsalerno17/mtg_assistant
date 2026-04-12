@@ -28,8 +28,8 @@ export default function ImportDeckPage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-xl mx-auto">
+    <div className="min-h-screen">
+      <div className="max-w-xl mx-auto px-8 pt-10 pb-6">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -38,7 +38,7 @@ export default function ImportDeckPage() {
           >
             ← Dashboard
           </Link>
-          <h1 className="font-[var(--font-heading)] text-3xl text-[var(--color-text)] tracking-wide mb-2">
+          <h1 className="font-heading text-3xl text-[var(--color-text)] tracking-wide mb-2">
             Import Deck
           </h1>
           <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />

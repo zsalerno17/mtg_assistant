@@ -55,8 +55,14 @@ def fetch_deck(body: FetchDeckRequest, user: dict = Depends(require_allowed_user
         "id": deck.id,
         "name": deck.name,
         "format": deck.format,
-        "commander": {"name": deck.commander.name} if deck.commander else None,
-        "partner": {"name": deck.partner.name} if deck.partner else None,
+        "commander": {
+            "name": deck.commander.name,
+            "image_uri": deck.commander.image_uri,
+        } if deck.commander else None,
+        "partner": {
+            "name": deck.partner.name,
+            "image_uri": deck.partner.image_uri,
+        } if deck.partner else None,
         "mainboard": [{"name": c.name, "quantity": c.quantity} for c in deck.mainboard],
     }
 
@@ -151,20 +157,39 @@ def add_to_library(body: AddToLibraryRequest, user: dict = Depends(require_allow
             "id": deck.id,
             "name": deck.name,
             "format": deck.format,
-            "commander": {"name": deck.commander.name} if deck.commander else None,
-            "partner": {"name": deck.partner.name} if deck.partner else None,
+            "commander": {
+                "name": deck.commander.name,
+                "image_uri": deck.commander.image_uri,
+            } if deck.commander else None,
+            "partner": {
+                "name": deck.partner.name,
+                "image_uri": deck.partner.image_uri,
+            } if deck.partner else None,
             "mainboard": [{"name": c.name, "quantity": c.quantity} for c in deck.mainboard],
         }
         sb.table("decks").insert({"moxfield_id": deck_id, "data_json": deck_data}).execute()
 
     moxfield_url = f"https://www.moxfield.com/decks/{deck_id}"
     deck_name = deck_data.get("name") or deck_id
+    
+    # Extract commander and partner image URIs if available
+    commander_image_uri = None
+    partner_image_uri = None
+    commander_data = deck_data.get("commander")
+    partner_data = deck_data.get("partner")
+    if commander_data and isinstance(commander_data, dict):
+        commander_image_uri = commander_data.get("image_uri")
+    if partner_data and isinstance(partner_data, dict):
+        partner_image_uri = partner_data.get("image_uri")
 
     row = {
         "user_id": user["user_id"],
         "moxfield_id": deck_id,
         "deck_name": deck_name,
         "moxfield_url": moxfield_url,
+        "commander_image_uri": commander_image_uri,
+        "partner_image_uri": partner_image_uri,
+        "format": deck_data.get("format", "commander"),
     }
     sb.table("user_decks").upsert(row, on_conflict="user_id,moxfield_id").execute()
 
@@ -212,9 +237,13 @@ def get_library(user: dict = Depends(require_allowed_user)):
             "added_at": deck["added_at"],
             "analyzed": analysis is not None,
             "commander": rj.get("commander"),
+            "commander_image_uri": deck.get("commander_image_uri"),
+            "partner_image_uri": deck.get("partner_image_uri"),
+            "format": deck.get("format", "commander"),
             "colors": rj.get("colors") or rj.get("color_identity"),
             "themes": rj.get("themes", []),
             "verdict": rj.get("verdict"),
+            "power_level": rj.get("power_level"),
         })
 
     # Backwards-compat: include analyses that have no user_decks entry
@@ -222,6 +251,23 @@ def get_library(user: dict = Depends(require_allowed_user)):
         if deck_id in user_deck_ids:
             continue
         rj = analysis["result_json"]
+        
+        # Try to get commander and partner images from cached deck data
+        commander_image_uri = None
+        partner_image_uri = None
+        try:
+            cached_deck = sb.table("decks").select("data_json").eq("moxfield_id", deck_id).execute()
+            if cached_deck.data:
+                deck_data = cached_deck.data[0].get("data_json", {})
+                commander_obj = deck_data.get("commander")
+                partner_obj = deck_data.get("partner")
+                if commander_obj and isinstance(commander_obj, dict):
+                    commander_image_uri = commander_obj.get("image_uri")
+                if partner_obj and isinstance(partner_obj, dict):
+                    partner_image_uri = partner_obj.get("image_uri")
+        except Exception:
+            pass  # Silently fail for legacy entries
+        
         result.append({
             "moxfield_id": deck_id,
             "deck_name": analysis.get("deck_name") or deck_id,
@@ -229,9 +275,13 @@ def get_library(user: dict = Depends(require_allowed_user)):
             "added_at": analysis["created_at"],
             "analyzed": True,
             "commander": rj.get("commander"),
+            "commander_image_uri": commander_image_uri,
+            "partner_image_uri": partner_image_uri,
+            "format": "commander",
             "colors": rj.get("colors") or rj.get("color_identity"),
             "themes": rj.get("themes", []),
             "verdict": rj.get("verdict"),
+            "power_level": rj.get("power_level"),
         })
 
     result.sort(key=lambda x: x.get("added_at") or "", reverse=True)

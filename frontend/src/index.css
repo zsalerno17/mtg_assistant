@@ -4,13 +4,15 @@
   /* Refined Variant — Phase 24 color palette */
   --color-bg:        #0a0f1a;  /* Deep background */
   --color-surface:   #111827;  /* Refined surface (darker than previous #0f172a) */
-  --color-surface-2: #1f2937;  /* Secondary surface (elevated cards) */
-  --color-border:    #374151;  /* Refined border (lighter than previous #334155) */
+  --color-surface-2: #1a202e;  /* Secondary surface (elevated cards) */
+  --color-border:    #1e293b;  /* Refined border */
+  --color-border-light: #2d3748;  /* Secondary border */
   --color-primary:   #fbbf24;  /* Amber accent */
+  --color-accent:    #f59e0b;  /* Amber hover accent */
   --color-secondary: #38bdf8;  /* Sky blue secondary */
   --color-success:   #34d399;  /* Emerald success */
   --color-danger:    #fb7185;  /* Rose danger */
-  --color-text:      #e2e8f0;  /* Primary text */
+  --color-text:      #f1f5f9;  /* Primary text */
   --color-muted:     #94a3b8;  /* Muted text */
 
   /* MTG color identity pips */
@@ -124,7 +126,37 @@ body {
 }
 
 /* Mana symbol glow effect (Phase 24) */
-.mana-glow-hover:hover {
-  filter: drop-shadow(0 0 8px currentColor);
+.mana-glow-hover {
+  filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.2));
   transition: filter 0.2s ease;
+}
+.group:hover .mana-glow-hover {
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
+}
+
+/* Stat card bottom gradient borders (Phase 24i) */
+.stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.stat-card:hover::after {
+  opacity: 1;
+}
+.stat-card-1::after {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.stat-card-2::after {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+.stat-card-3::after {
+  background: linear-gradient(90deg, #8b5cf6, #6366f1);
+}
+.stat-card-4::after {
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
 }

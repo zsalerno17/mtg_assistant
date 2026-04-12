@@ -23,7 +23,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
-      <h1 className="font-[var(--font-brand)] text-5xl text-[var(--color-primary)] mb-3 tracking-wide drop-shadow-[0_0_16px_rgba(251,191,36,0.4)]">
+      <h1 className="font-brand text-5xl text-[var(--color-primary)] mb-3 tracking-wide">
         MTG Assistant
       </h1>
 
@@ -34,13 +34,13 @@ export default function LoginPage() {
         ))}
       </div>
 
-      <p className="text-[var(--color-muted)] mb-10 text-center max-w-xs text-sm font-[var(--font-heading)]">
+      <p className="text-[var(--color-muted)] mb-10 text-center max-w-xs text-sm font-heading">
         Know your deck. Command your game.
       </p>
 
       <button
         onClick={signInWithGoogle}
-        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-lg hover:shadow-amber-500/10 transition-all font-[var(--font-heading)]"
+        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-lg hover:shadow-amber-500/10 transition-all font-heading"
       >
         <GoogleIcon />
         <span>Continue with Google</span>

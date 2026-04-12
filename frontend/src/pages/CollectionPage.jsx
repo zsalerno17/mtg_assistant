@@ -76,14 +76,14 @@ export default function CollectionPage() {
     : []
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen">
+      <div className="max-w-[1600px] mx-auto px-8 pt-10 pb-6">
       <div className="mb-8">
-        <h2 className="font-[var(--font-brand)] text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2 drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]">
+        <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
           My Collection
         </h2>
         <div className="h-px w-20 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
-        <p className="text-[var(--color-muted)] text-sm font-[var(--font-heading)]">
+        <p className="text-[var(--color-muted)] text-sm font-heading">
           Export your collection from Moxfield and upload it here.
         </p>
         <p className="text-[var(--color-muted)] text-xs mt-2 opacity-75">
@@ -182,7 +182,7 @@ export default function CollectionPage() {
                 className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >
                 <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
-                <span className="text-[var(--color-muted)] font-[var(--font-mono)] text-xs ml-2 shrink-0">×{card.quantity}</span>
+                <span className="text-[var(--color-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>
               </div>
             ))}
           </div>

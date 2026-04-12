@@ -24,7 +24,7 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
     const id = urlToPresetId(avatarUrl)
     if (isCreaturePreset(id)) {
       return (
-        <div className={`${sizeClasses[size]} rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0`}>
+        <div className={`${sizeClasses[size]} rounded-[7px] bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0`}>
           <CreaturePresetIcon id={id} className={`${iconSizeClasses[size]} text-amber-400`}/>
         </div>
       )
@@ -42,14 +42,14 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
       <img
         src={avatarUrl}
         alt="Profile"
-        className={`${sizeClasses[size]} rounded-full object-cover border border-amber-500/30 shrink-0`}
+        className={`${sizeClasses[size]} rounded-[7px] object-cover border border-amber-500/30 shrink-0`}
       />
     )
   }
   const initials = email ? email.slice(0, 2).toUpperCase() : '?'
   return (
-    <div className={`${sizeClasses[size]} rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0`}>
-      <span className={`${textSizeClasses[size]} text-[var(--color-primary)] font-semibold font-[var(--font-mono)]`}>{initials}</span>
+    <div className={`${sizeClasses[size]} rounded-[7px] bg-gradient-to-br from-[var(--color-primary)] to-[#f59e0b] flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(251,191,36,0.25)]`}>
+      <span className={`${textSizeClasses[size]} text-black font-semibold font-mono`}>{initials}</span>
     </div>
   )
 }
@@ -61,14 +61,14 @@ export default function TopNavbar() {
   const email = session?.user?.email || ''
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/90 border-b border-[var(--color-border)]">
+    <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/85 border-b border-[var(--color-border)]">
       <div className="max-w-[1920px] mx-auto px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-8">
             <NavLink
               to="/"
-              className="font-[var(--font-brand)] text-[var(--color-primary)] text-xl md:text-2xl tracking-wide hover:brightness-110 transition-all drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]"
+              className="font-brand text-[var(--color-primary)] text-[18px] tracking-wide hover:brightness-110 transition-all"
             >
               MTG Assistant
             </NavLink>
@@ -79,10 +79,10 @@ export default function TopNavbar() {
                 to="/"
                 end
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-[var(--font-heading)] font-medium transition-all ${
+                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/10 text-[var(--color-primary)] shadow-[0_0_8px_rgba(251,191,36,0.2)]'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]'
+                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
                   }`
                 }
               >
@@ -91,10 +91,10 @@ export default function TopNavbar() {
               <NavLink
                 to="/collection"
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-[var(--font-heading)] font-medium transition-all ${
+                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/10 text-[var(--color-primary)] shadow-[0_0_8px_rgba(251,191,36,0.2)]'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]'
+                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
                   }`
                 }
               >

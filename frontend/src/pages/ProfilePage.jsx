@@ -106,22 +106,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen">
+      <div className="max-w-lg mx-auto px-8 pt-10 pb-6">
         {/* First-time welcome banner */}
         {isFirstTime && (
           <div className="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4">
-            <p className="font-[var(--font-heading)] text-[var(--color-primary)] text-sm tracking-wide mb-1">Welcome to MTG Assistant!</p>
+            <p className="font-heading text-[var(--color-primary)] text-sm tracking-wide mb-1">Welcome to MTG Assistant!</p>
             <p className="text-[var(--color-muted)] text-xs">Pick a username and avatar, then head to the dashboard to import your first deck.</p>
           </div>
         )}
         {/* Header */}
         <div className="mb-8">
-          <h2 className="font-[var(--font-brand)] text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2 drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]">
+          <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
             Profile
           </h2>
           <div className="h-px w-20 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
-          <p className="text-[var(--color-muted)] text-sm font-[var(--font-heading)]">
+          <p className="text-[var(--color-muted)] text-sm font-heading">
             Set a username and profile picture for use across the app.
           </p>
         </div>
@@ -151,7 +151,7 @@ export default function ProfilePage() {
                 />
               ) : (
                 <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-500/30 flex items-center justify-center">
-                  <span className="text-[var(--color-primary)] text-2xl font-semibold font-[var(--font-mono)]">
+                  <span className="text-[var(--color-primary)] text-2xl font-semibold font-mono">
                     {email.slice(0, 2).toUpperCase()}
                   </span>
                 </div>

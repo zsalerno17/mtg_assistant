@@ -1,15 +1,57 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 12, 2026 (Phase 24 UI Redesign complete)
+> Last updated: April 12, 2026 (User Experience Review Complete)
 
 ---
 
 ## ⚡ CURRENT TASK
 
-**Phase 22 — Deployment** (pending — ready to deploy)
+**Phase 25 — Feature Planning & Prioritization** (April 12, 2026)
 
-Phase 24 UI Redesign completed in overnight session. Next: deploy to production (Phase 22) or continue with Phase 23 schema improvements.
+Review findings from [.github/mtg-review.md](.github/mtg-review.md) and plan next development phase. User review identified critical Commander accuracy issues and differentiation opportunities.
+
+**Planning objectives:**
+1. Prioritize fixes by impact (trust/accuracy vs polish)
+2. Choose initial implementation scope (Phase 26)
+3. Define success criteria for each fix
+4. Assess resource requirements (backend vs frontend, Gemini dependencies)
+
+**Review summary:**
+- ✅ **Strengths:** Collection integration, UI polish, educational weakness cards
+- ❌ **Critical gaps:** Flat thresholds, no power level detection, removal bundling
+- ❌ **False positives:** Theme detection triggers on incidental patterns
+- 📊 **User rating:** 4/5 for casual, 2/5 for competitive (accuracy issues)
+
+**Next phase recommendation:** Phase 26 — Commander Accuracy Sprint (power level + dynamic thresholds)
+
+**Previous:** Phase 24j — Partner Commander Stacked Display (complete, ready for deployment)
+
+---
+
+## Phase 25 — Feature Planning & Prioritization (Upcoming)
+
+Based on comprehensive user review ([.github/mtg-review.md](.github/mtg-review.md)), prioritize and plan implementation of:
+
+**🔴 Critical Fixes (Commander Accuracy):**
+1. **Power level detection** — Calculate 4–10 scale based on fast mana, tutors, infinite combos, avg CMC
+2. **Dynamic thresholds** — Strategy-aware ramp/draw/removal recommendations (aggro vs combo vs control)
+3. **Removal quality splits** — Distinguish exile vs destroy vs conditional removal
+
+**🟡 High Priority (Quality of Life):**
+4. **Theme detection improvements** — Increase thresholds, exclude incidental tokens, density checks
+5. **Enhanced counting functions** — Add ritual/impulse draw/cost reducer detection
+6. **Collection tab clarity** — Rename or split to distinguish owned vs recommended purchases
+
+**🟢 Medium Priority (Differentiation):**
+7. **Budget filtering** — Toggle for price-tier filtering on suggestions
+8. **Scenario analysis quality** — Weight cards by CMC/quality, not just count
+9. **Bulk actions** — Dashboard "Analyze All" and "Refresh All" buttons
+
+**Review Goals:**
+- Decide which fixes to implement in Phase 26 (recommend: all Critical + 2 High Priority)
+- Identify quick wins vs long-term features
+- Assess differentiation strategy: double down on collection integration vs expand feature set
 
 ---
 
@@ -46,9 +88,137 @@ Completed three critical UX fixes identified during testing:
 
 **Testing status:** All fixes verified on localhost (backend:8000, frontend:5173). Frontend hot-reloaded changes successfully.
 
+**Phase 24k: Full App Redesign Pass (Continuation)**
+- ✅ **CRITICAL FIX**: Tailwind v4 font classes globally fixed — `font-[var(--font-brand)]` → `font-brand` etc. (46 replacements across 8 files). The arbitrary value syntax silently produces NO CSS in Tailwind v4.
+- ✅ **DeckPage redesign**: Removed drop-shadows, container `max-w-[1600px] mx-auto px-8`, ColorPips `gap-[5px]`, top bar centered
+- ✅ **CollectionPage**: Removed drop-shadow, container widened to `max-w-[1600px] mx-auto px-8 pt-10`
+- ✅ **ProfilePage**: Removed drop-shadow, consistent container padding
+- ✅ **LoginPage**: Removed drop-shadow from brand title
+- ✅ **ImportDeckPage**: Consistent container padding
+- ✅ Build verified clean
+
 **Phase 24 UI Redesign — Complete ✅ (April 12, 2026)**
 
-Implemented complete visual redesign with new typography hierarchy, horizontal navigation, and refined color palette.
+**Phase 24i: Final Hover Effects & Typography Polish (April 12, 2026)**
+- ✅ Fixed DashboardPage to EXACTLY match variant-3-refined.html mockup:
+  - **Page title**: Changed from amber to white text (`var(--color-text)`), 28px Cinzel
+  - **Section heading**: Changed "My Decks" → "Your Decks" with Space Grotesk 18px font
+  - **Stat values**: Increased to 34px (from 24px), Space Grotesk font
+  - **Stat cards**: Added gradient backgrounds (`from-surface to-#1a202e`), ::after bottom gradient borders (4 colors), hover effects (lift + shadow)
+  - **Button**: Explicit Inter font, gradient background (`from-primary to-#f59e0b`), hover lift + shadow
+  - **Table header**: Darker background (#1a202e), larger padding (py-4 px-6), 11px font with 0.8px tracking
+  - **Table cells**: Larger padding (py-[18px] px-6), 15px deck names, 18px mana symbols, 11px format/labels
+  - **Action links**: Inter font, 13px, hover color change (no underline)
+  - **Table row hover**: Amber tint `/5` opacity
+  - **Commander art hover**: Dual-shadow on group hover, lift 0.5 translateY
+  - **Mana symbols**: 18px size, glow on group hover
+- ✅ Updated ColorPips component with optional glow prop for table hover consistency
+- ✅ Added CSS for stat-card-1 through stat-card-4 ::after pseudo-elements with gradient bottom borders
+- Files: [frontend/src/pages/DashboardPage.jsx](frontend/src/pages/DashboardPage.jsx), [frontend/src/index.css](frontend/src/index.css)
+
+**Typography hierarchy verified:**
+- Cinzel (`font-[var(--font-brand)]`): Page title ("Deck Vault" - white text)
+- Space Grotesk (`font-[var(--font-heading)]`): Section headings ("Your Decks"), deck names, stat values
+- Inter (`font-[var(--font-body)]`): Buttons, action links, body text
+- JetBrains Mono (`font-[var(--font-mono)]`): Stats and data
+
+**Phase 24 UI Redesign — Complete ✅ (April 12, 2026)**
+
+Implemented complete visual redesign matching variant-3-refined mockup with typography hierarchy, horizontal navigation, refined color palette, and commander artwork in deck tables.
+
+**Phase 24h: Commander Artwork Table (April 12, 2026)**
+- ✅ Created migration [006_add_commander_art.sql](supabase/migrations/006_add_commander_art.sql)
+  - Added `commander_image_uri` TEXT column to `user_decks`
+  - Added `format` TEXT column with default 'commander'
+- ✅ Updated backend [routers/decks.py](backend/routers/decks.py)
+  - Store commander image URI when caching deck data
+  - Extract and store commander art when importing decks to library
+  - Return `commander_image_uri`, `format`, and `power_level` in `/library` endpoint
+  - Updated deck serialization to include image_uri for commanders and partners
+- ✅ Updated frontend [DashboardPage.jsx](frontend/src/pages/DashboardPage.jsx)
+  - Redesigned table layout to match variant-3-refined mockup
+  - Commander artwork thumbnails (46px × 64px) with hover effects
+  - Deck column combines art + deck name + commander name
+  - Table columns: Deck (45% width, with art), Colors, Format, Status, Power, Actions
+  - Removed separate Commander column and Added date column
+  - Added Power Level column (shows "—" if not analyzed)
+  - Moxfield link moved to row hover behavior (pending)
+  - Updated skeleton loaders to match new structure
+
+**Visual Design Elements:**
+- Commander art with amber border and glow on hover
+- Translates up 2px on hover with enhanced shadow
+- Graceful fallback (gray card placeholder) when no image available
+- Typography: Space Grotesk for deck names, Inter for commander names
+- Consistent with variant-3-refined color palette and spacing
+
+**Phase 24i: Legacy Deck Commander Images (April 12, 2026)**
+- ✅ **ROOT CAUSE IDENTIFIED:**
+  - Legacy decks exist in `analyses` table but not in `user_decks` table (pre-migration data)
+  - Backend `get_library()` was explicitly setting `commander_image_uri: None` for legacy entries
+  - Old cached deck data in `decks` table only contained commander names, not image URIs
+  - Moxfield API response didn't include `image_uris` for these specific cards (empty `card_faces`)
+- ✅ **Updated backend** [routers/decks.py](backend/routers/decks.py)
+  - Modified backwards-compatibility loop in `get_library()` to extract commander images from cached deck data
+  - Added try/except block to look up `data_json.commander.image_uri` from `decks` table
+  - Falls back to `None` gracefully if cache lookup fails (no breaking changes)
+- ✅ **Created cache refresh script** [scripts/fix_commander_images.py](scripts/fix_commander_images.py)
+  - Fetches commander images from Scryfall API by card name
+  - Updates cached `decks` table with `image_uri` for both commander and partner
+  - Tested on "Turtle Time" deck — successfully added image URIs from Scryfall
+- ✅ **Created debug scripts**
+  - [scripts/debug_library_data.py](scripts/debug_library_data.py) — Inspect user_decks and analyses tables
+  - [scripts/debug_moxfield_api.py](scripts/debug_moxfield_api.py) — Examine raw Moxfield API responses
+  - Used to diagnose that Moxfield doesn't always include image_uris in responses
+- ✅ **Verified fix**
+  - Cache now contains: `commander.image_uri: "https://cards.scryfall.io/normal/front/7/2/72e637db-7112-..."`
+  - Backend extracts image from cache and returns in `/library` endpoint
+  - Frontend displays commander artwork thumbnails for legacy decks
+
+**Implementation Details:**
+- **Why images were missing:** Moxfield API returns `card_faces: []` (empty array) for some cards, so no image_uris available directly
+- **Solution path:** Look up images via Scryfall using card name ({exact: "Leonardo, the Balance"})
+- **Backwards compatibility:** Legacy entries still work (None if cache has no image)
+- **Future-proof:** New decks get images via normal import flow (Phases 24h implementation)
+
+**Files Modified (Phase 24i):**
+- Updated: [backend/routers/decks.py](backend/routers/decks.py) (backwards-compat logic in `get_library`)
+- Created: [scripts/fix_commander_images.py](scripts/fix_commander_images.py) (~85 lines, Scryfall lookup)
+- Created: [scripts/debug_library_data.py](scripts/debug_library_data.py) (~35 lines, diagnostic)
+- Created: [scripts/debug_moxfield_api.py](scripts/debug_moxfield_api.py) (~40 lines, diagnostic)
+
+**Phase 24j: Partner Commander Stacked Display (April 12, 2026)**
+- ✅ **Updated database migration** [006_add_commander_art.sql](supabase/migrations/006_add_commander_art.sql)
+  - Added `partner_image_uri TEXT` column to `user_decks` table
+  - Now stores both commander and partner artwork URIs
+- ✅ **Updated backend** [routers/decks.py](backend/routers/decks.py)
+  - `/library` endpoint now returns `partner_image_uri` for both user_decks and legacy entries
+  - `add_to_library()` extracts and stores partner image URI when importing decks
+  - Legacy deck lookup now fetches both `commander.image_uri` and `partner.image_uri` from cached data
+- ✅ **Created CommanderArtStack component** [DashboardPage.jsx](frontend/src/pages/DashboardPage.jsx)
+  - Single commander: Standard card display with hover effects and Scryfall tooltip
+  - Partner commanders: Stacked layout with 2nd card partially visible (offset 14px)
+  - **Hover behavior:** Cards spread out (28px offset) with enhanced glow and shadow
+  - **Interactive tooltips:** Each card has individual CardTooltip with Scryfall image preview
+  - Parses commander names from combined string (e.g., "Leonardo & Michelangelo" → 2 tooltips)
+  - Smooth 200ms transitions for all animations
+- ✅ **Visual design:**
+  - Stacked cards have layered z-index (commander: z-10, partner: z-0, both z-20/z-10 on hover)
+  - Amber border glow on hover: `shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)]`
+  - Cards lift up 2px on hover with `-translate-y-0.5`
+  - Cursor changes to `cursor-help` to indicate interactive tooltips
+
+**Implementation Notes:**
+- **Smart parsing:** Splits commander names on " & " to get individual card names for tooltips
+- **Graceful fallback:** Shows "?" placeholder if no images available
+- **Accessibility:** Hover state on parent div controls both cards' spread animation
+- **Scryfall integration:** CardTooltip fetches high-res card images on hover using individual card names
+
+**Files Modified (Phase 24j):**
+- Updated: [supabase/migrations/006_add_commander_art.sql](supabase/migrations/006_add_commander_art.sql) (added partner_image_uri column)
+- Updated: [backend/routers/decks.py](backend/routers/decks.py) (3 locations: add_to_library, user_decks loop, legacy loop)
+- Updated: [frontend/src/pages/DashboardPage.jsx](frontend/src/pages/DashboardPage.jsx) (added CommanderArtStack component, ~75 lines)
+- Imported: [frontend/src/components/CardTooltip.jsx](frontend/src/components/CardTooltip.jsx) (for Scryfall previews)
 
 **Phase 24b: Top Navigation Component**
 - ✅ Created [TopNavbar.jsx](frontend/src/components/TopNavbar.jsx) — horizontal nav with logo, links, user avatar
