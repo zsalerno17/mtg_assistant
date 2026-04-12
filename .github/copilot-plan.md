@@ -15,24 +15,99 @@ Do not start Phase 23 or Phase 24 until Phase 22 is complete.
 
 ## Current Status
 
-**Phase 22 Deployment — Ready to Deploy.**
+**Phase 22 Deployment — All Automated Steps Complete ✅**
 
-All automated deployment preparation complete:
-- ✅ `render.yaml` created (Render backend configuration)
-- ✅ `vercel.json` created (Vercel frontend configuration)
-- ✅ `.github/DEPLOYMENT.md` updated (references new config files)
-- ✅ Environment variables documented
-- ✅ All changes committed and pushed to GitHub
+All automated deployment preparation complete. Ready to deploy to production.
 
-**Manual steps required** (cannot be automated):
-1. Create Render account → connect GitHub repo → add env vars → deploy
-2. Create Vercel account → connect GitHub repo → add env vars → deploy
-3. Update Supabase Auth redirect URLs with production Vercel URL
-4. Test production deployment
+### What I Did (Automated)
 
-See [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) for complete step-by-step instructions.
+1. ✅ **Created deployment configurations**
+   - [render.yaml](render.yaml) — Render will auto-detect backend settings
+   - [vercel.json](vercel.json) — Vercel will auto-detect frontend settings
 
-**Final status (April 11, 2026):**
+2. ✅ **Updated deployment guide**
+   - [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) references the new config files
+   - Added automated testing section
+
+3. ✅ **Created deployment test script**
+   - [scripts/test-deployment.sh](scripts/test-deployment.sh) — Run after deployment to verify everything works
+   - Tests: health endpoint, CORS, frontend accessibility, Vite build
+
+4. ✅ **Verified all requirements**
+   - Environment variables documented ([backend/.env.example](backend/.env.example), [frontend/.env.example](frontend/.env.example))
+   - .env files are gitignored ✓
+   - Backend health endpoint works ✓
+   - CORS already configured for `*.vercel.app` wildcard ✓
+   - Local servers running (backend:8000, frontend:5173) ✓
+
+5. ✅ **Committed everything to GitHub**
+   - All code pushed to https://github.com/zsalerno17/mtg_assistant
+   - Latest commits:
+     - `5503356` — Add automated testing step to deployment guide
+     - `dbd602c` — Add production deployment testing script
+     - `94ab250` — Update Phase 22 status: deployment configs ready
+     - `d41418f` — Update DEPLOYMENT.md to reference automation
+     - `c86c68b` — Add Render and Vercel deployment configs
+
+### What You Need to Do (Manual — Cannot Be Automated)
+
+Follow [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) for complete step-by-step instructions. Summary:
+
+**1. Deploy Backend to Render** (~5 minutes)
+   - Create Render account → sign in with GitHub
+   - New Web Service → select `mtg_assistant` repo
+   - Render auto-detects `render.yaml` (all settings pre-filled!)
+   - Add 5 environment variables in dashboard
+   - Click "Create Web Service" → wait for build
+   - Copy your backend URL (e.g., `https://mtg-assistant-backend.onrender.com`)
+
+**2. Deploy Frontend to Vercel** (~2 minutes)
+   - Create Vercel account → sign in with GitHub
+   - Import `mtg_assistant` repo
+   - Vercel auto-detects `vercel.json` (all settings pre-filled!)
+   - Add 3 environment variables (use Render URL from step 1)
+   - Click "Deploy" → wait for build
+   - Copy your frontend URL (e.g., `https://mtg-assistant.vercel.app`)
+
+**3. Configure Supabase Auth** (~1 minute)
+   - Supabase dashboard → Authentication → URL Configuration
+   - Add redirect URL: `https://your-app.vercel.app/auth/callback`
+   - Save
+
+**4. Test Production** (~5 minutes)
+   - Run: `./scripts/test-deployment.sh <BACKEND_URL> <FRONTEND_URL>`
+   - Open your Vercel URL in browser
+   - Sign in with Google
+   - Import a deck, verify analysis works
+
+### Environment Variables Quick Reference
+
+**Backend (Render):**
+```
+SUPABASE_URL=https://erklzjnsdduexqifffim.supabase.co
+SUPABASE_ANON_KEY=<your-key-from-supabase-dashboard>
+SUPABASE_JWT_SECRET=<your-secret-from-supabase-dashboard>
+GEMINI_API_KEY=<your-gemini-key>
+ENVIRONMENT=production
+```
+
+**Frontend (Vercel):**
+```
+VITE_SUPABASE_URL=https://erklzjnsdduexqifffim.supabase.co
+VITE_SUPABASE_ANON_KEY=<same-as-backend>
+VITE_API_BASE_URL=<your-render-backend-url>
+```
+
+### Risks / Gotchas
+
+- Render free tier **sleeps after 15 minutes** of inactivity (first request takes ~30 seconds to wake up)
+- Environment variables must be added **in the platform dashboards** (not in GitHub — they're secrets)
+- After adding env vars in Vercel, you must **redeploy** for changes to take effect
+- Your Google email must be in Supabase `allowed_users` table or you'll get 401 errors in production
+
+---
+
+**Previous Phase 20-21 Status:**
 1. ✅ **CMC decimals overlapping** — FIXED (reduced both numerator and denominator sizes)
 2. ✅ **Card tooltips clipped** — FIXED (React Portal escapes stacking contexts)
 3. ✅ **Scryfall search links** — FIXED (exact match quotes)
@@ -900,13 +975,31 @@ players    → id, display_name, persona, email
 
 > Do after Phase 21. Backend to Render, frontend to Vercel.
 
-**Automated preparation (COMPLETE):**
+**Status:** All automated preparation complete. Ready for manual deployment steps.
+
+**Automated preparation (COMPLETE — April 12, 2026):**
 - [x] Push repo to GitHub (https://github.com/zsalerno17/mtg_assistant)
-- [x] Create `render.yaml` with backend configuration
-- [x] Create `vercel.json` with frontend configuration
-- [x] Update `.github/DEPLOYMENT.md` with step-by-step instructions
-- [x] Verify environment variables documented
+- [x] Create `render.yaml` with backend configuration (Python 3.11, Oregon region, free tier)
+- [x] Create `vercel.json` with frontend configuration (Vite framework, SPA rewrites)
+- [x] Create `scripts/test-deployment.sh` - automated testing script for post-deployment verification
+- [x] Create `scripts/README.md` - documentation for deployment scripts
+- [x] Update `.github/DEPLOYMENT.md` with step-by-step instructions referencing automation
+- [x] Verify environment variables documented (backend/.env.example, frontend/.env.example)
+- [x] Verify .env files are gitignored (security check passed)
+- [x] Verify backend health endpoint works locally
+- [x] Verify backend CORS already configured for *.vercel.app wildcard
 - [x] Commit and push all deployment configs
+  - Commit `c86c68b`: Add Render and Vercel deployment configs
+  - Commit `d41418f`: Update DEPLOYMENT.md to reference automation
+  - Commit `94ab250`: Update Phase 22 status
+  - Commit `dbd602c`: Add production deployment testing script
+  - Commit `5503356`: Add automated testing step to deployment guide
+
+**Files created:**
+- `render.yaml` - Render auto-detects this for zero-config backend deployment
+- `vercel.json` - Vercel auto-detects this for zero-config frontend deployment
+- `scripts/test-deployment.sh` - Test health endpoint, CORS, frontend accessibility after deployment
+- `scripts/README.md` - Usage instructions for test script
 
 **Manual deployment steps (USER REQUIRED):**
 - [ ] Create Render account and connect GitHub repo
@@ -915,22 +1008,30 @@ players    → id, display_name, persona, email
 - [ ] Create Vercel account and connect GitHub repo
 - [ ] Configure frontend environment variables in Vercel dashboard
 - [ ] Deploy frontend to Vercel (auto-builds from vercel.json)
-- [ ] Add Vercel URL to Supabase Auth redirect URLs
-- [ ] Test production deployment
+- [ ] Add Vercel URL to Supabase Auth redirect URLs (format: https://your-app.vercel.app/auth/callback)
+- [ ] Run `./scripts/test-deployment.sh <BACKEND_URL> <FRONTEND_URL>` to verify deployment
+- [ ] Test production deployment manually (sign in, import deck, verify analysis)
 
 **Environment Variables:**
 
 Backend (Render):
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_JWT_SECRET`
-- `GEMINI_API_KEY`
+- `SUPABASE_URL=https://erklzjnsdduexqifffim.supabase.co`
+- `SUPABASE_ANON_KEY` (from Supabase dashboard → API)
+- `SUPABASE_JWT_SECRET` (from Supabase dashboard → JWT Settings)
+- `GEMINI_API_KEY` (your Gemini API key)
 - `ENVIRONMENT=production`
 
 Frontend (Vercel):
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_API_BASE_URL` (set to Render backend URL)
+- `VITE_SUPABASE_URL=https://erklzjnsdduexqifffim.supabase.co`
+- `VITE_SUPABASE_ANON_KEY` (same as backend)
+- `VITE_API_BASE_URL` (set to Render backend URL after backend deployment)
+
+**Cost estimate:** $0/month (all free tiers)
+- Render free tier: Backend sleeps after 15 min inactivity
+- Vercel Hobby: Unlimited bandwidth, instant serving
+- Supabase free tier: 500MB DB, 50k auth users
+
+**Next:** After deployment complete, proceed to Phase 23 (schema design) or Phase 24 (UI redesign)
 
 ---
 
