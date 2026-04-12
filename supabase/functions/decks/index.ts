@@ -133,9 +133,7 @@ async function handleAnalyze(
   let lastUpdatedAt: string | null = null;
 
   try {
-    const result = await getDeckWithMeta(moxfieldId);
-    deck = result.deck;
-    lastUpdatedAt = result.lastUpdatedAt;
+    [deck, lastUpdatedAt] = await getDeckWithMeta(moxfieldId);
   } catch (e) {
     // If Moxfield is down but we have an existing analysis, return it
     if (existing) {
