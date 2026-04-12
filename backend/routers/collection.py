@@ -1,9 +1,11 @@
 import os
+import time
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from supabase import create_client
 
 from auth import require_allowed_user
 from src.collection import parse_moxfield_csv, parse_text_list
+from src.scryfall import get_card_by_name
 
 router = APIRouter()
 
@@ -28,7 +30,33 @@ async def upload_collection(
     if not collection.cards:
         raise HTTPException(status_code=400, detail="No cards parsed from file. Check the format.")
 
-    cards_data = [{"name": c.name, "quantity": c.quantity} for c in collection.cards]
+    # Enrich cards with Scryfall data
+    enriched = []
+    for i, card in enumerate(collection.cards):
+        scryfall_card = get_card_by_name(card.name)
+        if scryfall_card:
+            scryfall_card.quantity = card.quantity
+            enriched.append(scryfall_card)
+        else:
+            # Keep stub card if Scryfall lookup fails
+            enriched.append(card)
+        
+        # Rate limit: 10 requests/sec (Scryfall allows 10/sec max)
+        if i < len(collection.cards) - 1:  # Don't sleep after last card
+            time.sleep(0.11)
+
+    # Store enriched card data
+    cards_data = [
+        {
+            "name": c.name,
+            "quantity": c.quantity,
+            "cmc": c.cmc,
+            "type_line": c.type_line,
+            "oracle_text": c.oracle_text,
+            "color_identity": c.color_identity,
+        }
+        for c in enriched
+    ]
 
     sb = _supabase()
     sb.table("collections").upsert(

@@ -31,4 +31,12 @@ def get_history(
         .execute()
     )
 
-    return {"analyses": result.data, "page": page}
+    analyses = []
+    for row in result.data:
+        rj = row.get("result_json") or {}
+        analyses.append({
+            **row,
+            "verdict": rj.get("verdict"),
+        })
+
+    return {"analyses": analyses, "page": page}

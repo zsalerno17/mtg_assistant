@@ -108,18 +108,18 @@ def analyze_deck(deck: Deck) -> Dict:
 
 def find_collection_improvements(
     deck: Deck, collection: Collection
-) -> List[Tuple[Card, Optional[Card], str]]:
+) -> List[Tuple[Card, Optional[Card], str, float, Optional[str]]]:
     """Find cards in *collection* that could improve *deck*.
 
-    Returns a list of (collection_card, card_to_cut_or_None, reason) triples,
-    sorted by relevance, capped at 20 suggestions.
+    Returns a list of (collection_card, card_to_cut_or_None, reason, score, never_cut_reason) tuples,
+    sorted by score (descending), capped at 20 suggestions.
     """
     deck_names = {c.name.lower() for c in deck.all_cards}
     commander_colors = set(deck.color_identity)
     weaknesses = identify_weaknesses(deck)
     themes = identify_themes(deck)
 
-    suggestions: List[Tuple[Card, Optional[Card], str]] = []
+    suggestions: List[Tuple[Card, Optional[Card], str, float, Optional[str]]] = []
 
     for col_card in collection.cards:
         # Skip if already in deck
@@ -131,12 +131,108 @@ def find_collection_improvements(
         if card_colors and not card_colors.issubset(commander_colors):
             continue
 
-        reason = _evaluate_card(col_card, weaknesses, themes)
-        if reason:
-            cut = _find_cut(deck, col_card)
-            suggestions.append((col_card, cut, reason))
+        result = _evaluate_card(col_card, weaknesses, themes)
+        if result:
+            reason, score = result
+            cut, never_cut_reason = _find_cut(deck, col_card)
+            suggestions.append((col_card, cut, reason, score, never_cut_reason))
 
+    # Sort by score descending, then return top 20
+    suggestions.sort(key=lambda x: x[3], reverse=True)
     return suggestions[:20]
+
+
+def scenarios_fallback(deck: Deck, adds: List[str], removes: List[str]) -> Dict:
+    """Rule-based stat diff for proposed deck changes. No AI required.
+
+    Returns before/after/delta stats and a template-driven verdict sentence.
+    """
+    # Build a mutable copy of the mainboard as name->card map (case-insensitive)
+    card_map: Dict[str, Card] = {c.name.lower(): c for c in deck.all_cards}
+
+    # Current stats
+    all_cards = list(deck.all_cards)
+    before_lands = count_mana_sources(all_cards)
+    before_ramp = count_ramp(all_cards)
+    before_draw = count_draw(all_cards)
+    before_avg_cmc = calculate_average_cmc(all_cards)
+
+    # Apply changes: find matching cards from the deck for removals
+    modified = list(all_cards)
+    removed_cards: List[Card] = []
+    for name in removes:
+        key = name.strip().lower()
+        match = card_map.get(key)
+        if match and match in modified:
+            modified.remove(match)
+            removed_cards.append(match)
+
+    # For adds, construct minimal placeholder cards from oracle text if possible
+    # We only know the name, so compute deltas based on whether each added name
+    # matches known ramp/draw patterns (we can't without oracle text).
+    # Instead, track delta from removals only, then annotate adds as unknowns.
+    added_cards: List[Card] = []
+    for name in adds:
+        # Create a stub card — oracle text unknown at this stage.
+        # We'll compute net delta purely from what we know (removed cards).
+        added_cards.append(Card(name=name.strip(), quantity=1))
+
+    after_cards = modified + added_cards
+
+    after_lands = count_mana_sources(after_cards)
+    after_ramp = count_ramp(after_cards)
+    after_draw = count_draw(after_cards)
+    after_avg_cmc = calculate_average_cmc(after_cards)
+
+    delta_lands = after_lands - before_lands
+    delta_ramp = after_ramp - before_ramp
+    delta_draw = after_draw - before_draw
+    delta_cmc = round(after_avg_cmc - before_avg_cmc, 2)
+
+    # Template-driven verdict
+    parts: List[str] = []
+    if delta_ramp > 0:
+        parts.append(f"ramp improves by {delta_ramp}")
+    elif delta_ramp < 0:
+        parts.append(f"ramp decreases by {abs(delta_ramp)}")
+    if delta_draw > 0:
+        parts.append(f"card draw improves by {delta_draw}")
+    elif delta_draw < 0:
+        parts.append(f"card draw decreases by {abs(delta_draw)}")
+    if delta_lands != 0:
+        direction = "up" if delta_lands > 0 else "down"
+        parts.append(f"mana sources go {direction} by {abs(delta_lands)}")
+    if delta_cmc > 0.05:
+        parts.append(f"average CMC rises by {delta_cmc:.2f}")
+    elif delta_cmc < -0.05:
+        parts.append(f"average CMC drops by {abs(delta_cmc):.2f}")
+
+    if parts:
+        verdict = "Net effect: " + ", ".join(parts) + "."
+    else:
+        verdict = "These changes have minimal measurable impact on ramp, draw, lands, or average CMC."
+
+    return {
+        "before": {
+            "land_count": before_lands,
+            "ramp_count": before_ramp,
+            "draw_count": before_draw,
+            "avg_cmc": before_avg_cmc,
+        },
+        "after": {
+            "land_count": after_lands,
+            "ramp_count": after_ramp,
+            "draw_count": after_draw,
+            "avg_cmc": after_avg_cmc,
+        },
+        "delta": {
+            "land_count": delta_lands,
+            "ramp_count": delta_ramp,
+            "draw_count": delta_draw,
+            "avg_cmc": delta_cmc,
+        },
+        "verdict": verdict,
+    }
 
 
 # ─── Mana Curve & CMC ─────────────────────────────────────────────────────────
@@ -582,47 +678,96 @@ def generate_deck_verdict(analysis: Dict) -> str:
 
 def _evaluate_card(
     card: Card, weaknesses: List, themes: List[Dict]
-) -> Optional[str]:
-    """Return a reason string if *card* addresses a weakness or fits a theme."""
+) -> Optional[Tuple[str, float]]:
+    """Return (reason, score) if *card* addresses a weakness or fits a theme.
+    
+    Score is 0.0-1.0 based on:
+    - CMC efficiency (lower is better for ramp/draw)
+    - Unconditional vs conditional (color restrictions reduce score)
+    - Repeatable vs one-shot (permanents score higher than instants/sorceries)
+    """
     oracle = card.oracle_text.lower()
+    type_line = card.type_line.lower()
 
     # Normalise weaknesses to list of label strings for matching
     weakness_text = " ".join(
         w["label"] if isinstance(w, dict) else w for w in weaknesses
     )
 
+    reason = None
+    base_score = 0.5  # Default score
+
     if "Low ramp" in weakness_text:
         if ("add {" in oracle or "adds {" in oracle or "add mana" in oracle
                 or "treasure token" in oracle
                 or ("search your library" in oracle and "land" in oracle)):
-            return "Adds ramp (deck needs more ramp)"
+            reason = "Adds ramp (deck needs more ramp)"
+            # CMC efficiency: prefer CMC <= 2 for ramp
+            base_score = 0.9 if card.cmc <= 2 else (0.7 if card.cmc <= 3 else 0.5)
+            # Repeatable (enchantment/artifact) vs one-shot (instant/sorcery)
+            if "enchantment" in type_line or "artifact" in type_line:
+                base_score += 0.1
+            # Treasure tokens are excellent repeatable value
+            if "treasure token" in oracle:
+                base_score = min(1.0, base_score + 0.1)
 
     if "Low card draw" in weakness_text:
         if any(p in oracle for p in (
             "draw a card", "draw cards", "draw two", "draw three", "draw an additional",
         )):
-            return "Adds card draw (deck needs more draw)"
+            reason = "Adds card draw (deck needs more draw)"
+            # CMC efficiency: prefer CMC <= 3 for draw
+            base_score = 0.9 if card.cmc <= 3 else (0.7 if card.cmc <= 4 else 0.5)
+            # Repeatable draw engines score much higher
+            if "enchantment" in type_line or "artifact" in type_line:
+                base_score = min(1.0, base_score + 0.2)
+            # "Draw additional" implies ongoing value
+            if "draw an additional" in oracle or "whenever" in oracle:
+                base_score = min(1.0, base_score + 0.1)
 
     if "Low removal" in weakness_text:
         if any(p in oracle for p in ("destroy target", "exile target")):
-            return "Adds removal (deck needs more removal)"
+            reason = "Adds removal (deck needs more removal)"
+            base_score = 0.7
+            # Unconditional removal (no color/type restrictions) scores higher
+            if not any(restrict in oracle for restrict in ("nonblack", "nonwhite", "nonblue", "nonred", "nongreen", "nonartifact")):
+                base_score += 0.2
+            # Exile is better than destroy
+            if "exile target" in oracle:
+                base_score = min(1.0, base_score + 0.1)
 
     if "Low board wipes" in weakness_text:
         if any(p in oracle for p in (
             "destroy all creatures", "destroy all nonland", "exile all",
             "damage to each creature",
         )):
-            return "Adds a board wipe (deck needs more wipes)"
+            reason = "Adds a board wipe (deck needs more wipes)"
+            base_score = 0.8
+            # Unconditional wipes score higher
+            if "destroy all creatures" in oracle or "exile all creatures" in oracle:
+                base_score = 0.9
+            # One-sided wipes are premium
+            if "you control" in oracle or "you don't control" in oracle:
+                base_score = 1.0
 
     if "Low land count" in weakness_text and card.is_land:
-        return "Adds a land (deck needs more lands)"
+        reason = "Adds a land (deck needs more lands)"
+        base_score = 0.6
+        # Utility lands score higher than basics
+        if oracle.strip():  # Has oracle text = not a basic land
+            base_score = 0.8
 
     # Theme alignment — themes are now dicts with "name" key
     theme_names = [t["name"] if isinstance(t, dict) else t for t in themes]
     for theme_name in theme_names:
         if _card_fits_theme(card, theme_name):
-            return f"Fits deck theme: {theme_name}"
+            reason = f"Fits deck theme: {theme_name}"
+            # Theme cards score high if low CMC, decent otherwise
+            base_score = 0.9 if card.cmc <= 4 else 0.7
+            break
 
+    if reason:
+        return (reason, min(1.0, max(0.0, base_score)))  # Clamp to [0.0, 1.0]
     return None
 
 
@@ -630,31 +775,49 @@ def _evaluate_card(
 _MIN_ORACLE_TEXT_FOR_CUT = 40
 
 
-def _find_cut(deck: Deck, incoming: Card) -> Optional[Card]:
+def _find_cut(deck: Deck, incoming: Card) -> Tuple[Optional[Card], Optional[str]]:
     """Heuristically pick a card from the deck to replace with *incoming*.
 
-    Avoids cutting on-theme cards or cheap utility pieces.
+    Returns (cut_card, never_cut_reason).
+    - If a suitable cut is found: (Card, None)
+    - If no cut found: (None, reason_string)
+
+    Avoids cutting:
+    - Commanders
+    - On-theme cards
+    - Cheap utility pieces
     """
     themes = identify_themes(deck)
     theme_names = [t["name"] if isinstance(t, dict) else t for t in themes]
+    
+    # Get commander names (case-insensitive)
+    commander_names = set()
+    if deck.commander:
+        commander_names.add(deck.commander.name.lower())
+    if deck.partner:
+        commander_names.add(deck.partner.name.lower())
 
     def _is_on_theme(c: Card) -> bool:
         return any(_card_fits_theme(c, tn) for tn in theme_names)
+    
+    def _is_commander(c: Card) -> bool:
+        return c.name.lower() in commander_names
 
     candidates = [
         c for c in deck.mainboard
         if not c.is_land
         and len(c.oracle_text) > _MIN_ORACLE_TEXT_FOR_CUT
         and not _is_on_theme(c)
+        and not _is_commander(c)
     ]
-    # Fallback: if every non-land is on-theme, allow all non-lands
+    
+    # If no suitable candidates, explain why
     if not candidates:
-        candidates = [
-            c for c in deck.mainboard
-            if not c.is_land and len(c.oracle_text) > _MIN_ORACLE_TEXT_FOR_CUT
-        ]
-    if not candidates:
-        return None
+        # Check if all non-lands are commanders or on-theme
+        non_lands = [c for c in deck.mainboard if not c.is_land]
+        if all(_is_commander(c) or _is_on_theme(c) for c in non_lands):
+            return (None, "All non-lands are commanders or on-theme")
+        return (None, "No suitable cuts found")
 
     # Prefer replacing expensive cards of the same broad type
     incoming_type = incoming.type_line.lower()
@@ -667,5 +830,6 @@ def _find_cut(deck: Deck, incoming: Card) -> Optional[Card]:
         )
     ]
     pool = same_type if same_type else candidates
+    # Sort by CMC descending — prefer cutting high-cost dead weight
     pool.sort(key=lambda c: c.cmc, reverse=True)
-    return pool[0]
+    return (pool[0], None)

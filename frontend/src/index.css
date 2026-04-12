@@ -75,3 +75,9 @@ body {
   background-size: 1200px 100%;
   animation: shimmer 1.5s linear infinite;
 }
+
+/* Progress bar shimmer */
+@keyframes progressShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}

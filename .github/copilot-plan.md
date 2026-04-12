@@ -1,13 +1,13 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 11, 2026
+> Last updated: April 11, 2026 (Overnight Session: Phases 20-23)
 
 ---
 
 ## Current Status
 
-**Phase 16 complete.** All original phases done. Working through gap phases (17–21) in order.
+**Phase 23 complete.** All gap phases (20-23) completed in overnight autonomous session.
 
 **Completed:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
@@ -19,14 +19,115 @@
 7. [x] Phase 14B: Onboarding panel (replaced by Phase 16)
 8. [x] Phase 15: Design review (MTG aesthetic + desktop/mobile polish)
 9. [x] Phase 16: Rearchitect user flow (complete)
+10. [x] Phase 17: Cleanup + quick backend fixes (complete)
+11. [x] Phase 18: Scenarios tab rule-based fallback (complete)
+12. [x] Phase 19: Collection improvements quality (complete)
+13. [x] Phase 20: Card tooltip (Scryfall image on hover) — **NEW**
+14. [x] Phase 21: StatBadge visual upgrade (radial progress rings) — **NEW**
+15. [x] Phase 22: Deployment documentation (Render + Vercel) — **NEW**
+16. [x] Phase 23: Deck metadata & iteration tracking schema design — **NEW**
 
-**Next up (gap phases):**
-- [ ] Phase 17: Cleanup + quick backend fixes (verdict in history, remove mockup page)
-- [ ] Phase 18: Scenarios tab rule-based fallback (`scenarios_fallback()`)
-- [ ] Phase 19: Collection improvements quality (`_evaluate_card()` + cut logic)
-- [ ] Phase 20: Card tooltip (Scryfall image on hover)
-- [ ] Phase 21: StatBadge visual upgrade (radial progress rings)
-- [ ] Phase 22: Deployment (Render + Vercel)
+**Next up:**
+- Deployment to production (requires GitHub repo creation + Render/Vercel account setup)
+- Future: Deck version tracking, improvement lifecycle, scenario persistence (Phase 23 schema)
+
+---
+
+## Recent Changes (Phases 20-23 — April 11, 2026 Overnight Session)
+
+### Phase 20: Card Tooltip Component
+
+**What**: Scryfall card image appears on hover over card names throughout the app.
+
+**Implementation:**
+- Created `CardTooltip.jsx` component with:
+  - 300ms hover delay (prevents flicker on accidental mouseovers)
+  - Session-scoped image cache (`Map`) to avoid redundant Scryfall API calls
+  - Scryfall Named Card API: `https://api.scryfall.com/cards/named?exact={name}&format=image`
+  - Auto-positioning (flips above/below based on viewport position)
+  - 146×204px card image with shimmer loading state
+  - Graceful error handling (no tooltip if card not found)
+- Integrated into `DeckPage.jsx`:
+  - **ImprovementsTab**: All card names wrapped (urgent_fixes, swaps, additions)
+  - **CollectionUpgradesTab**: Add/cut card names wrapped
+  - **OverviewTab**: Commander names (optional, already have images)
+
+**Files changed:**
+- `frontend/src/components/CardTooltip.jsx` (new)
+- `frontend/src/pages/DeckPage.jsx` (added import + wrapped all card name strings)
+
+**User-facing impact**: Hovering any card name (Improvements, Collection Upgrades, etc.) shows visual card preview — major UX improvement, standard behavior on MTG sites.
+
+### Phase 21: StatBadge Visual Upgrade
+
+**What**: Replaced plain number boxes with radial progress rings showing progress toward target thresholds.
+
+**Implementation:**
+- Rewrote `StatBadge` function in `DeckPage.jsx`:
+  - SVG circle progress rings (64×64px)
+  - Target thresholds:
+    - Lands: 37, Ramp: 10, Draw: 10, Removal: 8, Wipes: 2
+    - Avg CMC: ≤ 3.0 (inverted scale — lower is better)
+  - Color coding:
+    - Green (emerald-400): ≥ 100% of target
+    - Amber (amber-400): 75-99% of target
+    - Rose (rose-400): < 75% of target
+  - Stroke-dasharray animation (300ms ease-out)
+  - Center value + label below ring + target notation ("/ 10" or "≤ 3.0")
+- No API changes — purely visual upgrade
+
+**Files changed:**
+- `frontend/src/pages/DeckPage.jsx` (replaced StatBadge function)
+
+**User-facing impact**: Overview tab Key Numbers section now shows modern circular progress indicators instead of plain boxes. At-a-glance visual feedback on deck health.
+
+### Phase 22: Deployment Documentation
+
+**What**: Complete deployment guide for production (Render backend + Vercel frontend).
+
+**Deliverables:**
+- `.github/DEPLOYMENT.md`: Step-by-step guide covering:
+  - GitHub repo setup
+  - Render backend deployment (free tier, env vars, build/start commands)
+  - Vercel frontend deployment (env vars, build config)
+  - Supabase OAuth redirect URL configuration
+  - CORS setup
+  - Verification checklist (auth, deck import, collection upload, tooltips, etc.)
+  - Troubleshooting guide
+  - Cost estimate ($0/month on free tiers)
+  - Rollback procedures
+
+**Files created:**
+- `.github/DEPLOYMENT.md` (new)
+
+**User action required**: Follow deployment guide to push to GitHub and deploy to Render + Vercel. All instructions included — ready to execute when ready.
+
+**Note**: `.env.example` files already exist for both backend and frontend (pre-existing).
+
+### Phase 23: Deck Metadata Schema Design
+
+**What**: Data model design for tracking deck iterations, improvements, scenarios, and feedback loops over time.
+
+**Deliverables:**
+- `.github/DECK_METADATA_SCHEMA.md`: Comprehensive design doc including:
+  - Problem statement (current JSON blob limitations)
+  - Proposed schema (6 new tables):
+    - `deck_snapshots`: Immutable deck versions (keyed by `deck_updated_at`)
+    - `deck_analyses`: Structured analysis results (replaces `analyses` table)
+    - `deck_weaknesses`: Normalized weakness tracking with resolution lifecycle
+    - `deck_improvements`: User action tracking (pending → accepted → implemented → tested)
+    - `deck_scenarios`: Persistent scenario testing with predicted vs actual impact
+    - `deck_changes`: Auto-generated diffs between snapshots
+  - Migration plan (backwards-compatible backfill)
+  - API contract changes (new endpoints, modified analyze endpoint)
+  - UI mockups (Deck Timeline, Improvements Tracker, Scenario Workflow)
+  - Implementation phases (23a-23d)
+  - Open questions + answers
+
+**Files created:**
+- `.github/DECK_METADATA_SCHEMA.md` (new)
+
+**User action required**: Review design when ready to implement iteration tracking features. This is **foundational design only** — no code changes yet. Implementation deferred to future (after deployment).
 
 ---
 
@@ -91,6 +192,40 @@ Existing analyses in `analyses` table are NOT in `user_decks`. On `GET /api/deck
 - **Shimmer skeletons**: `DeckCardSkeleton` + `DeckRowSkeleton` components replace "Loading decks…" text on Dashboard. `.skeleton` CSS class + `shimmer` keyframe added to `index.css`.
 - **Note**: DeckPage top bar "date" (spec item) skipped — no `analyzed_at` in the analysis response payload. To add it: expose `created_at` from `POST /api/decks/analyze` response and surface it on the top bar.
 
+## Recent Changes (Phase 18 — April 2026)
+
+- **`scenarios_fallback()` added** (`backend/src/deck_analyzer.py`): Rule-based stat diff — computes land_count, ramp_count, draw_count, avg_cmc before and after applying proposed adds/removes. Returns `{before, after, delta, verdict}` with a template-driven verdict sentence. No AI required.
+- **`ai.py` scenarios endpoint updated** (`backend/routers/ai.py`): `POST /api/ai/scenarios` now catches Gemini errors and falls back to `scenarios_fallback()`. Returns `ai_enhanced: true` (Gemini prose) or `ai_enhanced: false` (rule-based diff table).
+- **`ScenariosTab` rewritten** (`frontend/src/pages/DeckPage.jsx`): Two render paths. When `ai_enhanced: false` → 4-row stat diff table (Mana Sources / Ramp / Card Draw / Avg CMC × Before/After/Δ), amber rows when changed, `DeltaCell` helper (green=positive, red=negative, inverted for CMC), verdict sentence with amber left border. When `ai_enhanced: true` → original Gemini prose before/after cards (unchanged).
+- **Fixed build error**: Orphaned JSX tail from old ScenariosTab (key_weaknesses + changes_summary blocks) was left after the replace operation — removed in this session, build clean.
+- **Scenarios tab UX overhaul** (post-Phase 18 improvement): Replaced free-text textarea inputs with interactive UI. **Suggested Changes**: Shows swaps as "− Cut → + Add" buttons (clicking pre-populates both sides), urgent fixes and additions as "+ Card" buttons. **Cards to Remove**: Searchable dropdown from deck.mainboard. Selected cards show as dismissible chips with color coding. Much more intuitive and aligned with Improvements tab data structure — swaps preserve their paired nature instead of being flattened to just additions.
+- **AI results restructured for scannability**: Gemini scenarios output now highlights **deltas** instead of showing full before/after prose. Changes summary displayed prominently at top in amber hero card. Shows only: new win conditions (+), resolved weaknesses (✓ strikethrough), new weaknesses (!), unchanged weaknesses (muted). Full strategy comparison collapsed in expandable `<details>`. Much easier to scan and act on — focuses attention on what changed rather than walls of text.
+- **Impact summary as bullet points**: Changes summary prose now split into 2-4 concise bullet points (splits on `. `, shows first 4). Replaces wall-of-text paragraph — easier to scan key impacts at a glance.
+- **Weaknesses consolidated into one card**: Replaced 4 separate weakness cards (addressed/new/unchanged/resolved) with single "Weaknesses" card showing all items with clear status indicators (✓ addressed green strikethrough, ! new red, − unchanged muted). Eliminates conflicting information when Gemini mentions "ramp addressed" in summary but still lists it in weaknesses — now one source of truth with visual status per item.
+
+## Recent Changes (Phase 19 — April 2026)
+
+- **`_evaluate_card()` quality scoring** (`backend/src/deck_analyzer.py`): Now returns `(reason: str, score: float)` tuple instead of just reason. Score is 0.0–1.0 based on:
+  - **CMC efficiency**: Lower CMC scores higher for ramp (≤2 = 0.9, ≤3 = 0.7) and draw (≤3 = 0.9, ≤4 = 0.7)
+  - **Unconditional vs conditional**: Removal without color/type restrictions (+0.2), exile vs destroy (+0.1)
+  - **Repeatable vs one-shot**: Enchantment/artifact permanents score higher than instant/sorcery (+0.1 to +0.2)
+  - Special bonuses: treasure tokens, one-sided board wipes, "draw additional" triggers
+- **`find_collection_improvements()` sorted by score** (`backend/src/deck_analyzer.py`): Suggestions now sorted by score descending before returning top 20. Return type changed to `List[Tuple[Card, Optional[Card], str, float, Optional[str]]]` to include score and never_cut_reason.
+- **`_find_cut()` never-cut logic** (`backend/src/deck_analyzer.py`): Return type changed to `Tuple[Optional[Card], Optional[str]]` where second element is `never_cut_reason`. Now never suggests cutting:
+  - **Commanders** — checks against `deck.commanders` (case-insensitive)
+  - **On-theme cards** — already blocked (existing logic preserved)
+  - When no suitable cut found, returns `(None, "All non-lands are commanders or on-theme")` or `(None, "No suitable cuts found")` for transparency
+- **Collection upgrades API enhanced** (`backend/routers/ai.py`): `POST /api/ai/collection-upgrades` response now includes `score` field (0.0–1.0) for each upgrade. Optionally includes `never_cut_reason` field when no cut is available. Enables frontend to show quality ranking and explain why cuts aren't suggested.
+- **No frontend changes needed**: Collection Upgrades tab already renders suggestions correctly — score field available for future enhancements (e.g., sorting, visual quality indicators).
+- **Collection enrichment bug fix** (post-Phase 19): Fixed critical bug where collection upgrades always showed zero results despite 400+ cards in collection. **Root cause**: Card objects stored in DB only had `name` + `quantity` fields — missing `oracle_text`, `cmc`, `type_line`, `color_identity`. When `_evaluate_card()` pattern-matched against `oracle_text`, it was matching against empty string → all evaluations failed silently → zero suggestions. **Solution**: Collection upload now enriches each card with Scryfall data (`get_card_by_name()`) before storing, with 110ms rate limiting. DB now stores `{name, quantity, cmc, type_line, oracle_text, color_identity}` for each card. Collection-upgrades endpoint updated to reconstruct full Card objects with all enriched fields. **User action required**: Re-upload collection CSV to trigger enrichment (existing DB data still has old format). Files changed: `backend/routers/collection.py` (upload enrichment loop + extended storage fields), `backend/routers/ai.py` (Card reconstruction with all fields).
+
+## Recent Changes (Phase 17 — April 2026)
+
+- **Removed dead code**: Deleted `frontend/src/pages/IconMockupPage.jsx`; removed `/mockup` route + import from `App.jsx`. Note: `creatureIcons.jsx` had no orphaned functions — the mockup page imported from `iconAlternatives.js`, not creatureIcons.
+- **Added `verdict` to `GET /api/decks/library`** (`backend/routers/decks.py`): Both the library-deck entries and backwards-compat analyses entries now include `"verdict": rj.get("verdict")`.
+- **Added `verdict` to `GET /api/analyses/history`** (`backend/routers/analyses.py`): History rows now surface `verdict` at the top level (extracted from `result_json`).
+- **Dashboard deck cards**: `DeckCard` (mobile) shows verdict as `line-clamp-2` muted text below commander. `DeckTableRow` (desktop) shows verdict as a smaller `line-clamp-1` subtitle below the deck name in the same cell. Both conditionally rendered — no change when verdict is null.
+
 ## Recent Changes (Phase 16 — April 2026)
 
 - **DB**: Created `supabase/migrations/005_user_decks.sql` — `user_decks` table with RLS. **Must be run in Supabase SQL editor before new import features work.**
@@ -106,7 +241,7 @@ Existing analyses in `analyses` table are NOT in `user_decks`. On `GET /api/deck
 
 ## Open Items & Known Gaps
 
-> All gaps have been promoted to planned phases. See Phases 17–21 below.
+> All gaps have been promoted to planned phases. See Phases 17–23 below.
 
 - [x] **Deck top bar** — commander name + color pips subtitle added. Done as quick win (pre-Phase 15).
 - [x] **Skeleton loaders** — Shimmer `DeckCardSkeleton` + `DeckRowSkeleton` on Dashboard. `.skeleton` CSS class added. Done in Phase 15.
@@ -116,6 +251,7 @@ Existing analyses in `analyses` table are NOT in `user_decks`. On `GET /api/deck
 - [ ] **Cleanup + `verdict` in history** → Phase 17
 - [ ] **`find_collection_improvements()` quality** → Phase 19
 - [ ] **Deployment** → Phase 22
+- [ ] **Deck metadata & iteration tracking** → Phase 23
 
 ---
 
@@ -492,6 +628,39 @@ players    → id, display_name, persona, email
 - [ ] Import repo, set root to `frontend/`
 - [ ] Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_BASE_URL`
 - [ ] Add Vercel URL to Supabase Auth redirect URLs
+
+---
+
+## Phase 23 — Deck Metadata & Iteration Tracking Schema
+
+> Data model design phase — no implementation yet. Goal: design proper schema for tracking deck changes over time, so users can implement improvements, test scenarios, and see data-driven feedback loops.
+
+**Problem statement:**
+Currently we've thrown together a basic schema (`analyses` table with `result_json` blob). But we're missing a coherent data model for:
+- **Themes** — what's the current theme set? Did user accept/reject AI theme suggestions?
+- **Weaknesses** — which weaknesses have been addressed? Which are new? What's the tracking structure for "low/medium/high" severity?
+- **Improvements** — did user implement a swap? When? What was the outcome?
+- **Scenarios** — user tests a scenario → how do we save it? Link it to actual deck changes? Track whether it was implemented? Compare "predicted impact" vs "actual impact after changes"?
+- **Deck versions** — if user implements changes on Moxfield and re-analyzes, how do we diff versions? Track what changed? Show trend over time?
+
+**Key questions to answer:**
+1. **Schema structure** — do we need separate tables (`deck_themes`, `deck_weaknesses`, `deck_improvements`, `deck_scenarios`)? Or keep `analyses` as the snapshot and add a `deck_changes` table for user actions?
+2. **Improvement lifecycle** — how do we track: suggested → user_accepted → implemented_on_moxfield → verified_via_reanalysis?
+3. **Scenario persistence** — when user runs a scenario, do we save it? Link it to a "planned change" that they can mark as "done"?
+4. **Weakness severity** — add `severity: low|medium|high` field? Track resolution separately from re-analysis?
+5. **Version diffing** — when `deck_updated_at` changes and user re-analyzes, do we auto-diff the two `mainboard` arrays and surface "you added X, removed Y" in the UI?
+6. **Historical trends** — can we show charts/timelines? "Your ramp count over time", "Weaknesses addressed this month"?
+
+**Deliverables (when we do this phase):**
+- [ ] Schema design doc showing all tables, fields, relationships, indexes
+- [ ] Lifecycle diagrams for improvements, scenarios, themes, weaknesses
+- [ ] Migration plan (what changes to `analyses` table, what new tables, how to backfill existing data)
+- [ ] API contract changes (what new endpoints, what fields added to existing responses)
+- [ ] UI mockups showing where this data surfaces (deck timeline view? improvement tracker? scenario history?)
+
+**Related work:**
+- This phase is a prerequisite for "deck changelog" feature, "improvement tracker", "scenario testing workflow", and any analytics/insights dashboard.
+- Will inform whether we keep jamming everything into `result_json` or break out into normalized tables for queryability and trends.
 
 ---
 

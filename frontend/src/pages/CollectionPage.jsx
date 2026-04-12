@@ -8,12 +8,39 @@ export default function CollectionPage() {
   const [error, setError] = useState(null)
   const [collection, setCollection] = useState(null)
   const [search, setSearch] = useState('')
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
+
+  const loadingMessages = [
+    "Consulting the Scryfall oracle...",
+    "Calculating mana curves...",
+    "Categorizing card types...",
+    "Reading oracle text...",
+    "Identifying color identities...",
+    "Enchanting your collection...",
+    "Shuffling through the multiverse...",
+    "Tapping into card data...",
+    "Casting data enrichment spells...",
+    "Searching plane by plane...",
+  ]
 
   useEffect(() => {
     api.getCollection()
       .then(data => setCollection(data))
       .catch(() => {}) // silently ignore; user may not have uploaded yet
   }, [])
+
+  useEffect(() => {
+    if (!uploading) {
+      setLoadingMessageIndex(0)
+      return
+    }
+    
+    const interval = setInterval(() => {
+      setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length)
+    }, 2500)
+    
+    return () => clearInterval(interval)
+  }, [uploading, loadingMessages.length])
 
   const handleDrop = (e) => {
     e.preventDefault()
@@ -59,6 +86,9 @@ export default function CollectionPage() {
         <p className="text-[var(--color-muted)] text-sm">
           Export your collection from Moxfield and upload it here.
         </p>
+        <p className="text-[var(--color-muted)] text-xs mt-2 opacity-75">
+          Re-uploading will replace your existing collection — no duplicates or deduping needed.
+        </p>
       </div>
 
       <div
@@ -75,9 +105,29 @@ export default function CollectionPage() {
         onClick={() => !uploading && document.getElementById('csv-input').click()}
       >
         {uploading ? (
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-col items-center justify-center gap-4 py-4">
             <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-            <span className="text-[var(--color-muted)] text-sm">Uploading…</span>
+            
+            <div className="text-center space-y-3 max-w-xs">
+              <p className="text-[var(--color-text)] text-sm font-medium transition-all duration-500">
+                {loadingMessages[loadingMessageIndex]}
+              </p>
+              
+              {/* Progress bar */}
+              <div className="w-full bg-[var(--color-border)] rounded-full h-1.5 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 animate-pulse" 
+                     style={{ 
+                       width: '100%',
+                       animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, shimmer 2s linear infinite',
+                       backgroundSize: '200% 100%'
+                     }} 
+                />
+              </div>
+              
+              <p className="text-[var(--color-muted)] text-xs">
+                This takes 30–60 seconds for large collections
+              </p>
+            </div>
           </div>
         ) : (
           <>

@@ -7,7 +7,7 @@ from supabase import create_client
 
 from auth import require_allowed_user
 from src.moxfield import get_deck
-from src.deck_analyzer import analyze_deck, find_collection_improvements
+from src.deck_analyzer import analyze_deck, find_collection_improvements, scenarios_fallback
 from src.gemini_assistant import get_strategy_advice, get_improvement_suggestions, explain_scenarios
 from src.models import Card, Collection
 
@@ -178,8 +178,27 @@ def scenarios(body: ScenariosRequest, user: dict = Depends(require_allowed_user)
     deck = _load_deck(body.moxfield_id)
     analysis = analyze_deck(deck)
 
-    result = explain_scenarios(deck, analysis, body.cards_to_add, body.cards_to_remove)
-    return {"scenarios": result}
+    try:
+        result = explain_scenarios(deck, analysis, body.cards_to_add, body.cards_to_remove)
+        # explain_scenarios returns a plain dict (before/after AI prose).
+        # Check if it looks like a real AI result vs the generic fallback.
+        # The gemini fallback returns a static game_plan string — we detect it by
+        # checking whether the result came from Gemini or the static _fallback_scenarios.
+        # Since explain_scenarios doesn't expose ai_enhanced, we wrap it here.
+        ai_enhanced = bool(
+            result.get("before", {}).get("game_plan") and
+            result["before"]["game_plan"] != "Current deck strategy based on existing card composition."
+        )
+    except Exception as e:
+        logger.warning("explain_scenarios failed: %s", e)
+        ai_enhanced = False
+        result = None
+
+    if not ai_enhanced:
+        fallback = scenarios_fallback(deck, body.cards_to_add, body.cards_to_remove)
+        return {"scenarios": fallback, "ai_enhanced": False}
+
+    return {"scenarios": result, "ai_enhanced": True}
 
 
 class CollectionUpgradesRequest(BaseModel):
@@ -189,26 +208,45 @@ class CollectionUpgradesRequest(BaseModel):
 @router.post("/collection-upgrades")
 def collection_upgrades(body: CollectionUpgradesRequest, user: dict = Depends(require_allowed_user)):
     """Rule-based collection-vs-deck comparison. Returns swap suggestions."""
-    sb = _supabase()
+    try:
+        sb = _supabase()
 
-    col_result = sb.table("collections").select("cards_json").eq("user_id", user["user_id"]).execute()
-    if not col_result.data or not col_result.data[0]["cards_json"]:
-        return {"upgrades": [], "has_collection": False}
+        col_result = sb.table("collections").select("cards_json").eq("user_id", user["user_id"]).execute()
+        if not col_result.data or not col_result.data[0]["cards_json"]:
+            return {"upgrades": [], "has_collection": False}
 
-    deck = _load_deck(body.moxfield_id)
-    collection = Collection(
-        cards=[Card(name=c["name"], quantity=c.get("quantity", 1)) for c in col_result.data[0]["cards_json"]]
-    )
+        deck = _load_deck(body.moxfield_id)
+        
+        # Reconstruct Card objects with all enriched fields from DB
+        collection = Collection(
+            cards=[
+                Card(
+                    name=c["name"],
+                    quantity=c.get("quantity", 1),
+                    cmc=c.get("cmc", 0.0),
+                    type_line=c.get("type_line", ""),
+                    oracle_text=c.get("oracle_text", ""),
+                    color_identity=c.get("color_identity", []),
+                )
+                for c in col_result.data[0]["cards_json"]
+            ]
+        )
 
-    suggestions = find_collection_improvements(deck, collection)
+        suggestions = find_collection_improvements(deck, collection)
 
-    upgrades = []
-    for col_card, cut_card, reason in suggestions:
-        entry = {
-            "add": col_card.name,
-            "cut": cut_card.name if cut_card else None,
-            "reason": reason,
-        }
-        upgrades.append(entry)
+        upgrades = []
+        for col_card, cut_card, reason, score, never_cut_reason in suggestions:
+            entry = {
+                "add": col_card.name,
+                "cut": cut_card.name if cut_card else None,
+                "reason": reason,
+                "score": score,
+            }
+            if never_cut_reason:
+                entry["never_cut_reason"] = never_cut_reason
+            upgrades.append(entry)
 
-    return {"upgrades": upgrades, "has_collection": True}
+        return {"upgrades": upgrades, "has_collection": True}
+    except Exception as e:
+        logger.error(f"collection-upgrades error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error analyzing collection upgrades: {str(e)}")

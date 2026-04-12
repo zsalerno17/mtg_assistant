@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
 import { api } from '../lib/api'
+import CardTooltip from '../components/CardTooltip'
 
 function OverviewIcon() {
   return (
@@ -135,20 +136,108 @@ function IconChevronLeft({ className = 'w-4 h-4 shrink-0' }) {
 }
 
 function StatBadge({ label, value, warning, healthy }) {
-  const borderColor = warning
-    ? 'border-[var(--color-danger)]'
-    : healthy
-    ? 'border-[var(--color-success)]'
-    : 'border-[var(--color-border)]'
-  const textColor = warning
-    ? 'text-[var(--color-danger)]'
-    : healthy
-    ? 'text-[var(--color-success)]'
-    : 'text-[var(--color-primary)]'
+  // Determine target thresholds based on label
+  const targets = {
+    'Lands': 37,
+    'Ramp': 10,
+    'Draw': 10,
+    'Removal': 8,
+    'Wipes': 2,
+    'Avg CMC': 3.0,
+  }
+  
+  const target = targets[label]
+  const numValue = typeof value === 'number' ? value : parseFloat(value)
+  
+  // Calculate percentage for ring fill
+  let percentage = 0
+  let ringColor = 'text-[var(--color-border)]'
+  
+  if (target && !isNaN(numValue)) {
+    if (label === 'Avg CMC') {
+      // Inverted scale: lower CMC is better
+      // Ring fills as CMC approaches 0; empty if ≥ 3.5
+      if (numValue >= 3.5) {
+        percentage = 0
+        ringColor = 'text-rose-400'
+      } else if (numValue <= 3.0) {
+        percentage = 100
+        ringColor = 'text-emerald-400'
+      } else {
+        // Between 3.0 and 3.5: map to 75-100%
+        percentage = 100 - ((numValue - 3.0) / 0.5 * 25)
+        ringColor = 'text-amber-400'
+      }
+    } else {
+      // Normal scale: higher is better
+      percentage = Math.min((numValue / target) * 100, 100)
+      
+      if (percentage >= 100) {
+        ringColor = 'text-emerald-400'
+      } else if (percentage >= 75) {
+        ringColor = 'text-amber-400'
+      } else {
+        ringColor = 'text-rose-400'
+      }
+    }
+  }
+  
+  // SVG circle calculations
+  const radius = 28
+  const circumference = 2 * Math.PI * radius
+  const strokeDashoffset = circumference - (percentage / 100) * circumference
+  
   return (
-    <div className={`bg-[var(--color-bg)] border rounded-lg px-4 py-3 text-center ${borderColor}`}>
-      <div className={`text-2xl font-[var(--font-mono)] font-bold ${textColor}`}>{value}</div>
-      <div className="text-[var(--color-muted)] text-xs mt-0.5">{label}</div>
+    <div className="flex flex-col items-center gap-2 py-2">
+      {/* Radial progress ring */}
+      <div className="relative" style={{ width: '64px', height: '64px' }}>
+        {/* Background circle */}
+        <svg className="transform -rotate-90" width="64" height="64">
+          <circle
+            cx="32"
+            cy="32"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            className="text-[var(--color-border)]/20"
+          />
+          {/* Progress circle */}
+          <circle
+            cx="32"
+            cy="32"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+            className={`transition-all duration-500 ease-out ${ringColor}`}
+            style={{
+              strokeDasharray: circumference,
+              strokeDashoffset: strokeDashoffset,
+            }}
+          />
+        </svg>
+        
+        {/* Center value */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={`text-lg font-[var(--font-mono)] font-bold ${
+            warning ? 'text-[var(--color-danger)]' : healthy ? 'text-[var(--color-success)]' : 'text-[var(--color-text)]'
+          }`}>
+            {value}
+          </span>
+        </div>
+      </div>
+      
+      {/* Label and target */}
+      <div className="text-center">
+        <div className="text-[var(--color-text)] text-xs font-medium">{label}</div>
+        {target && (
+          <div className="text-[var(--color-muted)] text-[10px]">
+            {label === 'Avg CMC' ? `\u2264 ${target}` : `/ ${target}`}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -603,7 +692,7 @@ function ImprovementsTab({ deckId }) {
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/30 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-[var(--color-danger)]/50 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
                 <div className="flex-1">
-                  <span className="text-[var(--color-text)] font-semibold text-sm">{fix.card}</span>
+                  <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={fix.card}>{fix.card}</CardTooltip></span>
                   <span className={`ml-2 text-xs font-medium uppercase ${categoryColors[fix.category] || 'text-[var(--color-muted)]'}`}>
                     {fix.category}
                   </span>
@@ -625,9 +714,9 @@ function ImprovementsTab({ deckId }) {
             {(expanded['swaps'] ? data.swaps : data.swaps.slice(0, MAX_VISIBLE)).map((swap, i) => (
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[var(--color-danger)] font-semibold text-sm">− {swap.cut}</span>
+                  <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={swap.cut}>{swap.cut}</CardTooltip></span>
                   <span className="text-[var(--color-muted)] text-xs">→</span>
-                  <span className="text-[var(--color-success)] font-semibold text-sm">+ {swap.add}</span>
+                  <span className="text-[var(--color-success)] font-semibold text-sm">+ <CardTooltip cardName={swap.add}>{swap.add}</CardTooltip></span>
                   {swap.owned && (
                     <span className="text-[var(--color-success)] text-xs">✓ owned</span>
                   )}
@@ -668,7 +757,7 @@ function ImprovementsTab({ deckId }) {
                     <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
-                        <span className="text-[var(--color-text)] font-semibold text-sm">{add.card}</span>
+                        <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
                         <span className="ml-2 text-[var(--color-success)] text-xs">✓ owned</span>
                         <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
                       </div>
@@ -688,7 +777,7 @@ function ImprovementsTab({ deckId }) {
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[var(--color-text)] font-semibold text-sm">{add.card}</span>
+                          <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
                           {add.price_tier && (
                             <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${
                               add.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : add.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
@@ -778,11 +867,11 @@ function CollectionUpgradesTab({ deckId }) {
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[var(--color-success)] font-semibold text-sm">+ {u.add}</span>
+              <span className="text-[var(--color-success)] font-semibold text-sm">+ <CardTooltip cardName={u.add}>{u.add}</CardTooltip></span>
               {u.cut && (
                 <>
                   <span className="text-[var(--color-muted)] text-xs">for</span>
-                  <span className="text-[var(--color-danger)] font-semibold text-sm">− {u.cut}</span>
+                  <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={u.cut}>{u.cut}</CardTooltip></span>
                 </>
               )}
             </div>
@@ -794,24 +883,70 @@ function CollectionUpgradesTab({ deckId }) {
   )
 }
 
-function ScenariosTab({ deckId }) {
-  const [addInput, setAddInput] = useState('')
-  const [removeInput, setRemoveInput] = useState('')
-  const [result, setResult] = useState(null)
+function ScenariosTab({ deckId, deck, analysis }) {
+  // Selected cards (arrays of card names)
+  const [cardsToAdd, setCardsToAdd] = useState([])
+  const [cardsToRemove, setCardsToRemove] = useState([])
+  
+  // UI state
+  const [removeSearchTerm, setRemoveSearchTerm] = useState('')
+  const [customAddInput, setCustomAddInput] = useState('') // for manual entry
+  const [showCustomAdd, setShowCustomAdd] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [result, setResult] = useState(null)
+  const [aiEnhanced, setAiEnhanced] = useState(false)
+
+  // Load improvements data for suggestions
+  const [improvements, setImprovements] = useState(null)
+  useEffect(() => {
+    api.getImprovements(deckId)
+      .then((res) => setImprovements(res.improvements))
+      .catch(() => {}) // Silent fail — suggestions are optional
+  }, [deckId])
+
+  // Build list of suggestions from improvements (swaps + pure additions)
+  const suggestions = (() => {
+    if (!improvements) return []
+    const items = []
+    
+    // Add swaps (paired cut → add)
+    ;(improvements.swaps || []).slice(0, 6).forEach(swap => {
+      items.push({ type: 'swap', cut: swap.cut, add: swap.add, category: swap.category })
+    })
+    
+    // Add pure additions (urgent fixes + additions)
+    ;(improvements.urgent_fixes || []).slice(0, 4).forEach(fix => {
+      items.push({ type: 'addition', card: fix.card, category: fix.category })
+    })
+    ;(improvements.additions || []).slice(0, 4).forEach(add => {
+      items.push({ type: 'addition', card: add.card })
+    })
+    
+    return items.slice(0, 10) // max 10 total suggestions
+  })()
+
+  // Build searchable deck card list from mainboard
+  const deckCards = (deck?.mainboard || [])
+    .map(c => c.name)
+    .filter(name => {
+      const term = removeSearchTerm.toLowerCase()
+      return !term || name.toLowerCase().includes(term)
+    })
+    .filter(name => !cardsToRemove.includes(name)) // hide already selected
+    .slice(0, 8) // show max 8 results at a time
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const cardsToAdd = addInput.split('\n').map(s => s.trim()).filter(Boolean)
-    const cardsToRemove = removeInput.split('\n').map(s => s.trim()).filter(Boolean)
-    if (!cardsToAdd.length && !cardsToRemove.length) return
+    if (cardsToAdd.length === 0 && cardsToRemove.length === 0) return
+
     setLoading(true)
     setError(null)
     setResult(null)
     try {
       const data = await api.getScenarios(deckId, cardsToAdd, cardsToRemove)
       setResult(data.scenarios)
+      setAiEnhanced(data.ai_enhanced ?? true)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -819,39 +954,255 @@ function ScenariosTab({ deckId }) {
     }
   }
 
+  const toggleSuggestion = (suggestion) => {
+    if (suggestion.type === 'swap') {
+      // Toggle both cut and add for swaps
+      const hasAdd = cardsToAdd.includes(suggestion.add)
+      const hasCut = cardsToRemove.includes(suggestion.cut)
+      const isActive = hasAdd && hasCut
+      
+      if (isActive) {
+        // Remove both
+        setCardsToAdd(prev => prev.filter(c => c !== suggestion.add))
+        setCardsToRemove(prev => prev.filter(c => c !== suggestion.cut))
+      } else {
+        // Add both
+        setCardsToAdd(prev => prev.includes(suggestion.add) ? prev : [...prev, suggestion.add])
+        setCardsToRemove(prev => prev.includes(suggestion.cut) ? prev : [...prev, suggestion.cut])
+      }
+    } else {
+      // Toggle just the add for pure additions
+      const cardName = suggestion.card
+      if (cardsToAdd.includes(cardName)) {
+        setCardsToAdd(prev => prev.filter(c => c !== cardName))
+      } else {
+        setCardsToAdd(prev => [...prev, cardName])
+      }
+    }
+  }
+
+  const isSuggestionActive = (suggestion) => {
+    if (suggestion.type === 'swap') {
+      return cardsToAdd.includes(suggestion.add) && cardsToRemove.includes(suggestion.cut)
+    } else {
+      return cardsToAdd.includes(suggestion.card)
+    }
+  }
+
+  const addRemoveCard = (cardName) => {
+    if (!cardsToRemove.includes(cardName)) {
+      setCardsToRemove(prev => [...prev, cardName])
+    }
+    setRemoveSearchTerm('') // clear search after selecting
+  }
+
+  const removeCardFromList = (cardName, list) => {
+    if (list === 'add') {
+      setCardsToAdd(prev => prev.filter(c => c !== cardName))
+    } else {
+      setCardsToRemove(prev => prev.filter(c => c !== cardName))
+    }
+  }
+
+  const addCustomCards = () => {
+    const cards = customAddInput.split('\n').map(s => s.trim()).filter(Boolean)
+    setCardsToAdd(prev => [...new Set([...prev, ...cards])]) // dedupe
+    setCustomAddInput('')
+    setShowCustomAdd(false)
+  }
+
+  const STAT_ROWS = [
+    { key: 'land_count', label: 'Mana Sources' },
+    { key: 'ramp_count', label: 'Ramp' },
+    { key: 'draw_count', label: 'Card Draw' },
+    { key: 'avg_cmc',    label: 'Avg CMC' },
+  ]
+
+  const DeltaCell = ({ v, isFloat }) => {
+    if (v === 0) return <span className="text-[var(--color-muted)]">—</span>
+    const pos = v > 0
+    const color = isFloat
+      ? (pos ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')
+      : (pos ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')
+    return (
+      <span className={`font-semibold ${color}`}>
+        {pos ? '+' : ''}{isFloat ? v.toFixed(2) : v}
+      </span>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <p className="text-[var(--color-muted)] text-sm">
-        Enter cards to add and/or remove to see how the proposed changes affect your strategy.
-      </p>
-      <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="block text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Cards to Add (one per line)</label>
-          <textarea
-            value={addInput}
-            onChange={(e) => setAddInput(e.target.value)}
-            placeholder={"Rhystic Study\nArcane Signet"}
-            rows={5}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-success)] focus:shadow-[0_0_0_3px_rgba(52,211,153,0.12)] transition-all resize-none"
-          />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Suggestions & Cards to Add */}
+        <div className="space-y-3">
+          <label className="block text-[var(--color-muted)] text-xs uppercase tracking-wider">Suggested Changes</label>
+          
+          {/* Suggestions from Improvements */}
+          {suggestions.length > 0 && (
+            <div>
+              <p className="text-[var(--color-muted)] text-xs mb-2">Quick-pick from Improvements:</p>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((suggestion, idx) => {
+                  const isActive = isSuggestionActive(suggestion)
+                  const isSwap = suggestion.type === 'swap'
+                  
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => toggleSuggestion(suggestion)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-all ${
+                        isActive
+                          ? 'bg-[var(--color-primary)]/20 border-[var(--color-primary)] text-[var(--color-primary)]'
+                          : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
+                      }`}
+                    >
+                      {isActive && '✓ '}
+                      {isSwap ? (
+                        <span>
+                          <span className="text-[var(--color-danger)]">− {suggestion.cut}</span>
+                          <span className="text-[var(--color-muted)] mx-1">→</span>
+                          <span className="text-[var(--color-success)]">+ {suggestion.add}</span>
+                        </span>
+                      ) : (
+                        <span>+ {suggestion.card}</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Custom add button */}
+          {!showCustomAdd && (
+            <button
+              type="button"
+              onClick={() => setShowCustomAdd(true)}
+              className="text-[var(--color-secondary)] text-sm hover:underline"
+            >
+              + Add custom card(s)
+            </button>
+          )}
+
+          {/* Custom add textarea */}
+          {showCustomAdd && (
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-3 space-y-2">
+              <textarea
+                value={customAddInput}
+                onChange={(e) => setCustomAddInput(e.target.value)}
+                placeholder="Type card names (one per line)"
+                rows={3}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-success)] resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addCustomCards}
+                  disabled={!customAddInput.trim()}
+                  className="text-[var(--color-success)] text-sm font-semibold hover:underline disabled:opacity-50"
+                >
+                  Add Cards
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowCustomAdd(false); setCustomAddInput('') }}
+                  className="text-[var(--color-muted)] text-sm hover:underline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Selected cards to add - chips */}
+          {cardsToAdd.length > 0 && (
+            <div className="bg-[var(--color-bg)] border border-[var(--color-success)]/30 rounded-lg p-3">
+              <p className="text-[var(--color-success)] text-xs font-semibold mb-2">Selected ({cardsToAdd.length}):</p>
+              <div className="flex flex-wrap gap-2">
+                {cardsToAdd.map(cardName => (
+                  <div key={cardName} className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/40 rounded-md px-2 py-1 text-sm text-[var(--color-text)] flex items-center gap-1.5">
+                    <span>+ {cardName}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeCardFromList(cardName, 'add')}
+                      className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 text-xs font-bold"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <div>
-          <label className="block text-[var(--color-muted)] text-xs uppercase tracking-wider mb-2">Cards to Remove (one per line)</label>
-          <textarea
-            value={removeInput}
-            onChange={(e) => setRemoveInput(e.target.value)}
-            placeholder={"Bad Card\nWeak Synergy"}
-            rows={5}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-danger)] focus:shadow-[0_0_0_3px_rgba(251,113,133,0.12)] transition-all resize-none"
-          />
+
+        {/* Cards to Remove */}
+        <div className="space-y-3">
+          <label className="block text-[var(--color-muted)] text-xs uppercase tracking-wider">Cards to Remove</label>
+          
+          {/* Search box */}
+          <div className="relative">
+            <input
+              type="text"
+              value={removeSearchTerm}
+              onChange={(e) => setRemoveSearchTerm(e.target.value)}
+              placeholder="Search your deck..."
+              className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-danger)] focus:shadow-[0_0_0_3px_rgba(251,113,133,0.12)] transition-all"
+            />
+          </div>
+
+          {/* Deck card results */}
+          {removeSearchTerm && deckCards.length > 0 && (
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg max-h-48 overflow-y-auto">
+              {deckCards.map(cardName => (
+                <button
+                  key={cardName}
+                  type="button"
+                  onClick={() => addRemoveCard(cardName)}
+                  className="w-full text-left px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg)] border-b border-[var(--color-border)] last:border-0"
+                >
+                  {cardName}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {removeSearchTerm && deckCards.length === 0 && (
+            <p className="text-[var(--color-muted)] text-xs">No cards found</p>
+          )}
+
+          {/* Selected cards to remove - chips */}
+          {cardsToRemove.length > 0 && (
+            <div className="bg-[var(--color-bg)] border border-[var(--color-danger)]/30 rounded-lg p-3">
+              <p className="text-[var(--color-danger)] text-xs font-semibold mb-2">Selected ({cardsToRemove.length}):</p>
+              <div className="flex flex-wrap gap-2">
+                {cardsToRemove.map(cardName => (
+                  <div key={cardName} className="bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/40 rounded-md px-2 py-1 text-sm text-[var(--color-text)] flex items-center gap-1.5">
+                    <span>− {cardName}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeCardFromList(cardName, 'remove')}
+                      className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 text-xs font-bold"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <div className="sm:col-span-2">
+
+        {/* Submit */}
+        <div>
           <button
             type="submit"
-            disabled={loading || (!addInput.trim() && !removeInput.trim())}
+            disabled={loading || (cardsToAdd.length === 0 && cardsToRemove.length === 0)}
             className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_rgba(251,191,36,0.35)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Analyzing…' : 'Analyze Scenario'}
+            {loading ? 'Analyzing…' : 'Run Simulation'}
           </button>
           {error && <p className="mt-2 text-[var(--color-danger)] text-sm">{error}</p>}
         </div>
@@ -859,58 +1210,166 @@ function ScenariosTab({ deckId }) {
 
       {loading && <LoadingSpinner />}
 
-      {result && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Before */}
-          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-5">
-            <h3 className="font-[var(--font-heading)] text-[var(--color-muted)] text-[10px] font-semibold uppercase tracking-widest mb-4">Before</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-[var(--color-muted)] text-xs mb-1">Game Plan</p>
-                <p className="text-[var(--color-text)] text-sm">{result.before?.game_plan}</p>
-              </div>
-              {result.before?.win_conditions?.length > 0 && (
-                <div>
-                  <p className="text-[var(--color-muted)] text-xs mb-1">Win Conditions</p>
-                  <ul className="space-y-1">{result.before.win_conditions.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-success)]" />{w}</li>)}</ul>
-                </div>
-              )}
-              {result.before?.key_weaknesses?.length > 0 && (
-                <div>
-                  <p className="text-[var(--color-muted)] text-xs mb-1">Weaknesses</p>
-                  <ul className="space-y-1">{result.before.key_weaknesses.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconWarning className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-danger)]" />{w}</li>)}</ul>
-                </div>
-              )}
-            </div>
+      {/* Rule-based stat diff table (AI unavailable) */}
+      {result && !aiEnhanced && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[var(--color-muted)] shrink-0" />
+            <span className="text-[var(--color-muted)] text-xs">Rule-based analysis — AI unavailable</span>
           </div>
-          {/* After */}
-          <div className="bg-[var(--color-bg)] border border-[var(--color-secondary)] rounded-lg p-5">
-            <h3 className="font-[var(--font-heading)] text-[var(--color-secondary)] text-[10px] font-semibold uppercase tracking-widest mb-4">After Changes</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-[var(--color-muted)] text-xs mb-1">Game Plan</p>
-                <p className="text-[var(--color-text)] text-sm">{result.after?.game_plan}</p>
-              </div>
-              {result.after?.win_conditions?.length > 0 && (
-                <div>
-                  <p className="text-[var(--color-muted)] text-xs mb-1">Win Conditions</p>
-                  <ul className="space-y-1">{result.after.win_conditions.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-success)]" />{w}</li>)}</ul>
-                </div>
-              )}
-              {result.after?.key_weaknesses?.length > 0 && (
-                <div>
-                  <p className="text-[var(--color-muted)] text-xs mb-1">Weaknesses</p>
-                  <ul className="space-y-1">{result.after.key_weaknesses.map((w, i) => <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2"><IconWarning className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-danger)]" />{w}</li>)}</ul>
-                </div>
-              )}
-              {result.after?.changes_summary && (
-                <div className="border-t border-[var(--color-border)] pt-3 mt-3">
-                  <p className="text-[var(--color-muted)] text-xs mb-1">Summary of Changes</p>
-                  <p className="text-[var(--color-secondary)] text-sm">{result.after.changes_summary}</p>
-                </div>
-              )}
-            </div>
+          <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <th className="text-left px-4 py-2.5 text-[var(--color-muted)] text-xs uppercase tracking-wider font-semibold w-1/3">Stat</th>
+                  <th className="text-center px-4 py-2.5 text-[var(--color-muted)] text-xs uppercase tracking-wider font-semibold">Before</th>
+                  <th className="text-center px-4 py-2.5 text-[var(--color-muted)] text-xs uppercase tracking-wider font-semibold">After</th>
+                  <th className="text-center px-4 py-2.5 text-[var(--color-muted)] text-xs uppercase tracking-wider font-semibold">Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {STAT_ROWS.map(({ key, label }) => {
+                  const isFloat = key === 'avg_cmc'
+                  const before = result.before?.[key] ?? 0
+                  const after  = result.after?.[key]  ?? 0
+                  const delta  = result.delta?.[key]  ?? 0
+                  const changed = delta !== 0
+                  return (
+                    <tr
+                      key={key}
+                      className={`border-b border-[var(--color-border)] last:border-0 ${changed ? 'bg-amber-500/5' : ''}`}
+                    >
+                      <td className="px-4 py-3 text-[var(--color-text)]">{label}</td>
+                      <td className="px-4 py-3 text-center text-[var(--color-muted)]">
+                        {isFloat ? before.toFixed(2) : before}
+                      </td>
+                      <td className="px-4 py-3 text-center text-[var(--color-text)] font-medium">
+                        {isFloat ? after.toFixed(2) : after}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <DeltaCell v={delta} isFloat={isFloat} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
+          {result.verdict && (
+            <p className="text-[var(--color-text)] text-sm border-l-2 border-[var(--color-primary)] pl-3">{result.verdict}</p>
+          )}
+        </div>
+      )}
+
+      {/* AI prose before/after (AI available) */}
+      {result && aiEnhanced && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] shrink-0" />
+            <span className="text-[var(--color-muted)] text-xs">AI-enhanced analysis</span>
+          </div>
+
+          {/* Summary of Changes - hero section with bullet points */}
+          {result.after?.changes_summary && (
+            <div className="bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20 rounded-xl p-5">
+              <h3 className="font-[var(--font-heading)] text-[var(--color-primary)] text-xs font-semibold uppercase tracking-widest mb-3">Impact Summary</h3>
+              <ul className="space-y-2">
+                {result.after.changes_summary
+                  .split(/\.\s+/)
+                  .filter(s => s.trim().length > 0)
+                  .slice(0, 4)
+                  .map((point, i) => (
+                    <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2">
+                      <span className="text-[var(--color-primary)] text-lg leading-none mt-0.5">•</span>
+                      <span>{point.trim()}{point.trim().endsWith('.') ? '' : '.'}</span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* New Win Conditions */}
+            {(() => {
+              const beforeWins = new Set(result.before?.win_conditions || [])
+              const newWins = (result.after?.win_conditions || []).filter(w => !beforeWins.has(w))
+              if (newWins.length === 0) return null
+              return (
+                <div className="bg-[var(--color-success)]/5 border border-[var(--color-success)]/20 rounded-xl p-4">
+                  <h3 className="font-[var(--font-heading)] text-[var(--color-success)] text-[10px] font-semibold uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <IconCheck className="w-3.5 h-3.5" />
+                    New Win Conditions
+                  </h3>
+                  <ul className="space-y-2">
+                    {newWins.map((w, i) => (
+                      <li key={i} className="text-[var(--color-text)] text-sm flex items-start gap-2">
+                        <span className="text-[var(--color-success)] text-lg leading-none mt-0.5">+</span>
+                        <span>{w}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })()}
+
+            {/* Consolidated Weaknesses - one source of truth */}
+            {(() => {
+              const beforeWeaknesses = new Set(result.before?.key_weaknesses || [])
+              const afterWeaknesses = new Set(result.after?.key_weaknesses || [])
+              const resolved = (result.before?.key_weaknesses || []).filter(w => !afterWeaknesses.has(w))
+              const newWeaknesses = (result.after?.key_weaknesses || []).filter(w => !beforeWeaknesses.has(w))
+              const unchanged = (result.before?.key_weaknesses || []).filter(w => afterWeaknesses.has(w))
+              
+              if (resolved.length === 0 && newWeaknesses.length === 0 && unchanged.length === 0) return null
+              
+              return (
+                <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
+                  <h3 className="font-[var(--font-heading)] text-[var(--color-text)] text-[10px] font-semibold uppercase tracking-widest mb-3">
+                    Weaknesses
+                  </h3>
+                  <ul className="space-y-2">
+                    {resolved.map((w, i) => (
+                      <li key={`resolved-${i}`} className="text-[var(--color-muted)] text-sm flex items-start gap-2 line-through decoration-[var(--color-success)]">
+                        <span className="text-[var(--color-success)] text-lg leading-none mt-0.5">✓</span>
+                        <span>{w}</span>
+                      </li>
+                    ))}
+                    {newWeaknesses.map((w, i) => (
+                      <li key={`new-${i}`} className="text-[var(--color-text)] text-sm flex items-start gap-2">
+                        <span className="text-[var(--color-danger)] text-lg leading-none mt-0.5">!</span>
+                        <span>{w}</span>
+                      </li>
+                    ))}
+                    {unchanged.map((w, i) => (
+                      <li key={`unchanged-${i}`} className="text-[var(--color-muted)] text-sm flex items-start gap-2">
+                        <span className="text-[var(--color-muted)] text-lg leading-none mt-0.5">−</span>
+                        <span>{w}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })()}
+          </div>
+
+          {/* Strategy comparison - collapsible */}
+          {result.before?.game_plan && result.after?.game_plan && (
+            <details className="bg-[var(--color-surface)]/50 border border-[var(--color-border)] rounded-xl p-4">
+              <summary className="font-[var(--font-heading)] text-[var(--color-muted)] text-xs font-semibold uppercase tracking-widest cursor-pointer hover:text-[var(--color-text)] transition-colors">
+                Strategy Comparison (click to expand)
+              </summary>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-[var(--color-muted)] text-xs mb-1.5">Before</p>
+                  <p className="text-[var(--color-muted)] text-sm leading-relaxed">{result.before.game_plan}</p>
+                </div>
+                <div>
+                  <p className="text-[var(--color-secondary)] text-xs mb-1.5">After</p>
+                  <p className="text-[var(--color-text)] text-sm leading-relaxed">{result.after.game_plan}</p>
+                </div>
+              </div>
+            </details>
+          )}
         </div>
       )}
     </div>
@@ -1041,7 +1500,7 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Scenarios' && (
-            <ScenariosTab deckId={deckId} />
+            <ScenariosTab deckId={deckId} deck={deck} analysis={analysis} />
           )}
         </div>
       </div>

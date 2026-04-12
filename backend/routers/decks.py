@@ -214,6 +214,7 @@ def get_library(user: dict = Depends(require_allowed_user)):
             "commander": rj.get("commander"),
             "colors": rj.get("colors") or rj.get("color_identity"),
             "themes": rj.get("themes", []),
+            "verdict": rj.get("verdict"),
         })
 
     # Backwards-compat: include analyses that have no user_decks entry
@@ -230,6 +231,7 @@ def get_library(user: dict = Depends(require_allowed_user)):
             "commander": rj.get("commander"),
             "colors": rj.get("colors") or rj.get("color_identity"),
             "themes": rj.get("themes", []),
+            "verdict": rj.get("verdict"),
         })
 
     result.sort(key=lambda x: x.get("added_at") or "", reverse=True)
