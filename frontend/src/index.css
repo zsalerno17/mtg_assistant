@@ -1,48 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 @import 'mana-font/css/mana.min.css';
 @import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/components.css";
 
 /*
- * Border-radius convention:
- *   rounded-xl  (12px) — cards, containers, modals
- *   rounded-lg  (8px)  — buttons, inputs, dropdowns
- *   rounded-[7px]      — small badges, nav pills, avatar squares
- *   rounded-full       — circular avatars only
+ * MTG Assistant — Design System Entry Point
+ * 
+ * Color System: Arcane Spectrum (Option C) — MTG 5-color palette
+ * Typography: Cinzel + Inter (Option D) — Gravitas + Clarity
+ * Components: Crisp — Flat surfaces, borders carry structure
+ * Motion: Cinematic — 300-500ms, dramatic spring, stagger entrances
+ * 
+ * All design tokens defined in tokens.css
+ * All component classes defined in components.css
  */
 
-@theme {
-  /* Refined Variant — Phase 24 color palette */
-  --color-bg:        #0a0f1a;  /* Deep background */
-  --color-surface:   #111827;  /* Refined surface (darker than previous #0f172a) */
-  --color-surface-2: #1a202e;  /* Secondary surface (elevated cards) */
-  --color-border:    #1e293b;  /* Refined border */
-  --color-border-light: #2d3748;  /* Secondary border */
-  --color-primary:   #fbbf24;  /* Amber accent */
-  --color-accent:    #f59e0b;  /* Amber hover accent */
-  --color-secondary: #38bdf8;  /* Sky blue secondary */
-  --color-success:   #34d399;  /* Emerald success */
-  --color-danger:    #fb7185;  /* Rose danger */
-  --color-text:      #f1f5f9;  /* Primary text */
-  --color-muted:     #94a3b8;  /* Muted text */
-
-  /* MTG color identity pips */
-  --color-mtg-w: #f9fafb;
-  --color-mtg-u: #3b82f6;
-  --color-mtg-b: #6b21a8;
-  --color-mtg-r: #ef4444;
-  --color-mtg-g: #22c55e;
-
-  /* Gradient accent colors for stat borders */
-  --color-gradient-amber:  #fbbf24;
-  --color-gradient-green:  #34d399;
-  --color-gradient-purple: #a855f7;
-  --color-gradient-blue:   #3b82f6;
-
-  /* Typography — Phase 24 hierarchy */
-  --font-brand:   'Cinzel', Georgia, serif;           /* Logo, "Deck Vault" */
-  --font-heading: 'Space Grotesk', system-ui, sans-serif;  /* Section headings */
-  --font-body:    'Inter', system-ui, sans-serif;     /* Body text */
-  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;  /* Code/data */
-}
+/* ─── Global Base Styles ────────────────────────────── */
 
 :root {
   font-family: var(--font-body);
@@ -53,31 +27,156 @@
 }
 
 body {
+  margin: 0;
+  min-height: 100vh;
+  /* Subtle texture + gradient accents (dark mode) */
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 15% 40%, rgba(251, 191, 36, 0.07) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 15%, rgba(56, 189, 248, 0.05) 0%, transparent 45%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 15% 40%, rgba(76, 168, 224, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(216, 168, 72, 0.04) 0%, transparent 45%);
   background-repeat: repeat, no-repeat, no-repeat;
   background-attachment: fixed;
+  background-color: var(--color-bg);
 }
 
-/* Thin custom scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-/* Text selection */
-::selection { background: rgba(251, 191, 36, 0.25); color: #f1f5f9; }
-
-/* Tab content fade-in */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+[data-theme="light"] body {
+  /* Light mode: cleaner, less texture */
+  background-image:
+    radial-gradient(ellipse at 15% 40%, rgba(32, 128, 184, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 15%, rgba(184, 132, 46, 0.02) 0%, transparent 40%);
 }
-.tab-content { animation: fadeIn 0.18s ease-out both; }
 
-/* Shimmer skeleton loading animation */
+/* ─── Typography Defaults ───────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+h1 {
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-tight);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+}
+
+h3 {
+  font-size: var(--text-xl);
+}
+
+p {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--color-surface-2);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid var(--color-border);
+}
+
+pre {
+  font-family: var(--font-mono);
+  background: var(--color-surface-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: var(--border-width) solid var(--color-border);
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-border);
+}
+
+/* ─── Text Selection ──────────────────────────────────── */
+
+::selection {
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
+}
+
+/* ─── Focus Visible (Accessibility) ───────────────────── */
+
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Tailwind Compatibility ──────────────────────────── */
+
+@theme {
+  /* Map Tailwind utilities to design tokens */
+  --color-bg:        var(--color-bg);
+  --color-surface:   var(--color-surface);
+  --color-surface-2: var(--color-surface-2);
+  --color-border:    var(--color-border);
+  --color-border-light: var(--color-border-light);
+  --color-primary:   var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-success:   var(--color-success);
+  --color-danger:    var(--color-danger);
+  --color-text:      var(--color-text);
+  --color-muted:     var(--color-text-muted);
+
+  /* MTG color identity */
+  --color-mtg-w: var(--color-mtg-white);
+  --color-mtg-u: var(--color-mtg-blue);
+  --color-mtg-b: var(--color-mtg-black);
+  --color-mtg-r: var(--color-mtg-red);
+  --color-mtg-g: var(--color-mtg-green);
+
+  /* Typography */
+  --font-brand:   var(--font-brand);
+  --font-heading: var(--font-heading);
+  --font-body:    var(--font-body);
+  --font-mono:    var(--font-mono);
+}
+
+/* ─── Border-radius Convention ────────────────────────── */
+
+/*
+ * rounded-xl  (16px via --radius-xl)  — cards, containers, modals
+ * rounded-lg  (10px via --radius-lg)  — buttons, inputs, dropdowns
+ * rounded-md  (8px via --radius-md)   — small badges, nav pills
+ * rounded-sm  (6px via --radius-sm)   — inline code, compact elements
+ * rounded-full                        — circular avatars, pill badges
+ */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
   100% { background-position:  600px 0; }

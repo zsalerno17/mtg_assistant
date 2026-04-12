@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Decision 01 — Color Palettes · MTG Assistant Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --page-bg: #04080f;
+  --page-text: #d4e2f0;
+}
+
+body {
+  background: var(--page-bg);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--page-text);
+  min-height: 100vh;
+  padding: 48px 24px 80px;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ─── page header ─────────────────────────────────────── */
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.page-header .step {
+  display: inline-block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #339DC9;
+  background: rgba(51,157,201,0.12);
+  border: 1px solid rgba(51,157,201,0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+.page-header h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #e8f4ff;
+  margin-bottom: 10px;
+}
+.page-header p {
+  font-size: 15px;
+  color: #8aa0b8;
+  max-width: 680px;
+  margin: 0 auto 20px;
+  line-height: 1.6;
+}
+.page-header .improved {
+  display: inline-block;
+  font-size: 12px;
+  color: #6a9ab8;
+  background: rgba(51,157,201,0.08);
+  border: 1px solid rgba(51,157,201,0.2);
+  padding: 6px 14px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+.page-header .logo-colors {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.logo-swatch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #8aaecc;
+}
+.logo-swatch .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+/* ─── theme toggle ────────────────────────────────────── */
+.theme-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 36px;
+}
+.theme-toggle {
+  display: flex;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+}
+.theme-btn {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 18px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #7a92aa;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.theme-btn.active {
+  background: rgba(51,157,201,0.15);
+  color: #4ab5e0;
+  box-shadow: 0 0 0 1px rgba(51,157,201,0.25);
+}
+.theme-btn:hover:not(.active) { color: #a0b8d0; }
+
+/* ─── 3-column palette grid ───────────────────────────── */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (max-width: 1100px) {
+  .palette-grid { grid-template-columns: 1fr; max-width: 540px; }
+}
+
+/* ─── palette column ──────────────────────────────────── */
+.pal-col {
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.pal-label {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.pal-label .option-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--primary-subtle);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  padding: 3px 10px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.pal-label h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.pal-label p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ─── swatch grid ─────────────────────────────────────── */
+.mini-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-subtle);
+  margin-bottom: 8px;
+}
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.swatch {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--swatch-border);
+}
+.swatch-color { height: 36px; }
+.swatch-label {
+  padding: 5px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--swatch-label-color);
+  background: var(--swatch-label-bg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── mini components ─────────────────────────────────── */
+.mini-nav {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mini-nav .brand {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mini-nav .bolt {
+  width: 14px;
+  height: 14px;
+  background: var(--primary);
+  clip-path: polygon(60% 0%, 100% 0%, 40% 50%, 80% 50%, 0% 100%, 30% 55%, 0% 55%);
+}
+.mini-nav .nav-links {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+}
+.mini-nav .nav-links li a {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 5px 9px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.mini-nav .nav-links li.active a {
+  color: var(--primary);
+  background: var(--primary-subtle);
+}
+.mini-nav .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--primary);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.stat-card .deck-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.stat-card .deck-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.stat-card .deck-info h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.stat-card .deck-info span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.stat-card .badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--success-border);
+  color: var(--success);
+  background: var(--success-subtle);
+  white-space: nowrap;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.stat-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 6px;
+  text-align: center;
+}
+.stat-item .val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  display: block;
+}
+.stat-item .key {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-subtle);
+  display: block;
+  margin-top: 2px;
+}
+
+.mini-table {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.mini-table-head {
+  background: var(--surface-2);
+  display: grid;
+  grid-template-columns: 1fr 40px 40px;
+  padding: 7px 12px;
+  gap: 8px;
+}
+.mini-table-head span {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-subtle);
+}
+.mini-table-head span:not(:first-child) { text-align: center; }
+.mini-table-row {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 40px 40px;
+  padding: 8px 12px;
+  gap: 8px;
+  align-items: center;
+  transition: background 0.15s;
+}
+.mini-table-row:hover { background: var(--primary-subtle); }
+.mini-table-row.highlight { background: var(--highlight-bg); }
+.mini-table-row .player {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.mini-table-row .rank {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  width: 14px;
+}
+.mini-table-row .rank.gold { color: var(--gold); }
+.mini-table-row .player-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+}
+.mini-table-row .num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+.mini-table-row .num.primary-col { color: var(--primary); }
+
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--btn-text);
+  box-shadow: var(--btn-shadow);
+}
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-light);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+.btn-danger {
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.text-hierarchy .th-heading {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.text-hierarchy .th-body {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.55;
+  margin-bottom: 4px;
+}
+.text-hierarchy .th-muted {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.choose-btn {
+  display: block;
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--primary);
+  color: var(--btn-text);
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: var(--choose-shadow);
+  transition: all 0.15s;
+  margin-top: auto;
+}
+.choose-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+
+/* ══════════════════════════════════════════════════════
+   OPTION A — DEEP OCEAN (Saturated teal + cyan)
+══════════════════════════════════════════════════════ */
+.pal-ocean-dark {
+  background: #050d15;
+  --bg: #050d15;
+  --surface: #0a1520;
+  --surface-2: #0f1e2c;
+  --border: #1a2d3f;
+  --border-light: #243a52;
+  --primary: #1fb8d8;
+  --primary-subtle: rgba(31,184,216,0.12);
+  --primary-border: rgba(31,184,216,0.30);
+  --secondary: #CDB788;
+  --success: #3ecf8e;
+  --success-subtle: rgba(62,207,142,0.12);
+  --success-border: rgba(62,207,142,0.30);
+  --danger: #ff5a6f;
+  --danger-subtle: rgba(255,90,111,0.12);
+  --danger-border: rgba(255,90,111,0.30);
+  --gold: #e0ba70;
+  --text: #e8f4fa;
+  --text-muted: #8cadc4;
+  --text-subtle: #4a6a85;
+  --btn-text: #001018;
+  --btn-shadow: 0 0 16px rgba(31,184,216,0.35);
+  --choose-shadow: 0 0 24px rgba(31,184,216,0.45);
+  --highlight-bg: rgba(224,186,112,0.08);
+  --swatch-border: rgba(255,255,255,0.08);
+  --swatch-label-bg: rgba(0,0,0,0.5);
+  --swatch-label-color: #8cadc4;
+  border-color: rgba(31,184,216,0.2);
+}
+
+.pal-ocean-light {
+  background: #f8fbfd;
+  --bg: #f8fbfd;
+  --surface: #ffffff;
+  --surface-2: #f0f7fa;
+  --border: #d4e4ed;
+  --border-light: #b8d4e0;
+  --primary: #0e8ba8;
+  --primary-subtle: rgba(14,139,168,0.10);
+  --primary-border: rgba(14,139,168,0.30);
+  --secondary: #a68650;
+  --success: #0e9f5e;
+  --success-subtle: rgba(14,159,94,0.10);
+  --success-border: rgba(14,159,94,0.30);
+  --danger: #d82e44;
+  --danger-subtle: rgba(216,46,68,0.10);
+  --danger-border: rgba(216,46,68,0.30);
+  --gold: #9f7b3e;
+  --text: #0a2533;
+  --text-muted: #426680;
+  --text-subtle: #8aadc0;
+  --btn-text: #ffffff;
+  --btn-shadow: 0 2px 8px rgba(14,139,168,0.25);
+  --choose-shadow: 0 4px 16px rgba(14,139,168,0.35);
+  --highlight-bg: rgba(166,134,80,0.08);
+  --swatch-border: rgba(0,0,0,0.08);
+  --swatch-label-bg: rgba(0,0,0,0.04);
+  --swatch-label-color: #5a7a90;
+  border-color: rgba(14,139,168,0.2);
+}
+
+/* ══════════════════════════════════════════════════════
+   OPTION B — FORGE (Warm amber + copper)
+══════════════════════════════════════════════════════ */
+.pal-forge-dark {
+  background: #0f0a06;
+  --bg: #0f0a06;
+  --surface: #1a1108;
+  --surface-2: #251910;
+  --border: #362614;
+  --border-light: #4a361e;
+  --primary: #e89d4a;
+  --primary-subtle: rgba(232,157,74,0.12);
+  --primary-border: rgba(232,157,74,0.30);
+  --secondary: #64a8c8;
+  --success: #5eb070;
+  --success-subtle: rgba(94,176,112,0.12);
+  --success-border: rgba(94,176,112,0.30);
+  --danger: #e85a50;
+  --danger-subtle: rgba(232,90,80,0.12);
+  --danger-border: rgba(232,90,80,0.30);
+  --gold: #e89d4a;
+  --text: #f8f0e4;
+  --text-muted: #b0967c;
+  --text-subtle: #5a4a38;
+  --btn-text: #0f0a06;
+  --btn-shadow: 0 0 16px rgba(232,157,74,0.30);
+  --choose-shadow: 0 0 24px rgba(232,157,74,0.40);
+  --highlight-bg: rgba(232,157,74,0.08);
+  --swatch-border: rgba(255,255,255,0.08);
+  --swatch-label-bg: rgba(0,0,0,0.5);
+  --swatch-label-color: #b0967c;
+  border-color: rgba(232,157,74,0.2);
+}
+
+.pal-forge-light {
+  background: #fdfaf6;
+  --bg: #fdfaf6;
+  --surface: #ffffff;
+  --surface-2: #f8f3ec;
+  --border: #e8dcc8;
+  --border-light: #d4c4a8;
+  --primary: #c47820;
+  --primary-subtle: rgba(196,120,32,0.10);
+  --primary-border: rgba(196,120,32,0.30);
+  --secondary: #2080a0;
+  --success: #2e8048;
+  --success-subtle: rgba(46,128,72,0.10);
+  --success-border: rgba(46,128,72,0.30);
+  --danger: #c8342c;
+  --danger-subtle: rgba(200,52,44,0.10);
+  --danger-border: rgba(200,52,44,0.30);
+  --gold: #9f6820;
+  --text: #1a1208;
+  --text-muted: #5a4a38;
+  --text-subtle: #9a8870;
+  --btn-text: #ffffff;
+  --btn-shadow: 0 2px 8px rgba(196,120,32,0.25);
+  --choose-shadow: 0 4px 16px rgba(196,120,32,0.35);
+  --highlight-bg: rgba(196,120,32,0.08);
+  --swatch-border: rgba(0,0,0,0.08);
+  --swatch-label-bg: rgba(0,0,0,0.04);
+  --swatch-label-color: #6a5a48;
+  border-color: rgba(196,120,32,0.2);
+}
+
+/* ══════════════════════════════════════════════════════
+   OPTION C — ARCANE SPECTRUM (MTG 5-color + high contrast)
+══════════════════════════════════════════════════════ */
+.pal-spectrum-dark {
+  background: #070813;
+  --bg: #070813;
+  --surface: #0d1020;
+  --surface-2: #14182d;
+  --border: #1e2540;
+  --border-light: #2a3458;
+  --primary: #4ca8e0;
+  --primary-subtle: rgba(76,168,224,0.12);
+  --primary-border: rgba(76,168,224,0.30);
+  --secondary: #d8a848;
+  --success: #5ec070;
+  --success-subtle: rgba(94,192,112,0.12);
+  --success-border: rgba(94,192,112,0.30);
+  --danger: #e85868;
+  --danger-subtle: rgba(232,88,104,0.12);
+  --danger-border: rgba(232,88,104,0.30);
+  --gold: #d8a848;
+  --mtg-white: #f4f0e0;
+  --mtg-blue: #4ca8e0;
+  --mtg-black: #9875d8;
+  --mtg-red: #e85868;
+  --mtg-green: #5ec070;
+  --text: #ecf2fa;
+  --text-muted: #92a8c8;
+  --text-subtle: #4a5a78;
+  --btn-text: #001028;
+  --btn-shadow: 0 0 16px rgba(76,168,224,0.35);
+  --choose-shadow: 0 0 24px rgba(76,168,224,0.45);
+  --highlight-bg: rgba(216,168,72,0.08);
+  --swatch-border: rgba(255,255,255,0.08);
+  --swatch-label-bg: rgba(0,0,0,0.5);
+  --swatch-label-color: #92a8c8;
+  border-color: rgba(76,168,224,0.2);
+}
+
+.pal-spectrum-light {
+  background: #f9fafb;
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --surface-2: #f0f4f8;
+  --border: #d8e2ec;
+  --border-light: #c0d0e0;
+  --primary: #2080b8;
+  --primary-subtle: rgba(32,128,184,0.10);
+  --primary-border: rgba(32,128,184,0.30);
+  --secondary: #b8842e;
+  --success: #2e9050;
+  --success-subtle: rgba(46,144,80,0.10);
+  --success-border: rgba(46,144,80,0.30);
+  --danger: #c8303c;
+  --danger-subtle: rgba(200,48,60,0.10);
+  --danger-border: rgba(200,48,60,0.30);
+  --gold: #a07028;
+  --mtg-white: #4a4035;
+  --mtg-blue: #2080b8;
+  --mtg-black: #6838a8;
+  --mtg-red: #c8303c;
+  --mtg-green: #2e9050;
+  --text: #0a1828;
+  --text-muted: #475a70;
+  --text-subtle: #8a9cb0;
+  --btn-text: #ffffff;
+  --btn-shadow: 0 2px 8px rgba(32,128,184,0.25);
+  --choose-shadow: 0 4px 16px rgba(32,128,184,0.35);
+  --highlight-bg: rgba(184,132,46,0.08);
+  --swatch-border: rgba(0,0,0,0.08);
+  --swatch-label-bg: rgba(0,0,0,0.04);
+  --swatch-label-color: #5a6a80;
+  border-color: rgba(32,128,184,0.2);
+}
+
+/* show 5-color pips in spectrum option */
+.pal-spectrum-dark .mana-pips,
+.pal-spectrum-light .mana-pips { display: flex; gap: 3px; margin-top: 8px; }
+.mana-pip {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Page Header ───────────────────────────────────── -->
+<div class="page-header">
+  <div class="step">Decision 01 of 04</div>
+  <h1>Color Palette</h1>
+  <p>Three distinct color systems, each shown in <strong>dark and light mode</strong>. All color pairings pass WCAG AA contrast (4.5:1 minimum). Compare the nav, card, table, and buttons in both modes.</p>
+  <div class="improved">✓ Fixed: Contrast ratios now meet accessibility standards · Light mode added · More distinct options</div>
+  <div class="logo-colors">
+    <span class="logo-swatch"><span class="dot" style="background:#177296;"></span> Deep Blue #177296</span>
+    <span class="logo-swatch"><span class="dot" style="background:#339DC9;"></span> Steel Blue #339DC9</span>
+    <span class="logo-swatch"><span class="dot" style="background:#CDB788;"></span> Parchment Gold #CDB788</span>
+    <span class="logo-swatch"><span class="dot" style="background:#4A9D4A;"></span> Forest Green #4A9D4A</span>
+    <span class="logo-swatch"><span class="dot" style="background:#EC3634;"></span> Crimson Red #EC3634</span>
+  </div>
+</div>
+
+<!-- ─── Theme Toggle ─────────────────────────────────── -->
+<div class="theme-toggle-wrap">
+  <div class="theme-toggle">
+    <button class="theme-btn active" onclick="setTheme('dark', this)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      Dark Mode
+    </button>
+    <button class="theme-btn" onclick="setTheme('light', this)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      Light Mode
+    </button>
+  </div>
+</div>
+
+<!-- ─── 3-column comparison ──────────────────────────── -->
+<div class="palette-grid" id="palette-grid">
+
+  <!-- ══ OPTION A — Deep Ocean ══════════════════════════ -->
+  <div class="pal-col pal-ocean-dark" data-dark-class="pal-ocean-dark" data-light-class="pal-ocean-light">
+    <div class="pal-label">
+      <div class="option-tag">Option A</div>
+      <h2>Deep Ocean</h2>
+      <p>Saturated teal + cyan. Modern, tech-forward. High energy.</p>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Color Tokens</div>
+      <div class="swatches">
+        <div class="swatch"><div class="swatch-color" style="background:#050d15;"></div><div class="swatch-label">Background</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#0a1520;"></div><div class="swatch-label">Surface</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#0f1e2c;"></div><div class="swatch-label">Surface-2</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1a2d3f;"></div><div class="swatch-label">Border</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1fb8d8;"></div><div class="swatch-label">Primary</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#CDB788;"></div><div class="swatch-label">Secondary</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#3ecf8e;"></div><div class="swatch-label">Success</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#ff5a6f;"></div><div class="swatch-label">Danger</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Navigation</div>
+      <div class="mini-nav">
+        <div class="brand"><div class="bolt"></div> MTG Assistant</div>
+        <ul class="nav-links">
+          <li class="active"><a href="#">Decks</a></li>
+          <li><a href="#">Leagues</a></li>
+          <li><a href="#">Collection</a></li>
+        </ul>
+        <div class="avatar">ZS</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Deck Card</div>
+      <div class="stat-card">
+        <div class="deck-header">
+          <div class="deck-icon">🐲</div>
+          <div class="deck-info">
+            <h3>Atraxa Superfriends</h3>
+            <span>Commander · Last played 3 days ago</span>
+          </div>
+          <div class="badge">Active</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-item"><span class="val">67%</span><span class="key">Win Rate</span></div>
+          <div class="stat-item"><span class="val">24</span><span class="key">Games</span></div>
+          <div class="stat-item"><span class="val">A−</span><span class="key">Grade</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">League Standings</div>
+      <div class="mini-table">
+        <div class="mini-table-head">
+          <span>Player</span><span>W</span><span>Pts</span>
+        </div>
+        <div class="mini-table-row highlight">
+          <div class="player"><span class="rank gold">1</span><span class="player-name">Zack S.</span></div>
+          <span class="num primary-col">8</span>
+          <span class="num primary-col">24</span>
+        </div>
+        <div class="mini-table-row">
+          <div class="player"><span class="rank">2</span><span class="player-name">Marcus L.</span></div>
+          <span class="num">6</span><span class="num">18</span>
+        </div>
+        <div class="mini-table-row">
+          <div class="player"><span class="rank">3</span><span class="player-name">Jamie P.</span></div>
+          <span class="num">4</span><span class="num">12</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Buttons</div>
+      <div class="btn-row">
+        <button class="btn btn-primary">Import Deck</button>
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-ghost">Add to League</button>
+        <button class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Text Hierarchy</div>
+      <div class="text-hierarchy">
+        <div class="th-heading">Deck Overview</div>
+        <div class="th-body">This deck focuses on planeswalker synergies with Atraxa as the commander.</div>
+        <div class="th-muted">Last updated 3 days ago</div>
+      </div>
+    </div>
+
+    <button class="choose-btn">Choose Deep Ocean</button>
+  </div>
+
+  <!-- ══ OPTION B — Forge ════════════════════════════════ -->
+  <div class="pal-col pal-forge-dark" data-dark-class="pal-forge-dark" data-light-class="pal-forge-light">
+    <div class="pal-label">
+      <div class="option-tag">Option B</div>
+      <h2>Forge</h2>
+      <p>Warm amber + copper. Inviting, alchemical. MTG-vintage feel.</p>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Color Tokens</div>
+      <div class="swatches">
+        <div class="swatch"><div class="swatch-color" style="background:#0f0a06;"></div><div class="swatch-label">Background</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1a1108;"></div><div class="swatch-label">Surface</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#251910;"></div><div class="swatch-label">Surface-2</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#362614;"></div><div class="swatch-label">Border</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#e89d4a;"></div><div class="swatch-label">Primary</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#64a8c8;"></div><div class="swatch-label">Secondary</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#5eb070;"></div><div class="swatch-label">Success</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#e85a50;"></div><div class="swatch-label">Danger</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Navigation</div>
+      <div class="mini-nav">
+        <div class="brand"><div class="bolt"></div> MTG Assistant</div>
+        <ul class="nav-links">
+          <li class="active"><a href="#">Decks</a></li>
+          <li><a href="#">Leagues</a></li>
+          <li><a href="#">Collection</a></li>
+        </ul>
+        <div class="avatar">ZS</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Deck Card</div>
+      <div class="stat-card">
+        <div class="deck-header">
+          <div class="deck-icon">🐲</div>
+          <div class="deck-info">
+            <h3>Atraxa Superfriends</h3>
+            <span>Commander · Last played 3 days ago</span>
+          </div>
+          <div class="badge">Active</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-item"><span class="val">67%</span><span class="key">Win Rate</span></div>
+          <div class="stat-item"><span class="val">24</span><span class="key">Games</span></div>
+          <div class="stat-item"><span class="val">A−</span><span class="key">Grade</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">League Standings</div>
+      <div class="mini-table">
+        <div class="mini-table-head">
+          <span>Player</span><span>W</span><span>Pts</span>
+        </div>
+        <div class="mini-table-row highlight">
+          <div class="player"><span class="rank gold">1</span><span class="player-name">Zack S.</span></div>
+          <span class="num primary-col">8</span>
+          <span class="num primary-col">24</span>
+        </div>
+        <div class="mini-table-row">
+          <div class="player"><span class="rank">2</span><span class="player-name">Marcus L.</span></div>
+          <span class="num">6</span><span class="num">18</span>
+        </div>
+        <div class="mini-table-row">
+          <div class="player"><span class="rank">3</span><span class="player-name">Jamie P.</span></div>
+          <span class="num">4</span><span class="num">12</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Buttons</div>
+      <div class="btn-row">
+        <button class="btn btn-primary">Import Deck</button>
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-ghost">Add to League</button>
+        <button class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Text Hierarchy</div>
+      <div class="text-hierarchy">
+        <div class="th-heading">Deck Overview</div>
+        <div class="th-body">This deck focuses on planeswalker synergies with Atraxa as the commander.</div>
+        <div class="th-muted">Last updated 3 days ago</div>
+      </div>
+    </div>
+
+    <button class="choose-btn">Choose Forge</button>
+  </div>
+
+  <!-- ══ OPTION C — Arcane Spectrum ══════════════════════ -->
+  <div class="pal-col pal-spectrum-dark" data-dark-class="pal-spectrum-dark" data-light-class="pal-spectrum-light">
+    <div class="pal-label">
+      <div class="option-tag">Option C</div>
+      <h2>Arcane Spectrum</h2>
+      <p>MTG 5-color + high contrast. Rich, immersive, balanced.</p>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Color Tokens</div>
+      <div class="swatches">
+        <div class="swatch"><div class="swatch-color" style="background:#070813;"></div><div class="swatch-label">Background</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#0d1020;"></div><div class="swatch-label">Surface</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#14182d;"></div><div class="swatch-label">Surface-2</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1e2540;"></div><div class="swatch-label">Border</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#4ca8e0;"></div><div class="swatch-label">Primary</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#d8a848;"></div><div class="swatch-label">Secondary</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#5ec070;"></div><div class="swatch-label">Success</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#e85868;"></div><div class="swatch-label">Danger</div></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="mini-section-label">MTG Color Identity</div>
+        <div class="mana-pips">
+          <div class="mana-pip" style="background:#f4f0e0;color:#333;">W</div>
+          <div class="mana-pip" style="background:#4ca8e0;color:#fff;">U</div>
+          <div class="mana-pip" style="background:#9875d8;color:#fff;">B</div>
+          <div class="mana-pip" style="background:#e85868;color:#fff;">R</div>
+          <div class="mana-pip" style="background:#5ec070;color:#fff;">G</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Navigation</div>
+      <div class="mini-nav">
+        <div class="brand"><div class="bolt"></div> MTG Assistant</div>
+        <ul class="nav-links">
+          <li class="active"><a href="#">Decks</a></li>
+          <li><a href="#">Leagues</a></li>
+          <li><a href="#">Collection</a></li>
+        </ul>
+        <div class="avatar">ZS</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Deck Card</div>
+      <div class="stat-card">
+        <div class="deck-header">
+          <div class="deck-icon">🐲</div>
+          <div class="deck-info">
+            <h3>Atraxa Superfriends</h3>
+            <span>Commander · Last played 3 days ago</span>
+          </div>
+          <div class="badge">Active</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-item"><span class="val">67%</span><span class="key">Win Rate</span></div>
+          <div class="stat-item"><span class="val">24</span><span class="key">Games</span></div>
+          <div class="stat-item"><span class="val">A−</span><span class="key">Grade</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">League Standings</div>
+      <div class="mini-table">
+        <div class="mini-table-head">
+          <span>Player</span><span>W</span><span>Pts</span>
+        </div>
+        <div class="mini-table-row highlight">
+          <div class="player"><span class="rank gold">1</span><span class="player-name">Zack S.</span></div>
+          <span class="num primary-col">8</span>
+          <span class="num primary-col">24</span>
+        </div>
+        <div class="mini-table-row">
+          <div class="player"><span class="rank">2</span><span class="player-name">Marcus L.</span></div>
+          <span class="num">6</span><span class="num">18</span>
+        </div>
+        <div class="mini-table-row">
+          <div class="player"><span class="rank">3</span><span class="player-name">Jamie P.</span></div>
+          <span class="num">4</span><span class="num">12</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Buttons</div>
+      <div class="btn-row">
+        <button class="btn btn-primary">Import Deck</button>
+        <button class="btn btn-secondary">View Details</button>
+        <button class="btn btn-ghost">Add to League</button>
+        <button class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-section-label">Text Hierarchy</div>
+      <div class="text-hierarchy">
+        <div class="th-heading">Deck Overview</div>
+        <div class="th-body">This deck focuses on planeswalker synergies with Atraxa as the commander.</div>
+        <div class="th-muted">Last updated 3 days ago</div>
+      </div>
+    </div>
+
+    <button class="choose-btn">Choose Arcane Spectrum</button>
+  </div>
+
+</div>
+
+<script>
+let currentTheme = 'dark';
+
+function setTheme(theme, btn) {
+  currentTheme = theme;
+  
+  // Update toggle buttons
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Switch all palette columns
+  document.querySelectorAll('.pal-col').forEach(col => {
+    const darkClass = col.getAttribute('data-dark-class');
+    const lightClass = col.getAttribute('data-light-class');
+    
+    col.classList.remove(darkClass, lightClass);
+    col.classList.add(theme === 'dark' ? darkClass : lightClass);
+  });
+}
+</script>
+
+</body>
+</html>

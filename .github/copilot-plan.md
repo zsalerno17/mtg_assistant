@@ -59,19 +59,25 @@
 
 ## ⚡ CURRENT TASK
 
-**Status:** Phases 30 & 31C nearly complete (April 12, 2026)
+**Status:** Phase 35 — Design System Overhaul (Foundation Complete, April 12, 2026)
 
-**Just completed:**
-- Phase 31C color identity pips (migration 013, backend leagues.py + decks.py, frontend LeaguesPage.jsx)
-- Discovered Phase 30 voting, bulk actions, and image export **already fully implemented**
-- Discovered Phase 31C entrance music preview **already fully implemented**
+**Just completed (Phase 35A — Foundation):**
+- Created 4 HTML mockups for isolated design decisions (color/typography/components/motion)
+- Locked design system: **Arcane Spectrum** colors + **Cinzel+Inter** typography + **Crisp** components + **Cinematic** motion
+- Created `frontend/src/styles/tokens.css` — Single source of truth for all design tokens (colors, typography, spacing, borders, shadows, motion)
+- Created `frontend/src/styles/components.css` — Reusable component classes (buttons, cards, badges, forms, tables, nav, animations)
+- Updated `frontend/src/index.css` — Imports new design system, adds Google Fonts, global base styles
+- Installed `framer-motion` for Cinematic animation profile
+- Documented all decisions in `.github/design-proposal.md`
 
-**Remaining:**
-- Phase 30 PDF export (optional enhancement — jsPDF not installed)
-- Migration 013 needs deployment (adds `color_identity` column to `user_decks`)
-- End-to-end verification of all features in browser
+**Next steps (Phase 35B — Component Migration):**
+- Set up shadcn/ui in CSS variables mode
+- Rebuild TopNavbar.jsx with new design tokens
+- Rebuild DeckPage.jsx stat cards and re-theme Recharts
+- Rebuild LeaguePage.jsx tables and standings
+- Add dark/light mode toggle to TopNavbar
 
-**Last session completed:**
+**Previous session (Phases 30-34):**
 - Fixed duplicate navbar on all 4 league pages
 - Removed all emoji from league pages (created `LeagueIcons.jsx` with SVG icons)
 - Added CSV export for standings, head-to-head tiebreaker display
@@ -121,16 +127,18 @@
 | 32 | Edge Functions migration (7 Deno functions, dual-mode api.js) | ✅ Complete |
 | 33 | App-wide design uniformity (glass morphism everywhere) | ✅ Complete |
 | 34 | Analysis accuracy & commander intelligence (strategy, power level, thresholds) | ✅ Complete |
+| 35A | Design System Overhaul — Foundation (tokens, components, mockups) | ✅ Complete |
+| 35B | Design System Overhaul — Component Migration (shadcn/ui, rebuild pages) | 🚧 In Progress |
 
 ---
 
 ## Uncommitted Changes
 
-20 files modified, 5 new files, 1 new migration:
+23 files modified, 9 new files, 1 new migration:
 
-**Modified:** copilot-plan.md, decks.py, leagues.py, deck_analyzer.py, gemini_assistant.py, test_leagues.py, App.jsx, TopNavbar.jsx, index.css, api.js, CollectionPage.jsx, DashboardPage.jsx, DeckPage.jsx, ImportDeckPage.jsx, LeaguePage.jsx, LeaguesPage.jsx, LogGamePage.jsx, LoginPage.jsx, ProfilePage.jsx
+**Modified:** copilot-plan.md, decks.py, leagues.py, deck_analyzer.py, gemini_assistant.py, test_leagues.py, App.jsx, TopNavbar.jsx, index.css, api.js, CollectionPage.jsx, DashboardPage.jsx, DeckPage.jsx, ImportDeckPage.jsx, LeaguePage.jsx, LeaguesPage.jsx, LogGamePage.jsx, LoginPage.jsx, ProfilePage.jsx, package.json
 
-**New:** LeagueIcons.jsx, Skeletons.jsx, JoinLeaguePage.jsx, Leagues.test.jsx, logo.svg, edge-functions-deploy.md, 013_deck_color_identity.sql
+**New:** LeagueIcons.jsx, Skeletons.jsx, JoinLeaguePage.jsx, Leagues.test.jsx, logo.svg, edge-functions-deploy.md, 013_deck_color_identity.sql, design-proposal.md, tokens.css, components.css, 01-color-palettes-v2.html, 02-typography.html (updated)
 
 ---
 
@@ -180,6 +188,58 @@
 
 ---
 
+### Phase 35 — Design System Overhaul
+
+**Goal:** Replace ad-hoc design decisions with a systematic, token-driven design foundation.
+
+**Phase 35A — Foundation (COMPLETE ✅)**
+
+Mockup-driven design decisions locked in:
+- **Color System:** Arcane Spectrum (MTG 5-color palette with high contrast, dark + light modes)
+- **Typography:** Cinzel + Inter (headings serif, body sans)
+- **Component Style:** Crisp (flat surfaces, borders carry structure, no ambient glow)
+- **Motion Profile:** Cinematic (300-500ms, dramatic spring, stagger entrances)
+
+Implementation files created:
+- ✅ `frontend/src/styles/tokens.css` — All design tokens (colors, typography, spacing, borders, shadows, motion, z-index)
+- ✅ `frontend/src/styles/components.css` — Reusable component classes (buttons, cards, badges, forms, tables, nav, animations)
+- ✅ `frontend/src/index.css` — Updated to import new design system, Google Fonts, global base styles
+- ✅ `.github/design-proposal.md` — Canonical design decisions documentation
+- ✅ `framer-motion` installed for advanced Cinematic animations
+
+Mockup files:
+- `frontend/mockups/design-system/01-color-palettes-v2.html` — 3 palettes × dark/light modes
+- `frontend/mockups/design-system/02-typography.html` — 4 font pairings
+- `frontend/mockups/design-system/03-components.html` — Crisp vs Glowing comparison
+- `frontend/mockups/design-system/04-motion.html` — Interactive motion profile demo
+
+**Phase 35B — Component Migration (IN PROGRESS 🚧)**
+
+Remaining tasks:
+- [ ] Set up shadcn/ui in CSS variables mode (`npx shadcn@latest init`)
+- [ ] Install shadcn components: Button, Card, Table, Badge, Dialog, Dropdown, Avatar, Input, Select, Tabs, Skeleton, Tooltip, NavigationMenu, Sheet
+- [ ] Override shadcn CSS vars in `tokens.css` to match Arcane Spectrum
+- [ ] Add `logo.svg` to `TopNavbar.jsx` (replace text brand with logo image, Cinzel fallback)
+- [ ] Add `logo.svg` to `LoginPage.jsx` hero section
+- [ ] Rebuild `TopNavbar.jsx` with new design tokens (Cinzel brand, Inter nav links, token-based colors)
+- [ ] Redesign `DeckPage.jsx` deck overview hero section (commander card art, deck title, metadata layout)
+- [ ] Rebuild `DeckPage.jsx` stat cards (use `.stat-card` classes, re-theme Recharts, MTG color badges)
+- [ ] Rebuild `LeaguePage.jsx` tables (use `.table` classes, stagger entrance animations)
+- [ ] Add dark/light mode toggle to TopNavbar (toggle `data-theme="light"` on `<html>`)
+- [ ] Rebuild `CollectionPage.jsx` card grid with stagger entrances
+- [ ] Rebuild `DashboardPage.jsx` deck grid with new color system
+- [ ] Page transition animations with framer-motion
+
+**Acceptance criteria:**
+- All pages use tokens exclusively (no hardcoded colors/sizes)
+- Dark/light mode toggle works across all pages
+- Stagger entrance animations on deck/card grids
+- Component classes used consistently (`.btn-primary`, `.card`, `.badge-mtg-u`, etc.)
+- Recharts re-themed to Arcane Spectrum colors
+- All components pass contrast checks (WCAG AA)
+
+---
+
 ## Production Fix Log
 
 ### Moxfield 403 Fix (April 12, 2026)
@@ -225,25 +285,51 @@ Replaced broken achievements-based scoring (First Blood/Last Stand had backwards
 
 ## Design System
 
-**Typography:**
-- `font-brand` (Cinzel) — logos, page titles, commander names
-- `font-heading` (Space Grotesk) — section headings, metadata, buttons
-- `font-body` (Inter) — body text
-- `font-mono` (JetBrains Mono) — numbers, code, data
+**Current System:** Arcane Spectrum (Phase 35 — April 12, 2026)
 
-**Color Palette:**
-- Background: `#0a0f1a` | Surface: `#111827` | Surface-2: `#1f2937`
-- Border: `#1e293b` | Text: `#f1f5f9` | Muted: `#94a3b8`
-- Primary: `#fbbf24` (amber) | Accent: `#f59e0b` | Secondary: `#38bdf8` (sky)
-- Success: `#34d399` | Danger: `#fb7185`
-- MTG colors: W/U/B/R/G as semantic accents
+**Typography:**
+- `font-brand` (Cinzel) — logos, page titles, headings
+- `font-heading` (Cinzel) — section headings, H1-H3
+- `font-body` (Inter) — body text, UI elements, tables
+- `font-mono` (JetBrains Mono) — code, card IDs, data
+
+**Color Palette (Dark Mode):**
+- Background: `#070813` | Surface: `#0d1020` | Surface-2: `#14182d`
+- Border: `#1e2540` | Border-light: `#2a3458`
+- Text: `#ecf2fa` | Text-muted: `#92a8c8` | Text-subtle: `#4a5a78`
+- Primary (Blue): `#4ca8e0` | Secondary (Gold): `#d8a848`
+- Success (Green): `#5ec070` | Danger (Red): `#e85868`
+- MTG colors: W `#f4f0e0` | U `#4ca8e0` | B `#9875d8` | R `#e85868` | G `#5ec070`
+
+**Color Palette (Light Mode):**
+- Background: `#f9fafb` | Surface: `#ffffff` | Surface-2: `#f0f4f8`
+- Border: `#d8e2ec` | Border-light: `#c0d0e0`
+- Text: `#0a1828` | Text-muted: `#475a70` | Text-subtle: `#8a9cb0`
+- Primary (Blue): `#2080b8` | Secondary (Gold): `#b8842e`
+- Success (Green): `#2e9050` | Danger (Red): `#c8303c`
+
+**Component Style:** Crisp
+- Flat surfaces (no gradients)
+- Borders carry structure (1px solid)
+- No ambient glow (glow only on primary buttons in dark mode)
+- Hover: translate + border color shift
+
+**Motion Profile:** Cinematic
+- Base duration: 350ms
+- Easing: `cubic-bezier(0.34, 1.56, 0.64, 1)` (dramatic spring)
+- Stagger delay: 60ms per item
+- Hover scale: 1.02x lift
 
 **Visual Conventions:**
-- Glass morphism: `bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)]`
-- Hover lift: `-translate-y-0.5 hover:shadow-lg transition-all`
-- Border-radius: `rounded-xl` (cards) | `rounded-lg` (buttons/inputs) | `rounded-[7px]` (badges)
+- Glass morphism: `bg-surface/80 backdrop-blur-sm border border-border`
+- Hover lift: `-translate-y-0.5 hover:shadow-md transition-all`
+- Border-radius: `rounded-xl` (16px cards) | `rounded-lg` (10px buttons) | `rounded-md` (8px badges)
 - Icons: inline SVG only — no Unicode emoji
-- CTA buttons: `bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]`
+- CTA buttons: primary with glow shadow in dark mode
+
+**All design tokens:** See `frontend/src/styles/tokens.css`  
+**Component classes:** See `frontend/src/styles/components.css`  
+**Design decisions:** See `.github/design-proposal.md`
 
 ---
 

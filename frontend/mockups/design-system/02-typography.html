@@ -84,12 +84,18 @@ body {
 /* ─── 3-column grid ───────────────────────────────────── */
 .typo-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1400px) {
+  .typo-grid { grid-template-columns: repeat(2, 1fr); max-width: 1100px; }
+}
+@media (max-width: 768px) {
+  .typo-grid { grid-template-columns: repeat(2, 1fr); max-width: 1100px; }
+}
+@media (max-width: 768px) {
   .typo-grid { grid-template-columns: 1fr; max-width: 560px; }
 }
 
@@ -299,6 +305,20 @@ body {
 .pair-c .sample-muted{ font-family: 'Alegreya', serif; font-size: 13px; font-style: italic; }
 .pair-c .sample-stat .val  { font-family: 'Cinzel', serif; font-size: 30px; }
 .pair-c .sample-stat .label { font-family: 'Cinzel', serif; font-size: 9px; }
+
+/* ══════════════════════════════════════════════
+   PAIRING D — Cinzel + Inter (RECOMMENDED)
+   "Hybrid" — MTG gravitas + modern clarity
+══════════════════════════════════════════════ */
+.pair-d .sample-brand { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; letter-spacing: 0.12em; }
+.pair-d .sample-h1   { font-family: 'Cinzel', serif; font-size: 24px; }
+.pair-d .sample-h2   { font-family: 'Cinzel', serif; font-size: 18px; }
+.pair-d .sample-h3   { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 0.04em; }
+.pair-d .sample-body { font-family: 'Inter', sans-serif; font-size: 15px; }
+.pair-d .sample-muted{ font-family: 'Inter', sans-serif; font-size: 13px; }
+.pair-d .sample-stat .val  { font-family: 'Inter', sans-serif; font-size: 30px; font-weight: 700; }
+.pair-d .sample-stat .label { font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600; }
+.pair-d { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary-border), 0 8px 32px rgba(51,157,201,0.15); }
 </style>
 </head>
 <body>
@@ -627,6 +647,111 @@ body {
     </div>
 
     <button class="choose-btn" style="font-family:'Cinzel',serif;letter-spacing:.08em;">↑ Choose Cinzel + Alegreya</button>
+  </div>
+
+  <!-- ══ OPTION D — Cinzel + Inter ══════════════════════ -->
+  <div class="typo-col pair-d">
+    <div class="col-header">
+      <div class="option-tag">Option D</div>
+      <div class="pair-names">
+        <span class="pair-chip heading-chip">Cinzel — headings</span>
+        <span class="pair-chip">Inter — body</span>
+      </div>
+      <p style="font-family:'Inter',sans-serif;font-size:14px;color:#7a90ab;margin-top:10px;line-height:1.5;">The hybrid approach. Cinzel brings MTG gravitas to headings. Inter is modern, crisp, and scannable for all body text, UI, tables, and data. Best of both worlds.</p>
+    </div>
+
+    <!-- Brand -->
+    <div class="typo-section">
+      <div class="section-label">Brand / Logo Text</div>
+      <div class="sample-brand">MTG Assistant</div>
+      <div style="font-family:'Cinzel',serif;font-size:10px;color:#3e5878;margin-top:4px;letter-spacing:.06em;">The typeface that represents the app's identity</div>
+    </div>
+
+    <!-- Headings -->
+    <div class="typo-section">
+      <div class="section-label">Headings H1 – H3</div>
+      <div class="sample-h1">Your Deck Library</div>
+      <div class="sample-h2">Atraxa Superfriends</div>
+      <div class="sample-h3">Ramp Analysis · 14 Cards</div>
+    </div>
+
+    <!-- Body -->
+    <div class="typo-section">
+      <div class="section-label">Body Paragraph</div>
+      <div class="sample-body" style="font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;">
+        Your deck has <em>above-average ramp density</em> compared to similar 4-color Commander lists. Sol Ring, Arcane Signet, and Three Visits accelerate your curve by 1.4 turns on average.
+      </div>
+      <div class="sample-muted" style="font-family:'Inter',sans-serif;">AI analysis generated April 12 · Based on 847 similar decks on Moxfield</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="typo-section">
+      <div class="section-label">Data / Statistics</div>
+      <div class="sample-stat-group">
+        <div class="sample-stat" style="font-family:'Inter',sans-serif;">
+          <span class="val">67%</span>
+          <span class="label">Win Rate</span>
+        </div>
+        <div class="sample-stat" style="font-family:'Inter',sans-serif;">
+          <span class="val">A−</span>
+          <span class="label">Grade</span>
+        </div>
+        <div class="sample-stat" style="font-family:'Inter',sans-serif;">
+          <span class="val">2.6</span>
+          <span class="label">Avg CMC</span>
+        </div>
+        <div class="sample-stat" style="font-family:'Inter',sans-serif;">
+          <span class="val">24</span>
+          <span class="label">Games</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="typo-section">
+      <div class="section-label">Table — League Standings</div>
+      <table class="sample-table" style="font-family:'Inter',sans-serif;font-size:13px;">
+        <thead>
+          <tr><th style="font-family:'Cinzel',serif;">Player</th><th style="font-family:'Cinzel',serif;">W</th><th style="font-family:'Cinzel',serif;">Pts</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="primary-val">Zack S.</span></td>
+            <td><span class="primary-val">12</span></td>
+            <td><span class="primary-val">148</span></td>
+          </tr>
+          <tr><td>Marcus R.</td><td>9</td><td>121</td></tr>
+          <tr><td>Priya N.</td><td>7</td><td>98</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mono -->
+    <div class="typo-section">
+      <div class="section-label">Mono / Code</div>
+      <div class="sample-mono" style="font-family:'JetBrains Mono',monospace;font-size:12px;">
+        Sol Ring      <span class="comment">// {1} · Artifact</span><br/>
+        Command Tower <span class="comment">// {} · Land</span><br/>
+        Atraxa, Praetors' Voice <span class="comment">// {W}{U}{B}{G}</span>
+      </div>
+    </div>
+
+    <!-- Links + badges -->
+    <div class="typo-section">
+      <div class="section-label">Links & Badges</div>
+      <div class="sample-link-row" style="margin-bottom:10px;">
+        <span class="sample-link" style="font-family:'Inter',sans-serif;font-size:14px;">View deck on Moxfield</span>
+        <span class="sample-link subtle" style="font-family:'Inter',sans-serif;font-size:14px;">Import deck</span>
+        <span class="sample-link gold" style="font-family:'Inter',sans-serif;font-size:14px;">AI Suggest</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="sample-badge badge-primary" style="font-family:'Cinzel',serif;">Commander</span>
+        <span class="sample-badge badge-gold" style="font-family:'Cinzel',serif;">4-Color</span>
+        <span class="sample-badge badge-success" style="font-family:'Cinzel',serif;">Active</span>
+      </div>
+    </div>
+
+    <button class="choose-btn" style="font-family:'Cinzel',serif;letter-spacing:.08em;">↑ Choose Cinzel + Inter</button>
   </div>
 
 </div>
