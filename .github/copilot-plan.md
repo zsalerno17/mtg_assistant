@@ -1,13 +1,15 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 11, 2026 (Phase 20-21 refinements complete)
+> Last updated: April 12, 2026 (Phase 24 "Refined" UI redesign plan created)
 
 ---
 
 ## Current Status
 
-**Phase 20-21 refinements complete.** All user-reported issues fixed and verified.
+**Phase 24 "Refined" UI Redesign — Implementation plan created.**
+
+Starting comprehensive visual redesign across all pages. Modern SaaS architecture with restrained MTG flavor. Implementation broken into 7 sub-phases (24a-24g).
 
 **Final status (April 11, 2026):**
 1. ✅ **CMC decimals overlapping** — FIXED (reduced both numerator and denominator sizes)
@@ -49,9 +51,9 @@ Previous fixes failed due to CSS stacking context trapping:
 **Phase 20-21 refinements: COMPLETE**
 
 **Next actions:**
-- Ready for new features or Phase 22 deployment work
-- League tracking feature scoping (if user wants it — not in current plan)
-- Phase 23 implementation (deck metadata & iteration tracking)
+- **Begin Phase 24a** (Foundation & Typography): Install Google Fonts, update CSS variables, establish design system foundation
+- See Phase 24 section below for full 7-sub-phase implementation roadmap (24a-24g)
+- Reference mockup: `frontend/mockups/variant-3-refined.html`
 
 **Completed:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
@@ -105,12 +107,22 @@ Previous fixes failed due to CSS stacking context trapping:
 2. **Vibrant** (`variant-2-vibrant.html`) — Energetic with colorful stat glows, stronger mana symbol effects, gradient buttons
 3. **Refined** (`variant-3-refined.html`) — Polished middle ground, Cinzel brand font, "Deck Vault" heading, gradient stat borders
 
+**User final selection (April 12, 2026):** "Refined" variant selected for implementation.
+
+**Design specs for implementation:**
+- **Typography**: Cinzel (brand/logo), Space Grotesk (headings), Inter (body)
+- **Layout**: Top navbar, horizontal stats strip (4 cards with gradient bottom borders), table view with commander card thumbnails
+- **Colors**: Dark mode (#0a0f1a bg, #111827 surface), amber primary (#fbbf24), gradient stat borders (amber/green/purple/blue)
+- **MTG flavor**: Commander card art (46×64px thumbnails), real mana symbols with hover glows, "Deck Vault" terminology
+- **Components**: No creature icons, minimal decorative elements, focus on content and hierarchy
+- **Responsive**: Desktop table → mobile card grid + bottom nav
+
 **Note on mockup content**: Mockups showed placeholder card boxes and generic pips for simplicity. Actual app already uses:
 - Real Scryfall card images (commander cards on deck detail page)
 - Real mana symbols via Mana Font library (`ms ms-w ms-cost` etc.)
 - These will be integrated into final implementation
 
-**Next step:** User reviewing 3 variant mockups to select final direction before implementation begins.
+**Next step:** Begin Phase 24 implementation (UI Redesign — "Refined" variant rollout).
 
 ---
 
@@ -298,6 +310,87 @@ Previous fixes failed due to CSS stacking context trapping:
 - `.github/DECK_METADATA_SCHEMA.md` (new)
 
 **User action required**: Review design when ready to implement iteration tracking features. This is **foundational design only** — no code changes yet. Implementation deferred to future (after deployment).
+
+### Phase 24: UI Redesign Implementation ("Refined" Variant)
+
+**What**: Complete visual redesign across all pages using "Refined" variant specs. Modern SaaS architecture with restrained MTG flavor.
+
+**Design specs:**
+- **Typography**: Cinzel (brand/logo), Space Grotesk (headings/sections), Inter (body text)
+- **Layout**: Top navbar (horizontal), stats strip with gradient borders, table → card grid responsive
+- **Colors**: #0a0f1a bg, #111827 surface, #fbbf24 primary, gradient accents (amber/green/purple/blue)
+- **MTG flavor**: Commander card thumbnails (46×64px), mana symbol glows, "Deck Vault" terminology
+
+**Implementation phases:**
+
+**Phase 24a: Foundation & Typography**
+- [ ] Install Google Fonts (Space Grotesk, Inter, Cinzel) via CDN or npm
+- [ ] Update `frontend/src/index.css` with new font-family variables
+- [ ] Update CSS color palette (new surface colors, borders, gradient utilities)
+- [ ] Create gradient utility classes for stat card borders (4 variants)
+- [ ] Test font rendering across browsers
+
+**Phase 24b: Top Navigation Component**
+- [ ] Create `frontend/src/components/TopNavbar.jsx` (horizontal layout)
+- [ ] Logo with Cinzel font + amber color
+- [ ] Navigation links: Dashboard, Collection, Profile
+- [ ] User avatar (right side)
+- [ ] Sticky positioning with blur backdrop
+- [ ] Mobile responsive (hide nav links, show only logo + avatar)
+- [ ] Update `Layout.jsx` to use TopNavbar instead of current nav
+
+**Phase 24c: Dashboard Page Redesign**
+- [ ] Update page title "Dashboard" → "Deck Vault" with Cinzel font
+- [ ] Rebuild stats section: 4-column grid with gradient bottom borders
+- [ ] Create `DeckTable` component (desktop table view)
+- [ ] Integrate commander card thumbnails (reuse `CommanderImage` pattern from DeckPage)
+- [ ] Style mana symbols with hover glow effects (`filter: drop-shadow()`)
+- [ ] Create mobile card grid view (replaces table on mobile)
+- [ ] Add responsive breakpoints (1440px, 1024px, 768px)
+- [ ] Test table → grid transition
+
+**Phase 24d: DeckPage Redesign**
+- [ ] Apply Space Grotesk to section headings ("Overview", "Strategy", etc.)
+- [ ] Update commander header with new fonts
+- [ ] Apply new surface colors to tabs and content areas
+- [ ] Verify StatBadge radial progress works with new palette
+- [ ] Test all tabs (Overview, Strategy, Scenarios) for visual consistency
+
+**Phase 24e: Collection & Profile Pages**
+- [ ] CollectionPage: Apply new fonts, surface colors, button styles
+- [ ] ProfilePage: Apply new design system
+- [ ] LoginPage: Update branding with Cinzel logo, new color palette
+- [ ] Test all forms, inputs, buttons across pages
+
+**Phase 24f: Component Library Updates**
+- [ ] Update button styles (gradient backgrounds for primary, new hover states)
+- [ ] Update badge styles (refined borders, new color palette)
+- [ ] Update card components (new surface colors, borders)
+- [ ] Update hover states across all components
+- [ ] Verify mana symbol glow effects consistent everywhere
+
+**Phase 24g: Polish & Testing**
+- [ ] Test all responsive breakpoints (desktop, tablet, mobile)
+- [ ] Test mana symbol hover glows
+- [ ] Test commander card thumbnail loading + errors
+- [ ] Verify color consistency across all pages
+- [ ] Clean up unused CSS (old sidebar styles, old color vars)
+- [ ] Cross-browser testing (Chrome, Safari, Firefox)
+- [ ] Accessibility check (contrast ratios, keyboard navigation)
+
+**Files to modify:**
+- `frontend/src/index.css` — font imports, color palette, gradients
+- `frontend/src/components/Layout.jsx` — switch to TopNavbar
+- `frontend/src/components/TopNavbar.jsx` — new component
+- `frontend/src/pages/DashboardPage.jsx` — complete redesign
+- `frontend/src/pages/DeckPage.jsx` — font + color updates
+- `frontend/src/pages/CollectionPage.jsx` — design system updates
+- `frontend/src/pages/ProfilePage.jsx` — design system updates
+- `frontend/src/pages/LoginPage.jsx` — branding updates
+
+**Reference mockup:** `frontend/mockups/variant-3-refined.html`
+
+**User action required:** None during implementation. Visual verification after each sub-phase.
 
 ---
 
@@ -831,6 +924,217 @@ Currently we've thrown together a basic schema (`analyses` table with `result_js
 **Related work:**
 - This phase is a prerequisite for "deck changelog" feature, "improvement tracker", "scenario testing workflow", and any analytics/insights dashboard.
 - Will inform whether we keep jamming everything into `result_json` or break out into normalized tables for queryability and trends.
+
+---
+
+## Phase 24 — UI Redesign Implementation ("Refined" Variant)
+
+> Start after design approval (April 12, 2026). Complete visual redesign across all pages. Modern SaaS architecture with restrained MTG flavor.
+
+### Goal
+Implement the "Refined" design variant selected by user. Replace current dark arcane aesthetic with modern SaaS interface that retains MTG flavor through commander card art, mana symbols, and typography choices.
+
+### Design specifications
+
+**Typography:**
+- **Cinzel** (serif) — Brand/logo only ("MTG Assistant")
+- **Space Grotesk** (sans-serif) — All headings, section titles, page titles
+- **Inter** (sans-serif) — All body text, labels, descriptions
+
+**Color palette:**
+```css
+--bg: #0a0f1a;
+--surface: #111827;
+--surface-elevated: #1a202e;
+--border: #1e293b;
+--border-light: #2d3748;
+--text: #f1f5f9;
+--text-muted: #94a3b8;
+--primary: #fbbf24;
+--accent: #f59e0b;
+```
+
+**Key visual elements:**
+- Top horizontal navbar (not sidebar) with sticky positioning
+- Stats cards with gradient bottom borders (4 colors: amber, green, purple, blue)
+- Commander card thumbnails (46×64px) with golden borders
+- Mana symbols with hover glow effects (`filter: drop-shadow()`)
+- "Deck Vault" page title (instead of "Dashboard")
+- Table view on desktop → card grid on mobile
+
+**Responsive breakpoints:**
+- Desktop: 1440px+ (full table view)
+- Laptop: 1024-1439px (condensed table)
+- Tablet: 768-1023px (2-column stats, condensed table)
+- Mobile: <768px (2-column stats, card grid, bottom nav)
+
+### Implementation sub-phases
+
+**Phase 24a: Foundation & Typography**
+
+Install Google Fonts and update CSS:
+- [ ] Add Google Fonts CDN links to `index.html` (Space Grotesk, Inter, Cinzel)
+- [ ] Update `frontend/src/index.css`:
+  - Font-family CSS variables
+  - New color palette variables
+  - Gradient utility classes (4 stat card gradients)
+  - Remove old sidebar-related styles
+- [ ] Test font rendering across Chrome, Safari, Firefox
+
+**Files to modify:**
+- `frontend/index.html` — add Google Fonts links
+- `frontend/src/index.css` — fonts, colors, gradients
+
+**Phase 24b: Top Navigation Component**
+
+Create new horizontal navbar:
+- [ ] Create `frontend/src/components/TopNavbar.jsx`:
+  - Logo ("MTG Assistant" with Cinzel font)
+  - Navigation links: Dashboard, Collection, Profile
+  - User avatar (right side, reuse existing avatar logic)
+  - Sticky positioning with blur backdrop
+  - Mobile: hide nav links, show only logo + avatar
+- [ ] Update `frontend/src/components/Layout.jsx`:
+  - Replace current sidebar with TopNavbar
+  - Adjust main content padding for top nav instead of side nav
+- [ ] Test sticky behavior on scroll
+- [ ] Test responsive nav on mobile
+
+**Files to modify:**
+- `frontend/src/components/TopNavbar.jsx` — new component
+- `frontend/src/components/Layout.jsx` — swap sidebar for TopNavbar
+
+**Phase 24c: Dashboard Page Redesign**
+
+Complete dashboard overhaul:
+- [ ] Update page title: "Dashboard" → "Deck Vault" (Cinzel font)
+- [ ] Rebuild stats section:
+  - 4-column grid (Total Decks, Analyzed, Avg Power, Collection)
+  - Gradient bottom borders (amber, green, purple, blue)
+  - Apply new surface colors and fonts
+- [ ] Create `DeckTable` component for desktop:
+  - Columns: Deck (with commander thumbnail), Colors, Format, Status, Power, Actions
+  - Commander thumbnails (46×64px) — reuse `CommanderImage` pattern from DeckPage
+  - Mana symbol pips with hover glows
+  - Status badges with new styling
+- [ ] Create mobile card grid view (replaces table on <768px)
+- [ ] Add responsive breakpoints
+- [ ] Test table → grid transition
+
+**Files to modify:**
+- `frontend/src/pages/DashboardPage.jsx` — complete redesign
+- Optional: Extract `frontend/src/components/DeckTable.jsx` if component gets large
+
+**Phase 24d: DeckPage Redesign**
+
+Apply design system to deck detail page:
+- [ ] Update all section headings to Space Grotesk ("Overview", "Strategy", "Improvements", etc.)
+- [ ] Apply new surface colors to tab backgrounds and content areas
+- [ ] Update commander header section with new fonts
+- [ ] Verify StatBadge radial progress works with new color palette (should already be compatible)
+- [ ] Test all 5 tabs for visual consistency
+- [ ] Verify card tooltips work correctly with new styling
+
+**Files to modify:**
+- `frontend/src/pages/DeckPage.jsx` — font and color updates
+
+**Phase 24e: Collection & Profile Pages**
+
+Apply design system to remaining pages:
+- [ ] CollectionPage:
+  - Apply Space Grotesk to headings
+  - Update surface colors
+  - Update button styles
+  - Test CSV upload flow
+- [ ] ProfilePage:
+  - Apply new fonts and colors
+  - Update avatar selection UI
+  - Test username updates
+- [ ] LoginPage:
+  - Update logo with Cinzel font
+  - Apply new color palette
+  - Update tagline/description text
+  - Test Google OAuth flow
+
+**Files to modify:**
+- `frontend/src/pages/CollectionPage.jsx`
+- `frontend/src/pages/ProfilePage.jsx`
+- `frontend/src/pages/LoginPage.jsx`
+
+**Phase 24f: Component Library Updates**
+
+Update shared components for consistency:
+- [ ] Button styles:
+  - Primary buttons: gradient backgrounds (amber → accent)
+  - Secondary buttons: border + hover states
+  - Danger buttons: rose gradient
+- [ ] Badge styles:
+  - New border colors
+  - Updated padding/sizing
+  - Status badge refinements
+- [ ] Card components:
+  - New surface colors
+  - Updated borders
+  - Hover state refinements
+- [ ] Form inputs:
+  - New border colors
+  - Focus states with primary color
+  - Consistent sizing
+
+**Files to modify:**
+- Individual component files OR
+- Add utility classes to `index.css` and apply via className
+
+**Phase 24g: Polish & Testing**
+
+Final checks and cleanup:
+- [ ] Test all responsive breakpoints:
+  - 1440px+ (desktop)
+  - 1024-1439px (laptop)
+  - 768-1023px (tablet)
+  - <768px (mobile)
+- [ ] Test mana symbol hover glows work everywhere
+- [ ] Test commander card thumbnails:
+  - Loading states
+  - Error states (missing card art)
+  - Sizing consistency
+- [ ] Verify color consistency across all pages
+- [ ] Clean up unused CSS:
+  - Old sidebar styles
+  - Old color variables
+  - Dead code from previous designs
+- [ ] Cross-browser testing (Chrome, Safari, Firefox)
+- [ ] Accessibility check:
+  - Contrast ratios meet WCAG AA
+  - Keyboard navigation works
+  - Focus indicators visible
+
+### Reference assets
+
+**Mockup:** `frontend/mockups/variant-3-refined.html`
+
+**Existing components to reuse:**
+- `CommanderImage` component from DeckPage (for commander thumbnails)
+- `ColorPips` component from DashboardPage (for mana symbols)
+- Creature icons from `creatureIcons.jsx` (NOT used in Refined variant)
+
+**Assets already available:**
+- Mana Font library (already imported)
+- Scryfall API (for commander card images)
+- Google Fonts CDN (for typography)
+
+### Success criteria
+
+Before marking Phase 24 complete:
+- [ ] All pages use new typography (Cinzel, Space Grotesk, Inter)
+- [ ] Top navbar works on all pages, all breakpoints
+- [ ] Dashboard shows "Deck Vault" title and stats with gradient borders
+- [ ] Deck table shows commander thumbnails and mana symbols with glows
+- [ ] Mobile view switches to card grid + bottom nav
+- [ ] All pages visually consistent with Refined mockup
+- [ ] No console errors, no broken styles
+- [ ] Cross-browser tested (Chrome, Safari, Firefox)
+- [ ] Responsive behavior smooth at all breakpoints
 
 ---
 
