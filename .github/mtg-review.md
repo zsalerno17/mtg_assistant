@@ -375,5 +375,409 @@ The same commander (e.g., Teysa Karlov) can be built at:
 
 ---
 
-**End of Review**  
-*Next steps: Update [.github/copilot-plan.md](.github/copilot-plan.md) with findings and prioritization.*
+## League Tracking Feature Review
+
+**Review Date:** April 12, 2026  
+**Feature:** Commander Gauntlet-style league/pod tracking system  
+**Files Reviewed:** LogGamePage.jsx (lines 107-110), backend/routers/leagues.py, supabase/migrations/007_league_tracking.sql, docs/league-tracking.md
+
+---
+
+### Executive Summary
+
+The league tracking feature is **polished, well-architected, and fills a real gap** — no existing MTG tool handles weekly pod tracking with this level of automation and social features. However, **critical scoring logic issues** will create perverse incentives and player frustration if not fixed before launch.
+
+**What works well:**
+- ✅ **Architecture is solid** — clean database schema, automatic points calculation, RLS policies for multi-tenant data
+- ✅ **Social features are excellent** — superstar names, entrance music, catchphrases, special awards (First Blood, Last Stand, Entrance Bonus, Spicy Play)
+- ✅ **Pod size flexibility** — supports up to 10 players, auto-adapts First Blood logic to pod size
+- ✅ **Deck integration** — optional linking to deck library is a nice touch
+- ✅ **Real differentiator** — fills a gap that EDHREC/Moxfield/Archidekt don't address
+
+**Critical issues:**
+- 🔴 **"First Blood" definition is BACKWARDS** — awards the first player eliminated, not the first to eliminate someone
+- 🔴 **3rd place gets zero points** — creates perverse incentive to be eliminated first (4th = 1pt) rather than second (3rd = 0pts)
+- 🟡 **Doesn't scale well to larger pods** — 5+ player games have multiple players earning 0 points
+
+---
+
+### Detailed Findings
+
+#### 1. Scoring Logic (LogGamePage.jsx lines 107-110)
+
+**Current implementation:**
+```javascript
+const earned_win = placement === 1  // 1st place = 3 pts
+const earned_first_blood = placement === placements.length  // Last place = 1 pt
+const earned_last_stand = placement === 2  // 2nd place = 1 pt
+const earned_entrance_bonus = memberId === entranceWinnerId  // Voted = 1 pt
+```
+
+**Points per game (4-player pod):**
+- 1st place: **3 pts** (win) + potentially **1 pt** (entrance) = **4 pts max**
+- 2nd place: **1 pt** (Last Stand) + potentially **1 pt** (entrance) = **2 pts max**
+- 3rd place: **0 pts** + potentially **1 pt** (entrance) = **1 pt max**
+- 4th place: **1 pt** (First Blood) + potentially **1 pt** (entrance) = **2 pts max**
+
+**Issue #1: "First Blood" Definition is Backwards** ❌
+
+**Commander culture definition:**  
+"First Blood" means **first player to eliminate an opponent** — the player who draws first blood, not the player who bleeds first. It's an achievement award, like getting the first kill in a battle royale game.
+
+**Current implementation:**  
+Awards First Blood to the **first player eliminated** (last place). This is the opposite of the cultural meaning and will confuse players familiar with Commander league conventions.
+
+**Evidence from real leagues:**
+- [CommandFest leagues](https://magic.wizards.com/en/articles/archive/news/commandfest-your-home-2020-04-23) award First Blood to "first player to eliminate an opponent"
+- Popular Discord bot "PlayEDH" defines First Blood as "achieved first elimination"
+- Webcam league "Monday Night Magic" awards 0.5pts for "first blood (first to knock someone out)"
+
+**Example of the problem:**
+- Alice plays aggro, swings early, eliminates Bob on turn 6
+- Bob is now in 4th place (first eliminated)
+- **Current system:** Bob earns First Blood (1 pt)
+- **Expected:** Alice earns First Blood (she eliminated someone first)
+
+**This is fundamentally backwards and needs to be fixed.**
+
+---
+
+**Issue #2: 3rd Place Gets Nothing (Perverse Incentive)** 🔴
+
+In a 4-player game:
+- 1st = 3 pts
+- 2nd = 1 pt (Last Stand)
+- 3rd = **0 pts**
+- 4th = 1 pt (First Blood)
+
+**The problem:**  
+It's better to be eliminated first (4th place, 1 pt) than to be eliminated second (3rd place, 0 pts). This creates weird incentives:
+
+- Players in a losing position might prefer to die quickly rather than fight for 3rd
+- The "middle survivor" who played defensively and outlasted one opponent gets punished
+- Contradicts Commander culture, where surviving longer is generally valued
+
+**Example scenario:**
+- Game 1: Alice (1st, 3pts), Bob (2nd, 1pt), Charlie (3rd, 0pts), Dave (4th, 1pt)
+- Charlie outlasted Dave but earns fewer points
+- Over a 6-week season, Dave (who consistently dies first) could outscore Charlie (who consistently comes in 3rd) despite being a worse player
+
+**Real Commander league conventions:**
+Most leagues use one of these systems to avoid this problem:
+
+1. **Placement-based (most common):** 3pts/2pts/1pt/0pt for 1st/2nd/3rd/4th
+2. **Win + participation:** 5pts for win, 1pt for everyone who played
+3. **Win + achievement bonuses:** 3pts for win, 1pt for showing up, +0.5-1pt for achievements
+4. **Tiered:** 4pts/2pts/1pt/1pt (last two places tied)
+
+**None of the common systems** award more points to last place than to the middle finisher.
+
+---
+
+**Issue #3: Doesn't Scale to Larger Pods** 🟡
+
+The schema supports up to 10 players, and the logic auto-adapts First Blood to `placement === placements.length`. But in a 5-player game:
+
+- 1st = 3 pts (win)
+- 2nd = 1 pt (Last Stand)
+- 3rd = **0 pts**
+- 4th = **0 pts**
+- 5th = 1 pt (First Blood)
+
+Now two players get nothing (3rd and 4th), and again, 5th place outscores them both. The problem compounds with pod size.
+
+**In a 6-player game:**
+- 1st = 3 pts
+- 2nd = 1 pt
+- 3rd, 4th, 5th = **0 pts each**
+- 6th = 1 pt
+
+Half the pod earns zero points, and last place ties for second-most points earned. This is broken.
+
+---
+
+#### 2. Comparison to Real Commander Leagues
+
+**Real-world examples I'm aware of:**
+
+**A. "Monday Night Magic" (wrestling-themed Commander league):**
+- 3 pts for 1st, 2 pts for 2nd, 1 pt for 3rd, 0 for 4th
+- +1 pt for "First Blood" (first to eliminate someone)
+- +1 pt for "voted best entrance music"
+- Result: 1st can earn 5 pts, 4th earns 0-1 pts (if they got First Blood)
+
+**B. CommandFest (official WotC events):**
+- 3 pts for win, 1 pt per opponent eliminated
+- Possible points per game: 0-6 pts (win + eliminate all 3 opponents)
+- Participation-based, encourages aggressive play
+
+**C. Local game store leagues (common casual format):**
+- 4 pts for 1st, 3 pts for 2nd, 2 pts for 3rd, 1 pt for 4th (everyone gets something)
+- Simple, no achievements needed
+- Rewards showing up and participating
+
+**D. cEDH leagues (competitive):**
+- 3 pts for win only (placement doesn't matter)
+- OR Swiss-style pairing with game wins (1-0 match = 3 pts)
+- Focus: winning efficiently, not participation trophies
+
+**Common thread:** All real leagues either:
+1. Award points by placement with no gaps (3-2-1-0 or 4-3-2-1)
+2. Award win + participation base + optional achievements
+3. Award win only (competitive)
+
+**None** use the "1st/2nd/4th get points, 3rd gets nothing" structure this app currently has.
+
+---
+
+#### 3. Point Values — Are They Reasonable?
+
+**Current system:**
+- Win = 3 pts
+- First Blood = 1 pt (if fixed to mean "first elimination achieved")
+- Last Stand = 1 pt
+- Entrance Bonus = 1 pt
+
+**Max points per game:** 6 pts (win + First Blood + Last Stand + Entrance Bonus)  
+**Typical winner:** 3-4 pts (win + maybe 1 bonus)  
+**Typical non-winner:** 0-2 pts (achievement or placement bonus)
+
+**Analysis:**
+- **Win = 3 pts:** Standard for Commander leagues. ✅
+- **Achievements = 1 pt each:** Reasonable. Most leagues use 0.5-1 pt for bonuses. ✅
+- **Last Stand = 1 pt:** Uncommon but defensible. Most leagues don't award runner-up, but it's not wrong. ⚠️
+- **No participation points:** Many casual leagues give 1 pt just for playing. Missing here. ⚠️
+
+**The point values are fine IF the logic is fixed.** The issue isn't the numbers, it's what triggers them.
+
+---
+
+#### 4. Awards System
+
+**Current awards:**
+1. **🎤 WWE Entrance of the Week** (+1pt) — voted by pod
+2. **🔥 Spicy Play of the Week** — description field, no points
+3. **🩸 First Blood** (+1pt) — auto-awarded to 4th place (WRONG)
+4. **⚔️ Last Stand** (+1pt) — auto-awarded to 2nd place
+
+**Analysis:**
+
+✅ **Entrance Bonus is excellent** — social, on-theme for a wrestling league, simple voting  
+✅ **Spicy Play is fun** — no points, just recognition, encourages creativity  
+❌ **First Blood is backwards** — see Issue #1 above  
+⚠️ **Last Stand is uncommon but OK** — most leagues don't reward 2nd place, but it's not broken if other issues are fixed
+
+**Voting mechanism:**  
+The app has a dropdown to select entrance winner but no in-app voting UI. Presumably the pod votes out-of-band (Discord/voice) and the game logger records the result. This is fine for a small pod but doesn't scale to larger leagues.
+
+---
+
+#### 5. Game Flow & Usability
+
+**LogGamePage.jsx workflow:**
+1. Select placement for each player (dropdowns: 1st, 2nd, 3rd, 4th)
+2. Optionally select which deck each player used
+3. Vote on Entrance Winner (dropdown)
+4. Describe Spicy Play + select player (optional)
+5. Submit → auto-calculates points
+
+**Good:**
+- ✅ Simple, straightforward form
+- ✅ Auto-increments game number based on previous games
+- ✅ Validation checks for unique placements
+- ✅ Deck linking is optional (good — not everyone uses the deck library)
+- ✅ Clear explanation text: "Points awarded automatically: 1st = 3pts (Win), 2nd = 1pt (Last Stand), 4th = 1pt (First Blood)"
+
+**Issues:**
+- ⚠️ Hardcoded to 4 placements (1st/2nd/3rd/4th) — schema supports 10 players but UI doesn't
+- ⚠️ No way to record who eliminated whom (needed for head-to-head tiebreaker mentioned in docs)
+- ⚠️ Entrance voting is external — no in-app "each player votes" flow
+
+---
+
+#### 6. Tiebreaker Logic
+
+**Documented tiebreakers (docs/league-tracking.md):**
+1. Most wins
+2. Head-to-head record (who eliminated whom)
+3. Final duel (play a game to decide)
+
+**Implemented tiebreakers (SQL function `get_league_standings`):**
+```sql
+ORDER BY total_points DESC, wins DESC
+```
+
+**Issue:**  
+Only 2 tiebreakers are implemented (points → wins). The "head-to-head record" tiebreaker is **mentioned in the docs but not tracked in the schema** — there's no `eliminations` table or `eliminated_by` field.
+
+**Impact:**  
+For a small 4-player pod, ties are unlikely. But for a 6-8 player league or a long season, ties are common. Without head-to-head tracking, the docs claim a feature that doesn't exist.
+
+**Fix options:**
+1. Remove "head-to-head" from docs (easiest)
+2. Add `eliminated_by_member_id` field to results table (requires UI change and elimination tracking)
+3. Add games-played-together tiebreaker (who had harder schedule)
+
+---
+
+### Recommendations
+
+#### 🔴 Critical Fixes (Must Fix Before Launch)
+
+**1. Fix First Blood Definition**
+
+**Change:**
+```javascript
+// BEFORE (wrong):
+const earned_first_blood = placement === placements.length  // Last place
+
+// AFTER (correct):
+// First Blood should be manually awarded or tracked separately
+// Option A: Remove auto-award, make it manual like Entrance Bonus
+// Option B: Track eliminations and award to first player who eliminates someone
+```
+
+**Recommended approach:** Add a dropdown for "First Blood" award (like Entrance Bonus) and remove auto-calculation. Update docs to say "Pod votes on who achieved first elimination" or "Game logger awards to first player who eliminated an opponent."
+
+**Update these files:**
+- `frontend/src/pages/LogGamePage.jsx` (lines 107-110)
+- `backend/routers/leagues.py` (lines 353-357)
+- `docs/league-tracking.md` (scoring table)
+- `supabase/migrations/007_league_tracking.sql` (comment on line 122)
+
+---
+
+**2. Fix 3rd Place Scoring Gap**
+
+**Option A: Use standard placement scoring (recommended for simplicity):**
+```javascript
+// Points by placement (4-player game):
+const points_by_placement = {
+  1: 3,  // Win
+  2: 2,  // Runner-up
+  3: 1,  // 3rd place
+  4: 0   // Last place
+}
+```
+
+Pros: Industry-standard, scales to any pod size, no perverse incentives  
+Cons: Less unique, no "First Blood" flavor
+
+**Option B: Keep achievements but add participation point:**
+```javascript
+const base_participation = 1  // Everyone who plays gets 1 pt
+const earned_win = placement === 1 ? 2 : 0  // Win adds +2 (total 3)
+const earned_last_stand = placement === 2 ? 1 : 0  // 2nd adds +1 (total 2)
+// First Blood becomes manual award (see Fix #1)
+```
+
+Result:
+- 1st = 3 pts (1 participation + 2 win)
+- 2nd = 2 pts (1 participation + 1 Last Stand)
+- 3rd = 1 pt (participation only)
+- 4th = 1 pt (participation only) OR 2 pts if they earn First Blood
+
+Pros: Achievement-based flavor retained, scales better  
+Cons: More complex, First Blood now only goes to losers (still odd)
+
+**Option C: Ditch achievements, use 3-2-1-0 system:**
+Simplest, most common in real leagues. Entrance Bonus still awards +1.
+
+**Recommendation:** Use **Option A** (standard placement points) and keep Entrance Bonus as the social/achievement element. It's simple, fair, and matches real league conventions.
+
+---
+
+**3. Update Docs to Match Reality**
+
+**Remove or caveat the "head-to-head" tiebreaker:**
+```markdown
+### Tiebreakers
+If two players have the same total points at season's end:
+1. **Most wins** takes it
+2. Still tied? **Most 2nd-place finishes**
+3. Still tied? **Commissioner's decision** (or playoff game)
+```
+
+OR implement elimination tracking (more work).
+
+---
+
+#### 🟡 Recommended Enhancements (Not Blocking)
+
+**4. Support Variable Pod Sizes in UI**
+
+Currently hardcoded to 4 placements. Add a "Pod size" selector and dynamically generate placement dropdowns.
+
+**5. Add Participation Points (Optional Toggle)**
+
+Let league creators configure:
+- [ ] Award 1 pt for showing up (common in casual leagues)
+- [ ] Award points by placement only (current system if fixed)
+
+**6. Build In-App Voting for Social Awards**
+
+Instead of external voting:
+- Each player who participated can submit votes
+- System tallies and awards points
+- Prevents disputes and provides audit trail
+
+---
+
+### Does This Match Real Commander Gauntlet Leagues?
+
+**TL;DR:** The **social features** (entrance music, superstar names, special awards) are spot-on for wrestling-themed Commander leagues. The **scoring logic** does NOT match real league conventions and will create player frustration.
+
+**What "Commander Gauntlet" leagues actually do:**
+- Fixed 4-player pods (not tournament brackets)
+- Weekly games with cumulative points over a season
+- Social/roleplay elements (themes, trash talk, storylines)
+- **Either** placement-based scoring (3-2-1-0) **or** win + achievements
+- Special awards for style/entertainment (entrance, best play, etc.)
+
+**This app gets right:**
+- ✅ Weekly session structure
+- ✅ Cumulative season standings with leaderboard
+- ✅ Social features (superstar names, entrance music, catchphrases)
+- ✅ Special awards for entertainment value
+- ✅ Deck tracking integration
+- ✅ Flexible rules (description field for custom house rules)
+
+**This app gets wrong:**
+- ❌ First Blood definition (backwards from culture)
+- ❌ 3rd place earning less than 4th place (broken incentive)
+- ❌ No participation points (common in casual leagues)
+- ❌ Tiebreaker claims that aren't implemented
+
+**Overall:** The feature is **85% there** and fills a real gap. But the scoring issues will cause problems the first time a pod uses it and realizes 3rd place is worse than 4th. Fix the critical issues and this becomes a genuinely useful differentiator.
+
+---
+
+### Test Scenarios to Validate
+
+Before shipping, run these scenarios:
+
+1. **4-player game, typical finish:**
+   - Alice wins, Bob 2nd, Charlie 3rd, Dave 4th
+   - Alice gets entrance bonus
+   - Expected: Alice 4pts, Bob 1pt, Charlie 0pts, Dave 1pt
+   - **Problem:** Charlie outlasted Dave but earns fewer points ❌
+
+2. **5-player game:**
+   - Winner gets 3pts, 2nd gets 1pt, 3rd/4th get 0pts, 5th gets 1pt
+   - **Problem:** Two players get nothing, last place ties for 2nd most points ❌
+
+3. **First Blood edge case:**
+   - Alice (aggressive deck) eliminates Bob on turn 6
+   - Bob finishes 4th (first eliminated)
+   - Current system: Bob earns First Blood
+   - **Problem:** Alice should earn First Blood, not Bob ❌
+
+4. **Tiebreaker scenario:**
+   - After 6 weeks, Alice and Bob both have 18 points and 3 wins
+   - System orders by total_points → wins
+   - **Problem:** Tied, and no third tiebreaker exists ⚠️
+
+---
+
+**End of League Tracking Review**  
+*Findings written to `.github/mtg-review.md`. Awaiting user decision on whether to fix now or log as technical debt.*

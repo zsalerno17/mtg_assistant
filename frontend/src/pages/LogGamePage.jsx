@@ -103,10 +103,13 @@ export default function LogGamePage() {
         .filter(([_, r]) => r.placement !== null && r.placement !== '')
         .map(([memberId, r]) => {
           const placement = Number(r.placement)
-          // Automatically award points based on placement
+          
+          // FIXED SCORING SYSTEM: Standard placement points (3-2-1-0) + Entrance Bonus
+          // This replaces the broken First Blood/Last Stand system that awarded
+          // 4th place (1pt) more than 3rd place (0pts)
           const earned_win = placement === 1
-          const earned_first_blood = placement === placements.length // Last place = first eliminated
-          const earned_last_stand = placement === 2 // 2nd place = last eliminated
+          const earned_second_place = placement === 2
+          const earned_third_place = placement === 3
           const earned_entrance_bonus = memberId === entranceWinnerId
 
           return {
@@ -114,9 +117,12 @@ export default function LogGamePage() {
             deck_id: r.deck_id || null,
             placement,
             earned_win,
-            earned_first_blood,
-            earned_last_stand,
+            earned_second_place,
+            earned_third_place,
             earned_entrance_bonus,
+            // Legacy fields for backward compatibility (always false now)
+            earned_first_blood: false,
+            earned_last_stand: false,
             notes: r.notes || null,
           }
         })

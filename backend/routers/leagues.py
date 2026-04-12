@@ -1,14 +1,44 @@
 """League/pod tracking endpoints for Commander Gauntlet-style weekly play."""
 
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl, validator
 from typing import Optional, List
 from datetime import date, datetime
 from uuid import UUID
+from urllib.parse import urlparse
 
-from auth import require_user_id, get_supabase_client
+from auth import require_user_id, get_user_supabase_client
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
+
+
+# ============================================================================
+# URL VALIDATION HELPERS (Security: prevent XSS/SSRF)
+# ============================================================================
+
+def validate_http_url(url: Optional[HttpUrl]) -> Optional[HttpUrl]:
+    """
+    Validate URL is using http/https and not pointing to localhost/internal IPs.
+    Prevents XSS (javascript: scheme) and SSRF (file://, internal network access).
+    """
+    if url is None:
+        return None
+    
+    parsed = urlparse(str(url))
+    
+    # Only allow http/https schemes
+    if parsed.scheme not in ['http', 'https']:
+        raise ValueError('URL must use http or https scheme')
+    
+    # Block localhost and internal IPs (SSRF prevention)
+    blocked_hosts = [
+        'localhost', '127.0.0.1', '0.0.0.0', '::1',
+        '10.', '172.16.', '192.168.',  # Private IP ranges
+    ]
+    if parsed.hostname and any(parsed.hostname.startswith(blocked) for blocked in blocked_hosts):
+        raise ValueError('URL cannot point to localhost or private network addresses')
+    
+    return url
 
 
 # ============================================================================
@@ -36,27 +66,33 @@ class LeagueUpdate(BaseModel):
 class MemberJoin(BaseModel):
     """Join a league as a new member."""
     superstar_name: str = Field(..., min_length=1, max_length=100)
-    entrance_music_url: Optional[str] = None
+    entrance_music_url: Optional[HttpUrl] = None
     catchphrase: Optional[str] = None
+    
+    _validate_url = validator('entrance_music_url', allow_reuse=True)(validate_http_url)
 
 
 class MemberUpdate(BaseModel):
     """Update member profile."""
     superstar_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    entrance_music_url: Optional[str] = None
+    entrance_music_url: Optional[HttpUrl] = None
     catchphrase: Optional[str] = None
     current_title: Optional[str] = None
+    
+    _validate_url = validator('entrance_music_url', allow_reuse=True)(validate_http_url)
 
 
 class GameLog(BaseModel):
     """Log a new game session."""
     game_number: int = Field(..., ge=1)
     played_at: Optional[datetime] = None
-    screenshot_url: Optional[str] = None
+    screenshot_url: Optional[HttpUrl] = None
     spicy_play_description: Optional[str] = None
     spicy_play_winner_id: Optional[UUID] = None
     entrance_winner_id: Optional[UUID] = None
     notes: Optional[str] = None
+    
+    _validate_url = validator('screenshot_url', allow_reuse=True)(validate_http_url)
 
 
 class GameResultLog(BaseModel):
@@ -64,10 +100,17 @@ class GameResultLog(BaseModel):
     member_id: UUID
     deck_id: Optional[UUID] = None
     placement: int = Field(..., ge=1, le=10)  # Support up to 10-player pods
-    earned_win: bool = False
-    earned_first_blood: bool = False
-    earned_last_stand: bool = False
-    earned_entrance_bonus: bool = False
+    
+    # New scoring system: standard placement points
+    earned_win: bool = False  # 1st = 3pts
+    earned_second_place: bool = False  # 2nd = 2pts
+    earned_third_place: bool = False  # 3rd = 1pt
+    earned_entrance_bonus: bool = False  # +1pt bonus
+    
+    # Legacy fields for backward compatibility (deprecated)
+    earned_first_blood: bool = False  # No longer used
+    earned_last_stand: bool = False  # No longer used
+    
     notes: Optional[str] = None
 
 
@@ -82,10 +125,12 @@ class GameWithResults(BaseModel):
 # ============================================================================
 
 @router.post("")
-async def create_league(league: LeagueCreate, user_id: str = Depends(require_user_id)):
+async def create_league(
+    league: LeagueCreate,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
     """Create a new league/season."""
-    supabase = get_supabase_client()
-    
     try:
         result = supabase.table("leagues").insert({
             "name": league.name,
@@ -102,10 +147,11 @@ async def create_league(league: LeagueCreate, user_id: str = Depends(require_use
 
 
 @router.get("")
-async def list_leagues(user_id: str = Depends(require_user_id)):
+async def list_leagues(
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
     """List all leagues the user is a member of or created."""
-    supabase = get_supabase_client()
-    
     try:
         # Get leagues where user is a member
         result = supabase.table("leagues") \
@@ -119,10 +165,12 @@ async def list_leagues(user_id: str = Depends(require_user_id)):
 
 
 @router.get("/{league_id}")
-async def get_league(league_id: str, user_id: str = Depends(require_user_id)):
+async def get_league(
+    league_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
     """Get league details."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify membership
         membership = supabase.table("league_members") \
@@ -152,11 +200,10 @@ async def get_league(league_id: str, user_id: str = Depends(require_user_id)):
 async def update_league(
     league_id: str,
     updates: LeagueUpdate,
-    user_id: str = Depends(require_user_id)
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
 ):
     """Update league metadata (creator only)."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify creator
         league = supabase.table("leagues") \
@@ -189,10 +236,12 @@ async def update_league(
 
 
 @router.delete("/{league_id}")
-async def delete_league(league_id: str, user_id: str = Depends(require_user_id)):
+async def delete_league(
+    league_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
     """Delete a league (creator only)."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify creator
         league = supabase.table("leagues") \
@@ -220,11 +269,10 @@ async def delete_league(league_id: str, user_id: str = Depends(require_user_id))
 async def join_league(
     league_id: str,
     member: MemberJoin,
-    user_id: str = Depends(require_user_id)
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
 ):
     """Join a league as a new member."""
-    supabase = get_supabase_client()
-    
     try:
         result = supabase.table("league_members").insert({
             "league_id": league_id,
@@ -243,10 +291,12 @@ async def join_league(
 
 
 @router.get("/{league_id}/members")
-async def list_members(league_id: str, user_id: str = Depends(require_user_id)):
+async def list_members(
+    league_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
     """List all members in a league."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify membership
         membership = supabase.table("league_members") \
@@ -275,11 +325,10 @@ async def update_member(
     league_id: str,
     member_id: str,
     updates: MemberUpdate,
-    user_id: str = Depends(require_user_id)
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
 ):
     """Update member profile (own profile only)."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify it's the user's own member record
         member = supabase.table("league_members") \
@@ -314,11 +363,10 @@ async def update_member(
 async def log_game(
     league_id: str,
     game_data: GameWithResults,
-    user_id: str = Depends(require_user_id)
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
 ):
     """Log a game session with all player results."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify membership
         membership = supabase.table("league_members") \
@@ -329,6 +377,56 @@ async def log_game(
         
         if not membership.data:
             raise HTTPException(status_code=403, detail="Not a member of this league")
+        
+        # SECURITY FIX: Validate all member_ids belong to this league
+        submitted_member_ids = {str(r.member_id) for r in game_data.results}
+        valid_members = supabase.table("league_members") \
+            .select("id, user_id") \
+            .eq("league_id", league_id) \
+            .in_("id", list(submitted_member_ids)) \
+            .execute()
+        
+        valid_member_ids = {m["id"] for m in valid_members.data}
+        invalid_members = submitted_member_ids - valid_member_ids
+        
+        if invalid_members:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid member_ids: {invalid_members}. All players must be league members."
+            )
+        
+        # Create member_id -> user_id mapping for deck validation
+        member_to_user = {m["id"]: m["user_id"] for m in valid_members.data}
+        
+        # SECURITY FIX: Validate deck ownership
+        for result in game_data.results:
+            if result.deck_id:
+                deck = supabase.table("user_decks") \
+                    .select("user_id") \
+                    .eq("id", str(result.deck_id)) \
+                    .single() \
+                    .execute()
+                
+                if not deck.data:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Deck {result.deck_id} not found"
+                    )
+                
+                expected_user = member_to_user[str(result.member_id)]
+                if deck.data["user_id"] != expected_user:
+                    raise HTTPException(
+                        status_code=403,
+                        detail=f"Deck {result.deck_id} does not belong to member {result.member_id}"
+                    )
+        
+        # VALIDATION: Check for duplicate placements
+        placements = [r.placement for r in game_data.results]
+        if len(placements) != len(set(placements)):
+            raise HTTPException(
+                status_code=400,
+                detail="Each player must have a unique placement. Duplicate placements detected."
+            )
         
         # 1. Create game record
         game = game_data.game
@@ -348,16 +446,19 @@ async def log_game(
         # 2. Create result records for each player
         results_to_insert = []
         for result in game_data.results:
-            # Calculate total points
+            # FIXED SCORING SYSTEM: Standard placement points (3-2-1-0) + Entrance Bonus
+            # Replaces broken First Blood/Last Stand system that created perverse incentives
             points = 0
             if result.earned_win:
-                points += 3
-            if result.earned_first_blood:
-                points += 1
-            if result.earned_last_stand:
-                points += 1
+                points += 3  # 1st place
+            elif result.earned_second_place:
+                points += 2  # 2nd place
+            elif result.earned_third_place:
+                points += 1  # 3rd place
+            # 4th+ place = 0 points
+            
             if result.earned_entrance_bonus:
-                points += 1
+                points += 1  # Social bonus
             
             results_to_insert.append({
                 "game_id": game_id,
@@ -387,10 +488,12 @@ async def log_game(
 
 
 @router.get("/{league_id}/games")
-async def list_games(league_id: str, user_id: str = Depends(require_user_id)):
+async def list_games(
+    league_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
     """List all games in a league."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify membership
         membership = supabase.table("league_members") \
@@ -420,10 +523,12 @@ async def list_games(league_id: str, user_id: str = Depends(require_user_id)):
 # ============================================================================
 
 @router.get("/{league_id}/standings")
-async def get_standings(league_id: str, user_id: str = Depends(require_user_id)):
+async def get_standings(
+    league_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
     """Get current standings for a league."""
-    supabase = get_supabase_client()
-    
     try:
         # Verify membership
         membership = supabase.table("league_members") \

@@ -61,6 +61,7 @@ export default function TopNavbar() {
   const email = session?.user?.email || ''
 
   return (
+    <>
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/85 border-b border-[var(--color-border)]" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)' }}>
       <div className="max-w-[1920px] mx-auto px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 min-h-[64px]">
@@ -163,8 +164,10 @@ export default function TopNavbar() {
         </div>
       </div>
 
-      {/* Mobile bottom navigation bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md bg-[var(--color-surface)]/95 border-t border-[var(--color-border)] z-40" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}>
+    </nav>
+
+    {/* Mobile bottom navigation bar — OUTSIDE nav to avoid backdrop-filter containing block */}
+    <div className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md bg-[var(--color-surface)]/95 border-t border-[var(--color-border)] z-50" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}>
         <div className="flex items-center justify-around px-2 pt-2 pb-1">
           <NavLink
             to="/"
@@ -204,7 +207,7 @@ export default function TopNavbar() {
             <span className="text-xs font-medium">Profile</span>
           </button>
         </div>
-      </div>
-    </nav>
+    </div>
+    </>
   )
 }

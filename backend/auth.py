@@ -81,3 +81,22 @@ def require_user_id(
     """
     user = require_allowed_user(credentials)
     return user["user_id"]
+
+
+def get_user_supabase_client(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer),
+):
+    """
+    Get a Supabase client authenticated with the user's JWT (respects RLS).
+    
+    CRITICAL SECURITY: This function must be used instead of get_supabase_client()
+    in all user-facing endpoints. The service_role client bypasses Row Level Security,
+    which defeats the entire point of having RLS policies.
+    """
+    token = credentials.credentials
+    url = os.environ["SUPABASE_URL"]
+    key = os.environ["SUPABASE_ANON_KEY"]
+    client = create_client(url, key)
+    # Set the user's JWT as the auth token
+    client.postgrest.auth(token)
+    return client
