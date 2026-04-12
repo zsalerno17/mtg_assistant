@@ -202,6 +202,24 @@ Click **Deploy**. Vercel will:
 
 ## Step 5: Verification Checklist
 
+**Automated Testing:**
+
+Run the deployment test script to verify backend and frontend are working:
+
+```bash
+./scripts/test-deployment.sh \
+  https://your-backend.onrender.com \
+  https://your-app.vercel.app
+```
+
+This will test:
+- ✅ Backend health endpoint
+- ✅ Backend CORS configuration
+- ✅ Frontend accessibility
+- ✅ Frontend Vite build verification
+
+**Manual Testing:**
+
 Test these flows in production (on your Vercel URL):
 
 - [ ] **Auth**: Sign in with Google → Dashboard loads
