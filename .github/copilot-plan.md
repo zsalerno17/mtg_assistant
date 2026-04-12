@@ -1,15 +1,28 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 12, 2026 (Phase 24 "Refined" UI redesign plan created)
+> Last updated: April 12, 2026 (Phase 22 deployment configs ready)
 
 ---
 
 ## Current Status
 
-**Phase 24 "Refined" UI Redesign — Implementation plan created.**
+**Phase 22 Deployment — Ready to Deploy.**
 
-Starting comprehensive visual redesign across all pages. Modern SaaS architecture with restrained MTG flavor. Implementation broken into 7 sub-phases (24a-24g).
+All automated deployment preparation complete:
+- ✅ `render.yaml` created (Render backend configuration)
+- ✅ `vercel.json` created (Vercel frontend configuration)
+- ✅ `.github/DEPLOYMENT.md` updated (references new config files)
+- ✅ Environment variables documented
+- ✅ All changes committed and pushed to GitHub
+
+**Manual steps required** (cannot be automated):
+1. Create Render account → connect GitHub repo → add env vars → deploy
+2. Create Vercel account → connect GitHub repo → add env vars → deploy
+3. Update Supabase Auth redirect URLs with production Vercel URL
+4. Test production deployment
+
+See [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) for complete step-by-step instructions.
 
 **Final status (April 11, 2026):**
 1. ✅ **CMC decimals overlapping** — FIXED (reduced both numerator and denominator sizes)
@@ -51,9 +64,8 @@ Previous fixes failed due to CSS stacking context trapping:
 **Phase 20-21 refinements: COMPLETE**
 
 **Next actions:**
-- **Begin Phase 24a** (Foundation & Typography): Install Google Fonts, update CSS variables, establish design system foundation
-- See Phase 24 section below for full 7-sub-phase implementation roadmap (24a-24g)
-- Reference mockup: `frontend/mockups/variant-3-refined.html`
+- **Complete Phase 22 manual deployment**: Follow [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) to deploy to Render and Vercel
+- After deployment: Test production, then proceed to Phase 23 (schema design) or Phase 24 (UI redesign) based on priorities
 
 **Completed:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
@@ -70,7 +82,7 @@ Previous fixes failed due to CSS stacking context trapping:
 12. [x] Phase 19: Collection improvements quality (complete)
 13. [x] Phase 20: Card tooltip (Scryfall image on hover) — **COMPLETE** (includes bug fixes)
 14. [x] Phase 21: StatBadge visual upgrade (radial progress rings) — **COMPLETE** (includes bug fixes)
-15. [ ] Phase 22: Deployment documentation (Render + Vercel) — design complete, not deployed
+15. [x] Phase 22: Deployment configuration (Render + Vercel) — **READY FOR MANUAL DEPLOYMENT** (render.yaml, vercel.json, updated docs)
 16. [ ] Phase 23: Deck metadata & iteration tracking schema design — design complete, not implemented
 
 **Next up:**
@@ -880,17 +892,37 @@ players    → id, display_name, persona, email
 
 > Do after Phase 21. Backend to Render, frontend to Vercel.
 
-**Backend → Render:**
-- [ ] Push repo to GitHub
-- [ ] New Web Service on Render, point to `backend/`
-- [ ] Build: `pip install -r requirements.txt` | Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- [ ] Env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET`, `GEMINI_API_KEY`, `ENVIRONMENT=production`
-- [ ] Update `main.py` CORS to include Vercel URL
+**Automated preparation (COMPLETE):**
+- [x] Push repo to GitHub (https://github.com/zsalerno17/mtg_assistant)
+- [x] Create `render.yaml` with backend configuration
+- [x] Create `vercel.json` with frontend configuration
+- [x] Update `.github/DEPLOYMENT.md` with step-by-step instructions
+- [x] Verify environment variables documented
+- [x] Commit and push all deployment configs
 
-**Frontend → Vercel:**
-- [ ] Import repo, set root to `frontend/`
-- [ ] Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_BASE_URL`
+**Manual deployment steps (USER REQUIRED):**
+- [ ] Create Render account and connect GitHub repo
+- [ ] Configure backend environment variables in Render dashboard
+- [ ] Deploy backend to Render (auto-builds from render.yaml)
+- [ ] Create Vercel account and connect GitHub repo
+- [ ] Configure frontend environment variables in Vercel dashboard
+- [ ] Deploy frontend to Vercel (auto-builds from vercel.json)
 - [ ] Add Vercel URL to Supabase Auth redirect URLs
+- [ ] Test production deployment
+
+**Environment Variables:**
+
+Backend (Render):
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_JWT_SECRET`
+- `GEMINI_API_KEY`
+- `ENVIRONMENT=production`
+
+Frontend (Vercel):
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_API_BASE_URL` (set to Render backend URL)
 
 ---
 
