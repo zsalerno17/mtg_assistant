@@ -84,13 +84,33 @@ Previous fixes failed due to CSS stacking context trapping:
 
 **User feedback:** App looks dated, fonts boring, too mobile-first, doesn't lean into MTG enough.
 
-**4 mockups created** in `frontend/mockups/` — open directly in browser:
+**Initial 4 mockups created** in `frontend/mockups/` — open directly in browser:
 1. **Grimoire** (`direction-1-grimoire.html`) — Premium dark luxury. Cormorant Garamond + Crimson Pro. Gold leaf accents, card-art hero images, leather-bound spellbook feel.
 2. **Command Zone** (`direction-2-command-zone.html`) — Modern SaaS dashboard (Linear/Vercel). Space Grotesk font, data-dense table + two-column layout, stats strip, activity feed, quick actions panel.
 3. **Mana Forge** (`direction-3-mana-forge.html`) — Warm workshop aesthetic. Cinzel + Alegreya, MTG card-frame color bars per deck, forge metaphor (Forged = analyzed), copper/amber palette, textured backgrounds.
 4. **Nexus** (`direction-4-nexus.html`) — High-energy tech/neon. Outfit font, top navigation bar, mana-colored glow borders on hover, grid background, vibrant per-stat accent colors. MTG Arena companion feel.
 
-**Awaiting user decision** on which direction (or mix) to implement.
+**User selection:** "Command Zone and Nexus the best. Modern SaaS/tech as core architecture, with MTG flavoring through icons and occasional fonts."
+
+**Hybrid design created:**
+- **Command Nexus Hybrid** (`direction-hybrid-command-nexus.html`) — Combines modern SaaS structure with restrained MTG flavor
+- **Core architecture**: Space Grotesk + Inter fonts, top navbar (Nexus), horizontal stats strip + table view (Command Zone)
+- **MTG flavor elements**: Commander card thumbnails, mana symbol glows, Cinzel for special headings only, mana-colored stat accents
+- **Design proposal**: `.github/design-proposal-hybrid.md` (full implementation specs)
+
+**User feedback on hybrid:** "I don't like the creature icons - just need commander card icons. Can I see a few variations?"
+
+**3 hybrid variants created** (no creature icons, commander cards only):
+1. **Minimal** (`variant-1-minimal.html`) — Ultra-clean, subtle borders, minimal glow effects, pure modern SaaS
+2. **Vibrant** (`variant-2-vibrant.html`) — Energetic with colorful stat glows, stronger mana symbol effects, gradient buttons
+3. **Refined** (`variant-3-refined.html`) — Polished middle ground, Cinzel brand font, "Deck Vault" heading, gradient stat borders
+
+**Note on mockup content**: Mockups showed placeholder card boxes and generic pips for simplicity. Actual app already uses:
+- Real Scryfall card images (commander cards on deck detail page)
+- Real mana symbols via Mana Font library (`ms ms-w ms-cost` etc.)
+- These will be integrated into final implementation
+
+**Next step:** User reviewing 3 variant mockups to select final direction before implementation begins.
 
 ---
 

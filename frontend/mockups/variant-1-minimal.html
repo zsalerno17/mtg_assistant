@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Nexus - Minimal - MTG Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.min.css" rel="stylesheet" type="text/css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0e17;
+      --surface: #0f1419;
+      --surface-light: #151b24;
+      --border: #1f2937;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #fbbf24;
+      --primary-dark: #d4a030;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Top Navbar - Clean minimal */
+    .navbar {
+      background: rgba(15, 20, 25, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 60px;
+    }
+
+    .navbar-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .navbar-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
+
+    .navbar-nav {
+      display: flex;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .navbar-link {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .navbar-link:hover {
+      color: var(--text);
+      background: rgba(251, 191, 36, 0.06);
+    }
+
+    .navbar-link.active {
+      color: var(--text);
+      background: rgba(251, 191, 36, 0.1);
+    }
+
+    .navbar-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--bg);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Page Header - Minimal */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    /* Stats Grid - Cleaner */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(251, 191, 36, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .btn {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    /* Table View - Minimal clean */
+    .deck-table {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .deck-table thead {
+      background: var(--surface-light);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .deck-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      padding: 14px 20px;
+      text-align: left;
+    }
+
+    .deck-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+
+    .deck-table tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .deck-table tbody tr:hover {
+      background: rgba(251, 191, 36, 0.04);
+    }
+
+    .deck-table td {
+      padding: 14px 20px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .deck-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .deck-commander-art {
+      width: 42px;
+      height: 58px;
+      border-radius: 4px;
+      object-fit: cover;
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
+    }
+
+    .deck-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .deck-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .deck-commander {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .mana-pips {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .ms {
+      font-size: 17px;
+      transition: all 0.2s;
+    }
+
+    .deck-table tbody tr:hover .ms {
+      filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+    }
+
+    .format-badge {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    .status-analyzed {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+    }
+
+    .status-pending {
+      background: rgba(100, 116, 139, 0.12);
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .action-link {
+      font-weight: 500;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .action-link:hover {
+      color: var(--text);
+    }
+
+    .power-value {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Mobile bottom nav */
+    .bottom-nav {
+      display: none;
+    }
+
+    /* Direction label */
+    .direction-label {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(15, 20, 25, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+      z-index: 200;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar-nav {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .deck-table {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <div class="navbar-brand">MTG Assistant</div>
+      <ul class="navbar-nav">
+        <li><a href="#" class="navbar-link active">Dashboard</a></li>
+        <li><a href="#" class="navbar-link">Collection</a></li>
+        <li><a href="#" class="navbar-link">Profile</a></li>
+      </ul>
+      <div class="navbar-user">
+        <div class="avatar">ZS</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Dashboard</h1>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Decks</div>
+        <div class="stat-value">12</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Analyzed</div>
+        <div class="stat-value">8</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Power</div>
+        <div class="stat-value">7.2</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Collection</div>
+        <div class="stat-value">2,847</div>
+      </div>
+    </div>
+
+    <!-- Decks Section -->
+    <div class="section-header">
+      <h2 class="section-title">Your Decks</h2>
+      <button class="btn btn-primary">+ Import Deck</button>
+    </div>
+
+    <!-- Desktop Table View -->
+    <table class="deck-table">
+      <thead>
+        <tr>
+          <th style="width: 45%;">Deck</th>
+          <th>Colors</th>
+          <th>Format</th>
+          <th>Status</th>
+          <th>Power</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <img src="https://cards.scryfall.io/normal/front/1/7/17ee2e71-3f80-4efd-8542-33b6bac9e1ea.jpg?1673147104" 
+                   alt="The Ur-Dragon" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Draconic Storm</div>
+                <div class="deck-commander">The Ur-Dragon</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-w ms-cost"></i>
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-b ms-cost"></i>
+              <i class="ms ms-r ms-cost"></i>
+              <i class="ms ms-g ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </td>
+          <td><span class="power-value">8.5</span></td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">View →</a>
+          </td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <img src="https://cards.scryfall.io/normal/front/4/5/45a7607c-c865-4a34-8ca1-927d57b50aee.jpg?1562686334" 
+                   alt="Niv-Mizzet" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Spellslinger</div>
+                <div class="deck-commander">Niv-Mizzet, Parun</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-r ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </td>
+          <td><span class="power-value">7.8</span></td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">View →</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <img src="https://cards.scryfall.io/normal/front/9/7/97eebc2e-affd-4163-b48d-a6e30244a1c6.jpg?1608911148" 
+                   alt="Gisa and Geralf" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Zombie Horde</div>
+                <div class="deck-commander">Gisa and Geralf</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-b ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-pending">
+              <span class="status-dot"></span>
+              Pending
+            </span>
+          </td>
+          <td style="color: var(--muted); font-weight: 500;">—</td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">Analyze</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <img src="https://cards.scryfall.io/normal/front/4/d/4d6ddc2a-0b53-4377-a47f-5ead6ade8d15.jpg?1688254021" 
+                   alt="Lathril" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Elvish Empire</div>
+                <div class="deck-commander">Lathril, Blade of the Elves</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-b ms-cost"></i>
+              <i class="ms ms-g ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </td>
+          <td><span class="power-value">6.9</span></td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">View →</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <img src="https://cards.scryfall.io/normal/front/f/a/fa7322fd-da60-4f7c-b49f-c30da504d2b8.jpg?1673308108" 
+                   alt="Lyra" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Angel Tribal</div>
+                <div class="deck-commander">Lyra Dawnbringer</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-w ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-pending">
+              <span class="status-dot"></span>
+              Pending
+            </span>
+          </td>
+          <td style="color: var(--muted); font-weight: 500;">—</td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">Analyze</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <img src="https://cards.scryfall.io/normal/front/a/f/af42254a-73b4-4451-9895-d5006cd8fb52.jpg?1598303742" 
+                   alt="Omnath" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Omnath Ramp</div>
+                <div class="deck-commander">Omnath, Locus of Creation</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-w ms-cost"></i>
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-r ms-cost"></i>
+              <i class="ms ms-g ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </td>
+          <td><span class="power-value">8.2</span></td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">View →</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- Direction Label -->
+  <div class="direction-label">
+    Variant: Minimal
+  </div>
+
+</body>
+</html>

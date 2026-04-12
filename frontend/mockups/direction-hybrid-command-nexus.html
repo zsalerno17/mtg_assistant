@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Nexus Hybrid - MTG Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.min.css" rel="stylesheet" type="text/css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0f1a;
+      --surface: #121826;
+      --border: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #fbbf24;
+      --primary-dark: #d4a030;
+
+      /* Mana colors */
+      --white: #f8f6e8;
+      --blue: #0e68ab;
+      --black: #150b00;
+      --red: #d3202a;
+      --green: #00733e;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Top Navbar (Nexus approach) */
+    .navbar {
+      background: rgba(18, 24, 38, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(251, 191, 36, 0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 64px;
+    }
+
+    .navbar-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+
+    .navbar-nav {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .navbar-link {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .navbar-link:hover {
+      color: var(--text);
+      background: rgba(251, 191, 36, 0.08);
+    }
+
+    .navbar-link.active {
+      color: var(--primary);
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+    }
+
+    .navbar-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .navbar-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--bg);
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-family: 'Cinzel', serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Stats Grid (Command Zone horizontal strip) */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      box-shadow: 0 0 24px rgba(251, 191, 36, 0.08);
+    }
+
+    .stat-card {
+      background: var(--surface);
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      opacity: 0.6;
+    }
+
+    .stat-card:nth-child(1)::before { background: var(--primary); }
+    .stat-card:nth-child(2)::before { background: var(--green); }
+    .stat-card:nth-child(3)::before { background: #a855f7; }
+    .stat-card:nth-child(4)::before { background: var(--blue); }
+
+    .stat-card:hover {
+      background: rgba(18, 24, 38, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .stat-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-card:nth-child(1) .stat-value { 
+      text-shadow: 0 0 16px rgba(251, 191, 36, 0.3);
+    }
+    .stat-card:nth-child(2) .stat-value { 
+      color: #10b981;
+      text-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    }
+    .stat-card:nth-child(3) .stat-value { 
+      color: #a855f7;
+      text-shadow: 0 0 16px rgba(168, 85, 247, 0.2);
+    }
+    .stat-card:nth-child(4) .stat-value { 
+      color: #3b82f6;
+      text-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .btn {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: var(--bg);
+      box-shadow: 0 0 16px rgba(251, 191, 36, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 24px rgba(251, 191, 36, 0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: var(--primary);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(251, 191, 36, 0.1);
+      border-color: rgba(251, 191, 36, 0.5);
+    }
+
+    /* Table View (Command Zone) */
+    .deck-table {
+      width: 100%;
+      background: rgba(18, 24, 38, 0.6);
+      border: 1px solid rgba(251, 191, 36, 0.12);
+      border-radius: 12px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .deck-table thead {
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    .deck-table th {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .deck-table tbody tr {
+      border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+      transition: all 0.2s;
+    }
+
+    .deck-table tbody tr:hover {
+      background: rgba(251, 191, 36, 0.05);
+      border-color: rgba(251, 191, 36, 0.2);
+    }
+
+    .deck-table td {
+      padding: 16px 20px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .deck-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .deck-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .deck-table tbody tr:hover .deck-icon {
+      background: rgba(251, 191, 36, 0.15);
+      border-color: rgba(251, 191, 36, 0.4);
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+    }
+
+    .deck-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--primary);
+      filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.4));
+    }
+
+    .deck-commander-art {
+      width: 38px;
+      height: 53px;
+      border-radius: 4px;
+      object-fit: cover;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+    }
+
+    .deck-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .deck-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .deck-commander {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .mana-pips {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .ms {
+      font-size: 18px;
+      filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+      transition: all 0.2s;
+    }
+
+    .deck-table tbody tr:hover .ms {
+      filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.6));
+    }
+
+    .format-badge {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 12px;
+      text-transform: capitalize;
+    }
+
+    .status-analyzed {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-pending {
+      background: rgba(100, 116, 139, 0.15);
+      color: var(--muted);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .action-link {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-link:hover {
+      color: var(--text);
+      text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+    }
+
+    /* Mobile bottom nav */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(18, 24, 38, 0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(251, 191, 36, 0.15);
+      padding: 12px 0;
+      z-index: 100;
+    }
+
+    .bottom-nav-items {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      list-style: none;
+    }
+
+    .bottom-nav-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 8px 16px;
+      transition: all 0.2s;
+    }
+
+    .bottom-nav-link.active {
+      color: var(--primary);
+    }
+
+    .bottom-nav-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Direction label */
+    .direction-label {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(18, 24, 38, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      z-index: 200;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar-nav {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .stat-card {
+        padding: 20px 16px;
+      }
+
+      .stat-value {
+        font-size: 28px;
+      }
+
+      /* Hide table, show card view on mobile */
+      .deck-table {
+        display: none;
+      }
+
+      .bottom-nav {
+        display: block;
+      }
+
+      .container {
+        padding-bottom: 80px;
+      }
+
+      .direction-label {
+        bottom: 84px;
+      }
+    }
+
+    /* Card view for mobile (hidden by default) */
+    .deck-grid {
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .deck-card {
+      background: rgba(18, 24, 38, 0.8);
+      border: 1px solid rgba(251, 191, 36, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+
+    .deck-card:hover {
+      border-color: rgba(251, 191, 36, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 16px rgba(251, 191, 36, 0.1);
+    }
+
+    .deck-card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .deck-card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .deck-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .deck-card-label {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+      .deck-grid {
+        display: grid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <div class="navbar-brand">
+        ⚔️ MTG Assistant
+      </div>
+      <ul class="navbar-nav">
+        <li><a href="#" class="navbar-link active">Dashboard</a></li>
+        <li><a href="#" class="navbar-link">Collection</a></li>
+        <li><a href="#" class="navbar-link">Profile</a></li>
+      </ul>
+      <div class="navbar-user">
+        <div class="avatar">ZS</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Deck Vault</h1>
+      <p class="page-subtitle">Manage and analyze your Commander decks</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Decks</div>
+        <div class="stat-value">12</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Analyzed</div>
+        <div class="stat-value">8</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Power</div>
+        <div class="stat-value">7.2</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Collection</div>
+        <div class="stat-value">2,847</div>
+      </div>
+    </div>
+
+    <!-- Decks Section -->
+    <div class="section-header">
+      <h2 class="section-title">Your Decks</h2>
+      <button class="btn btn-primary">+ Import Deck</button>
+    </div>
+
+    <!-- Desktop Table View -->
+    <table class="deck-table">
+      <thead>
+        <tr>
+          <th style="width: 40%;">Deck</th>
+          <th>Colors</th>
+          <th>Format</th>
+          <th>Status</th>
+          <th>Power</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <div class="deck-icon">
+                <svg viewBox="0 0 512 512" fill="currentColor">
+                  <path d="M200.947 18.686c-6.98.087-14.64.774-22.85 1.9c27.57 20.468 51.098 45.25 67.594 70.527c1.66 0 3.312.012 4.958.047c18.066.39 35.487 2.906 53.217 7.2c-15.695-28.457-29.935-50.19-47.45-63.22c-13.817-10.278-30.063-16.168-52.52-16.454q-1.45-.02-2.948 0zm-91.66 22.96q-1.094-.002-2.195.022c-14.045.31-29.36 3.92-46.86 11.13c56.18 18.807 106.985 50.468 133.907 83.585c18.377-5.13 29.44-14.72 36.454-28.817C195.84 78.18 168.118 56.19 140.65 46.96c-10.168-3.418-20.433-5.306-31.363-5.315zm-.203 52.786c-39.42 6.758-74.73 31.854-87.822 74.19v322.345h212.73C100.352 442.58 61.19 206.49 187.115 230.104c5.838-14.164 9.92-28.027 11.018-41.465l18.627 1.522c-1.684 20.592-8.828 40.49-18.033 59.943c-.732 2.035-1.472 4.12-2.186 6.063c32.842 85.24 113.77 160.69 169.495 168.197c.915.033 1.905-.002 2.953-.09c17.016 1.035 35.86-4.222 52.21-22.304l7.984-8.83l-10.473-5.658c-6.507-3.515-14.29-7.094-18.167-10.925c-1.938-1.916-2.793-3.47-3.074-5.194c-.282-1.725-.13-4.227 2.23-8.578l10.673-19.656l-21.484 6.222c-6.304 1.825-17.305-3.032-23.224-10.71c-2.96-3.84-4.408-7.907-4.387-10.843c.02-2.938.72-5.125 4.747-8.05l19.453-14.125l-23.884-2.72c-9.974-1.137-16.37-6.658-19.17-12.294c-2.802-5.634-2.312-10.084 1.375-13.31l12.204-10.677l-15.358-5.205c-6.717-2.276-10.296-7.555-10.357-10.633c-.028-1.373.238-2.666 1.843-4.476c10.93-2.39 21.258-.45 28.088 6.374c6.154 6.146 8.35 15.128 6.977 24.832c8.55-2.254 16.985-1.616 24.112 2.494c9.34 5.387 14.647 15.692 15.67 27.965c15.212-10.132 32.152-12.725 45.262-5.164c15.467 8.92 21.36 29.513 16.805 51.75c23.992-33.355 34.588-75.717 5.617-120.43c-46.726-4.442-81.693-30.676-93.293-67.64c-5.026-16.016-21.284-28.67-42-37.904l-.08.217c-29.74-10.823-55.575-17.35-82.604-18.733l.08.155c-2.294-.093-4.56-.16-6.762-.172c-9.537 22.874-28.662 39.9-57.436 46.054l-5.906 1.262l-3.576-4.864c-14.216-19.33-41.23-40.452-74.002-58.074z"/>
+                </svg>
+              </div>
+              <img src="https://cards.scryfall.io/normal/front/1/7/17ee2e71-3f80-4efd-8542-33b6bac9e1ea.jpg?1673147104" 
+                   alt="The Ur-Dragon" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Draconic Storm</div>
+                <div class="deck-commander">The Ur-Dragon</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-w ms-cost"></i>
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-b ms-cost"></i>
+              <i class="ms ms-r ms-cost"></i>
+              <i class="ms ms-g ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </td>
+          <td style="color: var(--primary); font-weight: 600;">8.5</td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">View →</a>
+          </td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <div class="deck-icon">
+                <svg viewBox="0 0 512 512" fill="currentColor">
+                  <path d="M256.3 19.42C204 57.2 177.2 111 152.5 160.7c43.4-24.6 101.7-32.9 126.9-28.7c-63.8 10.6-108 25.8-144.4 64.3c-2.2 4.5-4.1 8.3-6.4 13.1c115.4-27.8 134.4-27 250.9-.7C368 158.6 343 126.6 304 65.83C345.9 118.4 428.1 208.1 424.3 190.6C401.4 85.73 324.2 23.49 256.3 19.42M88 231.3c-31 7.4-53.9 17.5-62.8 26.7c.9 11.7 6.7 22.1 17.5 32c11.8 10.8 29.6 20.4 51.3 28.1q4.035 1.35 8.1 2.7c-8.4-11-11.2-26.3-13-41.1c0-15.4-3-33.5-1.1-48.4m336 0c2.2 16.2.6 34.5-1.1 48.4c-1.8 14.8-4.6 30.1-13 41.1c20.2-7 44.6-17.6 59.4-30.8c10.8-9.9 16.6-20.3 17.5-32c-8.9-9.2-31.7-19.3-62.8-26.7z"/>
+                </svg>
+              </div>
+              <img src="https://cards.scryfall.io/normal/front/4/5/45a7607c-c865-4a34-8ca1-927d57b50aee.jpg?1562686334" 
+                   alt="Niv-Mizzet" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Spellslinger</div>
+                <div class="deck-commander">Niv-Mizzet, Parun</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-r ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </td>
+          <td style="color: var(--primary); font-weight: 600;">7.8</td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">View →</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <div class="deck-icon">
+                <svg viewBox="0 0 512 512" fill="currentColor">
+                  <path d="M63.648 18.836l-21.906 5.22l4.174 17.508l21.904-5.22zm55.41 9.576c-10.812.018-19.293 3.666-24.505 10.344c-5.56 7.123-6.867 17.012-3.494 28.383s11.602 23.646 23.973 33.288c12.372 9.64 26.29 14.625 38.15 15.125c11.856.5 21.136-3.178 26.696-10.3c5.56-7.124 6.866-17.012 3.493-28.382a51 51 0 0 0-1.172-3.434c-8.79 6.754-14.632 18.57-22.014 13.644c-2.02-1.347 4.205-17.284 13.49-28.98a75 75 0 0 0-9.41-10.39l-25.328 12.17l-13.696-12.644c2.028-1.745 18.215-4.463 31.54-5.603c-11.69-8.362-24.503-12.712-35.532-13.176a50 50 0 0 0-2.193-.045z"/>
+                </svg>
+              </div>
+              <img src="https://cards.scryfall.io/normal/front/9/7/97eebc2e-affd-4163-b48d-a6e30244a1c6.jpg?1608911148" 
+                   alt="Gisa and Geralf" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Zombie Horde</div>
+                <div class="deck-commander">Gisa and Geralf</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-b ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-pending">
+              <span class="status-dot"></span>
+              Pending
+            </span>
+          </td>
+          <td style="color: var(--muted); font-weight: 500;">—</td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">Analyze</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <div class="deck-icon">
+                <svg viewBox="0 0 512 512" fill="currentColor">
+                  <path d="m107.3 26c-4.146 0-8.6 22.976-13.214 42.934l32.187 100.97l-39.052-69.726c-2.932 14.342-5.414 28.62-7.002 42.771l43.176 58.246l-44.838-36.824c-.435 11.08-.15 22.056 1.078 32.897l45.515 36.597l-40.89-13.285c2.558 9.025 5.94 18.077 9.812 27.049l40.819 26.943l-30.065-4.312c13.83 26.954 29.823 52.218 38.697 72.506c2.565 5.13 8.023 16.754 10.926 28.168c3.89 15.695-4.529 35.939-21.271 38.322c12.285-14.291 13.245-23.507 11.02-32.535c-13.242-.192-19.112 15.916-19.112 15.916s-12.527 23.473 15.717 59.369s67.176 33.974 67.176 33.974s-2.243-55.044-1.036-79.96c1.22-25.165 8.354-69.758 8.354-69.758s-19.998.093-42.443-15.8c-28.167-19.942-17.51-32.621-24.663-51.077c-14.417-37.201-4.68-95.143-4.68-95.143s-10.858-42.59-17.85-72.822C119.864 76.366 110.398 26 107.3 26"/>
+                </svg>
+              </div>
+              <img src="https://cards.scryfall.io/normal/front/4/d/4d6ddc2a-0b53-4377-a47f-5ead6ade8d15.jpg?1688254021" 
+                   alt="Lathril" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Elvish Empire</div>
+                <div class="deck-commander">Lathril, Blade of the Elves</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-b ms-cost"></i>
+              <i class="ms ms-g ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </td>
+          <td style="color: var(--primary); font-weight: 600;">6.9</td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">View →</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="deck-name-cell">
+              <div class="deck-icon">
+                <svg viewBox="0 0 512 512" fill="currentColor">
+                  <path d="M92.438 28.97C75.263 47.722 60.826 69.69 49.593 94L167.5 204.656l-12.78 13.625L41.905 112.407c-9.19 24.257-15.377 50.455-18.156 77.844l116.156 58.72l-8.437 16.686L22.312 210.47c-.963 24.45.777 49.666 5.437 75.155l100.53 8.313l-1.53 18.625l-94.97-7.844c.743 3.09 1.515 6.185 2.345 9.28c4.43 16.51 9.94 32.34 16.375 47.438c8.757-1.615 17.808-3.274 27.813-5.157c26.754-5.033 53.093-10.06 53.093-10.06l3.5 18.342s-26.368 5.054-53.156 10.094c-8.012 1.508-15.797 2.97-23.188 4.344c8.65 17.507 18.62 33.887 29.657 49l60.843-34.28L158.22 410l-58.407 32.938c12.202 14.79 25.482 28.186 39.624 40l17.157-20.344c1.38-20.537 4.963-37.725 14.375-51.72c6.338-9.425 15.44-16.826 27.155-21.937"/>
+                </svg>
+              </div>
+              <img src="https://cards.scryfall.io/normal/front/f/a/fa7322fd-da60-4f7c-b49f-c30da504d2b8.jpg?1673308108" 
+                   alt="Lyra" class="deck-commander-art">
+              <div class="deck-info">
+                <div class="deck-name">Angel Tribal</div>
+                <div class="deck-commander">Lyra Dawnbringer</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="mana-pips">
+              <i class="ms ms-w ms-cost"></i>
+            </div>
+          </td>
+          <td><span class="format-badge">Commander</span></td>
+          <td>
+            <span class="status-badge status-pending">
+              <span class="status-dot"></span>
+              Pending
+            </span>
+          </td>
+          <td style="color: var(--muted); font-weight: 500;">—</td>
+          <td style="text-align: right;">
+            <a href="#" class="action-link">Analyze</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Mobile Card View -->
+    <div class="deck-grid">
+      <div class="deck-card">
+        <div class="deck-card-header">
+          <div class="deck-icon">
+            <svg viewBox="0 0 512 512" fill="currentColor">
+              <path d="M200.947 18.686c-6.98.087-14.64.774-22.85 1.9c27.57 20.468 51.098 45.25 67.594 70.527c1.66 0 3.312.012 4.958.047c18.066.39 35.487 2.906 53.217 7.2c-15.695-28.457-29.935-50.19-47.45-63.22c-13.817-10.278-30.063-16.168-52.52-16.454q-1.45-.02-2.948 0z"/>
+            </svg>
+          </div>
+          <div class="deck-info">
+            <div class="deck-name">Draconic Storm</div>
+            <div class="deck-commander">The Ur-Dragon</div>
+          </div>
+        </div>
+        <div class="deck-card-details">
+          <div class="deck-card-row">
+            <span class="deck-card-label">Colors</span>
+            <div class="mana-pips">
+              <i class="ms ms-w ms-cost"></i>
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-b ms-cost"></i>
+              <i class="ms ms-r ms-cost"></i>
+              <i class="ms ms-g ms-cost"></i>
+            </div>
+          </div>
+          <div class="deck-card-row">
+            <span class="deck-card-label">Format</span>
+            <span class="format-badge">Commander</span>
+          </div>
+          <div class="deck-card-row">
+            <span class="deck-card-label">Status</span>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </div>
+          <div class="deck-card-row">
+            <span class="deck-card-label">Power Level</span>
+            <span style="color: var(--primary); font-weight: 600;">8.5</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck-card">
+        <div class="deck-card-header">
+          <div class="deck-icon">
+            <svg viewBox="0 0 512 512" fill="currentColor">
+              <path d="M256.3 19.42C204 57.2 177.2 111 152.5 160.7c43.4-24.6 101.7-32.9 126.9-28.7c-63.8 10.6-108 25.8-144.4 64.3c-2.2 4.5-4.1 8.3-6.4 13.1c115.4-27.8 134.4-27 250.9-.7C368 158.6 343 126.6 304 65.83C345.9 118.4 428.1 208.1 424.3 190.6C401.4 85.73 324.2 23.49 256.3 19.42"/>
+            </svg>
+          </div>
+          <div class="deck-info">
+            <div class="deck-name">Spellslinger</div>
+            <div class="deck-commander">Niv-Mizzet, Parun</div>
+          </div>
+        </div>
+        <div class="deck-card-details">
+          <div class="deck-card-row">
+            <span class="deck-card-label">Colors</span>
+            <div class="mana-pips">
+              <i class="ms ms-u ms-cost"></i>
+              <i class="ms ms-r ms-cost"></i>
+            </div>
+          </div>
+          <div class="deck-card-row">
+            <span class="deck-card-label">Format</span>
+            <span class="format-badge">Commander</span>
+          </div>
+          <div class="deck-card-row">
+            <span class="deck-card-label">Status</span>
+            <span class="status-badge status-analyzed">
+              <span class="status-dot"></span>
+              Analyzed
+            </span>
+          </div>
+          <div class="deck-card-row">
+            <span class="deck-card-label">Power Level</span>
+            <span style="color: var(--primary); font-weight: 600;">7.8</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="bottom-nav">
+    <ul class="bottom-nav-items">
+      <li>
+        <a href="#" class="bottom-nav-link active">
+          <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+          </svg>
+          Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="#" class="bottom-nav-link">
+          <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
+          </svg>
+          Collection
+        </a>
+      </li>
+      <li>
+        <a href="#" class="bottom-nav-link">
+          <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          Profile
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Direction Label -->
+  <div class="direction-label">
+    Hybrid: Command Nexus
+  </div>
+
+</body>
+</html>
