@@ -7,70 +7,51 @@
 
 ## Current Status
 
-**Phase 20-21 refinements — Round 3 tooltip fix in progress.** Comprehensive root cause analysis completed. Implementing React Portal solution.
+**Phase 20-21 refinements complete.** All user-reported issues fixed and verified.
 
-**Root cause analysis (April 11, 2026):**
-Previous tooltip fixes failed due to misunderstanding of CSS stacking contexts:
-1. **Problem**: Tooltips rendered as React Fragment siblings inside parent containers with `overflow-y-auto`
-2. **Why Fragment didn't work**: Fragment is React rendering optimization — doesn't change DOM tree position
-3. **Stacking context trap**: Elements with `overflow` (other than visible) create new stacking contexts. Children cannot escape with z-index alone, even `z-index: 99999`
-4. **position: fixed limitation**: Fixed positioning calculates viewport coordinates correctly, BUT element is still clipped by parent's overflow property when inside a stacking context
+**Final status (April 11, 2026):**
+1. ✅ **CMC decimals overlapping** — FIXED (reduced both numerator and denominator sizes)
+2. ✅ **Card tooltips clipped** — FIXED (React Portal escapes stacking contexts)
+3. ✅ **Scryfall search links** — FIXED (exact match quotes)
+4. ✅ **Tooltip cursor positioning** — FIXED (cursor tracking + smart viewport edges)
+5. ✅ **Tooltip showing on every hover** — FIXED (150ms delay, down from 300ms)
 
-**Round 3 fix (deployed):**
-- **React Portal**: Render tooltip directly under `document.body` via `createPortal()` — escapes ALL overflow containers and stacking contexts
-- **Cursor-based positioning**: Track `e.clientX/clientY` and position near cursor (not centered on element) — feels more natural
-- **Faster delay**: 300ms → 150ms (standard tooltip timing, fixes "tooltips not appearing" issue)
-- **Smart positioning**: Check viewport edges, flip tooltip to left/above cursor when needed
+**Tooltip fix — Root cause analysis:**
+Previous fixes failed due to CSS stacking context trapping:
+- Tooltips rendered as React Fragment siblings inside containers with `overflow-y-auto`
+- Elements with `overflow` (other than visible) create new stacking contexts
+- Children cannot escape with z-index alone, even `z-index: 99999`
+- `position: fixed` calculates viewport coordinates correctly BUT is still clipped by parent's overflow
+
+**Solution (React Portal):**
+- Render tooltip directly under `document.body` via `createPortal()` — escapes ALL overflow containers and stacking contexts
+- Track `e.clientX/clientY` and position near cursor (not centered on element)
+- Reduce delay 300ms → 150ms (standard tooltip timing)
+- Smart viewport edge detection (flip tooltip to left/above when at edges)
 
 **Files changed:**
-- `frontend/src/components/CardTooltip.jsx` — added `createPortal` import, cursor tracking, viewport-aware positioning
+- `frontend/src/components/CardTooltip.jsx` — Portal rendering, cursor tracking, viewport-aware positioning
+- `frontend/src/pages/DeckPage.jsx` — StatBadge refactor (integrated fractions, color consistency), Collection Upgrades grouping
 
 **Servers status:**
 - Backend: Running on port 8000 ✓
-- Frontend: Running on port 5173 ✓ (restarted with Portal implementation)
+- Frontend: Running on port 5173 ✓
 
-**Ready for testing:** User should test all 3 issues:
-1. Card tooltips no longer clipped by overflow containers (z-index issue fixed)
-2. Card appears near cursor, not far away (cursor tracking + offset positioning)
-3. Card shows on every hover (150ms delay, down from 300ms)
-- Backend: Running on port 8000 (uvicorn, reload enabled)
-- Frontend: Running on port 5173 (Vite dev server)
-- Partial fixes deployed, tooltip z-index issue remains
+**User testing complete — all fixes verified working (April 11, 2026):**
+1. ✅ Card tooltips now 244×340px (readable text, larger images)
+2. ✅ Card tooltips clickable (open Scryfall search in new tab)
+3. ✅ Radial progress shows integrated fractions ("7/8" in center, not "/ 8" below)
+4. ✅ Radial progress colors consistent (ring and center value always match — no yellow ring + red number)
+5. ✅ Collection upgrades deduplicated + grouped by card to cut + sorted by quality
+6. ✅ Strategy tab key cards have tooltips
+7. ✅ Scenarios tab card names have tooltips (4 locations: suggestions, chips, search results)
 
-**Recent fixes (April 11, 2026):**
-- **CardTooltip.jsx**: 
-  - Moved tooltip outside trigger span (React Fragment + separate render)
-  - Added `hideTimeoutRef` for delayed hiding (150ms)
-  - Tooltip has `onMouseEnter`/`onMouseLeave` handlers to cancel hide timeout
-  - Gap reduced from 8px → 4px
-  - Z-index increased to 99999
-  - Scryfall link: `q=!CardName` → `q=!"CardName"`
-- **DeckPage.jsx**: 
-  - StatBadge: CMC numerator now `text-sm` instead of `text-lg` (integer badges unchanged)
-  - denominator reduced to `text-[10px]` (was `text-xs`)
-  - Formula: CMC "2.8/3.0" = 14px + 10px + 10px = ~34px fits in 64px circle
-  - Integer "7/8" = 18px + 10px + 10px = ~38px fits in 64px circle
-
-**Why previous attempts failed:**
-1. Only reduced denominator, not numerator — decimals still overlapped
-2. Increased z-index without addressing React Fragment portalling — still clipped by overflow containers
-3. No tooltip hover handlers — moving mouse toward tooltip triggered `onMouseLeave` on trigger span
-
-**Pending user testing:**
-User needs to validate at http://localhost:5173:
-1. Card tooltips now 244×340px (readable text, larger images)
-2. Card tooltips clickable (open Scryfall search in new tab)
-3. Radial progress shows integrated fractions ("7/8" in center, not "/ 8" below)
-4. Radial progress colors consistent (ring and center value always match — no yellow ring + red number)
-5. Collection upgrades deduplicated + grouped by card to cut + sorted by quality
-6. Strategy tab key cards have tooltips
-7. Scenarios tab card names have tooltips (4 locations: suggestions, chips, search results)
+**Phase 20-21 refinements: COMPLETE**
 
 **Next actions:**
-- Await user testing confirmation
-- If issues found: debug + fix
-- If all verified: session complete
-- Future work: Deployment (Phase 22), Phase 23 implementation, league tracking (if user wants it)
+- Ready for new features or Phase 22 deployment work
+- League tracking feature scoping (if user wants it — not in current plan)
+- Phase 23 implementation (deck metadata & iteration tracking)
 
 **Completed:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
@@ -85,10 +66,10 @@ User needs to validate at http://localhost:5173:
 10. [x] Phase 17: Cleanup + quick backend fixes (complete)
 11. [x] Phase 18: Scenarios tab rule-based fallback (complete)
 12. [x] Phase 19: Collection improvements quality (complete)
-13. [x] Phase 20: Card tooltip (Scryfall image on hover) — **NEW**
-14. [x] Phase 21: StatBadge visual upgrade (radial progress rings) — **NEW**
-15. [x] Phase 22: Deployment documentation (Render + Vercel) — **NEW**
-16. [x] Phase 23: Deck metadata & iteration tracking schema design — **NEW**
+13. [x] Phase 20: Card tooltip (Scryfall image on hover) — **COMPLETE** (includes bug fixes)
+14. [x] Phase 21: StatBadge visual upgrade (radial progress rings) — **COMPLETE** (includes bug fixes)
+15. [ ] Phase 22: Deployment documentation (Render + Vercel) — design complete, not deployed
+16. [ ] Phase 23: Deck metadata & iteration tracking schema design — design complete, not implemented
 
 **Next up:**
 - **Full UI/UX redesign** — user reviewing 4 design directions (mockups created)
