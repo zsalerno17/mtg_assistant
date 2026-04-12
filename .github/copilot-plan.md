@@ -5,6 +5,14 @@
 
 ---
 
+## ⚡ CURRENT TASK
+
+**Phase 22 — Deployment** (next pending phase)
+
+Do not start Phase 23 or Phase 24 until Phase 22 is complete.
+
+---
+
 ## Current Status
 
 **Phase 22 Deployment — Ready to Deploy.**
