@@ -46,7 +46,8 @@ export default function CardTooltip({ cardName, children }) {
 
     setLoading(true)
     try {
-      const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&format=image`
+      // Use 'normal' size (488×680px) instead of default thumbnail (146×204px)
+      const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&format=image&version=normal`
       
       // Test if image loads successfully
       const img = new Image()
@@ -111,25 +112,33 @@ export default function CardTooltip({ cardName, children }) {
       
       {showTooltip && (
         <div 
-          className={`absolute left-1/2 -translate-x-1/2 z-50 pointer-events-none ${
+          className={`absolute left-1/2 -translate-x-1/2 z-[9999] ${
             position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
           }`}
-          style={{ width: '146px' }}
+          style={{ width: '244px' }}
         >
           {loading || !imageUrl ? (
             // Loading shimmer placeholder
             <div 
-              className="skeleton rounded-lg"
-              style={{ width: '146px', height: '204px' }}
+              className="skeleton rounded-lg pointer-events-none"
+              style={{ width: '244px', height: '340px' }}
             />
           ) : (
-            // Scryfall card image
-            <img
-              src={imageUrl}
-              alt={cardName}
-              className="rounded-lg shadow-2xl border border-white/10"
-              style={{ width: '146px', height: '204px' }}
-            />
+            // Clickable Scryfall card image
+            <a
+              href={`https://scryfall.com/search?q=!${encodeURIComponent(cardName)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={imageUrl}
+                alt={cardName}
+                className="rounded-lg shadow-2xl border border-white/10 hover:border-amber-400/50 transition-colors"
+                style={{ width: '244px', height: '340px' }}
+              />
+            </a>
           )}
         </div>
       )}

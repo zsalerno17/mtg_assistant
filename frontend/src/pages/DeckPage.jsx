@@ -135,7 +135,7 @@ function IconChevronLeft({ className = 'w-4 h-4 shrink-0' }) {
   )
 }
 
-function StatBadge({ label, value, warning, healthy }) {
+function StatBadge({ label, value }) {
   // Determine target thresholds based on label
   const targets = {
     'Lands': 37,
@@ -219,24 +219,27 @@ function StatBadge({ label, value, warning, healthy }) {
           />
         </svg>
         
-        {/* Center value */}
+        {/* Center value with fraction notation */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`text-lg font-[var(--font-mono)] font-bold ${
-            warning ? 'text-[var(--color-danger)]' : healthy ? 'text-[var(--color-success)]' : 'text-[var(--color-text)]'
-          }`}>
-            {value}
-          </span>
+          {target ? (
+            <div className={`font-[var(--font-mono)] flex items-baseline ${ringColor}`}>
+              <span className="text-lg font-bold">{label === 'Avg CMC' ? numValue.toFixed(1) : value}</span>
+              {label !== 'Cards' && (
+                <>
+                  <span className="text-sm text-[var(--color-muted)]">/</span>
+                  <span className="text-sm text-[var(--color-muted)]">{label === 'Avg CMC' ? target.toFixed(1) : target}</span>
+                </>
+              )}
+            </div>
+          ) : (
+            <span className={`text-lg font-[var(--font-mono)] font-bold ${ringColor}`}>{value}</span>
+          )}
         </div>
       </div>
       
-      {/* Label and target */}
+      {/* Label only */}
       <div className="text-center">
         <div className="text-[var(--color-text)] text-xs font-medium">{label}</div>
-        {target && (
-          <div className="text-[var(--color-muted)] text-[10px]">
-            {label === 'Avg CMC' ? `\u2264 ${target}` : `/ ${target}`}
-          </div>
-        )}
       </div>
     </div>
   )
@@ -350,12 +353,12 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <SectionLabel className="mb-3">Key Numbers</SectionLabel>
         <div className="grid grid-cols-4 gap-3 sm:grid-cols-7">
           <StatBadge label="Cards" value={analysis.total_cards} />
-          <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} warning={analysis.average_cmc > 3.5} healthy={typeof analysis.average_cmc === 'number' && analysis.average_cmc <= 3.0} />
-          <StatBadge label="Lands" value={cardTypes['Lands'] || 0} warning={(cardTypes['Lands'] || 0) < 36} healthy={(cardTypes['Lands'] || 0) >= 36} />
-          <StatBadge label="Ramp" value={analysis.ramp_count || 0} warning={(analysis.ramp_count || 0) < 10} healthy={(analysis.ramp_count || 0) >= 10} />
-          <StatBadge label="Draw" value={analysis.draw_count || 0} warning={(analysis.draw_count || 0) < 10} healthy={(analysis.draw_count || 0) >= 10} />
-          <StatBadge label="Removal" value={analysis.removal_count || 0} warning={(analysis.removal_count || 0) < 8} healthy={(analysis.removal_count || 0) >= 8} />
-          <StatBadge label="Wipes" value={analysis.board_wipe_count || 0} warning={(analysis.board_wipe_count || 0) < 2} healthy={(analysis.board_wipe_count || 0) >= 2} />
+          <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} />
+          <StatBadge label="Lands" value={cardTypes['Lands'] || 0} />
+          <StatBadge label="Ramp" value={analysis.ramp_count || 0} />
+          <StatBadge label="Draw" value={analysis.draw_count || 0} />
+          <StatBadge label="Removal" value={analysis.removal_count || 0} />
+          <StatBadge label="Wipes" value={analysis.board_wipe_count || 0} />
         </div>
       </div>
 
@@ -580,7 +583,7 @@ function StrategyTab({ deckId }) {
           <div className="grid gap-2 sm:grid-cols-2">
             {data.key_cards.map((kc, i) => (
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
-                <span className="text-[var(--color-primary)] font-semibold text-sm">{kc.name}</span>
+                <span className="text-[var(--color-primary)] font-semibold text-sm"><CardTooltip cardName={kc.name}>{kc.name}</CardTooltip></span>
                 <p className="text-[var(--color-muted)] text-xs mt-0.5">{kc.role}</p>
               </div>
             ))}
@@ -819,7 +822,24 @@ function CollectionUpgradesTab({ deckId }) {
   useEffect(() => {
     api.getCollectionUpgrades(deckId)
       .then((data) => {
-        setUpgrades(data.upgrades)
+        // Deduplicate upgrades based on (cut, add) pair
+        const seen = new Set()
+        const uniqueUpgrades = (data.upgrades || []).filter(u => {
+          const key = `${u.cut || 'none'}::${u.add}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        
+        // Group by card to cut for better UX when showing multiple options
+        const grouped = {}
+        uniqueUpgrades.forEach(u => {
+          const cutKey = u.cut || '_no_cut'
+          if (!grouped[cutKey]) grouped[cutKey] = []
+          grouped[cutKey].push(u)
+        })
+        
+        setUpgrades({ raw: uniqueUpgrades, grouped })
         setHasCollection(data.has_collection)
       })
       .catch((err) => setError(err.message))
@@ -843,7 +863,7 @@ function CollectionUpgradesTab({ deckId }) {
     )
   }
 
-  if (!upgrades?.length) {
+  if (!upgrades?.raw?.length) {
     return (
       <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
         <IconCheck className="w-8 h-8 text-[var(--color-success)]" />
@@ -856,29 +876,48 @@ function CollectionUpgradesTab({ deckId }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p className="text-[var(--color-muted)] text-sm mb-4">
-        {upgrades.length} card{upgrades.length !== 1 ? 's' : ''} from your collection could improve this deck.
+        {upgrades.raw.length} upgrade{upgrades.raw.length !== 1 ? 's' : ''} from your collection.
       </p>
-      {upgrades.map((u, i) => (
-        <div
-          key={i}
-          className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150"
-        >
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[var(--color-success)] font-semibold text-sm">+ <CardTooltip cardName={u.add}>{u.add}</CardTooltip></span>
-              {u.cut && (
-                <>
-                  <span className="text-[var(--color-muted)] text-xs">for</span>
-                  <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={u.cut}>{u.cut}</CardTooltip></span>
-                </>
-              )}
-            </div>
-            <p className="text-[var(--color-muted)] text-xs mt-1">{u.reason}</p>
+      {Object.entries(upgrades.grouped).map(([cutKey, options]) => {
+        const hasCut = cutKey !== '_no_cut'
+        const multipleOptions = options.length > 1
+        
+        // Sort options by score (if available) descending
+        const sortedOptions = [...options].sort((a, b) => (b.score || 0) - (a.score || 0))
+        
+        return (
+          <div key={cutKey} className="space-y-2">
+            {hasCut && multipleOptions && (
+              <p className="text-[var(--color-muted)] text-xs font-semibold">
+                {options.length} options for replacing <CardTooltip cardName={options[0].cut}>{options[0].cut}</CardTooltip> (sorted by quality):
+              </p>
+            )}
+            {sortedOptions.map((u, i) => (
+              <div
+                key={i}
+                className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150 ${
+                  multipleOptions && hasCut ? 'ml-4' : ''
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[var(--color-success)] font-semibold text-sm">+ <CardTooltip cardName={u.add}>{u.add}</CardTooltip></span>
+                    {u.cut && (
+                      <>
+                        <span className="text-[var(--color-muted)] text-xs">for</span>
+                        <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={u.cut}>{u.cut}</CardTooltip></span>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-[var(--color-muted)] text-xs mt-1">{u.reason}</p>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -1061,12 +1100,12 @@ function ScenariosTab({ deckId, deck, analysis }) {
                       {isActive && '✓ '}
                       {isSwap ? (
                         <span>
-                          <span className="text-[var(--color-danger)]">− {suggestion.cut}</span>
+                          <span className="text-[var(--color-danger)]">− <CardTooltip cardName={suggestion.cut}>{suggestion.cut}</CardTooltip></span>
                           <span className="text-[var(--color-muted)] mx-1">→</span>
-                          <span className="text-[var(--color-success)]">+ {suggestion.add}</span>
+                          <span className="text-[var(--color-success)]">+ <CardTooltip cardName={suggestion.add}>{suggestion.add}</CardTooltip></span>
                         </span>
                       ) : (
-                        <span>+ {suggestion.card}</span>
+                        <span>+ <CardTooltip cardName={suggestion.card}>{suggestion.card}</CardTooltip></span>
                       )}
                     </button>
                   )
@@ -1123,7 +1162,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
               <div className="flex flex-wrap gap-2">
                 {cardsToAdd.map(cardName => (
                   <div key={cardName} className="bg-[var(--color-success)]/10 border border-[var(--color-success)]/40 rounded-md px-2 py-1 text-sm text-[var(--color-text)] flex items-center gap-1.5">
-                    <span>+ {cardName}</span>
+                    <span>+ <CardTooltip cardName={cardName}>{cardName}</CardTooltip></span>
                     <button
                       type="button"
                       onClick={() => removeCardFromList(cardName, 'add')}
@@ -1163,7 +1202,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
                   onClick={() => addRemoveCard(cardName)}
                   className="w-full text-left px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg)] border-b border-[var(--color-border)] last:border-0"
                 >
-                  {cardName}
+                  <CardTooltip cardName={cardName}>{cardName}</CardTooltip>
                 </button>
               ))}
             </div>
@@ -1180,7 +1219,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
               <div className="flex flex-wrap gap-2">
                 {cardsToRemove.map(cardName => (
                   <div key={cardName} className="bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/40 rounded-md px-2 py-1 text-sm text-[var(--color-text)] flex items-center gap-1.5">
-                    <span>− {cardName}</span>
+                    <span>− <CardTooltip cardName={cardName}>{cardName}</CardTooltip></span>
                     <button
                       type="button"
                       onClick={() => removeCardFromList(cardName, 'remove')}

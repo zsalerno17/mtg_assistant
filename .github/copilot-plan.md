@@ -1,13 +1,18 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 11, 2026 (Overnight Session: Phases 20-23)
+> Last updated: April 11, 2026 (Design proposal: radial ring target notation)
 
 ---
 
 ## Current Status
 
 **Phase 23 complete.** All gap phases (20-23) completed in overnight autonomous session.
+
+**Active design work:**
+- Design proposal created for radial progress ring target notation improvement (`.github/radial-ring-design-proposal.md`)
+- User feedback: "Having the /number at the bottom is weird" — current "/ 8" target notation feels awkward
+- Recommended direction: Move target into center as integrated fraction ("7/8" instead of separate "/ 8" line)
 
 **Completed:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
@@ -28,6 +33,7 @@
 16. [x] Phase 23: Deck metadata & iteration tracking schema design — **NEW**
 
 **Next up:**
+- Review + implement radial ring design proposal (if approved)
 - Deployment to production (requires GitHub repo creation + Render/Vercel account setup)
 - Future: Deck version tracking, improvement lifecycle, scenario persistence (Phase 23 schema)
 
