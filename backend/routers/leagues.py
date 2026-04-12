@@ -266,15 +266,53 @@ async def list_leagues(
     user_id: str = Depends(require_user_id),
     supabase = Depends(get_user_supabase_client)
 ):
-    """List all leagues the user is a member of or created."""
+    """List all leagues the user is a member of or created, with member color identities."""
     try:
-        # Get leagues where user is a member
+        # Get leagues where user is a member, with all members expanded
         result = supabase.table("leagues") \
-            .select("*, league_members!inner(user_id)") \
+            .select("*, league_members(*, user_profiles(display_name))") \
             .eq("league_members.user_id", user_id) \
             .execute()
         
-        return {"leagues": result.data}
+        leagues = result.data or []
+        
+        # For each league, aggregate deck colors for each member
+        for league in leagues:
+            if not league.get("league_members"):
+                continue
+            
+            try:
+                # Fetch all game results with deck info for this league
+                # (gracefully handle if color_identity column doesn't exist yet)
+                game_results = supabase.table("league_game_results") \
+                    .select("member_id, user_decks(color_identity), league_games!inner(league_id)") \
+                    .eq("league_games.league_id", league["id"]) \
+                    .execute()
+                
+                # Build a map of member_id -> set of colors
+                member_colors = {}
+                for result_row in (game_results.data or []):
+                    member_id = result_row.get("member_id")
+                    deck_data = result_row.get("user_decks")
+                    if member_id and deck_data and isinstance(deck_data, dict):
+                        colors = deck_data.get("color_identity", [])
+                        if member_id not in member_colors:
+                            member_colors[member_id] = set()
+                        member_colors[member_id].update(colors)
+                
+                # Attach sorted color identity to each member
+                for member in league["league_members"]:
+                    colors = member_colors.get(member["id"], set())
+                    # Sort in WUBRG order
+                    sorted_colors = sorted(colors, key=lambda c: "WUBRG".index(c) if c in "WUBRG" else 99)
+                    member["deck_color_identity"] = sorted_colors
+            except Exception:
+                # If color aggregation fails (e.g., column doesn't exist yet), 
+                # just leave members without deck_color_identity
+                for member in league["league_members"]:
+                    member["deck_color_identity"] = []
+        
+        return {"leagues": leagues}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -211,4 +211,19 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ superstar_name, entrance_music_url, catchphrase }),
     }),
+
+  /** Cast a vote for a game award (entrance or spicy_play). */
+  castVote: (league_id, game_id, { category, nominee_id }) =>
+    edgeFetch('leagues', `/${league_id}/games/${game_id}/votes`, {
+      method: 'POST',
+      body: JSON.stringify({ category, nominee_id }),
+    }),
+
+  /** Get all votes for a game. */
+  getGameVotes: (league_id, game_id) =>
+    edgeFetch('leagues', `/${league_id}/games/${game_id}/votes`, {}),
+
+  /** Archive all completed leagues (season ended). */
+  archiveCompletedLeagues: () =>
+    edgeFetch('leagues', '/bulk/archive', { method: 'POST' }),
 }

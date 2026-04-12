@@ -184,15 +184,24 @@ def add_to_library(body: AddToLibraryRequest, user: dict = Depends(require_allow
     moxfield_url = f"https://www.moxfield.com/decks/{deck_id}"
     deck_name = deck_data.get("name") or deck_id
     
-    # Extract commander and partner image URIs if available
+    # Extract commander and partner image URIs and color identity
     commander_image_uri = None
     partner_image_uri = None
+    color_identity = []
+    
     commander_data = deck_data.get("commander")
     partner_data = deck_data.get("partner")
+    
     if commander_data and isinstance(commander_data, dict):
         commander_image_uri = commander_data.get("image_uri")
+        color_identity.extend(commander_data.get("color_identity", []))
+    
     if partner_data and isinstance(partner_data, dict):
         partner_image_uri = partner_data.get("image_uri")
+        color_identity.extend(partner_data.get("color_identity", []))
+    
+    # Deduplicate and sort colors in WUBRG order
+    color_identity = sorted(set(color_identity), key=lambda c: "WUBRG".index(c) if c in "WUBRG" else 99)
 
     row = {
         "user_id": user["user_id"],
@@ -202,6 +211,7 @@ def add_to_library(body: AddToLibraryRequest, user: dict = Depends(require_allow
         "commander_image_uri": commander_image_uri,
         "partner_image_uri": partner_image_uri,
         "format": deck_data.get("format", "commander"),
+        "color_identity": color_identity,
     }
     sb.table("user_decks").upsert(row, on_conflict="user_id,moxfield_id").execute()
 

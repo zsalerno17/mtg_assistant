@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Decision 02 — Typography · MTG Assistant Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Space+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Cinzel:wght@400;500;600;700&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── shared base (use Tidal Steel as neutral context) ── */
+body {
+  background: #070d18;
+  color: #e4edf8;
+  min-height: 100vh;
+  padding: 48px 24px 80px;
+}
+
+/* Tokens (Tidal Steel as reference palette) */
+:root {
+  --bg: #070d18;
+  --surface: #0d1525;
+  --surface-2: #131e30;
+  --border: #1c2d45;
+  --border-light: #243a58;
+  --primary: #339DC9;
+  --primary-subtle: rgba(51,157,201,0.10);
+  --primary-border: rgba(51,157,201,0.28);
+  --primary-glow: rgba(51,157,201,0.30);
+  --gold: #CDB788;
+  --success: #4A9D4A;
+  --danger: #EC3634;
+  --text: #e4edf8;
+  --text-muted: #7a90ab;
+  --text-subtle: #3e5878;
+}
+
+/* ─── page header ─────────────────────────────────────── */
+.page-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.page-header .step {
+  display: inline-block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #339DC9;
+  background: rgba(51,157,201,0.1);
+  border: 1px solid rgba(51,157,201,0.25);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+.page-header h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #e8f2fc;
+  margin-bottom: 10px;
+}
+.page-header p {
+  font-size: 15px;
+  color: #6a8aaa;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+.page-header .note {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #4a6888;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #1c2d45;
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+
+/* ─── 3-column grid ───────────────────────────────────── */
+.typo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (max-width: 1024px) {
+  .typo-grid { grid-template-columns: 1fr; max-width: 560px; }
+}
+
+/* ─── shared column ───────────────────────────────────── */
+.typo-col {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.col-header {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.option-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border);
+  padding: 3px 10px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+.pair-names {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.pair-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+.pair-chip.heading-chip { color: var(--gold); border-color: rgba(205,183,136,0.3); background: rgba(205,183,136,0.06); }
+
+/* ─── section within a column ─────────────────────────── */
+.typo-section {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+}
+.typo-section:last-of-type { border-bottom: none; padding-bottom: 0; }
+.section-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  margin-bottom: 10px;
+}
+
+/* ─── sample content blocks ───────────────────────────── */
+.sample-brand {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+.sample-h1 { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.2; margin-bottom: 4px; }
+.sample-h2 { font-size: 20px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 4px; }
+.sample-h3 { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 4px; }
+.sample-body { font-size: 14px; font-weight: 400; color: var(--text); line-height: 1.65; margin-bottom: 6px; }
+.sample-body em { font-style: italic; color: var(--gold); }
+.sample-muted { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* data / stats */
+.sample-stat-group { display: flex; gap: 20px; flex-wrap: wrap; }
+.sample-stat { text-align: center; }
+.sample-stat .val { font-size: 28px; font-weight: 700; color: var(--primary); display: block; line-height: 1; }
+.sample-stat .label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-subtle); margin-top: 4px; display: block; }
+
+/* table sample */
+.sample-table { width: 100%; border-collapse: collapse; }
+.sample-table th {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-subtle);
+  padding: 8px 10px;
+  background: var(--surface-2);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.sample-table th:not(:first-child) { text-align: right; }
+.sample-table td {
+  font-size: 12px;
+  padding: 8px 10px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.sample-table td:not(:first-child) { text-align: right; }
+.sample-table td .primary-val { color: var(--primary); font-weight: 600; }
+.sample-table tr:last-child td { border-bottom: none; }
+
+/* mono / code */
+.sample-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--gold);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  line-height: 1.6;
+}
+.sample-mono .comment { color: var(--text-subtle); }
+
+/* link sample */
+.sample-link-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.sample-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: rgba(51,157,201,0.4);
+  text-underline-offset: 3px;
+  cursor: default;
+}
+.sample-link.subtle { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.sample-link.gold { color: var(--gold); text-decoration-color: rgba(205,183,136,0.4); }
+
+/* badges in type context */
+.sample-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.badge-primary { background: var(--primary-subtle); border: 1px solid var(--primary-border); color: var(--primary); }
+.badge-gold { background: rgba(205,183,136,0.1); border: 1px solid rgba(205,183,136,0.3); color: var(--gold); }
+.badge-success { background: rgba(74,157,74,0.1); border: 1px solid rgba(74,157,74,0.3); color: var(--success); }
+
+/* choose button */
+.choose-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #ffffff;
+  border: 1px solid var(--primary-border);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 20px var(--primary-glow);
+  transition: all 0.15s;
+}
+.choose-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+/* ══════════════════════════════════════════════
+   PAIRING A — Space Grotesk + Inter
+   "Modern & Precise" — current direction
+══════════════════════════════════════════════ */
+.pair-a .sample-brand { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; }
+.pair-a .sample-h1   { font-family: 'Space Grotesk', sans-serif; }
+.pair-a .sample-h2   { font-family: 'Space Grotesk', sans-serif; }
+.pair-a .sample-h3   { font-family: 'Space Grotesk', sans-serif; }
+.pair-a .sample-body { font-family: 'Inter', sans-serif; }
+.pair-a .sample-muted{ font-family: 'Inter', sans-serif; }
+.pair-a .stat-label-font { font-family: 'Space Grotesk', sans-serif; }
+.pair-a .sample-stat .val  { font-family: 'Space Grotesk', sans-serif; }
+.pair-a .sample-stat .label { font-family: 'Space Grotesk', sans-serif; }
+
+/* ══════════════════════════════════════════════
+   PAIRING B — Cormorant Garamond + Inter
+   "Scholarly & Elegant" — literary, antique
+══════════════════════════════════════════════ */
+.pair-b .sample-brand { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; letter-spacing: 0.1em; }
+.pair-b .sample-h1   { font-family: 'Cormorant Garamond', serif; font-size: 30px; }
+.pair-b .sample-h2   { font-family: 'Cormorant Garamond', serif; font-size: 22px; }
+.pair-b .sample-h3   { font-family: 'Cormorant Garamond', serif; font-size: 17px; }
+.pair-b .sample-body { font-family: 'Inter', sans-serif; }
+.pair-b .sample-muted{ font-family: 'Inter', sans-serif; }
+.pair-b .sample-stat .val  { font-family: 'Cormorant Garamond', serif; font-size: 36px; }
+.pair-b .sample-stat .label { font-family: 'Inter', sans-serif; }
+
+/* ══════════════════════════════════════════════
+   PAIRING C — Cinzel + Alegreya
+   "Arcane & Immersive" — MTG fantasy flavor
+══════════════════════════════════════════════ */
+.pair-c .sample-brand { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; letter-spacing: 0.12em; }
+.pair-c .sample-h1   { font-family: 'Cinzel', serif; font-size: 24px; }
+.pair-c .sample-h2   { font-family: 'Cinzel', serif; font-size: 18px; }
+.pair-c .sample-h3   { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 0.04em; }
+.pair-c .sample-body { font-family: 'Alegreya', serif; font-size: 15px; }
+.pair-c .sample-muted{ font-family: 'Alegreya', serif; font-size: 13px; font-style: italic; }
+.pair-c .sample-stat .val  { font-family: 'Cinzel', serif; font-size: 30px; }
+.pair-c .sample-stat .label { font-family: 'Cinzel', serif; font-size: 9px; }
+</style>
+</head>
+<body>
+
+<!-- ─── Page header ───────────────────────────────────── -->
+<div class="page-header">
+  <div class="step">Decision 02 of 04</div>
+  <h1>Typography</h1>
+  <p>Three font pairings — each one changes the entire personality of the app. The same colors and components are used across all three so you can isolate the type decision.</p>
+  <div class="note">All three use <strong>JetBrains Mono</strong> for code/card-identifier text (not up for debate — it's the clearest option)</div>
+</div>
+
+<!-- ─── 3-column comparison ──────────────────────────── -->
+<div class="typo-grid">
+
+  <!-- ══ PAIRING A — Space Grotesk + Inter ══════════════ -->
+  <div class="typo-col pair-a">
+    <div class="col-header">
+      <div class="option-tag">Option A</div>
+      <div class="pair-names">
+        <span class="pair-chip heading-chip">Space Grotesk — headings</span>
+        <span class="pair-chip">Inter — body</span>
+      </div>
+      <p style="font-family:'Inter',sans-serif;font-size:12px;color:#7a90ab;margin-top:10px;line-height:1.5;">Clean, modern, precise. The current direction. Works extremely well for data-heavy interfaces. No atmosphere — all clarity.</p>
+    </div>
+
+    <!-- Brand -->
+    <div class="typo-section">
+      <div class="section-label">Brand / Logo Text</div>
+      <div class="sample-brand">MTG Assistant</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:#3e5878;margin-top:4px;letter-spacing:.05em;">The typeface that represents the app's identity</div>
+    </div>
+
+    <!-- Headings -->
+    <div class="typo-section">
+      <div class="section-label">Headings H1 – H3</div>
+      <div class="sample-h1">Your Deck Library</div>
+      <div class="sample-h2">Atraxa Superfriends</div>
+      <div class="sample-h3">Ramp Analysis · 14 cards</div>
+    </div>
+
+    <!-- Body -->
+    <div class="typo-section">
+      <div class="section-label">Body Paragraph</div>
+      <div class="sample-body">
+        Your deck has <em>above-average ramp density</em> compared to similar 4-color Commander lists. Sol Ring, Arcane Signet, and Three Visits accelerate your curve by 1.4 turns on average.
+      </div>
+      <div class="sample-muted">AI analysis generated April 12 · Based on 847 similar decks on Moxfield</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="typo-section">
+      <div class="section-label">Data / Statistics</div>
+      <div class="sample-stat-group">
+        <div class="sample-stat">
+          <span class="val">67%</span>
+          <span class="label">Win Rate</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">A−</span>
+          <span class="label">Grade</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">2.6</span>
+          <span class="label">Avg CMC</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">24</span>
+          <span class="label">Games</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="typo-section">
+      <div class="section-label">Table — League Standings</div>
+      <table class="sample-table">
+        <thead>
+          <tr><th>Player</th><th>W</th><th>Pts</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="primary-val">Zack S.</span></td>
+            <td><span class="primary-val">12</span></td>
+            <td><span class="primary-val">148</span></td>
+          </tr>
+          <tr><td>Marcus R.</td><td>9</td><td>121</td></tr>
+          <tr><td>Priya N.</td><td>7</td><td>98</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mono -->
+    <div class="typo-section">
+      <div class="section-label">Mono / Code — Mana Costs & Card IDs</div>
+      <div class="sample-mono">
+        Sol Ring      <span class="comment">// {1} · Artifact</span><br/>
+        Command Tower <span class="comment">// {} · Land</span><br/>
+        Atraxa, Praetors' Voice <span class="comment">// {W}{U}{B}{G}</span>
+      </div>
+    </div>
+
+    <!-- Links + badges -->
+    <div class="typo-section">
+      <div class="section-label">Links & Badges</div>
+      <div class="sample-link-row" style="margin-bottom:10px;">
+        <span class="sample-link">View deck on Moxfield</span>
+        <span class="sample-link subtle">Import deck</span>
+        <span class="sample-link gold">AI Suggest</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="sample-badge badge-primary">Commander</span>
+        <span class="sample-badge badge-gold">4-Color</span>
+        <span class="sample-badge badge-success">Active</span>
+      </div>
+    </div>
+
+    <button class="choose-btn">↑ Choose Space Grotesk + Inter</button>
+  </div>
+
+  <!-- ══ PAIRING B — Cormorant Garamond + Inter ══════════ -->
+  <div class="typo-col pair-b">
+    <div class="col-header">
+      <div class="option-tag">Option B</div>
+      <div class="pair-names">
+        <span class="pair-chip heading-chip">Cormorant Garamond — headings</span>
+        <span class="pair-chip">Inter — body</span>
+      </div>
+      <p style="font-family:'Inter',sans-serif;font-size:12px;color:#7a90ab;margin-top:10px;line-height:1.5;">Scholarly and distinguished. Headings feel handwritten in an old tome. Body stays readable in modern Inter. A strong contrast pairing.</p>
+    </div>
+
+    <!-- Brand -->
+    <div class="typo-section">
+      <div class="section-label">Brand / Logo Text</div>
+      <div class="sample-brand">MTG Assistant</div>
+      <div style="font-family:'Inter',sans-serif;font-size:11px;color:#3e5878;margin-top:4px;">The typeface that represents the app's identity</div>
+    </div>
+
+    <!-- Headings -->
+    <div class="typo-section">
+      <div class="section-label">Headings H1 – H3</div>
+      <div class="sample-h1">Your Deck Library</div>
+      <div class="sample-h2">Atraxa Superfriends</div>
+      <div class="sample-h3" style="font-style:italic;">Ramp Analysis · 14 cards</div>
+    </div>
+
+    <!-- Body -->
+    <div class="typo-section">
+      <div class="section-label">Body Paragraph</div>
+      <div class="sample-body">
+        Your deck has <em>above-average ramp density</em> compared to similar 4-color Commander lists. Sol Ring, Arcane Signet, and Three Visits accelerate your curve by 1.4 turns on average.
+      </div>
+      <div class="sample-muted">AI analysis generated April 12 · Based on 847 similar decks on Moxfield</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="typo-section">
+      <div class="section-label">Data / Statistics</div>
+      <div class="sample-stat-group">
+        <div class="sample-stat">
+          <span class="val">67%</span>
+          <span class="label">Win Rate</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">A−</span>
+          <span class="label">Grade</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">2.6</span>
+          <span class="label">Avg CMC</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">24</span>
+          <span class="label">Games</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="typo-section">
+      <div class="section-label">Table — League Standings</div>
+      <table class="sample-table">
+        <thead>
+          <tr><th>Player</th><th>W</th><th>Pts</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="primary-val">Zack S.</span></td>
+            <td><span class="primary-val">12</span></td>
+            <td><span class="primary-val">148</span></td>
+          </tr>
+          <tr><td>Marcus R.</td><td>9</td><td>121</td></tr>
+          <tr><td>Priya N.</td><td>7</td><td>98</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mono -->
+    <div class="typo-section">
+      <div class="section-label">Mono / Code</div>
+      <div class="sample-mono">
+        Sol Ring      <span class="comment">// {1} · Artifact</span><br/>
+        Command Tower <span class="comment">// {} · Land</span><br/>
+        Atraxa, Praetors' Voice <span class="comment">// {W}{U}{B}{G}</span>
+      </div>
+    </div>
+
+    <!-- Links + badges -->
+    <div class="typo-section">
+      <div class="section-label">Links & Badges</div>
+      <div class="sample-link-row" style="margin-bottom:10px;">
+        <span class="sample-link">View deck on Moxfield</span>
+        <span class="sample-link subtle">Import deck</span>
+        <span class="sample-link gold">AI Suggest</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="sample-badge badge-primary">Commander</span>
+        <span class="sample-badge badge-gold">4-Color</span>
+        <span class="sample-badge badge-success">Active</span>
+      </div>
+    </div>
+
+    <button class="choose-btn">↑ Choose Cormorant + Inter</button>
+  </div>
+
+  <!-- ══ PAIRING C — Cinzel + Alegreya ══════════════════ -->
+  <div class="typo-col pair-c">
+    <div class="col-header">
+      <div class="option-tag">Option C</div>
+      <div class="pair-names">
+        <span class="pair-chip heading-chip">Cinzel — headings</span>
+        <span class="pair-chip">Alegreya — body</span>
+      </div>
+      <p style="font-family:'Alegreya',serif;font-size:14px;color:#7a90ab;margin-top:10px;line-height:1.5;font-style:italic;">The most MTG-flavored pairing. Cinzel is inspired by classical Roman inscriptions. Alegreya brings a warm editorial feel to body text. Very immersive.</p>
+    </div>
+
+    <!-- Brand -->
+    <div class="typo-section">
+      <div class="section-label">Brand / Logo Text</div>
+      <div class="sample-brand">MTG Assistant</div>
+      <div style="font-family:'Cinzel',serif;font-size:10px;color:#3e5878;margin-top:4px;letter-spacing:.06em;">The typeface that represents the app's identity</div>
+    </div>
+
+    <!-- Headings -->
+    <div class="typo-section">
+      <div class="section-label">Headings H1 – H3</div>
+      <div class="sample-h1">Your Deck Library</div>
+      <div class="sample-h2">Atraxa Superfriends</div>
+      <div class="sample-h3">Ramp Analysis · 14 Cards</div>
+    </div>
+
+    <!-- Body -->
+    <div class="typo-section">
+      <div class="section-label">Body Paragraph</div>
+      <div class="sample-body">
+        Your deck has <em>above-average ramp density</em> compared to similar 4-color Commander lists. Sol Ring, Arcane Signet, and Three Visits accelerate your curve by 1.4 turns on average.
+      </div>
+      <div class="sample-muted">AI analysis generated April 12 · Based on 847 similar decks on Moxfield</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="typo-section">
+      <div class="section-label">Data / Statistics</div>
+      <div class="sample-stat-group">
+        <div class="sample-stat">
+          <span class="val">67%</span>
+          <span class="label">Win Rate</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">A−</span>
+          <span class="label">Grade</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">2.6</span>
+          <span class="label">Avg CMC</span>
+        </div>
+        <div class="sample-stat">
+          <span class="val">24</span>
+          <span class="label">Games</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="typo-section">
+      <div class="section-label">Table — League Standings</div>
+      <table class="sample-table" style="font-family:'Alegreya',serif;font-size:13px;">
+        <thead>
+          <tr><th style="font-family:'Cinzel',serif;">Player</th><th style="font-family:'Cinzel',serif;">W</th><th style="font-family:'Cinzel',serif;">Pts</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="primary-val">Zack S.</span></td>
+            <td><span class="primary-val">12</span></td>
+            <td><span class="primary-val">148</span></td>
+          </tr>
+          <tr><td>Marcus R.</td><td>9</td><td>121</td></tr>
+          <tr><td>Priya N.</td><td>7</td><td>98</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mono -->
+    <div class="typo-section">
+      <div class="section-label">Mono / Code</div>
+      <div class="sample-mono">
+        Sol Ring      <span class="comment">// {1} · Artifact</span><br/>
+        Command Tower <span class="comment">// {} · Land</span><br/>
+        Atraxa, Praetors' Voice <span class="comment">// {W}{U}{B}{G}</span>
+      </div>
+    </div>
+
+    <!-- Links + badges -->
+    <div class="typo-section">
+      <div class="section-label">Links & Badges</div>
+      <div class="sample-link-row" style="margin-bottom:10px;">
+        <span class="sample-link" style="font-family:'Alegreya',serif;font-size:14px;">View deck on Moxfield</span>
+        <span class="sample-link subtle" style="font-family:'Alegreya',serif;font-size:14px;">Import deck</span>
+        <span class="sample-link gold" style="font-family:'Alegreya',serif;font-size:14px;">AI Suggest</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="sample-badge badge-primary" style="font-family:'Cinzel',serif;">Commander</span>
+        <span class="sample-badge badge-gold" style="font-family:'Cinzel',serif;">4-Color</span>
+        <span class="sample-badge badge-success" style="font-family:'Cinzel',serif;">Active</span>
+      </div>
+    </div>
+
+    <button class="choose-btn" style="font-family:'Cinzel',serif;letter-spacing:.08em;">↑ Choose Cinzel + Alegreya</button>
+  </div>
+
+</div>
+
+<!-- ─── footer note ──────────────────────────────────── -->
+<div style="text-align:center;margin-top:48px;font-family:'Space Grotesk',sans-serif;font-size:12px;color:#2e4868;line-height:1.7;">
+  Note: Pairings can also be <strong style="color:#4a6888;">mixed</strong> — e.g. Cinzel brand + Space Grotesk headings + Inter body is a valid hybrid.
+  Once you've chosen, open <strong style="color:#4a6888;">03-components.html</strong> to decide button styles and component treatments.
+</div>
+
+</body>
+</html>

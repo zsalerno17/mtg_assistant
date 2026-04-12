@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Decision 04 — Motion · MTG Assistant Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #070d18;
+  --surface: #0d1525;
+  --surface-2: #131e30;
+  --border: #1c2d45;
+  --border-light: #243a58;
+  --primary: #339DC9;
+  --primary-subtle: rgba(51,157,201,0.10);
+  --primary-border: rgba(51,157,201,0.25);
+  --primary-glow: rgba(51,157,201,0.40);
+  --secondary: #CDB788;
+  --success: #4A9D4A;
+  --success-subtle: rgba(74,157,74,0.12);
+  --success-border: rgba(74,157,74,0.30);
+  --danger: #EC3634;
+  --text: #e4edf8;
+  --text-muted: #7a90ab;
+  --text-subtle: #3e5878;
+}
+
+body {
+  background: var(--bg);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+  padding: 48px 24px 80px;
+}
+
+/* ─── page header ─────────────────────────────────────── */
+.page-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.page-header .step {
+  display: inline-block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+.page-header h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #e8f2fc;
+  margin-bottom: 10px;
+}
+.page-header p {
+  font-size: 15px;
+  color: #6a8aaa;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+.page-header .note {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #4a6888;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 6px;
+}
+
+/* ─── profile selector tabs ───────────────────────────── */
+.profile-tabs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 0.02em;
+}
+.tab-btn:hover { border-color: var(--primary-border); color: var(--text); }
+.tab-btn.active {
+  background: var(--primary-subtle);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+/* ─── motion profile descriptions ────────────────────── */
+.profile-desc {
+  display: none;
+  max-width: 900px;
+  margin: 0 auto 40px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.profile-desc.active { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+@media (max-width: 700px) { .profile-desc.active { grid-template-columns: 1fr; } }
+
+.desc-item { }
+.desc-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-subtle);
+  margin-bottom: 4px;
+}
+.desc-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.desc-note { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+/* ─── demo area ───────────────────────────────────────── */
+.demo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto 40px;
+}
+@media (max-width: 700px) { .demo-grid { grid-template-columns: 1fr; } }
+
+.demo-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+}
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-subtle);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ─── Replay button ───────────────────────────────────── */
+.replay-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.replay-btn {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 22px;
+  border-radius: 8px;
+  border: 1px solid var(--primary-border);
+  background: var(--primary-subtle);
+  color: var(--primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+.replay-btn:hover { background: rgba(51,157,201,0.18); }
+.replay-btn svg { transition: transform 0.3s; }
+.replay-btn:hover svg { transform: rotate(180deg); }
+
+/* ─── choose button ───────────────────────────────────── */
+.choose-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.choose-btn {
+  flex: 1;
+  min-width: 220px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 20px var(--primary-glow);
+  transition: all 0.15s;
+}
+.choose-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.choose-btn.inactive {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.choose-btn.inactive:hover { border-color: var(--primary-border); color: var(--primary); }
+
+/* ══════════════════════════════════════════════
+   MOTION PROFILE: GROUNDED
+   Fast, subtle. Interaction feedback only.
+══════════════════════════════════════════════ */
+.grounded .demo-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  margin-bottom: 8px;
+}
+.grounded .demo-card:hover {
+  border-color: var(--primary-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transform: translateY(-1px);
+}
+.grounded .demo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  transition: filter 150ms ease, transform 100ms ease;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+.grounded .demo-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.grounded .demo-btn:active { transform: translateY(0); transition-duration: 60ms; }
+.grounded .demo-btn.secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-light);
+}
+.grounded .demo-btn.secondary:hover { border-color: var(--primary-border); color: var(--primary); }
+
+.grounded .stat-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+  display: block;
+}
+
+.grounded .table-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 40px;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  align-items: center;
+  transition: background 120ms ease;
+  cursor: default;
+}
+.grounded .table-row:hover { background: var(--primary-subtle); }
+
+/* entrance: instant — no slide-in */
+.grounded .enter { }
+
+/* ══════════════════════════════════════════════
+   MOTION PROFILE: EXPRESSIVE
+   Spring feel, entrance stagger, glow pulses.
+══════════════════════════════════════════════ */
+.expressive .demo-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 220ms cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 220ms ease,
+              transform 220ms cubic-bezier(0.34,1.56,0.64,1);
+  margin-bottom: 8px;
+}
+.expressive .demo-card:hover {
+  border-color: var(--primary-border);
+  box-shadow: 0 0 0 1px var(--primary-border), 0 6px 24px rgba(0,0,0,0.4), 0 0 20px var(--primary-glow);
+  transform: translateY(-3px) scale(1.005);
+}
+.expressive .demo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 16px var(--primary-glow);
+  transition: filter 200ms ease, transform 200ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+.expressive .demo-btn:hover { filter: brightness(1.15); transform: translateY(-2px) scale(1.03); box-shadow: 0 0 28px var(--primary-glow); }
+.expressive .demo-btn:active { transform: translateY(0) scale(0.97); transition-duration: 80ms; }
+.expressive .demo-btn.secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-light);
+  box-shadow: none;
+}
+.expressive .demo-btn.secondary:hover { border-color: var(--primary-border); color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
+
+.expressive .stat-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+  display: block;
+  text-shadow: 0 0 20px var(--primary-glow);
+}
+
+.expressive .table-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 40px;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  align-items: center;
+  transition: background 200ms ease, transform 200ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease;
+  cursor: default;
+}
+.expressive .table-row:hover { background: var(--primary-subtle); transform: translateX(3px); }
+
+/* entrance stagger animation */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.expressive .enter {
+  opacity: 0;
+  animation: slideUpFade 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.expressive .enter:nth-child(1) { animation-delay: 0ms; }
+.expressive .enter:nth-child(2) { animation-delay: 60ms; }
+.expressive .enter:nth-child(3) { animation-delay: 120ms; }
+.expressive .enter:nth-child(4) { animation-delay: 180ms; }
+.expressive .enter:nth-child(5) { animation-delay: 240ms; }
+
+/* ══════════════════════════════════════════════
+   MOTION PROFILE: CINEMATIC
+   Slow spring, dramatic depth, page presence.
+══════════════════════════════════════════════ */
+.cinematic .demo-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 350ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 350ms ease,
+              transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.cinematic .demo-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(51,157,201,0.08), transparent 70%);
+  opacity: 0;
+  transition: opacity 350ms ease;
+  pointer-events: none;
+}
+.cinematic .demo-card:hover::before { opacity: 1; }
+.cinematic .demo-card:hover {
+  border-color: rgba(51,157,201,0.4);
+  box-shadow: 0 0 0 1px rgba(51,157,201,0.2), 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(51,157,201,0.15);
+  transform: translateY(-5px) scale(1.01);
+}
+.cinematic .demo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 24px var(--primary-glow), 0 4px 16px rgba(0,0,0,0.4);
+  transition: filter 350ms ease, transform 350ms cubic-bezier(0.22,1,0.36,1), box-shadow 350ms ease;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.cinematic .demo-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -60%;
+  width: 40%; height: 200%;
+  background: rgba(255,255,255,0.15);
+  transform: skewX(-20deg);
+  transition: left 500ms ease;
+}
+.cinematic .demo-btn:hover::after { left: 130%; }
+.cinematic .demo-btn:hover { filter: brightness(1.18); transform: translateY(-3px) scale(1.04); box-shadow: 0 0 36px var(--primary-glow), 0 8px 24px rgba(0,0,0,0.5); }
+.cinematic .demo-btn:active { transform: translateY(-1px) scale(0.98); transition-duration: 120ms; }
+.cinematic .demo-btn.secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.cinematic .demo-btn.secondary::after { display: none; }
+.cinematic .demo-btn.secondary:hover { border-color: var(--primary-border); color: var(--primary); box-shadow: 0 0 20px var(--primary-glow); }
+
+.cinematic .stat-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+  display: block;
+  text-shadow: 0 0 32px var(--primary-glow);
+}
+
+.cinematic .table-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 40px;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  align-items: center;
+  transition: background 300ms ease, transform 300ms cubic-bezier(0.22,1,0.36,1), box-shadow 300ms ease;
+  cursor: default;
+  position: relative;
+}
+.cinematic .table-row:hover {
+  background: var(--primary-subtle);
+  transform: translateX(6px);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+
+/* entrance: dramatic slide from below */
+@keyframes cinematicEnter {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.cinematic .enter {
+  opacity: 0;
+  animation: cinematicEnter 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.cinematic .enter:nth-child(1) { animation-delay: 0ms; }
+.cinematic .enter:nth-child(2) { animation-delay: 100ms; }
+.cinematic .enter:nth-child(3) { animation-delay: 200ms; }
+.cinematic .enter:nth-child(4) { animation-delay: 300ms; }
+.cinematic .enter:nth-child(5) { animation-delay: 400ms; }
+
+/* ─── count-up animation ──────────────────────────────── */
+.count-up {
+  display: inline-block;
+  transition: none;
+}
+
+/* ─── shared inner components ─────────────────────────── */
+.card-inner-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.card-inner-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.card-inner-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.badge-sm {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--success-subtle);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+.stat-key {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-subtle);
+  margin-top: 1px;
+  display: block;
+}
+.rank { font-size: 11px; font-weight: 700; color: var(--text-subtle); }
+.rank.gold { color: #CDB788; }
+.rank.silver { color: #9aafc4; }
+.rank.bronze { color: #c07830; }
+.pname { font-size: 12px; font-weight: 500; color: var(--text); }
+.pts { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; color: var(--primary); text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- ─── Page Header ───────────────────────────────────── -->
+<div class="page-header">
+  <div class="step">Decision 04 of 04</div>
+  <h1>Motion Profile</h1>
+  <p>Three animation budgets applied to the same components. The tokens you choose here become the <code style="font-size:13px;color:var(--primary);">--duration-*</code> and <code style="font-size:13px;color:var(--primary);">--easing-*</code> variables used everywhere in the app.</p>
+  <span class="note">Click "Replay Animations" after switching profiles to see the entrance effects</span>
+</div>
+
+<!-- ─── Profile Selector ─────────────────────────────── -->
+<div class="profile-tabs">
+  <button class="tab-btn active" onclick="setProfile('grounded', this)">
+    ⚡ Grounded — Subtle & Fast
+  </button>
+  <button class="tab-btn" onclick="setProfile('expressive', this)">
+    ✦ Expressive — Spring & Stagger
+  </button>
+  <button class="tab-btn" onclick="setProfile('cinematic', this)">
+    ◈ Cinematic — Dramatic & Slow
+  </button>
+</div>
+
+<!-- ─── Profile Descriptions ─────────────────────────── -->
+<div class="profile-desc active" id="desc-grounded">
+  <div class="desc-item">
+    <div class="desc-label">Duration</div>
+    <div class="desc-val">100–150ms</div>
+    <div class="desc-note">Barely perceptible. Confirms interaction without demanding attention.</div>
+  </div>
+  <div class="desc-item">
+    <div class="desc-label">Easing</div>
+    <div class="desc-val">ease / ease-out</div>
+    <div class="desc-note">Standard curves. No bounce, no overshoot. Clean and professional.</div>
+  </div>
+  <div class="desc-item">
+    <div class="desc-label">Entrances</div>
+    <div class="desc-val">None</div>
+    <div class="desc-note">Content appears instantly. No stagger, no slide-in. Focus stays on data.</div>
+  </div>
+</div>
+
+<div class="profile-desc" id="desc-expressive">
+  <div class="desc-item">
+    <div class="desc-label">Duration</div>
+    <div class="desc-val">200–280ms</div>
+    <div class="desc-note">Noticeable but brisk. Movements feel intentional and responsive.</div>
+  </div>
+  <div class="desc-item">
+    <div class="desc-label">Easing</div>
+    <div class="desc-val">cubic-bezier(0.34, 1.56, 0.64, 1)</div>
+    <div class="desc-note">Subtle spring — slight overshoot on hover lift. Organic and lively.</div>
+  </div>
+  <div class="desc-item">
+    <div class="desc-label">Entrances</div>
+    <div class="desc-val">Stagger 60ms/item</div>
+    <div class="desc-note">Cards and rows slide up and fade in sequentially. Reveals the layout naturally.</div>
+  </div>
+</div>
+
+<div class="profile-desc" id="desc-cinematic">
+  <div class="desc-item">
+    <div class="desc-label">Duration</div>
+    <div class="desc-val">300–500ms</div>
+    <div class="desc-note">Slow and deliberate. Every transition feels like a small event.</div>
+  </div>
+  <div class="desc-item">
+    <div class="desc-label">Easing</div>
+    <div class="desc-val">cubic-bezier(0.22, 1, 0.36, 1)</div>
+    <div class="desc-note">Deceleration curve — fast start, smooth landing. Polished and weighty.</div>
+  </div>
+  <div class="desc-item">
+    <div class="desc-label">Entrances</div>
+    <div class="desc-val">Stagger 100ms/item + scale</div>
+    <div class="desc-note">Items rise from below with a scale pop. High production value — use when impact matters.</div>
+  </div>
+</div>
+
+<!-- ─── Replay button ─────────────────────────────────── -->
+<div class="replay-row">
+  <button class="replay-btn" onclick="replayAnimations()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-4.5"></path></svg>
+    Replay Animations
+  </button>
+</div>
+
+<!-- ─── Demo Area ─────────────────────────────────────── -->
+<div class="demo-grid" id="demo-area">
+
+  <!-- → Left: Hoverable Cards + Buttons -->
+  <div class="demo-section" id="profile-container">
+    <div class="section-label">Cards & Buttons</div>
+    <!-- JS populates with the right class -->
+  </div>
+
+  <!-- → Right: Table rows + Stats -->
+  <div class="demo-section" id="profile-table">
+    <div class="section-label">Table & Stats</div>
+    <!-- JS populates with the right class -->
+  </div>
+
+</div>
+
+<!-- ─── Choose row ────────────────────────────────────── -->
+<div class="choose-row" id="choose-row">
+  <button class="choose-btn" id="choose-grounded" onclick="selectProfile('grounded')">Choose Grounded — Subtle & Fast</button>
+  <button class="choose-btn inactive" id="choose-expressive" onclick="selectProfile('expressive')">Choose Expressive — Spring & Stagger</button>
+  <button class="choose-btn inactive" id="choose-cinematic" onclick="selectProfile('cinematic')">Choose Cinematic — Dramatic & Slow</button>
+</div>
+
+<script>
+let currentProfile = 'grounded';
+
+const cardHTML = (profile) => `
+<div class="${profile}">
+  <div class="demo-card enter">
+    <div class="card-inner-header">
+      <div>
+        <div class="card-inner-title">Atraxa Superfriends</div>
+        <div class="card-inner-sub">Commander · 24 games</div>
+      </div>
+      <span class="badge-sm">Active</span>
+    </div>
+    <span class="stat-val count-up" data-target="67">0</span>
+    <span class="stat-key">Win Rate %</span>
+  </div>
+  <div class="demo-card enter">
+    <div class="card-inner-header">
+      <div>
+        <div class="card-inner-title">Krenko Goblins</div>
+        <div class="card-inner-sub">Commander · 18 games</div>
+      </div>
+      <span class="badge-sm">Active</span>
+    </div>
+    <span class="stat-val count-up" data-target="44">0</span>
+    <span class="stat-key">Win Rate %</span>
+  </div>
+  <div class="demo-card enter">
+    <div class="card-inner-header">
+      <div>
+        <div class="card-inner-title">Edgar Markov Vampires</div>
+        <div class="card-inner-sub">Commander · 11 games</div>
+      </div>
+      <span class="badge-sm" style="background:rgba(236,54,52,0.12);color:#EC3634;border-color:rgba(236,54,52,0.3);">Inactive</span>
+    </div>
+    <span class="stat-val count-up" data-target="36">0</span>
+    <span class="stat-key">Win Rate %</span>
+  </div>
+  <div class="enter" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+    <button class="demo-btn">Import Deck</button>
+    <button class="demo-btn secondary">View All</button>
+  </div>
+</div>`;
+
+const tableHTML = (profile) => `
+<div class="${profile}">
+  <div style="margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-subtle);background:var(--surface-2);padding:7px 14px;border-radius:6px;display:grid;grid-template-columns:20px 1fr 40px;gap:8px;">
+      <span>#</span><span>Player</span><span style="text-align:right;">Pts</span>
+    </div>
+    <div class="table-row enter" style="border-radius:6px;background:rgba(205,183,136,0.06);margin-top:4px;">
+      <span class="rank gold">1</span>
+      <span class="pname">Zack S.</span>
+      <span class="pts">24</span>
+    </div>
+    <div class="table-row enter" style="border-radius:6px;margin-top:2px;">
+      <span class="rank silver">2</span>
+      <span class="pname">Marcus L.</span>
+      <span class="pts">18</span>
+    </div>
+    <div class="table-row enter" style="border-radius:6px;margin-top:2px;">
+      <span class="rank bronze">3</span>
+      <span class="pname">Jamie P.</span>
+      <span class="pts">12</span>
+    </div>
+    <div class="table-row enter" style="border-radius:6px;margin-top:2px;">
+      <span class="rank" style="color:var(--text-subtle)">4</span>
+      <span class="pname">Alex R.</span>
+      <span class="pts" style="color:var(--text-muted)">9</span>
+    </div>
+  </div>
+  <div style="margin-top:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;" class="enter">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-subtle);margin-bottom:8px;">Season Stats</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <div style="text-align:center;">
+        <span class="stat-val count-up" data-target="12" style="font-size:22px;">0</span>
+        <span class="stat-key">Games</span>
+      </div>
+      <div style="text-align:center;">
+        <span class="stat-val count-up" data-target="8" style="font-size:22px;">0</span>
+        <span class="stat-key">Wins</span>
+      </div>
+      <div style="text-align:center;">
+        <span class="stat-val count-up" data-target="67" style="font-size:22px;">0</span>
+        <span class="stat-key">Win%</span>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+function setProfile(profile, btn) {
+  currentProfile = profile;
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Update descriptions
+  document.querySelectorAll('.profile-desc').forEach(d => d.classList.remove('active'));
+  document.getElementById('desc-' + profile).classList.add('active');
+
+  // Update choose buttons
+  document.querySelectorAll('.choose-btn').forEach(b => {
+    b.classList.add('inactive');
+    b.style.boxShadow = 'none';
+  });
+  const chosen = document.getElementById('choose-' + profile);
+  chosen.classList.remove('inactive');
+  chosen.style.boxShadow = '0 0 20px rgba(51,157,201,0.40)';
+
+  renderDemo(profile);
+}
+
+function replayAnimations() {
+  renderDemo(currentProfile);
+}
+
+function renderDemo(profile) {
+  const cardContainer = document.getElementById('profile-container');
+  const tableContainer = document.getElementById('profile-table');
+
+  // Clear and re-render to trigger animations
+  const cardLabel = cardContainer.querySelector('.section-label').outerHTML;
+  const tableLabel = tableContainer.querySelector('.section-label').outerHTML;
+
+  cardContainer.innerHTML = cardLabel + cardHTML(profile);
+  tableContainer.innerHTML = tableLabel + tableHTML(profile);
+
+  // Trigger count-up
+  setTimeout(() => {
+    document.querySelectorAll('.count-up').forEach(el => {
+      const target = parseInt(el.getAttribute('data-target'), 10);
+      const duration = profile === 'grounded' ? 600 : profile === 'expressive' ? 900 : 1400;
+      const delay = profile === 'grounded' ? 0 : profile === 'expressive' ? 200 : 400;
+      animateCount(el, target, duration, delay);
+    });
+  }, 50);
+}
+
+function animateCount(el, target, duration, delay) {
+  const start = Date.now() + delay;
+  const step = () => {
+    const now = Date.now();
+    if (now < start) { requestAnimationFrame(step); return; }
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // easeOutCubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target);
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function selectProfile(profile) {
+  // Highlight the chosen button
+  document.querySelectorAll('.choose-btn').forEach(b => {
+    b.classList.add('inactive');
+    b.style.boxShadow = 'none';
+    b.textContent = b.textContent.replace(' ✓', '');
+  });
+  const chosen = document.getElementById('choose-' + profile);
+  chosen.classList.remove('inactive');
+  chosen.style.boxShadow = '0 0 20px rgba(51,157,201,0.40)';
+  chosen.textContent = chosen.textContent + ' ✓';
+}
+
+// ─── Initial render ───────────────────────────────────
+renderDemo('grounded');
+</script>
+</body>
+</html>
