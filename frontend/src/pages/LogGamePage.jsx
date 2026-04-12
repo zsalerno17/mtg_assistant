@@ -33,7 +33,8 @@ export default function LogGamePage() {
 
   useEffect(() => {
     loadData()
-  }, [leagueId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagueId, session?.access_token])
 
   async function loadData() {
     setLoading(true)

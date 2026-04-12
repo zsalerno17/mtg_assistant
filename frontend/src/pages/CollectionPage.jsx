@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function CollectionPage() {
+  const { session } = useAuth()
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [status, setStatus] = useState(null)
@@ -24,10 +26,12 @@ export default function CollectionPage() {
   ]
 
   useEffect(() => {
+    if (!session?.access_token) return
     api.getCollection()
       .then(data => setCollection(data))
       .catch(() => {}) // silently ignore; user may not have uploaded yet
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.access_token])
 
   useEffect(() => {
     if (!uploading) {

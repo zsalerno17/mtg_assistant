@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import CardTooltip from '../components/CardTooltip'
 
 function ImportModal({ onClose, onImported }) {
@@ -435,6 +436,7 @@ function CollectionSummaryWidget({ summary, loading }) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const [decks, setDecks] = useState([])
   const [decksLoading, setDecksLoading] = useState(true)
   const [collectionSummary, setCollectionSummary] = useState(null)
@@ -451,13 +453,17 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    if (!session?.access_token) return
+    setDecksLoading(true)
+    setSummaryLoading(true)
     loadDecks()
 
     api.getCollectionSummary()
       .then(data => setCollectionSummary(data))
       .catch(() => setCollectionSummary(null))
       .finally(() => setSummaryLoading(false))
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.access_token])
 
   const handleImported = () => {
     setShowImportModal(false)

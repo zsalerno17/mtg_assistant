@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import { LeagueCardSkeleton } from '../components/Skeletons'
 import { SwordsIcon, TrophyIcon } from '../components/LeagueIcons'
 
@@ -10,6 +11,9 @@ export default function LeaguesPage() {
   const [error, setError] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [showCompleted, setShowCompleted] = useState(true)
 
   // Form state
   const [name, setName] = useState('')
@@ -17,9 +21,13 @@ export default function LeaguesPage() {
   const [seasonStart, setSeasonStart] = useState('')
   const [seasonEnd, setSeasonEnd] = useState('')
 
+  const { session } = useAuth()
+
   useEffect(() => {
+    if (!session?.access_token) return
     loadLeagues()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.access_token])
 
   async function loadLeagues() {
     setLoading(true)
@@ -61,6 +69,40 @@ export default function LeaguesPage() {
     }
   }
 
+  async function handleArchiveCompleted() {
+    setArchiving(true)
+    setError(null)
+    try {
+      const result = await api.archiveCompletedLeagues()
+      if (result.archived > 0) {
+        await loadLeagues()
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setArchiving(false)
+    }
+  }
+
+  async function handleRefreshDecks() {
+    setRefreshing(true)
+    setError(null)
+    try {
+      // Refresh deck library from Moxfield
+      await api.getDeckLibrary()
+      // Reload leagues to pick up any changes
+      await loadLeagues()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const activeLeagues = leagues.filter(l => l.status === 'active' || l.status === 'draft')
+  const completedLeagues = leagues.filter(l => l.status === 'completed')
+  const displayLeagues = showCompleted ? leagues : activeLeagues
+
   return (
       <div className="max-w-[1400px] mx-auto px-8 py-10">
         {/* Header */}
@@ -85,6 +127,34 @@ export default function LeaguesPage() {
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6">
             {error}
+          </div>
+        )}
+
+        {/* Bulk Actions */}
+        {!loading && leagues.length > 0 && (
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              onClick={handleRefreshDecks}
+              disabled={refreshing}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
+            >
+              {refreshing ? 'Refreshing...' : 'Refresh Decks'}
+            </button>
+            <button
+              onClick={handleArchiveCompleted}
+              disabled={archiving}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
+            >
+              {archiving ? 'Archiving...' : 'Archive Completed'}
+            </button>
+            {completedLeagues.length > 0 && (
+              <button
+                onClick={() => setShowCompleted(!showCompleted)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+              >
+                {showCompleted ? 'Hide Completed' : `Show Completed (${completedLeagues.length})`}
+              </button>
+            )}
           </div>
         )}
 
@@ -191,7 +261,7 @@ export default function LeaguesPage() {
         {/* Leagues Grid */}
         {!loading && leagues.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {leagues.map((league) => (
+            {displayLeagues.map((league) => (
               <Link
                 key={league.id}
                 to={`/leagues/${league.id}`}
@@ -222,6 +292,22 @@ export default function LeaguesPage() {
                   {league.league_members && (
                     <div>👥 {league.league_members.length} members</div>
                   )}
+                  {(() => {
+                    // Calculate color identity from all league decks
+                    const colors = new Set()
+                    ;(league.league_members || []).forEach(member => {
+                      ;(member.deck_color_identity || []).forEach(c => colors.add(c))
+                    })
+                    const colorArray = Array.from(colors).sort((a, b) => 'WUBRG'.indexOf(a) - 'WUBRG'.indexOf(b))
+                    const colorNames = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' }
+                    return colorArray.length > 0 ? (
+                      <div className="flex gap-1 mt-1" title={`Colors played: ${colorArray.map(c => colorNames[c]).join(', ')}`}>
+                        {colorArray.map(color => (
+                          <i key={color} className={`ms ms-${color.toLowerCase()} ms-cost`} style={{ fontSize: '14px' }} />
+                        ))}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
 
                 {league.description && (

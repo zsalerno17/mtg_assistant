@@ -22,10 +22,14 @@ export default function LeaguePage() {
   const [generatingInvite, setGeneratingInvite] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [activeMusicPreview, setActiveMusicPreview] = useState(null)
+  const [gameVotes, setGameVotes] = useState({}) // { [gameId]: { votes: [], myVotes: {} } }
+  const [votingGameId, setVotingGameId] = useState(null)
+  const [exportingImage, setExportingImage] = useState(false)
 
   useEffect(() => {
     loadLeagueData()
-  }, [leagueId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagueId, session?.access_token])
 
   async function loadLeagueData() {
     setLoading(true)
@@ -120,6 +124,135 @@ export default function LeaguePage() {
       // invalid URL — fall through
     }
     return { type: 'external', url }
+  }
+
+  async function loadGameVotes(gameId) {
+    try {
+      const data = await api.getGameVotes(leagueId, gameId)
+      const votes = data.votes || []
+      // Find current user's member_id
+      const myMember = league?.league_members?.find(m => m.user_id === session?.user?.id)
+      const myVotes = {}
+      votes.forEach(v => {
+        if (v.voter_id === myMember?.id) {
+          myVotes[v.category] = v.nominee_id
+        }
+      })
+      setGameVotes(prev => ({ ...prev, [gameId]: { votes, myVotes } }))
+    } catch (err) {
+      console.error('Failed to load votes:', err)
+    }
+  }
+
+  async function handleVote(gameId, category, nomineeId) {
+    try {
+      await api.castVote(leagueId, gameId, { category, nominee_id: nomineeId })
+      await loadGameVotes(gameId)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  function getVoteTally(gameId, category) {
+    const votes = gameVotes[gameId]?.votes || []
+    const tally = {}
+    votes.filter(v => v.category === category).forEach(v => {
+      tally[v.nominee_id] = (tally[v.nominee_id] || 0) + 1
+    })
+    return tally
+  }
+
+  async function handleExportImage() {
+    if (!standings.length) return
+    setExportingImage(true)
+    try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const rowHeight = 44
+      const headerHeight = 60
+      const padding = 32
+      const width = 700
+      const height = headerHeight + padding * 2 + standings.length * rowHeight + 20
+
+      canvas.width = width * 2
+      canvas.height = height * 2
+      ctx.scale(2, 2)
+
+      // Background
+      ctx.fillStyle = '#0a0f1a'
+      ctx.fillRect(0, 0, width, height)
+
+      // Title
+      ctx.fillStyle = '#f1f5f9'
+      ctx.font = 'bold 22px serif'
+      ctx.fillText(league?.name || 'League Standings', padding, padding + 22)
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '13px sans-serif'
+      ctx.fillText(`Season ${new Date(league?.season_start).toLocaleDateString()} — ${new Date(league?.season_end).toLocaleDateString()}`, padding, padding + 42)
+
+      // Column headers
+      const cols = [
+        { label: '#', x: padding, w: 30 },
+        { label: 'Player', x: padding + 40, w: 200 },
+        { label: 'Pts', x: padding + 280, w: 50 },
+        { label: 'W', x: padding + 340, w: 40 },
+        { label: '2nd', x: padding + 390, w: 40 },
+        { label: '3rd', x: padding + 440, w: 40 },
+        { label: 'GP', x: padding + 500, w: 40 },
+      ]
+
+      const tableY = headerHeight + padding
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = 'bold 12px sans-serif'
+      cols.forEach(col => ctx.fillText(col.label, col.x, tableY))
+
+      // Rows
+      standings.forEach((m, idx) => {
+        const y = tableY + (idx + 1) * rowHeight
+        // Highlight first place
+        if (idx === 0) {
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.1)'
+          ctx.fillRect(padding - 8, y - rowHeight + 12, width - padding * 2 + 16, rowHeight)
+        }
+
+        ctx.fillStyle = idx === 0 ? '#fbbf24' : '#f1f5f9'
+        ctx.font = 'bold 14px sans-serif'
+        ctx.fillText(`${idx + 1}`, cols[0].x, y)
+        ctx.font = idx === 0 ? 'bold 14px serif' : '14px sans-serif'
+        ctx.fillText(m.superstar_name || '', cols[1].x, y)
+        ctx.fillStyle = '#fbbf24'
+        ctx.font = 'bold 14px sans-serif'
+        ctx.fillText(`${m.total_points}`, cols[2].x, y)
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = '13px sans-serif'
+        ctx.fillText(`${m.wins}`, cols[3].x, y)
+        ctx.fillText(`${m.second_places || 0}`, cols[4].x, y)
+        ctx.fillText(`${m.third_places || 0}`, cols[5].x, y)
+        ctx.fillText(`${m.games_played}`, cols[6].x, y)
+      })
+
+      // Watermark
+      ctx.fillStyle = '#94a3b830'
+      ctx.font = '10px sans-serif'
+      ctx.fillText('MTG Assistant', width - padding - 80, height - 12)
+
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${league?.name || 'standings'}-standings.png`
+        a.click()
+        URL.revokeObjectURL(url)
+        setExportingImage(false)
+      }, 'image/png')
+    } catch (err) {
+      console.error('Export failed:', err)
+      setExportingImage(false)
+    }
+  }
+
+  function handlePrintPDF() {
+    window.print()
   }
 
   async function handleLeaveLeague() {
@@ -353,7 +486,20 @@ export default function LeaguePage() {
         {activeTab === 'standings' && (
           <div role="tabpanel" id="tabpanel-standings" aria-labelledby="tab-standings" aria-live="polite">
             {standings.length > 0 && (
-              <div className="flex justify-end mb-3">
+              <div className="flex justify-end gap-2 mb-3">
+                <button
+                  onClick={handleExportImage}
+                  disabled={exportingImage}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
+                >
+                  {exportingImage ? 'Exporting...' : 'Export Image'}
+                </button>
+                <button
+                  onClick={handlePrintPDF}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors"
+                >
+                  Print / PDF
+                </button>
                 <button
                   onClick={handleExportCSV}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors"
@@ -553,6 +699,49 @@ export default function LeaguePage() {
                 {game.notes && (
                   <div className="mt-3 text-sm text-[var(--color-muted)] italic">{game.notes}</div>
                 )}
+
+                {/* Voting Section */}
+                <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+                  {!gameVotes[game.id] ? (
+                    <button
+                      onClick={() => { loadGameVotes(game.id); setVotingGameId(game.id) }}
+                      className="text-xs text-[var(--color-primary)] hover:underline"
+                    >
+                      Vote on awards
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      {['entrance', 'spicy_play'].map(category => {
+                        const tally = getVoteTally(game.id, category)
+                        const myVote = gameVotes[game.id]?.myVotes?.[category]
+                        const members = league?.league_members || []
+                        return (
+                          <div key={category}>
+                            <div className="text-xs font-medium text-[var(--color-muted)] mb-1.5">
+                              {category === 'entrance' ? 'Best Entrance' : 'Spiciest Play'}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {members.map(m => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => handleVote(game.id, category, m.id)}
+                                  className={`px-2.5 py-1 rounded-[7px] text-xs font-medium transition-all ${
+                                    myVote === m.id
+                                      ? 'bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]'
+                                      : 'bg-[var(--color-surface)]/60 text-[var(--color-muted)] border border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
+                                  }`}
+                                >
+                                  {m.superstar_name}
+                                  {tally[m.id] ? ` (${tally[m.id]})` : ''}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
 
@@ -630,7 +819,11 @@ export default function LeaguePage() {
                             onClick={() => setActiveMusicPreview(activeMusicPreview === member.id ? null : member.id)}
                             className="inline-flex items-center gap-2 bg-[var(--color-primary)]/20 px-4 py-2 rounded-lg text-sm text-[var(--color-primary)] hover:bg-[var(--color-primary)]/30 transition-colors"
                           >
-                            {activeMusicPreview === member.id ? 'Close' : 'Entrance Music'}
+                            {activeMusicPreview === member.id ? 'Close Preview' : (() => {
+                              if (embed.type === 'youtube') return '▶ YouTube'
+                              if (embed.type === 'spotify') return '▶ Spotify'
+                              return '▶ Listen'
+                            })()}
                           </button>
                           {activeMusicPreview === member.id && (
                             <div className="mt-3">
