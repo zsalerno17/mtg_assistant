@@ -16,9 +16,10 @@ app = FastAPI(title="MTG Assistant API", version="2.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Vite dev server
-        "https://*.vercel.app",   # Vercel preview/prod deployments
+        "http://localhost:5173",                       # Vite dev server
+        "https://mtg-assistant-silk.vercel.app",       # Vercel production
     ],
+    allow_origin_regex=r"https://mtg-assistant-.*\.vercel\.app",  # Vercel preview deployments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
