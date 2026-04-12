@@ -10,8 +10,9 @@ import { supabase } from './supabase'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const LEGACY_API_BASE = import.meta.env.VITE_API_BASE_URL
 
-// If SUPABASE_URL is set, use Edge Functions; otherwise fall back to legacy FastAPI
-const USE_EDGE = !!SUPABASE_URL
+// If VITE_USE_EDGE is explicitly 'false', force legacy FastAPI mode (local dev).
+// Otherwise, use Edge Functions when SUPABASE_URL is available.
+const USE_EDGE = import.meta.env.VITE_USE_EDGE !== 'false' && !!SUPABASE_URL
 const EDGE_BASE = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1` : ''
 const LEGACY_BASE = LEGACY_API_BASE || 'http://localhost:8000'
 
