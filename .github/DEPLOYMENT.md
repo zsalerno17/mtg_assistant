@@ -66,19 +66,22 @@ dist/
 
 **2.1 — Create New Web Service**
 
+> **Note**: This repo includes a `render.yaml` configuration file that automates all build settings. Render will auto-detect it!
+
 1. Go to [render.com/dashboard](https://render.com/dashboard)
 2. Click **New +** → **Web Service**
 3. Connect GitHub repository
 4. Select `mtg-assistant` repo
-5. Configure:
-   - **Name**: `mtg-assistant-backend` (or any name)
-   - **Region**: Oregon (US West) or closest to you
+5. Render will **auto-detect** `render.yaml` and pre-fill:
+   - **Name**: `mtg-assistant-backend`
+   - **Region**: Oregon (US West)
    - **Branch**: `main`
    - **Root Directory**: `backend`
-   - **Runtime**: Python 3
+   - **Runtime**: Python 3.11
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - **Plan**: Free
+6. Confirm the auto-detected settings look correct
 
 **2.2 — Set Environment Variables**
 
@@ -108,11 +111,13 @@ Click **Create Web Service**. Render will:
 
 **Note**: Free tier sleeps after 15 minutes of inactivity. First request after sleep takes ~30 seconds to wake up.
 
-**2.4 — Update Backend CORS**
+**2.4 — Update Backend CORS (Optional)**
 
 After deployment, note your Render backend URL. You'll need it for frontend env vars.
 
-Then update `backend/main.py` CORS to include your Vercel frontend URL (you'll get this in Step 3):
+> **Note**: `backend/main.py` already includes `https://*.vercel.app` in CORS allowed origins, so your Vercel frontend will work automatically with the wildcard. This step is optional for additional security.
+
+If you want to restrict CORS to your specific Vercel URL (better security), update `backend/main.py` after you get your Vercel URL (from Step 3):
 
 ```python
 # backend/main.py
@@ -120,7 +125,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://your-app.vercel.app",  # ← Add your Vercel URL here
+        "https://your-app.vercel.app",  # ← Add your specific Vercel URL here
+        # Remove or keep the wildcard based on your security preferences
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -136,14 +142,17 @@ Push this change to GitHub → Render will auto-redeploy.
 
 **3.1 — Import Project**
 
+> **Note**: This repo includes a `vercel.json` configuration file that automates frontend build settings!
+
 1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
 2. Click **Add New...** → **Project**
 3. Import your `mtg-assistant` GitHub repo
-4. Configure:
+4. Vercel will **auto-detect** `vercel.json` and pre-fill:
    - **Framework Preset**: Vite
    - **Root Directory**: `frontend`
-   - **Build Command**: `npm run build` (auto-detected)
-   - **Output Directory**: `dist` (auto-detected)
+   - **Build Command**: `cd frontend && npm install && npm run build`
+   - **Output Directory**: `frontend/dist`
+5. Confirm the auto-detected settings look correct
 
 **3.2 — Set Environment Variables**
 
