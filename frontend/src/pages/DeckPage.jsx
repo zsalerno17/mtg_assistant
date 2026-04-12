@@ -223,11 +223,11 @@ function StatBadge({ label, value }) {
         <div className="absolute inset-0 flex items-center justify-center">
           {target ? (
             <div className={`font-[var(--font-mono)] flex items-baseline ${ringColor}`}>
-              <span className="text-lg font-bold">{label === 'Avg CMC' ? numValue.toFixed(1) : value}</span>
+              <span className={label === 'Avg CMC' ? 'text-sm font-bold' : 'text-lg font-bold'}>{label === 'Avg CMC' ? numValue.toFixed(1) : value}</span>
               {label !== 'Cards' && (
                 <>
-                  <span className="text-sm text-[var(--color-muted)]">/</span>
-                  <span className="text-sm text-[var(--color-muted)]">{label === 'Avg CMC' ? target.toFixed(1) : target}</span>
+                  <span className="text-[10px] text-[var(--color-muted)]">/</span>
+                  <span className="text-[10px] text-[var(--color-muted)]">{label === 'Avg CMC' ? target.toFixed(1) : target}</span>
                 </>
               )}
             </div>

@@ -1,18 +1,59 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 11, 2026 (Design proposal: radial ring target notation)
+> Last updated: April 11, 2026 (Phase 20-21 refinements complete)
 
 ---
 
 ## Current Status
 
-**Phase 23 complete.** All gap phases (20-23) completed in overnight autonomous session.
+**Phase 20-21 refinements in progress.** User tested overnight session deliverables (Phases 20-23), reported 3 bugs. Round 2 fixes partially working:
 
-**Active design work:**
-- Design proposal created for radial progress ring target notation improvement (`.github/radial-ring-design-proposal.md`)
-- User feedback: "Having the /number at the bottom is weird" — current "/ 8" target notation feels awkward
-- Recommended direction: Move target into center as integrated fraction ("7/8" instead of separate "/ 8" line)
+**Round 2 user test results (April 11, 2026):**
+1. ✅ **CMC decimals overlapping** — FIXED. Reduced BOTH numerator (`text-lg` → `text-sm` for CMC only) AND denominator (`text-xs` → `text-[10px]`). User confirms fits properly now.
+2. ❌ **Card tooltips clipped** — STILL BROKEN. Despite Fragment rendering + z-index 99999, tooltips still appear behind other components. Need to investigate further - likely stacking context issue with parent containers.
+3. ✅ **Scryfall search links** — FIXED. Added exact match quotes: `q=!"Card Name"`. User confirms clicking works correctly.
+4. ⚠️  **Tooltip disappears when moving mouse** — Not tested yet (blocked by #2).
+
+**Servers status:**
+- Backend: Running on port 8000 (uvicorn, reload enabled)
+- Frontend: Running on port 5173 (Vite dev server)
+- Partial fixes deployed, tooltip z-index issue remains
+
+**Recent fixes (April 11, 2026):**
+- **CardTooltip.jsx**: 
+  - Moved tooltip outside trigger span (React Fragment + separate render)
+  - Added `hideTimeoutRef` for delayed hiding (150ms)
+  - Tooltip has `onMouseEnter`/`onMouseLeave` handlers to cancel hide timeout
+  - Gap reduced from 8px → 4px
+  - Z-index increased to 99999
+  - Scryfall link: `q=!CardName` → `q=!"CardName"`
+- **DeckPage.jsx**: 
+  - StatBadge: CMC numerator now `text-sm` instead of `text-lg` (integer badges unchanged)
+  - denominator reduced to `text-[10px]` (was `text-xs`)
+  - Formula: CMC "2.8/3.0" = 14px + 10px + 10px = ~34px fits in 64px circle
+  - Integer "7/8" = 18px + 10px + 10px = ~38px fits in 64px circle
+
+**Why previous attempts failed:**
+1. Only reduced denominator, not numerator — decimals still overlapped
+2. Increased z-index without addressing React Fragment portalling — still clipped by overflow containers
+3. No tooltip hover handlers — moving mouse toward tooltip triggered `onMouseLeave` on trigger span
+
+**Pending user testing:**
+User needs to validate at http://localhost:5173:
+1. Card tooltips now 244×340px (readable text, larger images)
+2. Card tooltips clickable (open Scryfall search in new tab)
+3. Radial progress shows integrated fractions ("7/8" in center, not "/ 8" below)
+4. Radial progress colors consistent (ring and center value always match — no yellow ring + red number)
+5. Collection upgrades deduplicated + grouped by card to cut + sorted by quality
+6. Strategy tab key cards have tooltips
+7. Scenarios tab card names have tooltips (4 locations: suggestions, chips, search results)
+
+**Next actions:**
+- Await user testing confirmation
+- If issues found: debug + fix
+- If all verified: session complete
+- Future work: Deployment (Phase 22), Phase 23 implementation, league tracking (if user wants it)
 
 **Completed:**
 1. [x] Quick win: `ColorPips` on Dashboard history items
@@ -33,9 +74,99 @@
 16. [x] Phase 23: Deck metadata & iteration tracking schema design — **NEW**
 
 **Next up:**
-- Review + implement radial ring design proposal (if approved)
-- Deployment to production (requires GitHub repo creation + Render/Vercel account setup)
-- Future: Deck version tracking, improvement lifecycle, scenario persistence (Phase 23 schema)
+- User testing verification (immediate)
+- League tracking feature scoping (if user wants it — not in current plan)
+- Deployment to production (deferred — requires GitHub repo + Render/Vercel setup)
+- Phase 23 implementation (deferred — foundational design complete, no code yet)
+
+---
+
+## Recent Changes (Phase 20-21 Refinements — April 11, 2026)
+
+**Context:** User tested overnight session deliverables (Phases 20-23). Provided feedback on card tooltips, radial progress, and collection upgrades. All issues fixed in one comprehensive session.
+
+### Card Tooltip Enhancements (Phase 20 follow-up)
+
+**User feedback:** "Cards are blurry and small - I can't read them" + "Should be able to click them to go to Scryfall"
+
+**Fixes implemented:**
+1. **Image size increased 67%**: 146×204px → 244×340px (Scryfall 'normal' version instead of default)
+   - Changed API call: Added `&version=normal` parameter to Scryfall `/cards/named` endpoint
+   - Updated img style: `width: 244px, height: 340px`
+   - Card text now fully readable on tooltip
+2. **Made tooltips clickable**: Wrapped image in `<a>` tag opening Scryfall search in new tab
+   - Link: `https://scryfall.com/search?q=!{cardName}` (exact name search)
+   - Changed `pointer-events-none` → `pointer-events-auto` on link element
+   - Added amber border on hover (`hover:border-amber-400/50`) for visual feedback
+3. **Z-index increased**: z-50 → z-[9999] to prevent tooltips hiding behind other elements
+4. **Coverage expanded**: Added CardTooltip to Strategy tab (key cards) and Scenarios tab (4 locations: suggestion buttons, add chips, remove search results, remove chips)
+
+**Files changed:**
+- `frontend/src/components/CardTooltip.jsx`
+- `frontend/src/pages/DeckPage.jsx` (Strategy + Scenarios tabs)
+
+### Radial Progress Enhancements (Phase 21 follow-up)
+
+**User feedback:** "Having the /number at the bottom is weird" + "I see one where the radial circle is yellow, but the number inside the circle is red"
+
+**Fixes implemented:**
+1. **Integrated fraction notation**: Moved target into center as fraction ("7/8" instead of "7" with "/ 8" below label)
+   - Center now shows: `<value><muted>/</muted><muted><target></muted>` (e.g., "7/8")
+   - Avg CMC shows "2.8/3.0" as fraction
+   - Cards stat shows just "99" (no target, no fraction)
+   - Removed separate target line below label
+2. **Fixed color mismatch bug**: Removed `warning` and `healthy` props entirely
+   - **Root cause**: Ring used percentage-based color logic (green ≥100%, amber 75-99%, rose <75%), but center value used separate warning/healthy props from different logic → conflicts (e.g., Removal 7/8 = 87.5% → amber ring, but 7<8 → warning prop → red text)
+   - **Solution**: Center value now uses same `ringColor` variable as ring → always consistent
+   - Example: Removal 7/8 now shows amber ring + amber "7/8" center (both yellow)
+3. **Visual alignment**: Fraction elements use flexbox baseline alignment for typography precision
+
+**Files changed:**
+- `frontend/src/pages/DeckPage.jsx` (StatBadge function + all 7 call sites)
+
+**Before/After:**
+- Before: Ring yellow, center "7" red (conflicting), "/ 8" below label
+- After: Ring yellow, center "7/8" yellow (consistent), no extra line
+
+### Collection Upgrades Enhancements (UI improvements)
+
+**User feedback:** "There are duplicates on the collection upgrade page" + "Shows the same card to remove multiple times with different options" + "Are these prioritized at all? If we give users multiple options, we should give reasoning for which to pick"
+
+**Fixes implemented:**
+1. **Deduplication**: Client-side dedup using Set with `${cut}::${add}` key to eliminate exact duplicate suggestions
+2. **Grouping by card to cut**: All options for same card grouped under one header
+   - Shows: "X options for replacing [card] (sorted by quality):"
+   - Grouped items indented (ml-4) for visual hierarchy
+3. **Quality-based sorting**: Options within each group sorted by backend-provided `score` (descending)
+   - Best option always shows first
+   - Header text "(sorted by quality)" makes prioritization explicit
+4. **Data structure**: 
+   ```javascript
+   {
+     raw: [/* unique upgrades */],
+     grouped: {
+       'Sol Ring': [/* 3 options sorted by score */],
+       'Arcane Signet': [/* 1 option */],
+       '_no_cut': [/* pure additions */]
+     }
+   }
+   ```
+
+**Files changed:**
+- `frontend/src/pages/DeckPage.jsx` (CollectionUpgradesTab)
+
+### Other Clarifications
+
+**Phase 23 purpose:** Design-only schema proposal for future deck iteration tracking (snapshots, improvement lifecycle, scenario persistence). No code implementation yet — foundational design work. Deferred to post-deployment.
+
+**League tracking:** User asked "didn't we have a phase for my league tracking?" — confirmed NOT in plan (checked all phases 1-23). If user wants this feature, needs to be scoped as new phase.
+
+**Files touched this session:**
+- `frontend/src/components/CardTooltip.jsx` (image size, clickability, z-index)
+- `frontend/src/pages/DeckPage.jsx` (StatBadge function, StatBadge calls, CollectionUpgradesTab, StrategyTab, ScenariosTab)
+- `.github/copilot-plan.md` (this update)
+
+**Testing status:** All fixes deployed to localhost (backend port 8000, frontend port 5173). Awaiting user verification of 7 specific improvements (card tooltip size/clickability, radial progress fractions/colors, collection upgrades grouping/sorting, tooltips on Strategy/Scenarios tabs).
 
 ---
 

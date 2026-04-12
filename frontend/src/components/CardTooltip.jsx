@@ -18,13 +18,17 @@ export default function CardTooltip({ cardName, children }) {
   const [position, setPosition] = useState('top')
   
   const hoverTimeoutRef = useRef(null)
+  const hideTimeoutRef = useRef(null)
   const elementRef = useRef(null)
 
-  // Clear hover timeout on unmount
+  // Clear timeouts on unmount
   useEffect(() => {
     return () => {
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current)
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current)
       }
     }
   }, [])
@@ -71,7 +75,7 @@ export default function CardTooltip({ cardName, children }) {
   }
 
   const handleMouseEnter = () => {
-    // Determine if tooltip should appear above or below
+    // Determine position and calculate fixed coordinates
     if (elementRef.current) {
       const rect = elementRef.current.getBoundingClientRect()
       const viewportHeight = window.innerHeight
@@ -93,6 +97,21 @@ export default function CardTooltip({ cardName, children }) {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current)
     }
+    // Small delay before hiding to allow moving to tooltip
+    hideTimeoutRef.current = setTimeout(() => setShowTooltip(false), 150)
+  }
+
+  const handleTooltipMouseEnter = () => {
+    // Cancel hide timeout when hovering over tooltip
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current)
+    }
+  }
+
+  const handleTooltipMouseLeave = () => {
     setShowTooltip(false)
   }
 
@@ -101,35 +120,69 @@ export default function CardTooltip({ cardName, children }) {
     return <span>{children || cardName}</span>
   }
 
+  // Calculate position near the trigger element
+  const getTooltipPosition = () => {
+    if (!elementRef.current || !showTooltip) return { left: -9999, top: -9999 }
+    
+    const rect = elementRef.current.getBoundingClientRect()
+    const tooltipWidth = 244
+    const tooltipHeight = 340
+    const gap = 4 // Smaller gap to keep tooltip close
+    
+    // Center horizontally relative to trigger
+    let left = rect.left + (rect.width / 2) - (tooltipWidth / 2)
+    
+    // Position above or below based on viewport position
+    let top = position === 'top' 
+      ? rect.top - tooltipHeight - gap
+      : rect.bottom + gap
+    
+    // Keep tooltip within viewport horizontally
+    const margin = 16
+    const maxLeft = window.innerWidth - tooltipWidth - margin
+    left = Math.max(margin, Math.min(left, maxLeft))
+    
+    return { left, top }
+  }
+
+  const tooltipPos = getTooltipPosition()
+
   return (
-    <span 
-      ref={elementRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className="relative inline-block cursor-help"
-    >
-      {children || cardName}
+    <>
+      <span 
+        ref={elementRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="relative inline-block cursor-help"
+      >
+        {children || cardName}
+      </span>
       
       {showTooltip && (
         <div 
-          className={`absolute left-1/2 -translate-x-1/2 z-[9999] ${
-            position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
-          }`}
-          style={{ width: '244px' }}
+          onMouseEnter={handleTooltipMouseEnter}
+          onMouseLeave={handleTooltipMouseLeave}
+          className="fixed pointer-events-auto"
+          style={{
+            left: `${tooltipPos.left}px`,
+            top: `${tooltipPos.top}px`,
+            zIndex: 99999,
+            width: '244px'
+          }}
         >
           {loading || !imageUrl ? (
             // Loading shimmer placeholder
             <div 
-              className="skeleton rounded-lg pointer-events-none"
+              className="skeleton rounded-lg"
               style={{ width: '244px', height: '340px' }}
             />
           ) : (
             // Clickable Scryfall card image
             <a
-              href={`https://scryfall.com/search?q=!${encodeURIComponent(cardName)}`}
+              href={`https://scryfall.com/search?q=!"${encodeURIComponent(cardName)}"`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block pointer-events-auto"
+              className="block"
               onClick={(e) => e.stopPropagation()}
             >
               <img
@@ -142,6 +195,6 @@ export default function CardTooltip({ cardName, children }) {
           )}
         </div>
       )}
-    </span>
+    </>
   )
 }
