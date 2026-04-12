@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { api } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function LogGamePage() {
   const { leagueId } = useParams()
   const navigate = useNavigate()
+  const { session } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -275,26 +277,31 @@ export default function LogGamePage() {
                     <label className="block text-xs font-medium text-secondary mb-1.5">
                       Deck (optional)
                     </label>
-                    <select
-                      value={results[member.id]?.deck_id || ''}
-                      onChange={(e) => updateResult(member.id, 'deck_id', e.target.value)}
-                      className="w-full bg-black/40 border border-accent/30 rounded-lg px-3 py-2 text-sm text-primary focus:border-accent focus:ring-1 focus:ring-accent"
-                    >
-                      <option value="">—</option>
-                      {myDecks.map((deck) => (
-                        <option key={deck.id} value={deck.id}>
-                          {deck.deck_name}
-                        </option>
-                      ))}
-                    </select>
+                    {member.user_id === session?.user?.id ? (
+                      <select
+                        value={results[member.id]?.deck_id || ''}
+                        onChange={(e) => updateResult(member.id, 'deck_id', e.target.value)}
+                        className="w-full bg-black/40 border border-accent/30 rounded-lg px-3 py-2 text-sm text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                      >
+                        <option value="">—</option>
+                        {myDecks.map((deck) => (
+                          <option key={deck.id} value={deck.id}>
+                            {deck.deck_name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-xs text-secondary italic py-2">
+                        Only the deck owner can select
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
 
             <div className="mt-4 text-xs text-secondary">
-              <strong>Points awarded automatically:</strong> 1st = 3pts (Win), 2nd = 1pt (Last
-              Stand), 4th = 1pt (First Blood)
+              <strong>Points awarded automatically:</strong> 1st = 3pts, 2nd = 2pts, 3rd = 1pt, 4th+ = 0pts. Entrance bonus = +1pt.
             </div>
           </div>
 

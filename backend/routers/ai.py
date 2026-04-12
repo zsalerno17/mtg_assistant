@@ -9,7 +9,7 @@ from auth import require_allowed_user
 from src.moxfield import get_deck
 from src.deck_analyzer import analyze_deck, find_collection_improvements, scenarios_fallback
 from src.gemini_assistant import get_strategy_advice, get_improvement_suggestions, explain_scenarios
-from src.models import Card, Collection
+from src.models import Card, Collection, Deck
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -19,10 +19,53 @@ def _supabase():
     return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
 
 
+def _deck_from_cache(sb, moxfield_id: str):
+    """Reconstruct a Deck object from the Supabase decks cache, or return None."""
+    result = sb.table("decks").select("data_json").eq("moxfield_id", moxfield_id).execute()
+    if not result.data:
+        return None
+    d = result.data[0]["data_json"]
+
+    def _card(raw) -> Card:
+        if raw is None:
+            return None
+        return Card(
+            name=raw.get("name", ""),
+            quantity=raw.get("quantity", 1),
+            mana_cost=raw.get("mana_cost", ""),
+            cmc=float(raw.get("cmc", 0)),
+            type_line=raw.get("type_line", ""),
+            oracle_text=raw.get("oracle_text", ""),
+            colors=raw.get("colors", []),
+            color_identity=raw.get("color_identity", []),
+            keywords=raw.get("keywords", []),
+            rarity=raw.get("rarity", ""),
+            set_code=raw.get("set_code", ""),
+            image_uri=raw.get("image_uri", ""),
+            scryfall_id=raw.get("scryfall_id", ""),
+        )
+
+    return Deck(
+        id=d.get("id", moxfield_id),
+        name=d.get("name", ""),
+        format=d.get("format", "commander"),
+        commander=_card(d.get("commander")),
+        partner=_card(d.get("partner")),
+        mainboard=[_card(c) for c in d.get("mainboard", [])],
+        sideboard=[_card(c) for c in d.get("sideboard", [])],
+    )
+
+
 def _load_deck(moxfield_id: str):
+    sb = _supabase()
     try:
         return get_deck(moxfield_id)
     except Exception as e:
+        # Moxfield unreachable (e.g. datacenter IP block in production) — fall back to Supabase cache
+        deck = _deck_from_cache(sb, moxfield_id)
+        if deck:
+            logger.warning("Moxfield 403/error for %s, using Supabase deck cache: %s", moxfield_id, e)
+            return deck
         raise HTTPException(status_code=502, detail=f"Could not load deck: {str(e)}")
 
 

@@ -1,4 +1,5 @@
 import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from supabase import create_client
@@ -8,6 +9,37 @@ from src.moxfield import extract_deck_id, get_deck, get_deck_with_meta
 from src.deck_analyzer import analyze_deck
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+def _serialize_card(c) -> dict:
+    return {
+        "name": c.name,
+        "quantity": c.quantity,
+        "mana_cost": c.mana_cost,
+        "cmc": c.cmc,
+        "type_line": c.type_line,
+        "oracle_text": c.oracle_text,
+        "colors": c.colors,
+        "color_identity": c.color_identity,
+        "keywords": c.keywords,
+        "rarity": c.rarity,
+        "set_code": c.set_code,
+        "image_uri": c.image_uri,
+        "scryfall_id": c.scryfall_id,
+    }
+
+
+def _serialize_deck(deck) -> dict:
+    """Serialize a Deck to a dict with full card data for Supabase storage."""
+    return {
+        "id": deck.id,
+        "name": deck.name,
+        "format": deck.format,
+        "commander": _serialize_card(deck.commander) if deck.commander else None,
+        "partner": _serialize_card(deck.partner) if deck.partner else None,
+        "mainboard": [_serialize_card(c) for c in deck.mainboard],
+        "sideboard": [_serialize_card(c) for c in deck.sideboard],
+    }
 
 
 def _supabase():
@@ -50,21 +82,8 @@ def fetch_deck(body: FetchDeckRequest, user: dict = Depends(require_allowed_user
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Moxfield fetch failed: {str(e)}")
 
-    # Serialize deck to dict for storage
-    deck_data = {
-        "id": deck.id,
-        "name": deck.name,
-        "format": deck.format,
-        "commander": {
-            "name": deck.commander.name,
-            "image_uri": deck.commander.image_uri,
-        } if deck.commander else None,
-        "partner": {
-            "name": deck.partner.name,
-            "image_uri": deck.partner.image_uri,
-        } if deck.partner else None,
-        "mainboard": [{"name": c.name, "quantity": c.quantity} for c in deck.mainboard],
-    }
+    # Serialize deck to dict for storage (full card data for the AI fallback cache)
+    deck_data = _serialize_deck(deck)
 
     sb.table("decks").insert({"moxfield_id": deck_id, "data_json": deck_data}).execute()
 
@@ -105,6 +124,12 @@ def analyze(body: AnalyzeDeckRequest, user: dict = Depends(require_allowed_user)
     # Return cached analysis if deck content hasn't changed (unless force re-analysis requested)
     if not body.force and existing.data and existing.data[0].get("deck_updated_at") == last_updated_at:
         return {"analysis": existing.data[0]["result_json"], "cached": True}
+
+    # Update the Supabase deck cache with full card data (supports fallback when Moxfield is blocked)
+    try:
+        sb.table("decks").update({"data_json": _serialize_deck(deck)}).eq("moxfield_id", body.moxfield_id).execute()
+    except Exception as e:
+        logger.warning("Failed to update deck cache for %s: %s", body.moxfield_id, e)
 
     # Run fresh analysis
     result = analyze_deck(deck)
@@ -153,20 +178,7 @@ def add_to_library(body: AddToLibraryRequest, user: dict = Depends(require_allow
             deck = get_deck(deck_id)
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"Moxfield fetch failed: {str(e)}")
-        deck_data = {
-            "id": deck.id,
-            "name": deck.name,
-            "format": deck.format,
-            "commander": {
-                "name": deck.commander.name,
-                "image_uri": deck.commander.image_uri,
-            } if deck.commander else None,
-            "partner": {
-                "name": deck.partner.name,
-                "image_uri": deck.partner.image_uri,
-            } if deck.partner else None,
-            "mainboard": [{"name": c.name, "quantity": c.quantity} for c in deck.mainboard],
-        }
+        deck_data = _serialize_deck(deck)
         sb.table("decks").insert({"moxfield_id": deck_id, "data_json": deck_data}).execute()
 
     moxfield_url = f"https://www.moxfield.com/decks/{deck_id}"

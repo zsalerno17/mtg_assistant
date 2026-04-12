@@ -8,6 +8,9 @@ export default function LeaguePage() {
   const [league, setLeague] = useState(null)
   const [standings, setStandings] = useState([])
   const [games, setGames] = useState([])
+  const [gamesPage, setGamesPage] = useState(1)
+  const [hasMoreGames, setHasMoreGames] = useState(false)
+  const [loadingMoreGames, setLoadingMoreGames] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('standings') // standings | games | members
@@ -28,6 +31,8 @@ export default function LeaguePage() {
       setLeague(leagueData.league)
       setStandings(standingsData.standings || [])
       setGames(gamesData.games || [])
+      setHasMoreGames(gamesData.has_more || false)
+      setGamesPage(1)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -303,6 +308,31 @@ export default function LeaguePage() {
                 )}
               </div>
             ))}
+
+            {hasMoreGames && (
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={async () => {
+                    setLoadingMoreGames(true)
+                    try {
+                      const nextPage = gamesPage + 1
+                      const moreData = await api.getLeagueGames(leagueId, nextPage)
+                      setGames(prev => [...prev, ...(moreData.games || [])])
+                      setHasMoreGames(moreData.has_more || false)
+                      setGamesPage(nextPage)
+                    } catch (err) {
+                      setError(err.message)
+                    } finally {
+                      setLoadingMoreGames(false)
+                    }
+                  }}
+                  disabled={loadingMoreGames}
+                  className="px-6 py-2.5 bg-surface border border-accent/30 rounded-lg text-sm text-secondary hover:text-primary transition-colors disabled:opacity-50"
+                >
+                  {loadingMoreGames ? 'Loading...' : 'Load More Games'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 

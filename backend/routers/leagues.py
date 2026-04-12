@@ -1,9 +1,12 @@
 """League/pod tracking endpoints for Commander Gauntlet-style weekly play."""
 
+import re
+import time
+from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, validator, root_validator
 from typing import Optional, List
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from uuid import UUID
 from urllib.parse import urlparse
 
@@ -11,10 +14,29 @@ from auth import require_user_id, get_user_supabase_client
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 
+# ============================================================================
+# RATE LIMITING (in-memory, per-league game logging)
+# ============================================================================
+
+_game_log_timestamps: dict[str, list[float]] = defaultdict(list)
+GAME_LOG_RATE_LIMIT = 10  # max games per league per hour
+GAME_LOG_WINDOW = 3600  # 1 hour in seconds
+
 
 # ============================================================================
 # URL VALIDATION HELPERS (Security: prevent XSS/SSRF)
 # ============================================================================
+
+def sanitize_text(text: Optional[str], max_length: int = 5000) -> Optional[str]:
+    """Sanitize text input: strip HTML tags, limit length."""
+    if text is None:
+        return None
+    # Strip HTML tags to prevent stored XSS
+    clean = re.sub(r'<[^>]+>', '', text)
+    # Trim whitespace and enforce max length
+    clean = clean.strip()[:max_length]
+    return clean if clean else None
+
 
 def validate_http_url(url: Optional[HttpUrl]) -> Optional[HttpUrl]:
     """
@@ -41,6 +63,32 @@ def validate_http_url(url: Optional[HttpUrl]) -> Optional[HttpUrl]:
     return url
 
 
+def check_game_rate_limit(league_id: str):
+    """Enforce rate limit: max 10 games/hour per league."""
+    now = time.time()
+    timestamps = _game_log_timestamps[league_id]
+    # Remove timestamps older than the window
+    _game_log_timestamps[league_id] = [t for t in timestamps if now - t < GAME_LOG_WINDOW]
+    if len(_game_log_timestamps[league_id]) >= GAME_LOG_RATE_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded: maximum {GAME_LOG_RATE_LIMIT} games per hour per league"
+        )
+    _game_log_timestamps[league_id].append(now)
+
+
+async def verify_league_membership(league_id: str, user_id: str, supabase) -> str:
+    """Verify user is a member of the league. Returns member_id. Raises 403 if not."""
+    membership = supabase.table("league_members") \
+        .select("id") \
+        .eq("league_id", league_id) \
+        .eq("user_id", user_id) \
+        .execute()
+    if not membership.data:
+        raise HTTPException(status_code=403, detail="Not a member of this league")
+    return membership.data[0]["id"]
+
+
 # ============================================================================
 # REQUEST/RESPONSE MODELS
 # ============================================================================
@@ -48,38 +96,82 @@ def validate_http_url(url: Optional[HttpUrl]) -> Optional[HttpUrl]:
 class LeagueCreate(BaseModel):
     """Create a new league/season."""
     name: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=5000)
     season_start: date
     season_end: date
     status: str = Field(default="active", pattern="^(draft|active|completed)$")
+
+    @root_validator(skip_on_failure=True)
+    def validate_dates(cls, values):
+        start = values.get('season_start')
+        end = values.get('season_end')
+        if start and end and end <= start:
+            raise ValueError('season_end must be after season_start')
+        return values
+
+    @validator('name')
+    def sanitize_name(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @validator('description')
+    def sanitize_description(cls, v):
+        return sanitize_text(v, max_length=5000)
 
 
 class LeagueUpdate(BaseModel):
     """Update league metadata."""
     name: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=5000)
     season_start: Optional[date] = None
     season_end: Optional[date] = None
     status: Optional[str] = Field(None, pattern="^(draft|active|completed)$")
+
+    @validator('name')
+    def sanitize_name(cls, v):
+        return sanitize_text(v, max_length=200) if v else v
+
+    @validator('description')
+    def sanitize_description(cls, v):
+        return sanitize_text(v, max_length=5000) if v else v
 
 
 class MemberJoin(BaseModel):
     """Join a league as a new member."""
     superstar_name: str = Field(..., min_length=1, max_length=100)
     entrance_music_url: Optional[HttpUrl] = None
-    catchphrase: Optional[str] = None
+    catchphrase: Optional[str] = Field(None, max_length=500)
     
     _validate_url = validator('entrance_music_url', allow_reuse=True)(validate_http_url)
+
+    @validator('superstar_name')
+    def sanitize_superstar_name(cls, v):
+        return sanitize_text(v, max_length=100)
+
+    @validator('catchphrase')
+    def sanitize_catchphrase(cls, v):
+        return sanitize_text(v, max_length=500) if v else v
 
 
 class MemberUpdate(BaseModel):
     """Update member profile."""
     superstar_name: Optional[str] = Field(None, min_length=1, max_length=100)
     entrance_music_url: Optional[HttpUrl] = None
-    catchphrase: Optional[str] = None
-    current_title: Optional[str] = None
+    catchphrase: Optional[str] = Field(None, max_length=500)
+    current_title: Optional[str] = Field(None, max_length=100)
     
     _validate_url = validator('entrance_music_url', allow_reuse=True)(validate_http_url)
+
+    @validator('superstar_name')
+    def sanitize_superstar_name(cls, v):
+        return sanitize_text(v, max_length=100) if v else v
+
+    @validator('catchphrase')
+    def sanitize_catchphrase(cls, v):
+        return sanitize_text(v, max_length=500) if v else v
+    
+    @validator('current_title')
+    def sanitize_current_title(cls, v):
+        return sanitize_text(v, max_length=100) if v else v
 
 
 class GameLog(BaseModel):
@@ -87,12 +179,29 @@ class GameLog(BaseModel):
     game_number: int = Field(..., ge=1)
     played_at: Optional[datetime] = None
     screenshot_url: Optional[HttpUrl] = None
-    spicy_play_description: Optional[str] = None
+    spicy_play_description: Optional[str] = Field(None, max_length=2000)
     spicy_play_winner_id: Optional[UUID] = None
     entrance_winner_id: Optional[UUID] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=2000)
     
     _validate_url = validator('screenshot_url', allow_reuse=True)(validate_http_url)
+
+    @validator('spicy_play_description')
+    def sanitize_spicy_play(cls, v):
+        return sanitize_text(v, max_length=2000) if v else v
+
+    @validator('notes')
+    def sanitize_notes(cls, v):
+        return sanitize_text(v, max_length=2000) if v else v
+
+    @validator('played_at')
+    def normalize_timezone(cls, v):
+        """Store all times in UTC."""
+        if v is None:
+            return None
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
 
 class GameResultLog(BaseModel):
@@ -172,15 +281,7 @@ async def get_league(
 ):
     """Get league details."""
     try:
-        # Verify membership
-        membership = supabase.table("league_members") \
-            .select("id") \
-            .eq("league_id", league_id) \
-            .eq("user_id", user_id) \
-            .execute()
-        
-        if not membership.data:
-            raise HTTPException(status_code=403, detail="Not a member of this league")
+        await verify_league_membership(league_id, user_id, supabase)
         
         # Get league with members
         result = supabase.table("leagues") \
@@ -221,7 +322,7 @@ async def update_league(
             payload["season_start"] = payload["season_start"].isoformat()
         if "season_end" in payload:
             payload["season_end"] = payload["season_end"].isoformat()
-        payload["updated_at"] = datetime.utcnow().isoformat()
+        payload["updated_at"] = datetime.now(timezone.utc).isoformat()
         
         result = supabase.table("leagues") \
             .update(payload) \
@@ -298,15 +399,7 @@ async def list_members(
 ):
     """List all members in a league."""
     try:
-        # Verify membership
-        membership = supabase.table("league_members") \
-            .select("id") \
-            .eq("league_id", league_id) \
-            .eq("user_id", user_id) \
-            .execute()
-        
-        if not membership.data:
-            raise HTTPException(status_code=403, detail="Not a member of this league")
+        await verify_league_membership(league_id, user_id, supabase)
         
         result = supabase.table("league_members") \
             .select("*, user_profiles(display_name, avatar_url)") \
@@ -368,15 +461,10 @@ async def log_game(
 ):
     """Log a game session with all player results."""
     try:
-        # Verify membership
-        membership = supabase.table("league_members") \
-            .select("id") \
-            .eq("league_id", league_id) \
-            .eq("user_id", user_id) \
-            .execute()
+        # Rate limiting: max 10 games/hour per league
+        check_game_rate_limit(league_id)
         
-        if not membership.data:
-            raise HTTPException(status_code=403, detail="Not a member of this league")
+        await verify_league_membership(league_id, user_id, supabase)
         
         # SECURITY FIX: Validate all member_ids belong to this league
         submitted_member_ids = {str(r.member_id) for r in game_data.results}
@@ -433,7 +521,7 @@ async def log_game(
         game_record = supabase.table("league_games").insert({
             "league_id": league_id,
             "game_number": game.game_number,
-            "played_at": game.played_at.isoformat() if game.played_at else datetime.utcnow().isoformat(),
+            "played_at": game.played_at.isoformat() if game.played_at else datetime.now(timezone.utc).isoformat(),
             "screenshot_url": game.screenshot_url,
             "spicy_play_description": game.spicy_play_description,
             "spicy_play_winner_id": str(game.spicy_play_winner_id) if game.spicy_play_winner_id else None,
@@ -490,28 +578,32 @@ async def log_game(
 @router.get("/{league_id}/games")
 async def list_games(
     league_id: str,
+    page: int = 1,
+    page_size: int = 20,
     user_id: str = Depends(require_user_id),
     supabase = Depends(get_user_supabase_client)
 ):
-    """List all games in a league."""
+    """List games in a league with pagination."""
     try:
-        # Verify membership
-        membership = supabase.table("league_members") \
-            .select("id") \
-            .eq("league_id", league_id) \
-            .eq("user_id", user_id) \
-            .execute()
+        await verify_league_membership(league_id, user_id, supabase)
         
-        if not membership.data:
-            raise HTTPException(status_code=403, detail="Not a member of this league")
+        # Clamp page_size to prevent abuse
+        page_size = min(max(page_size, 1), 50)
+        offset = (max(page, 1) - 1) * page_size
         
         result = supabase.table("league_games") \
             .select("*, league_game_results(*, league_members(superstar_name), user_decks(deck_name))") \
             .eq("league_id", league_id) \
             .order("game_number", desc=True) \
+            .range(offset, offset + page_size - 1) \
             .execute()
         
-        return {"games": result.data}
+        return {
+            "games": result.data,
+            "page": page,
+            "page_size": page_size,
+            "has_more": len(result.data) == page_size
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -530,15 +622,7 @@ async def get_standings(
 ):
     """Get current standings for a league."""
     try:
-        # Verify membership
-        membership = supabase.table("league_members") \
-            .select("id") \
-            .eq("league_id", league_id) \
-            .eq("user_id", user_id) \
-            .execute()
-        
-        if not membership.data:
-            raise HTTPException(status_code=403, detail="Not a member of this league")
+        await verify_league_membership(league_id, user_id, supabase)
         
         # Use helper function from migration
         result = supabase.rpc("get_league_standings", {"league_uuid": league_id}).execute()

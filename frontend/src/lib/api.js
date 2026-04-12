@@ -146,8 +146,8 @@ export const api = {
       body: JSON.stringify(game_data),
     }),
 
-  /** Get all games for a league. */
-  getLeagueGames: (league_id) => apiFetch(`/api/leagues/${league_id}/games`),
+  /** Get games for a league (paginated). */
+  getLeagueGames: (league_id, page = 1) => apiFetch(`/api/leagues/${league_id}/games?page=${page}`),
 
   /** Get current standings for a league. */
   getLeagueStandings: (league_id) => apiFetch(`/api/leagues/${league_id}/standings`),

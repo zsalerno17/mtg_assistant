@@ -10,6 +10,22 @@
 
 ---
 
+## 🐛 Production Fix Applied (April 12, 2026)
+
+**Issue:** Collection upgrades 502: "Could not load deck: 403 Forbidden" — Render.com datacenter IPs blocked by Moxfield's Cloudflare.
+
+**Root cause:** `ai.py _load_deck()` always fetched live from Moxfield on every AI request. `decks` table cache only stored card name+quantity (no full card data), so it couldn't be used as fallback.
+
+**Fix:**
+1. `backend/routers/decks.py` — Added `_serialize_deck()` / `_serialize_card()` helpers that store ALL card fields (`type_line`, `oracle_text`, `colors`, `cmc`, etc.) in `decks.data_json`
+2. `backend/routers/ai.py` — `_load_deck()` now tries Moxfield first; if it gets a 403/error and a Supabase cache row exists, reconstructs the `Deck` object from cache (logs a warning)
+3. `backend/routers/decks.py:analyze` — After a successful Moxfield fetch, updates the `decks` cache with full card data (auto-backfills existing minimal-data rows)
+4. `backend/routers/leagues.py` — Fixed pre-existing `@root_validator` → `@root_validator(skip_on_failure=True)` (Pydantic v2 requirement — was preventing local server startup)
+
+**Post-deploy behavior:** First AI call after deploy hits Moxfield (may fail on new decks not yet cached). Once deck is in the cache with full data, subsequent calls use cache as fallback when Moxfield is blocked.
+
+---
+
 ## ⚡ CURRENT TASK
 
 **Phase 26 — League/Pod Tracking Feature** (April 12, 2026)
@@ -609,29 +625,16 @@ The designer called out these elements as working well:
 
 ---
 
-## Phase 25 — Feature Planning & Prioritization (Upcoming)
+## Phase 25 — Feature Planning & Prioritization ✅ COMPLETE (2026-04-12)
 
-Based on comprehensive user review ([.github/mtg-review.md](.github/mtg-review.md)), prioritize and plan implementation of:
+Comprehensive expert review conducted ([.github/mtg-review.md](.github/mtg-review.md)). All items triaged and scheduled.
 
-**🔴 Critical Fixes (Commander Accuracy):**
-1. **Power level detection** — Calculate 4–10 scale based on fast mana, tutors, infinite combos, avg CMC
-2. **Dynamic thresholds** — Strategy-aware ramp/draw/removal recommendations (aggro vs combo vs control)
-3. **Removal quality splits** — Distinguish exile vs destroy vs conditional removal
-
-**🟡 High Priority (Quality of Life):**
-4. **Theme detection improvements** — Increase thresholds, exclude incidental tokens, density checks
-5. **Enhanced counting functions** — Add ritual/impulse draw/cost reducer detection
-6. **Collection tab clarity** — Rename or split to distinguish owned vs recommended purchases
-
-**🟢 Medium Priority (Differentiation):**
-7. **Budget filtering** — Toggle for price-tier filtering on suggestions
-8. **Scenario analysis quality** — Weight cards by CMC/quality, not just count
-9. **Bulk actions** — Dashboard "Analyze All" and "Refresh All" buttons
-
-**Review Goals:**
-- Decide which fixes to implement in Phase 26 (recommend: all Critical + 2 High Priority)
-- Identify quick wins vs long-term features
-- Assess differentiation strategy: double down on collection integration vs expand feature set
+**Decisions made:**
+- Phase 26 became the **League feature** (different priority shift) — analysis accuracy fixes deferred
+- Critical commander accuracy fixes (power level, dynamic thresholds, removal splits) → scheduled as **Phase 34**
+- High priority QoL fixes (theme detection, counting functions, collection tab clarity) → scheduled as **Phase 34**
+- Medium priority features (budget filtering, scenario quality, bulk actions) → scheduled as **Phase 34** (lower sub-phases)
+- Differentiation strategy: **double down on collection integration** — collection-owned upgrades feature shipped in Phase 26 UX work
 
 ---
 
@@ -2482,32 +2485,34 @@ The app works well. This phase is about making it *feel* like a Magic: The Gathe
 - Auth flow — Supabase JWT still passed as Bearer token
 - All business logic (ported, same behavior)
 
-**Critical risk — Moxfield / cloudscraper:** The Python backend uses `cloudscraper` to bypass Cloudflare bot protection on the Moxfield API. Standard `fetch()` from Deno may be blocked with a 403. This must be validated in Phase A (spike test) before committing to the migration. If blocked, mitigation options are: aggressive Supabase DB caching (most calls are already cached), or fallback error messages guiding users to re-paste their Moxfield URL.
+**Critical risk — Moxfield / cloudscraper:** ~~The Python backend uses `cloudscraper` to bypass Cloudflare bot protection on the Moxfield API. Standard `fetch()` from Deno may be blocked with a 403. This must be validated in Phase A (spike test) before committing to the migration. If blocked, mitigation options are: aggressive Supabase DB caching (most calls are already cached), or fallback error messages guiding users to re-paste their Moxfield URL.~~
+
+**✅ RESOLVED (2026-04-12):** Spike test confirmed Deno native `fetch()` with browser-like headers returns HTTP 200 + full deck JSON from `api2.moxfield.com` in ~150ms. Cloudflare does NOT block the request. `cloudscraper` is unnecessary. Migration is unblocked.
 
 ---
 
-### Phase 32-A: Infrastructure Spike & Validation
+### Phase 32-A: Infrastructure Spike & Validation ✅ COMPLETE
 
 **Goal:** Prove the migration is feasible before writing any real code. Answer the Moxfield/cloudscraper question.
 
-**Tasks:**
-- [ ] Install Supabase CLI: `brew install supabase/tap/supabase`
-- [ ] Run `supabase init` in workspace root (creates `supabase/config.toml`)
-- [ ] Create a single test Edge Function `supabase/functions/moxfield-test/index.ts` that calls the Moxfield API using `fetch()` with realistic browser headers (`User-Agent: Mozilla/5.0...`, `Accept`, `Referer`)
-- [ ] Run `supabase functions serve moxfield-test` locally and test against a real public Moxfield deck URL
-- [ ] **Decision gate:** If fetch succeeds → proceed with migration. If Cloudflare blocks it → assess whether caching covers enough existing use cases, or pause migration
-- [ ] Set up `supabase/functions/_shared/` directory for shared utilities
-- [ ] Add `deno.json` import map (Supabase Deno client, Google Generative AI npm package)
-- [ ] Add `supabase/.env` with all secrets (mirrors `backend/.env`, not committed)
+**Result: 🟢 GO**
 
-**Files created:**
-- `supabase/functions/moxfield-test/index.ts` (throwaway spike, deleted after validation)
-- `supabase/functions/_shared/` (empty directory)
-- `supabase/config.toml`
-- `deno.json`
-- `supabase/.env` (gitignored)
+**Spike test conducted (2026-04-12):**
+- Supabase CLI not available (Homebrew not in PATH) — pivoted to running spike as a standalone Deno script
+- Deno installed via `curl -fsSL https://deno.land/install.sh | sh` → `/Users/zacksalerno/.deno/bin/deno`
+- Script: `scripts/test_moxfield_deno.ts` — calls `https://api2.moxfield.com/v2/decks/all/{deck_id}` with Chrome/macOS browser headers
+- Test deck: `C0p79fTob0C_xX3ojDTCMw` ("Turtle Time" — Commander: Leonardo, the Balance, 98 mainboard cards)
+- **Result: HTTP 200 in 150ms, full deck JSON returned**
+- Even the first attempted call (wrong deck ID) got a proper JSON `404` response — Cloudflare never triggered
 
-**Done when:** `curl http://localhost:54321/functions/v1/moxfield-test` returns a real Moxfield deck JSON.
+**Conclusion:** `cloudscraper` was either never necessary or Moxfield relaxed Cloudflare rules for the API subdomain. Deno `fetch()` works fine.
+
+**Remaining 32-A setup tasks (deferred to 32-B start):**
+- [ ] Install Supabase CLI (need to find Homebrew path or install via other means)
+- [ ] Run `supabase init` in workspace root
+- [ ] Set up `supabase/functions/_shared/` directory
+- [ ] Add `deno.json` import map
+- [ ] Add `supabase/.env` (gitignored)
 
 ---
 
@@ -2956,3 +2961,168 @@ The design-analysis.md identified that DeckPage Overview "fails the 5-second tes
 4. **33E + 33F** (MTG personality pass)
 5. **33G** (cleanup)
 6. **33H last** (largest single task, benefits from all prior consistency fixes being in place)
+
+---
+
+## Phase 34 — Analysis Accuracy & Commander Intelligence
+
+**Status:** 📋 NOT STARTED
+**Source:** Phase 25 feature planning review ([.github/mtg-review.md](.github/mtg-review.md)), MTG Specialist Agent audit (2026-04-12)
+**Prerequisite:** None — backend-only changes, no design dependencies
+
+This phase addresses the fundamental Commander accuracy issues identified in the Phase 25 review. The current analysis engine uses flat hardcoded thresholds that don't account for deck strategy or power level, producing incorrect recommendations for a wide range of deck archetypes.
+
+---
+
+### Phase 34A — Strategy Classification (~3h)
+
+**Goal:** Classify every deck into a primary strategy archetype. All other 34-series improvements depend on this.
+
+**Strategy categories:** aggro, tokens, combo, midrange, control, stax, ramp
+
+**Detection signals (parsed from existing card data):**
+- Tutor count → combo signal
+- Counterspell count → control signal
+- Fast mana count (≤1 CMC artifacts + dorks) → combo/cEDH signal
+- Token generator count → tokens signal
+- Avg CMC → aggro (≤2.5) vs ramp (≥4.0)
+- Stax piece keywords ("opponents can't", "each opponent loses") → stax signal
+
+**Output:** `strategy` string added to `DeckAnalysis` model and stored in `result_json`.
+
+**Files modified:** `backend/src/deck_analyzer.py`, `backend/src/models.py`
+
+---
+
+### Phase 34B — Power Level Detection (~3h)
+
+**Goal:** Calculate a 4–10 power level score. Gemini currently gives advice without knowing power level — biggest single improvement for advice quality.
+
+**Scoring rubric (additive from base 4):**
+
+| Signal | Points |
+|---|---|
+| Fast mana (≤1 CMC non-land): Sol Ring, Mana Crypt, etc. | +0.5 each, max +2 |
+| Tutor count | +0.4 each, max +2 |
+| Counterspell count | +0.3 each, max +1.5 |
+| Infinite combo pieces detected | +1.5 per combo |
+| Avg CMC ≤ 2.5 | +1 |
+| Avg CMC ≥ 4.0 | -1 |
+| Card draw ≥ 12 | +0.5 |
+| Interaction ≥ 15 | +0.5 |
+
+**Output:** `power_level: int` (4–10) added to `DeckAnalysis`.
+
+**Files modified:** `backend/src/deck_analyzer.py`, `backend/src/models.py`
+
+---
+
+### Phase 34C — Dynamic Thresholds (~2h)
+
+**Goal:** Replace flat hardcoded thresholds with strategy + power-level-aware recommendations.
+
+**Current (wrong):** `RECOMMENDED_RAMP = 10`, `RECOMMENDED_DRAW = 10`, `RECOMMENDED_REMOVAL = 8`, `RECOMMENDED_LANDS = (36, 38)` — same for every deck.
+
+**Replacement — `calculate_thresholds(strategy, power_level, avg_cmc)`:**
+
+| Strategy | Ramp | Draw | Removal | Lands |
+|---|---|---|---|---|
+| aggro | 6–8 | 8–10 | 6–8 | 33–35 |
+| tokens | 8–10 | 8–10 | 7–9 | 34–36 |
+| combo | 12–16 | 14–18 | 8–10 | 30–33 |
+| midrange | 10–12 | 10–12 | 9–11 | 36–38 |
+| control | 8–10 | 14–18 | 12–15 | 36–38 |
+| stax | 8–10 | 10–12 | 10–12 | 34–36 |
+| ramp | 14–18 | 10–12 | 8–10 | 38–42 |
+
+**Files modified:** `backend/src/deck_analyzer.py`
+
+---
+
+### Phase 34D — Removal Quality Splits (~2h)
+
+**Goal:** Split `count_removal()` into quality tiers — exile vs destroy vs conditional vs bounce.
+
+**New breakdown:**
+- `exile_removal` — Swords to Plowshares, Generous Gift, Chaos Warp, etc.
+- `destroy_removal` — Go for the Throat, Beast Within, etc.
+- `conditional_removal` — Doom Blade variants, damage-based removal < 6
+- `bounce_return` — Cyclonic Rift, blink effects (temporary)
+
+**Weakness detection additions:**
+- If `exile_removal < 3` AND total removal ≥ 8: flag "Low exile-based removal — doesn't hit indestructible"
+
+**Files modified:** `backend/src/deck_analyzer.py`, `backend/src/models.py`
+
+---
+
+### Phase 34E — Theme Detection Improvements (~2h)
+
+**Goal:** Fix false positives. Current matching is too loose.
+
+**Changes:**
+- Tokens: raise threshold from 3 → 6 token generators
+- Graveyard: raise from 4 → 6 graveyard-matter cards
+- Blink: require ≥ 4 ETB-payoffs AND ≥ 3 blink effects
+- Add density check: theme cards must be ≥ 8% of deck to trigger badge
+- Exclude incidental token generation (e.g., Clue tokens from Rhystic Study)
+
+**Files modified:** `backend/src/deck_analyzer.py`
+
+---
+
+### Phase 34F — Enhanced Counting Functions (~2h)
+
+**Goal:** Add detection for card categories currently missed. These also feed 34A and 34B.
+
+**New counters:**
+- `count_rituals()` — Dark Ritual, Cabal Ritual, etc.
+- `count_impulse_draw()` — Light Up the Stage, Valakut Awakening (distinct from true card draw)
+- `count_cost_reducers()` — Goblin Electromancer, Helm of Awakening
+- `count_fast_mana()` — Sol Ring, Mana Crypt, Chrome Mox, Jeweled Lotus, Mana Vault
+- `count_stax_pieces()` — Thalia, Eidolon of the Great Revel, Rule of Law
+
+**Files modified:** `backend/src/deck_analyzer.py`
+
+---
+
+### Phase 34G — Gemini Prompt Enrichment (~1h)
+
+**Goal:** Pass `strategy`, `power_level`, and removal quality into Gemini so advice is calibrated.
+
+**Updates:**
+- Add strategy + power_level to analysis context section
+- Add `exile_removal` count and `fast_mana_count` to context
+- Update prompt opener: "You are analyzing a **{strategy}** deck at power level **{power_level}/10**."
+
+**Files modified:** `backend/src/gemini_assistant.py`, `backend/routers/ai.py`
+
+---
+
+### Phase 34H — UX: Collection Tab Clarity (~1h)
+
+**Goal:** "Collection Upgrades" tab shows both owned cards AND AI suggestions — the name is misleading.
+
+**Fix:** Rename tab to **"Upgrades"**, add section labels inside: "From My Collection" and "Suggested Purchases".
+
+**Files modified:** `frontend/src/pages/DeckPage.jsx` (tab label + section headings only)
+
+---
+
+### Phase 34 Summary
+
+| Sub-phase | What | Effort | Impact |
+|---|---|---|---|
+| 34A | Strategy classification | 3h | **Critical** — foundation for all fixes |
+| 34B | Power level detection | 3h | **Critical** — unlocks accurate Gemini advice |
+| 34C | Dynamic thresholds | 2h | **Critical** — fixes wrong ramp/land/removal flags |
+| 34D | Removal quality splits | 2h | High — exile vs destroy matters in Commander |
+| 34E | Theme detection fixes | 2h | High — removes false-positive badges |
+| 34F | Enhanced counting functions | 2h | Medium — feeds 34A/34B |
+| 34G | Gemini prompt enrichment | 1h | High — immediately better AI advice |
+| 34H | Collection tab clarity | 1h | Medium — UX confusion fix |
+| **Total** | | **~16h** | |
+
+**Recommended order:** 34A → 34F → 34B → 34C → 34D → 34E → 34G → 34H
+
+**Note:** 34A–34G are all backend (`deck_analyzer.py`, `gemini_assistant.py`). No DB migrations — new fields computed at analysis time and stored in the existing `result_json` JSONB column. 34H is frontend-only.
