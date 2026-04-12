@@ -125,7 +125,7 @@ Full test plan in [.github/test-plan.md](.github/test-plan.md). Covers:
 6. 📋 Deploy backend + frontend
 7. 📋 Announce breaking change (new scoring system) to users
 
-**Deferred to Future Phases (27-31):**
+**Deferred to Future Phases (27-33):**
 - Phase 27: Security Polish (text sanitization, date validation, rate limiting, DB constraints)
 - Phase 28: Performance Optimizations (pagination, query deduplication, composite indexes)
 - Phase 29: Test Coverage Expansion (frontend tests, integration tests, RLS tests with real DB)
@@ -134,6 +134,7 @@ Full test plan in [.github/test-plan.md](.github/test-plan.md). Covers:
 - Phase 31B: Leaderboard & Profile Design (~12h) — championship standings, member cards, empty states, mobile layout, success animation
 - Phase 31C: Design Polish (~13h) — Cinzel labels, color pips, skeleton loaders, narrative game history, music preview
 - Phase 31D: Accessibility Fixes (~4h) — ARIA tabs, table semantics, focus rings, contrast, live regions, form labels
+- Phase 33: **App-Wide Design Uniformity** (~13h) — league color system fix, standardize CTA buttons, mobile nav leagues, stat card unification, Dashboard color pips, login page flavor, border-radius system, DeckPage hero restructure ⚠️ DO WITH OR AFTER 31A
 
 ### Files Modified
 
@@ -2459,3 +2460,499 @@ The app works well. This phase is about making it *feel* like a Magic: The Gathe
 - Do not redesign the information architecture — tabs, pages, and nav structure stay as-is
 - Do not add features — this is purely visual/UX polish
 - Do not use actual MTG card artwork (copyright) — Scryfall card images for commander lookup are fair use for a non-commercial tool; full art backgrounds are not
+
+---
+
+## Phase 32 — Migrate Backend: FastAPI/Render → Supabase Edge Functions (TypeScript/Deno)
+
+**Status:** 📋 NOT STARTED  
+**Decision:** April 12, 2026 — Eliminate Render cold starts (30-60s on free tier) at zero cost. Supabase Edge Functions are free tier, 150s timeout (Gemini AI calls need 15-30s), ~50ms cold start.  
+**New stack:** Frontend (Vercel) → Supabase Edge Functions (Deno) → Supabase DB/Auth — no Render at all.
+
+### Migration Overview
+
+**What changes:**
+- `backend/` (FastAPI/Python) → `supabase/functions/` (TypeScript/Deno)
+- `VITE_API_BASE_URL` changes from `https://mtg-assistant-m4r9.onrender.com` to `https://erklzjnsdduexqifffim.supabase.co/functions/v1`
+- All API endpoint paths stay the same semantically (re-mapped in `api.js`)
+
+**What stays the same:**
+- Frontend React code (minimal changes to `api.js` only)
+- Supabase DB schema — no changes
+- Auth flow — Supabase JWT still passed as Bearer token
+- All business logic (ported, same behavior)
+
+**Critical risk — Moxfield / cloudscraper:** The Python backend uses `cloudscraper` to bypass Cloudflare bot protection on the Moxfield API. Standard `fetch()` from Deno may be blocked with a 403. This must be validated in Phase A (spike test) before committing to the migration. If blocked, mitigation options are: aggressive Supabase DB caching (most calls are already cached), or fallback error messages guiding users to re-paste their Moxfield URL.
+
+---
+
+### Phase 32-A: Infrastructure Spike & Validation
+
+**Goal:** Prove the migration is feasible before writing any real code. Answer the Moxfield/cloudscraper question.
+
+**Tasks:**
+- [ ] Install Supabase CLI: `brew install supabase/tap/supabase`
+- [ ] Run `supabase init` in workspace root (creates `supabase/config.toml`)
+- [ ] Create a single test Edge Function `supabase/functions/moxfield-test/index.ts` that calls the Moxfield API using `fetch()` with realistic browser headers (`User-Agent: Mozilla/5.0...`, `Accept`, `Referer`)
+- [ ] Run `supabase functions serve moxfield-test` locally and test against a real public Moxfield deck URL
+- [ ] **Decision gate:** If fetch succeeds → proceed with migration. If Cloudflare blocks it → assess whether caching covers enough existing use cases, or pause migration
+- [ ] Set up `supabase/functions/_shared/` directory for shared utilities
+- [ ] Add `deno.json` import map (Supabase Deno client, Google Generative AI npm package)
+- [ ] Add `supabase/.env` with all secrets (mirrors `backend/.env`, not committed)
+
+**Files created:**
+- `supabase/functions/moxfield-test/index.ts` (throwaway spike, deleted after validation)
+- `supabase/functions/_shared/` (empty directory)
+- `supabase/config.toml`
+- `deno.json`
+- `supabase/.env` (gitignored)
+
+**Done when:** `curl http://localhost:54321/functions/v1/moxfield-test` returns a real Moxfield deck JSON.
+
+---
+
+### Phase 32-B: Shared Utilities (TypeScript equivalents of Python modules)
+
+**Goal:** Build the shared foundation all 6 Edge Functions will import. No endpoints yet.
+
+**Files to create in `supabase/functions/_shared/`:**
+
+1. **`cors.ts`** — CORS headers helper
+   - Hardcode allowed origins: `http://localhost:5173`, `https://mtg-assistant-silk.vercel.app`, regex for `https://mtg-assistant-*.vercel.app`
+   - Export `corsHeaders` object and `handleCors(req)` preflight handler
+
+2. **`auth.ts`** — JWT verification + allow-list check
+   - Verify the Bearer token using Supabase's `auth.getUser(token)`
+   - Query `allowed_users` table with service role client to confirm email is on the list
+   - Return `{ userId, email }` or throw 401/403
+   - Export `requireAllowedUser(req)` — mirrors Python `require_allowed_user` dependency
+
+3. **`supabase.ts`** — Supabase client factory
+   - `getServiceClient()` — admin client using `SUPABASE_SERVICE_ROLE_KEY`
+   - `getUserClient(token)` — user-scoped client (respects RLS), mirrors `get_user_supabase_client()`
+
+4. **`models.ts`** — TypeScript interfaces
+   - Port `backend/src/models.py` (~99 lines)
+   - `Card`, `Deck`, `Collection` interfaces
+
+5. **`moxfield.ts`** — Moxfield API client
+   - Port `backend/src/moxfield.py` (~126 lines)
+   - `extractDeckId(url)` — regex extraction
+   - `getDeck(deckId)` — fetch with browser-like headers
+   - `getDeckWithMeta(deckId)` — returns `[Deck, lastUpdatedAt]` tuple
+   - `parseMoxfieldDeck(json)` — JSON → `Deck` object
+
+6. **`scryfall.ts`** — Scryfall API client
+   - Port `backend/src/scryfall.py` (~96 lines)
+   - `getCardByName(name)` — exact name lookup
+   - Rate limit: 100ms sleep between calls (Scryfall allows 10/sec)
+
+7. **`deck_analyzer.ts`** — MTG deck analysis logic
+   - Port `backend/src/deck_analyzer.py` (~835 lines) — the biggest task in the migration
+   - `analyzeDeck(deck)` → analysis result object
+   - `findCollectionImprovements(deck, collection)` → swap suggestions
+   - `scenariosFallback(deck, additions, removals)` → static scenario result
+   - Pure logic, no external calls — direct port from Python to TypeScript
+
+8. **`gemini.ts`** — Gemini AI client
+   - Port `backend/src/gemini_assistant.py` (~350 lines)
+   - Use `@google/generative-ai` npm package via Deno's npm: specifier
+   - `getStrategyAdvice(deck, analysis)` → strategy object
+   - `getImprovementSuggestions(deck, analysis, collection)` → improvements object
+   - `explainScenarios(deck, analysis, adds, removes)` → before/after object
+   - Model chain fallback: `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-2.5-flash-lite`
+
+9. **`collection_parser.ts`** — CSV/text parsing
+   - Port `backend/src/collection.py` (~77 lines)
+   - `parseMoxfieldCsv(text)` → `Collection`
+   - `parseTextList(text)` → `Collection`
+
+**Done when:** All `_shared/` files compile cleanly with `deno check`.
+
+---
+
+### Phase 32-C: Simple Edge Functions (no AI, no Moxfield)
+
+**Goal:** Port the two simplest routers first to validate the Edge Function pattern end-to-end.
+
+**Functions:**
+
+1. **`supabase/functions/health/index.ts`**
+   - `GET /health` → `{ status: "ok" }`
+   - No auth required
+   - Test: `curl https://<project>.supabase.co/functions/v1/health`
+
+2. **`supabase/functions/users/index.ts`**
+   - Port `backend/routers/users.py` (~138 lines)
+   - Routes by HTTP method: `GET` → get profile, `PUT` → update profile
+   - Reuses `requireAllowedUser()`, `getServiceClient()` from `_shared/`
+   - Same username regex validation (`^[a-zA-Z0-9_-]{3,20}$`)
+   - Same avatar_url preset validation (full list of valid preset IDs)
+
+3. **`supabase/functions/analyses/index.ts`**
+   - Port `backend/routers/analyses.py` (~42 lines)
+   - `GET /analyses/history?page=N` → paginated analysis history
+   - Reuses `requireAllowedUser()`, `getServiceClient()`
+
+**Done when:** All three functions pass local `supabase functions serve` tests with real auth tokens.
+
+---
+
+### Phase 32-D: Moxfield-Dependent Functions
+
+**Goal:** Port the decks and collection routers that call Moxfield and Scryfall.
+
+**Functions:**
+
+1. **`supabase/functions/collection/index.ts`**
+   - Port `backend/routers/collection.py` (~93 lines)
+   - Routes: `GET /` → get collection, `POST /upload` → upload CSV, `GET /summary` → card count
+   - File upload via multipart form data — Deno handles via `req.formData()`
+   - Calls `scryfall.ts` for card enrichment (rate-limited, slow — may approach timeout for large collections)
+   - **Timeout risk:** A 500-card collection at 100ms/card = 50 seconds. Within 150s limit but close. May need to increase rate or warn user.
+
+2. **`supabase/functions/decks/index.ts`**
+   - Port `backend/routers/decks.py` (~288 lines)
+   - Routes: `POST /fetch`, `POST /analyze`, `POST /library`, `GET /library`
+   - Calls `moxfield.ts`, `deck_analyzer.ts`
+   - The backwards-compatibility logic for `get_library` (merging old analyses rows without `user_decks` entries) must be preserved exactly
+
+**Done when:** Can fetch a Moxfield deck, analyze it, and add to library via local Edge Function endpoints.
+
+---
+
+### Phase 32-E: AI Edge Function
+
+**Goal:** Port the AI router — the most complex and the primary reason for this migration.
+
+**Function: `supabase/functions/ai/index.ts`**
+- Port `backend/routers/ai.py` (~252 lines)
+- Routes: `POST /strategy`, `POST /improvements`, `POST /scenarios`, `POST /collection-upgrades`
+- Calls `moxfield.ts`, `deck_analyzer.ts`, `gemini.ts`
+- Cache reads/writes to `ai_cache` Supabase table (same logic as Python)
+- The complex post-processing logic in `/improvements` (swap validation, owned flags, backwards-compat merge) must be preserved exactly
+- **Timeout:** Gemini calls take 15-30s. Edge Function 150s limit is fine.
+
+**Done when:** AI strategy and improvements return correct JSON responses via local function endpoint.
+
+---
+
+### Phase 32-F: Leagues Edge Function
+
+**Goal:** Port the largest and most complex router.
+
+**Function: `supabase/functions/leagues/index.ts`**
+- Port `backend/routers/leagues.py` (~550 lines)
+- All league CRUD: create, update, list, get detail
+- Member management: join, update, remove
+- Game logging: log game with results, placements, social awards
+- Standings calculation
+- URL validation (SSRF prevention) — same blocked hosts list must be carried over
+- Uses user-scoped Supabase client (`getUserClient(token)`) for RLS compliance
+- Routes by method + URL path pattern (Deno has no FastAPI-style router — implement simple path matching or use `hono` framework)
+
+**Note on routing:** Each Supabase Edge Function is its own URL (`/functions/v1/leagues`). Multiple HTTP methods (GET, POST, PUT, DELETE) within a single function need to be routed manually. Options:
+- Simple if/else on `req.method` + `url.pathname`
+- Use Hono (lightweight Deno-compatible router) — cleaner for 550-line router
+
+**Done when:** Full league flow works end-to-end: create league → join → log game → view standings, via local Edge Functions.
+
+---
+
+### Phase 32-G: Frontend API Layer Update
+
+**Goal:** Point the frontend at Supabase Edge Functions instead of Render.
+
+**Tasks:**
+- [ ] Update `frontend/.env.production`:
+  - `VITE_API_BASE_URL=https://erklzjnsdduexqifffim.supabase.co/functions/v1`
+- [ ] Update `frontend/.env` (local dev):
+  - `VITE_API_BASE_URL=http://localhost:54321/functions/v1`
+- [ ] Audit `frontend/src/lib/api.js` — all endpoint paths
+  - Current: `/api/decks/fetch`, `/api/ai/strategy`, etc.
+  - New: `/decks/fetch`, `/ai/strategy`, etc. (drop the `/api` prefix — Edge Functions don't have it)
+  - Each function is its own root: `GET /health`, `GET /users` vs `GET /api/users/profile`
+  - **Map each old path to new path** and update all `fetch()` calls in `api.js`
+- [ ] Verify auth header is passed correctly — Edge Functions expect `Authorization: Bearer <jwt>` (same as now, no change needed in frontend auth flow)
+- [ ] Local integration test: run `supabase functions serve` + `npm run dev`, confirm all pages load
+
+**Files modified:**
+- `frontend/.env` (local)
+- `frontend/.env.production`
+- `frontend/src/lib/api.js`
+
+**Done when:** Full app works on localhost pointing at local Supabase Edge Functions.
+
+---
+
+### Phase 32-H: Production Deploy & Render Teardown
+
+**Goal:** Deploy Edge Functions to production, verify everything works, shut down Render.
+
+**Tasks:**
+- [ ] Set Edge Function secrets in Supabase dashboard: `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
+  - Go to Supabase → Settings → Edge Functions → Secrets
+- [ ] Deploy all functions: `supabase functions deploy` (deploys all functions at once)
+- [ ] Update `VITE_API_BASE_URL` in Vercel environment variables to Supabase Functions URL
+- [ ] Trigger a new Vercel deployment (push to main or redeploy manually)
+- [ ] Smoke test production: login → view library → analyze a deck → get AI strategy
+- [ ] Monitor Edge Function logs in Supabase dashboard for errors
+- [ ] **After 1 week of stable production:** Delete the Render service (Settings → Delete Service)
+- [ ] Archive `backend/` directory (or leave it — it's referenced in git history)
+- [ ] Update `render.yaml` and `README.md` to reflect new architecture
+
+**Done when:** Production runs entirely on Vercel + Supabase, no Render, with <1s cold starts.
+
+---
+
+### Phase 32 — Summary
+
+| Phase | What | Risk | Effort |
+|---|---|---|---|
+| 32-A | Infrastructure spike, Moxfield fetch test | **HIGH** (Cloudflare may block) | 2h |
+| 32-B | Shared utilities (models, auth, clients, deck analyzer) | Medium | 8-10h |
+| 32-C | Health, Users, Analyses functions | Low | 2h |
+| 32-D | Collection, Decks functions | Medium | 4h |
+| 32-E | AI function | Medium | 4h |
+| 32-F | Leagues function | Medium | 6h |
+| 32-G | Frontend API layer update | Low | 2h |
+| 32-H | Production deploy + Render teardown | Low | 1h |
+| **Total** | | | **~29-31h** |
+
+**The single deciding factor is Phase 32-A.** If Moxfield blocks standard `fetch()` from Deno, we need to decide whether the caching layer is sufficient (most users' decks are already cached after first analysis) or whether to abandon the migration.
+
+**Recommended order for implementation sessions:**
+1. Phase 32-A first (validation spike, short session)
+2. Phase 32-B (biggest single session — TypeScript ports)
+3. Phases 32-C through 32-F (one function at a time, test each before moving on)
+4. Phase 32-G + 32-H (deploy session)
+
+---
+
+## Phase 33 — App-Wide Design Uniformity & Polish
+
+**Status:** 📋 NOT STARTED  
+**Prerequisite:** Phase 31A complete (league glass cards / scoring columns fix)  
+**Source:** Full design audit comparing plan docs vs production (April 12, 2026)
+
+This phase addresses design inconsistencies **across the entire app** that fall outside the league-specific phases 31A–31D. The goal: every page should feel like the same product — fun, modern, and uniform.
+
+> **Overlap check vs existing phases:**
+> - Phase 31A already covers: deprecated scoring columns, glass cards for league pages, hero section for LeaguePage, tab reorder, points preview
+> - Phase 31B already covers: championship leaderboard standings, member cards, empty states, mobile LogGamePage, success animation
+> - Phase 31C already covers: Cinzel section labels in league pages, color pips on league cards, skeleton loading for league pages, narrative game history
+> - Phase 31D already covers: accessibility (ARIA tabs, focus rings, contrast, live regions, form labels)
+> - **Everything below is NEW scope not covered by any existing phase.**
+
+---
+
+### Phase 33A — League Color System Fix (~2h)
+
+The biggest visual consistency issue in the app. League pages use Tailwind v4 shorthand classes (`text-secondary`, `text-primary`, `text-accent`) that technically resolve but map to **wrong semantic colors**:
+
+| Class used | Resolves to | Intended meaning | Should be |
+|---|---|---|---|
+| `text-secondary` | Sky blue `#38bdf8` | Muted/helper text | `text-[var(--color-muted)]` → gray `#94a3b8` |
+| `text-primary` | Amber `#fbbf24` | Body text / member names | `text-[var(--color-text)]` → white `#f1f5f9` |
+| `text-accent` | `#f59e0b` | Active tabs / emphasis | `text-[var(--color-primary)]` → `#fbbf24` |
+| `border-accent/30` | Amber 30% | Card borders | `border-[var(--color-border)]` → `#1e293b` |
+| `bg-black/40` | Pure black 40% | Form input backgrounds | `bg-[var(--color-bg)]` → `#0a0f1a` |
+
+**Why 31A doesn't cover this:** 31A replaces card `bg-surface` with glass morphism styling, but doesn't fix the ~60+ instances of wrong text/border color semantics across LeaguePage, LeaguesPage, and LogGamePage.
+
+**Tasks:**
+- [ ] Replace all `text-secondary` with `text-[var(--color-muted)]` in league pages (labels, descriptions, loading text, table headers, breadcrumbs, form labels)
+- [ ] Replace all `text-primary` used for body text with `text-[var(--color-text)]` (member names, form text, headings that should be white not amber)
+- [ ] Replace `text-accent` / `border-accent` with `text-[var(--color-primary)]` / `border-[var(--color-primary)]` for intentional amber accents
+- [ ] Replace `border-accent/30` with `border-[var(--color-border)]` for standard borders
+- [ ] Replace `bg-black/40` with `bg-[var(--color-bg)] border border-[var(--color-border)]` for form inputs, add `focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)]` focus states
+- [ ] Replace `hover:text-accent` with `hover:text-[var(--color-text)]` for breadcrumb links
+- [ ] Replace `focus:border-accent focus:ring-1 focus:ring-accent` with `focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]` on inputs
+
+**Files Modified:**
+- `frontend/src/pages/LeaguePage.jsx` (~35 replacements)
+- `frontend/src/pages/LeaguesPage.jsx` (~15 replacements)
+- `frontend/src/pages/LogGamePage.jsx` (~25 replacements)
+
+**Impact:** Instantly makes all 3 league pages match the main app's color language — muted gray for helper text, white for body text, amber reserved for emphasis.
+
+---
+
+### Phase 33B — Standardize CTA Buttons App-Wide (~1.5h)
+
+Four different CTA button patterns exist across pages. Standardize to one:
+
+| Page | Current pattern |
+|---|---|
+| DashboardPage | `bg-gradient-to-r from-[var(--color-primary)] to-[#f59e0b]` + `hover:-translate-y-px hover:shadow-[0_4px_16px_...]` |
+| ImportDeckPage | `bg-gradient-to-r from-amber-500 to-orange-500` + `hover:-translate-y-0.5` |
+| ProfilePage | `bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]` |
+| LeaguesPage | Raw `bg-accent` or gradient with different hover |
+
+**Standard pattern (use everywhere):**
+```
+bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]
+text-black font-semibold font-body rounded-lg
+px-5 py-2.5
+hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)]
+active:translate-y-0 transition-all
+disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0
+```
+
+**Tasks:**
+- [ ] Align ImportDeckPage CTA gradient to use CSS vars instead of hardcoded `from-amber-500 to-orange-500`
+- [ ] Align ProfilePage CTA hover to include `-translate-y-0.5` and shadow
+- [ ] Align LeaguesPage "Create League" button to standard pattern
+- [ ] Align LogGamePage submit button to standard pattern
+- [ ] Standardize hover translation: all use `-translate-y-0.5` (not mix of `-translate-y-px` and `-translate-y-0.5`)
+
+**Files Modified:**
+- `frontend/src/pages/ImportDeckPage.jsx`
+- `frontend/src/pages/ProfilePage.jsx`
+- `frontend/src/pages/LeaguesPage.jsx`
+- `frontend/src/pages/LogGamePage.jsx`
+
+---
+
+### Phase 33C — Add Leagues to Mobile Bottom Nav (~30min)
+
+League tracking is the game-night feature — users will be on phones. Currently the mobile bottom nav only shows Home, Collection, and Profile. No way to reach Leagues without the hamburger menu (which doesn't exist) or typing the URL.
+
+**Tasks:**
+- [ ] Add Leagues icon + "Leagues" label to mobile bottom nav in TopNavbar.jsx
+- [ ] Use trophy/shield SVG icon consistent with desktop nav
+- [ ] Apply same active state pattern (`text-[var(--color-primary)]` when on `/leagues` routes)
+- [ ] Reorder: Home | Leagues | Collection | Profile (Leagues next to Home since it's a primary feature)
+
+**Files Modified:**
+- `frontend/src/components/TopNavbar.jsx` (mobile bottom nav section, ~15 lines added)
+
+---
+
+### Phase 33D — Unify Stat Card Styling (~1h)
+
+DashboardPage and DeckPage both display stat badges/cards but with different visual treatments:
+
+| Page | Background | Effect | Border |
+|---|---|---|---|
+| DashboardPage | `bg-gradient-to-br from-surface to-#1a202e` | Gradient bottom `::after` pseudo-element | None visible |
+| DeckPage | `bg-[var(--color-surface)]/80 backdrop-blur-sm` | Glass morphism | `border border-[var(--color-border)]` |
+
+**Target:** Use the DeckPage glass morphism approach everywhere (cleaner, more modern, consistent with the rest of the app's depth language).
+
+**Tasks:**
+- [ ] Update DashboardPage stat cards to use `bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)]` instead of gradient background
+- [ ] Keep the `stat-card::after` gradient bottom borders (they work with either approach)
+- [ ] Ensure hover states match: `hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]`
+
+**Files Modified:**
+- `frontend/src/pages/DashboardPage.jsx` (stat card grid, ~4 class changes)
+
+---
+
+### Phase 33E — Color Identity Pips on Dashboard Deck Cards (~2h)
+
+The plan identifies this as the "highest-impact single visual addition to the history list." CSS variables for mana colors exist (`--color-mtg-w/u/b/r/g`) but aren't used on the Dashboard.
+
+> **Note:** Phase 31C plans color pips on *league* cards. This task adds them to *Dashboard deck* cards — different page, different data source.
+
+**Tasks:**
+- [ ] Parse deck color identity from cached deck data (already available in `result_json.colors` or commander colors from Scryfall)
+- [ ] Add small W/U/B/R/G colored circles (8px) next to deck name or below commander art in the deck table
+- [ ] Use existing `--color-mtg-*` CSS variables for pip colors
+- [ ] Show pips for both the `ColorPips` component (already exists in DashboardPage) and any new deck card contexts
+- [ ] Ensure pips are visible on both analyzed and unanalyzed decks (use commander colors for unanalyzed, which are available from Moxfield import)
+
+**Files Modified:**
+- `frontend/src/pages/DashboardPage.jsx` (deck table row rendering)
+- Potentially `backend/routers/decks.py` (if color identity isn't already in `/library` response — verify first)
+
+---
+
+### Phase 33F — Login Page MTG Personality (~2h)
+
+The login page is the first screen users see and currently has zero MTG visual identity — just title + tagline + Google button on dark background.
+
+**Tasks:**
+- [ ] Add a row of W/U/B/R/G mana pip symbols below the title using Mana Font icons (already imported in the app)
+- [ ] Replace informational tagline ("Deck recommendations, play strategies, and scenario analysis") with something exciting: **"Build better commanders. Before the match."**
+- [ ] Push the radial glow from `body` more aggressively on this page — add a second `radial-gradient` centered behind the login card with stronger amber opacity (~15% vs current 7%)
+- [ ] Add subtle hover glow effect on the Google sign-in button (amber shadow on hover, matching the CTA button pattern)
+
+**Files Modified:**
+- `frontend/src/pages/LoginPage.jsx` (~20 lines changed)
+
+---
+
+### Phase 33G — Consistent Border-Radius System (~1h)
+
+The app uses 5 different border-radius values with no clear logic:
+
+| Value | Current usage |
+|---|---|
+| `rounded-full` (999px) | Avatar circles only |
+| `rounded-xl` (12px) | Most cards/containers |
+| `rounded-[10px]` | Some stat cards |
+| `rounded-lg` (8px) | Buttons, inputs |
+| `rounded-[7px]` | Status badges, avatar squares, nav links |
+
+**Standard system:**
+- `rounded-xl` (12px) — cards, containers, modals
+- `rounded-lg` (8px) — buttons, inputs, dropdowns
+- `rounded-[7px]` — small badges, nav pills, avatar squares (keep as-is, this is intentional per mockup)
+- `rounded-full` — circular avatars only
+
+**Tasks:**
+- [ ] Replace all `rounded-[10px]` on stat cards with `rounded-xl` (only a few instances in DashboardPage)
+- [ ] Audit any other non-standard radius values and align to the 3-tier system
+- [ ] Document the radius convention in a code comment in `index.css` for future reference
+
+**Files Modified:**
+- `frontend/src/pages/DashboardPage.jsx` (stat cards)
+- `frontend/src/index.css` (add comment documenting convention)
+
+---
+
+### Phase 33H — DeckPage Overview Tab Hero Restructure (~3h)
+
+The design-analysis.md identified that DeckPage Overview "fails the 5-second test" — users see an information dump with no focal point. The weaknesses section (the app's best-differentiated feature) is buried at the bottom of a long scroll.
+
+> **Not in any existing phase.** Phases 31A–31D only address league pages.
+
+**Tasks:**
+- [ ] Move commander name + art + color identity to a prominent hero position at the TOP of Overview tab
+  - Commander art: larger display (80x112px vs current inline)
+  - Commander name in `font-brand text-2xl` as the dominant text element
+  - Color identity pips immediately visible next to commander name
+  - Partner commanders shown side-by-side
+- [ ] Move weakness cards UP — position them directly after the stats row, before mana curve
+  - Weaknesses are the app's killer differentiator vs Moxfield; they shouldn't require scrolling past mana curve and card types to discover
+- [ ] Add "Explore Strategy →" and "Collection Upgrades →" quick-link cards below weaknesses
+  - These are the differentiator tabs; make them discoverable from Overview instead of requiring tab exploration
+
+**Files Modified:**
+- `frontend/src/pages/DeckPage.jsx` (Overview tab section, reorder components)
+
+---
+
+### Phase 33 Summary
+
+| Sub-phase | What | Effort | Impact |
+|---|---|---|---|
+| 33A | League color system fix | 2h | **Critical** — fixes 3 pages looking like a different product |
+| 33B | Standardize CTA buttons | 1.5h | High — uniform interaction language |
+| 33C | Leagues in mobile bottom nav | 30min | High — game-night users can reach leagues |
+| 33D | Unify stat card styling | 1h | Medium — visual consistency between pages |
+| 33E | Dashboard color identity pips | 2h | High — adds MTG flavor to most-viewed page |
+| 33F | Login page MTG personality | 2h | Medium — better first impression |
+| 33G | Consistent border-radius | 1h | Low — subtle polish |
+| 33H | DeckPage Overview hero restructure | 3h | High — fixes 5-second test failure |
+| **Total** | | **~13h** | |
+
+**Recommended order:**
+1. **33A first** (biggest visual impact, fixes the most jarring inconsistency)
+2. **33C** (30 min quick win, unblocks mobile league usage)
+3. **33B + 33D** (uniformity pass, natural to do together)
+4. **33E + 33F** (MTG personality pass)
+5. **33G** (cleanup)
+6. **33H last** (largest single task, benefits from all prior consistency fixes being in place)
