@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 // Simple session-scoped cache to avoid redundant Scryfall requests
 const imageCache = new Map()
@@ -6,16 +7,16 @@ const imageCache = new Map()
 /**
  * CardTooltip — shows Scryfall card image on hover
  * 
- * Wraps a card name string. On hover (delayed 300ms), fetches and displays
- * the Scryfall card image in a floating tooltip positioned above or below
- * the text depending on viewport position.
+ * Wraps a card name string. On hover (delayed 150ms), fetches and displays
+ * the Scryfall card image in a floating tooltip positioned near the cursor.
+ * Uses React Portal to render outside overflow containers (escapes stacking contexts).
  */
 export default function CardTooltip({ cardName, children }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [imageUrl, setImageUrl] = useState(null)
   const [imageError, setImageError] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [position, setPosition] = useState('top')
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 })
   
   const hoverTimeoutRef = useRef(null)
   const hideTimeoutRef = useRef(null)
@@ -74,23 +75,24 @@ export default function CardTooltip({ cardName, children }) {
     }
   }
 
-  const handleMouseEnter = () => {
-    // Determine position and calculate fixed coordinates
-    if (elementRef.current) {
-      const rect = elementRef.current.getBoundingClientRect()
-      const viewportHeight = window.innerHeight
-      
-      // If element is in bottom half of viewport, show tooltip above
-      setPosition(rect.bottom > viewportHeight / 2 ? 'bottom' : 'top')
-    }
+  const handleMouseEnter = (e) => {
+    // Track cursor position for tooltip placement
+    setCursorPos({ x: e.clientX, y: e.clientY })
 
-    // Delay tooltip appearance by 300ms to avoid flicker on accidental hovers
+    // Delay tooltip appearance by 150ms to avoid flicker on accidental hovers
     hoverTimeoutRef.current = setTimeout(() => {
       setShowTooltip(true)
       if (!imageUrl && !imageError) {
         fetchImage()
       }
-    }, 300)
+    }, 150)
+  }
+
+  const handleMouseMove = (e) => {
+    // Update cursor position while hovering (for dynamic positioning)
+    if (showTooltip || hoverTimeoutRef.current) {
+      setCursorPos({ x: e.clientX, y: e.clientY })
+    }
   }
 
   const handleMouseLeave = () => {
@@ -120,81 +122,91 @@ export default function CardTooltip({ cardName, children }) {
     return <span>{children || cardName}</span>
   }
 
-  // Calculate position near the trigger element
+  // Calculate position near cursor, avoiding viewport edges
   const getTooltipPosition = () => {
-    if (!elementRef.current || !showTooltip) return { left: -9999, top: -9999 }
+    if (!showTooltip) return { left: -9999, top: -9999 }
     
-    const rect = elementRef.current.getBoundingClientRect()
     const tooltipWidth = 244
     const tooltipHeight = 340
-    const gap = 4 // Smaller gap to keep tooltip close
+    const offset = 16 // Offset from cursor (prevents tooltip from blocking cursor)
+    const margin = 16 // Margin from viewport edges
     
-    // Center horizontally relative to trigger
-    let left = rect.left + (rect.width / 2) - (tooltipWidth / 2)
+    // Default: position below and to the right of cursor
+    let left = cursorPos.x + offset
+    let top = cursorPos.y + offset
     
-    // Position above or below based on viewport position
-    let top = position === 'top' 
-      ? rect.top - tooltipHeight - gap
-      : rect.bottom + gap
+    // If tooltip would go off right edge, position to left of cursor
+    if (left + tooltipWidth + margin > window.innerWidth) {
+      left = cursorPos.x - tooltipWidth - offset
+    }
     
-    // Keep tooltip within viewport horizontally
-    const margin = 16
-    const maxLeft = window.innerWidth - tooltipWidth - margin
-    left = Math.max(margin, Math.min(left, maxLeft))
+    // If tooltip would go off bottom edge, position above cursor
+    if (top + tooltipHeight + margin > window.innerHeight) {
+      top = cursorPos.y - tooltipHeight - offset
+    }
+    
+    // Ensure tooltip stays within viewport bounds
+    left = Math.max(margin, Math.min(left, window.innerWidth - tooltipWidth - margin))
+    top = Math.max(margin, Math.min(top, window.innerHeight - tooltipHeight - margin))
     
     return { left, top }
   }
 
   const tooltipPos = getTooltipPosition()
 
+  // Render tooltip via Portal to escape overflow containers and stacking contexts
+  const tooltipElement = showTooltip && createPortal(
+    <div 
+      onMouseEnter={handleTooltipMouseEnter}
+      onMouseLeave={handleTooltipMouseLeave}
+      className="fixed pointer-events-auto"
+      style={{
+        left: `${tooltipPos.left}px`,
+        top: `${tooltipPos.top}px`,
+        zIndex: 999999,
+        width: '244px'
+      }}
+    >
+      {loading || !imageUrl ? (
+        // Loading shimmer placeholder
+        <div 
+          className="skeleton rounded-lg"
+          style={{ width: '244px', height: '340px' }}
+        />
+      ) : (
+        // Clickable Scryfall card image
+        <a
+          href={`https://scryfall.com/search?q=!"${encodeURIComponent(cardName)}"`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <img
+            src={imageUrl}
+            alt={cardName}
+            className="rounded-lg shadow-2xl border border-white/10 hover:border-amber-400/50 transition-colors"
+            style={{ width: '244px', height: '340px' }}
+          />
+        </a>
+      )}
+    </div>,
+    document.body // Portal to body — escapes ALL overflow/stacking contexts
+  )
+
   return (
     <>
       <span 
         ref={elementRef}
         onMouseEnter={handleMouseEnter}
+        onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className="relative inline-block cursor-help"
       >
         {children || cardName}
       </span>
       
-      {showTooltip && (
-        <div 
-          onMouseEnter={handleTooltipMouseEnter}
-          onMouseLeave={handleTooltipMouseLeave}
-          className="fixed pointer-events-auto"
-          style={{
-            left: `${tooltipPos.left}px`,
-            top: `${tooltipPos.top}px`,
-            zIndex: 99999,
-            width: '244px'
-          }}
-        >
-          {loading || !imageUrl ? (
-            // Loading shimmer placeholder
-            <div 
-              className="skeleton rounded-lg"
-              style={{ width: '244px', height: '340px' }}
-            />
-          ) : (
-            // Clickable Scryfall card image
-            <a
-              href={`https://scryfall.com/search?q=!"${encodeURIComponent(cardName)}"`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={imageUrl}
-                alt={cardName}
-                className="rounded-lg shadow-2xl border border-white/10 hover:border-amber-400/50 transition-colors"
-                style={{ width: '244px', height: '340px' }}
-              />
-            </a>
-          )}
-        </div>
-      )}
+      {tooltipElement}
     </>
   )
 }

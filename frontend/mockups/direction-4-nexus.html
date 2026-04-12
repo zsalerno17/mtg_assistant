@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction 4 — Nexus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06060a;
+    --surface: #0c0c14;
+    --surface-2: #12121e;
+    --surface-3: #18182a;
+    --border: #1e1e36;
+    --border-glow: #2a2a4a;
+    --text: #eeeef4;
+    --text-secondary: #8888aa;
+    --text-dim: #55556a;
+    --neon-amber: #ffb020;
+    --neon-blue: #40a0ff;
+    --neon-purple: #a060ff;
+    --neon-green: #40dd80;
+    --neon-red: #ff5060;
+    --neon-white: #e8e0d0;
+    --mana-w: #f0e8d0;
+    --mana-u: #3090e0;
+    --mana-b: #6040a0;
+    --mana-r: #e04040;
+    --mana-g: #30a050;
+    --font-display: 'Outfit', system-ui, sans-serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(rgba(30,30,54,0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,30,54,0.3) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 70%);
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 15% 25%, rgba(64,160,255,0.06) 0%, transparent 40%),
+      radial-gradient(circle at 85% 75%, rgba(160,96,255,0.05) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(255,176,32,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+  /* Nav Bar — horizontal top instead of sidebar */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(6,6,10,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    z-index: 50;
+    gap: 0;
+  }
+  .nav-brand {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--neon-amber);
+    letter-spacing: -0.02em;
+    margin-right: 40px;
+    text-shadow: 0 0 20px rgba(255,176,32,0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-brand-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--neon-amber), #e09000);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--bg);
+    font-weight: 800;
+  }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+  .nav-link {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-link:hover { color: var(--text-secondary); background: var(--surface-2); }
+  .nav-link.active { color: var(--text); background: var(--surface-2); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .btn-glow {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    background: var(--neon-amber);
+    color: var(--bg);
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 20px rgba(255,176,32,0.25);
+  }
+  .btn-glow:hover { box-shadow: 0 0 30px rgba(255,176,32,0.45); transform: scale(1.02); }
+  .nav-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Main */
+  .main-wrap {
+    flex: 1;
+    padding: 96px 48px 48px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Hero Stats */
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .hero-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .hero-stat:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-2px);
+  }
+  .hero-stat-glow {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.15;
+  }
+  .glow-amber { background: var(--neon-amber); }
+  .glow-blue { background: var(--neon-blue); }
+  .glow-purple { background: var(--neon-purple); }
+  .glow-green { background: var(--neon-green); }
+  .hero-stat-value {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .value-amber { color: var(--neon-amber); }
+  .value-blue { color: var(--neon-blue); }
+  .value-purple { color: var(--neon-purple); }
+  .value-green { color: var(--neon-green); }
+  .hero-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .hero-stat-sub {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* Section */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .section-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .section-tab {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .section-tab.active { background: var(--surface-3); color: var(--text); }
+  .section-tab:hover:not(.active) { color: var(--text-secondary); }
+
+  /* Deck Grid — large cards with glow borders */
+  .deck-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 40px;
+  }
+  .nexus-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+  }
+  .nexus-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  /* Mana-colored glow border on hover */
+  .nexus-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(135deg, transparent, transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    transition: all 0.3s;
+    opacity: 0;
+  }
+  .nexus-card.glow-wubg:hover::before {
+    background: linear-gradient(135deg, var(--mana-w), var(--mana-u), var(--mana-b), var(--mana-g));
+    opacity: 0.6;
+  }
+  .nexus-card.glow-brg:hover::before {
+    background: linear-gradient(135deg, var(--mana-b), var(--mana-r), var(--mana-g));
+    opacity: 0.6;
+  }
+  .nexus-card.glow-ub:hover::before {
+    background: linear-gradient(135deg, var(--mana-u), var(--mana-b));
+    opacity: 0.6;
+  }
+  .nexus-card.glow-r:hover::before {
+    background: linear-gradient(135deg, var(--mana-r), #ff6040);
+    opacity: 0.6;
+  }
+  .nexus-card.glow-ug:hover::before {
+    background: linear-gradient(135deg, var(--mana-u), var(--mana-g));
+    opacity: 0.6;
+  }
+  .nexus-card.glow-bg:hover::before {
+    background: linear-gradient(135deg, var(--mana-b), var(--mana-g));
+    opacity: 0.6;
+  }
+  /* Card art strip */
+  .nexus-card-art {
+    height: 80px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+  .nexus-card-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 30%, var(--surface) 100%);
+  }
+  .nexus-card-body { padding: 16px 20px 20px; }
+  .nexus-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .nexus-card-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .nexus-card-commander {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+  .nexus-card-pips {
+    display: flex;
+    gap: 3px;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+  .pip {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 6px rgba(0,0,0,0.3);
+  }
+  .pip-w { background: var(--mana-w); box-shadow: 0 0 8px rgba(240,232,208,0.2); }
+  .pip-u { background: var(--mana-u); box-shadow: 0 0 8px rgba(48,144,224,0.3); }
+  .pip-b { background: var(--mana-b); box-shadow: 0 0 8px rgba(96,64,160,0.3); }
+  .pip-r { background: var(--mana-r); box-shadow: 0 0 8px rgba(224,64,64,0.3); }
+  .pip-g { background: var(--mana-g); box-shadow: 0 0 8px rgba(48,160,80,0.3); }
+
+  .nexus-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .nexus-badge {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .nexus-badge-green {
+    background: rgba(64,221,128,0.1);
+    color: var(--neon-green);
+    border: 1px solid rgba(64,221,128,0.15);
+  }
+  .nexus-badge-dim {
+    background: var(--surface-3);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .nexus-action {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nexus-action.view { color: var(--neon-blue); }
+  .nexus-action.view:hover { color: #60b0ff; text-shadow: 0 0 8px rgba(64,160,255,0.3); }
+  .nexus-action.analyze { color: var(--neon-amber); }
+  .nexus-action.analyze:hover { text-shadow: 0 0 8px rgba(255,176,32,0.3); }
+
+  /* Bottom Panels */
+  .bottom-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .dot-green { background: var(--neon-green); box-shadow: 0 0 8px rgba(64,221,128,0.4); }
+  .dot-blue { background: var(--neon-blue); box-shadow: 0 0 8px rgba(64,160,255,0.4); }
+
+  /* Collection panel */
+  .collection-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .collection-mini-stat {
+    text-align: center;
+    padding: 12px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .collection-mini-value {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--neon-green);
+  }
+  .collection-mini-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+  .collection-bar {
+    height: 4px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .collection-bar-fill {
+    height: 100%;
+    width: 72%;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+    border-radius: 2px;
+  }
+  .collection-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  /* Activity panel */
+  .activity-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .activity-icon.amber { background: rgba(255,176,32,0.1); }
+  .activity-icon.green { background: rgba(64,221,128,0.1); }
+  .activity-icon.blue { background: rgba(64,160,255,0.1); }
+  .activity-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; }
+  .activity-text strong { color: var(--text); font-weight: 500; }
+  .activity-time { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 3px; }
+
+  /* Design Label */
+  .design-label {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--neon-amber);
+    border-radius: 12px;
+    padding: 14px 20px;
+    z-index: 100;
+    max-width: 380px;
+    box-shadow: 0 0 20px rgba(255,176,32,0.1);
+  }
+  .design-label h3 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--neon-amber);
+    margin-bottom: 6px;
+  }
+  .design-label p {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 1200px) {
+    .deck-grid { grid-template-columns: repeat(2, 1fr); }
+    .main-wrap { padding: 96px 24px 32px; }
+  }
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .deck-grid { grid-template-columns: 1fr; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .bottom-panels { grid-template-columns: 1fr; }
+    .main-wrap { padding: 80px 16px 24px; }
+    .navbar { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <div class="nav-brand-icon">M</div>
+      MTG Nexus
+    </div>
+    <div class="nav-links">
+      <a class="nav-link active">Dashboard</a>
+      <a class="nav-link">Decks</a>
+      <a class="nav-link">Collection</a>
+      <a class="nav-link">Analytics</a>
+      <a class="nav-link">AI Coach</a>
+    </div>
+    <div class="nav-right">
+      <button class="btn-glow">+ Import</button>
+      <div class="nav-avatar">ZS</div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main-wrap">
+    <!-- Stats -->
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-glow glow-amber"></div>
+        <div class="hero-stat-value value-amber">7</div>
+        <div class="hero-stat-label">Decks</div>
+        <div class="hero-stat-sub">4 analyzed</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-glow glow-green"></div>
+        <div class="hero-stat-value value-green">2,847</div>
+        <div class="hero-stat-label">Collection</div>
+        <div class="hero-stat-sub">unique cards</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-glow glow-blue"></div>
+        <div class="hero-stat-value value-blue">31</div>
+        <div class="hero-stat-label">Upgrades</div>
+        <div class="hero-stat-sub">from your cards</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-glow glow-purple"></div>
+        <div class="hero-stat-value value-purple">7.4</div>
+        <div class="hero-stat-label">Avg Score</div>
+        <div class="hero-stat-sub">across decks</div>
+      </div>
+    </div>
+
+    <!-- Deck Grid -->
+    <div class="section-header">
+      <div class="section-title">Your Decks</div>
+      <div class="section-tabs">
+        <div class="section-tab active">Cards</div>
+        <div class="section-tab">Table</div>
+      </div>
+    </div>
+
+    <div class="deck-grid">
+      <div class="nexus-card glow-wubg">
+        <div class="nexus-card-art" style="background-image: url('https://cards.scryfall.io/art_crop/front/5/8/58c56cfd-7e31-4084-b7f2-bb7e1c1ce4a1.jpg?1562911444')"></div>
+        <div class="nexus-card-body">
+          <div class="nexus-card-top">
+            <div>
+              <div class="nexus-card-name">Atraxa Superfriends</div>
+              <div class="nexus-card-commander">Atraxa, Praetors' Voice</div>
+            </div>
+            <div class="nexus-card-pips">
+              <div class="pip pip-w"></div>
+              <div class="pip pip-u"></div>
+              <div class="pip pip-b"></div>
+              <div class="pip pip-g"></div>
+            </div>
+          </div>
+          <div class="nexus-card-footer">
+            <span class="nexus-badge nexus-badge-green">Analyzed</span>
+            <a class="nexus-action view">View →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nexus-card glow-brg">
+        <div class="nexus-card-art" style="background: linear-gradient(135deg, #1a1218, #2a1828);"></div>
+        <div class="nexus-card-body">
+          <div class="nexus-card-top">
+            <div>
+              <div class="nexus-card-name">Korvold Aristocrats</div>
+              <div class="nexus-card-commander">Korvold, Fae-Cursed King</div>
+            </div>
+            <div class="nexus-card-pips">
+              <div class="pip pip-b"></div>
+              <div class="pip pip-r"></div>
+              <div class="pip pip-g"></div>
+            </div>
+          </div>
+          <div class="nexus-card-footer">
+            <span class="nexus-badge nexus-badge-green">Analyzed</span>
+            <a class="nexus-action view">View →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nexus-card glow-ub">
+        <div class="nexus-card-art" style="background: linear-gradient(135deg, #0e1228, #1a1836);"></div>
+        <div class="nexus-card-body">
+          <div class="nexus-card-top">
+            <div>
+              <div class="nexus-card-name">Yuriko Ninja Tribal</div>
+              <div class="nexus-card-commander">Yuriko, the Tiger's Shadow</div>
+            </div>
+            <div class="nexus-card-pips">
+              <div class="pip pip-u"></div>
+              <div class="pip pip-b"></div>
+            </div>
+          </div>
+          <div class="nexus-card-footer">
+            <span class="nexus-badge nexus-badge-dim">Pending</span>
+            <a class="nexus-action analyze">Analyze →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nexus-card glow-r">
+        <div class="nexus-card-art" style="background: linear-gradient(135deg, #1a0e0e, #2a1414);"></div>
+        <div class="nexus-card-body">
+          <div class="nexus-card-top">
+            <div>
+              <div class="nexus-card-name">Krenko Goblins</div>
+              <div class="nexus-card-commander">Krenko, Mob Boss</div>
+            </div>
+            <div class="nexus-card-pips">
+              <div class="pip pip-r"></div>
+            </div>
+          </div>
+          <div class="nexus-card-footer">
+            <span class="nexus-badge nexus-badge-green">Analyzed</span>
+            <a class="nexus-action view">View →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nexus-card glow-ug">
+        <div class="nexus-card-art" style="background: linear-gradient(135deg, #0a1818, #102a20);"></div>
+        <div class="nexus-card-body">
+          <div class="nexus-card-top">
+            <div>
+              <div class="nexus-card-name">Tatyova Landfall</div>
+              <div class="nexus-card-commander">Tatyova, Benthic Druid</div>
+            </div>
+            <div class="nexus-card-pips">
+              <div class="pip pip-u"></div>
+              <div class="pip pip-g"></div>
+            </div>
+          </div>
+          <div class="nexus-card-footer">
+            <span class="nexus-badge nexus-badge-dim">Pending</span>
+            <a class="nexus-action analyze">Analyze →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nexus-card glow-bg">
+        <div class="nexus-card-art" style="background: linear-gradient(135deg, #10100e, #201c14);"></div>
+        <div class="nexus-card-body">
+          <div class="nexus-card-top">
+            <div>
+              <div class="nexus-card-name">Meren Graveyard</div>
+              <div class="nexus-card-commander">Meren of Clan Nel Toth</div>
+            </div>
+            <div class="nexus-card-pips">
+              <div class="pip pip-b"></div>
+              <div class="pip pip-g"></div>
+            </div>
+          </div>
+          <div class="nexus-card-footer">
+            <span class="nexus-badge nexus-badge-green">Analyzed</span>
+            <a class="nexus-action view">View →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Panels -->
+    <div class="bottom-panels">
+      <!-- Collection -->
+      <div class="panel">
+        <div class="panel-title">
+          <div class="panel-title-dot dot-green"></div>
+          Collection
+        </div>
+        <div class="collection-stat-row">
+          <div class="collection-mini-stat">
+            <div class="collection-mini-value">2,847</div>
+            <div class="collection-mini-label">Cards</div>
+          </div>
+          <div class="collection-mini-stat">
+            <div class="collection-mini-value" style="color:var(--neon-blue)">31</div>
+            <div class="collection-mini-label">Upgrades</div>
+          </div>
+          <div class="collection-mini-stat">
+            <div class="collection-mini-value" style="color:var(--neon-purple)">$420</div>
+            <div class="collection-mini-label">Est. Value</div>
+          </div>
+        </div>
+        <div class="collection-bar">
+          <div class="collection-bar-fill"></div>
+        </div>
+        <div class="collection-bar-label">
+          <span>Coverage across your decks</span>
+          <span>72%</span>
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <div class="panel">
+        <div class="panel-title">
+          <div class="panel-title-dot dot-blue"></div>
+          Recent Activity
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon green">✓</div>
+          <div>
+            <div class="activity-text"><strong>Korvold Aristocrats</strong> analyzed — scored 7.8/10</div>
+            <div class="activity-time">2 hours ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon amber">+</div>
+          <div>
+            <div class="activity-text"><strong>Yuriko Ninja Tribal</strong> imported from Moxfield</div>
+            <div class="activity-time">5 hours ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon blue">↑</div>
+          <div>
+            <div class="activity-text">Collection updated — <strong>+24 new cards</strong></div>
+            <div class="activity-time">Yesterday</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="design-label">
+  <h3>Direction 4 — Nexus</h3>
+  <p>Sleek, high-energy tech aesthetic. Top navigation bar (not sidebar), Outfit font for bold geometric headings, mana-colored neon border glows on hover, subtle grid background, vibrant accent colors per stat. Feels like MTG Arena's companion app. Data-forward with personality.</p>
+</div>
+</body>
+</html>

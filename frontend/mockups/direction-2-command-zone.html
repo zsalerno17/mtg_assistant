@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction 2 — Command Zone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090b;
+    --surface: #111113;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-hover: #3f3f46;
+    --text: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-dim: #71717a;
+    --white: #fff;
+    --blue: #60a5fa;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --purple: #a78bfa;
+    --mana-w: #f8f4e0;
+    --mana-u: #4393e0;
+    --mana-b: #5c3d7a;
+    --mana-r: #e04343;
+    --mana-g: #2ea04e;
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    flex-shrink: 0;
+  }
+  .sidebar-brand {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--amber), #d97706);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .brand-text {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 8px;
+  }
+  .nav-section-label {
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    padding: 12px 12px 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: var(--surface-2); color: var(--text); }
+  .nav-item.active {
+    background: rgba(251,191,36,0.1);
+    color: var(--amber);
+  }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.6; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text-dim);
+  }
+  .nav-item.active .nav-badge { background: rgba(251,191,36,0.15); color: var(--amber); }
+  
+  .sidebar-footer {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; }
+  
+  /* Top Bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .topbar-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .topbar-breadcrumb {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .topbar-breadcrumb span { color: var(--text-secondary); }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+  .btn-ghost {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--border-hover); color: var(--text); }
+  .btn-primary {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #000;
+    background: var(--amber);
+    border: none;
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary:hover { background: #f59e0b; }
+
+  .content { padding: 32px; flex: 1; max-width: 1400px; }
+
+  /* Stats Strip */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .stat-cell {
+    background: var(--surface);
+    padding: 20px 24px;
+    text-align: center;
+  }
+  .stat-cell-value {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .stat-cell-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .stat-cell-value.accent-amber { color: var(--amber); }
+  .stat-cell-value.accent-green { color: var(--green); }
+  .stat-cell-value.accent-blue { color: var(--blue); }
+
+  /* Two-Column Layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+  }
+
+  /* Deck Table */
+  .deck-table-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .deck-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .deck-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-weight: 600;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .deck-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .deck-table tr:last-child td { border-bottom: none; }
+  .deck-table tr:hover td { background: rgba(255,255,255,0.02); }
+  
+  .deck-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .deck-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .deck-name-text {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.88rem;
+  }
+  .deck-commander-text {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .color-pips { display: flex; gap: 3px; }
+  .pip {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .pip-w { background: var(--mana-w); }
+  .pip-u { background: var(--mana-u); }
+  .pip-b { background: var(--mana-b); }
+  .pip-r { background: var(--mana-r); }
+  .pip-g { background: var(--mana-g); }
+  
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .badge-green { background: rgba(74,222,128,0.1); color: var(--green); }
+  .badge-dim { background: var(--surface-2); color: var(--text-dim); }
+  
+  .action-link {
+    font-size: 0.78rem;
+    color: var(--blue);
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .action-link:hover { text-decoration: underline; }
+  .action-link.amber { color: var(--amber); }
+  
+  /* Right Panel */
+  .right-panel { display: flex; flex-direction: column; gap: 16px; }
+  
+  .panel-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title-badge {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  
+  /* Quick Actions */
+  .quick-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+  }
+  .quick-action:hover { background: var(--surface-2); }
+  .qa-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .qa-icon.amber { background: rgba(251,191,36,0.1); color: var(--amber); }
+  .qa-icon.blue { background: rgba(96,165,250,0.1); color: var(--blue); }
+  .qa-icon.purple { background: rgba(167,139,250,0.1); color: var(--purple); }
+  .qa-text-label { font-size: 0.84rem; font-weight: 500; color: var(--text); }
+  .qa-text-desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+  
+  /* Recent Activity */
+  .activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+  .activity-dot.amber { background: var(--amber); }
+  .activity-dot.green { background: var(--green); }
+  .activity-dot.blue { background: var(--blue); }
+  .activity-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+  .activity-text strong { color: var(--text); font-weight: 500; }
+  .activity-time { font-size: 0.68rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* Collection Card */
+  .collection-mini {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .collection-ring {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 3px solid var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .collection-ring-text {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--green);
+    font-weight: 500;
+  }
+  .collection-detail { font-size: 0.84rem; color: var(--text); font-weight: 500; }
+  .collection-detail span { color: var(--text-dim); font-weight: 400; font-size: 0.76rem; }
+
+  /* Design Label */
+  .design-label {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    padding: 14px 20px;
+    z-index: 100;
+    max-width: 360px;
+  }
+  .design-label h3 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--amber);
+    margin-bottom: 6px;
+  }
+  .design-label p {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 1200px) {
+    .two-col { grid-template-columns: 1fr; }
+    .right-panel { display: grid; grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .stats-strip { grid-template-columns: repeat(3, 1fr); }
+    .right-panel { grid-template-columns: 1fr; }
+    .content { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">M</div>
+      <div class="brand-text">MTG Assistant</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Decks
+        <span class="nav-badge">7</span>
+      </a>
+      <a class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-4 0v2"/></svg>
+        Collection
+        <span class="nav-badge">2.8k</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 12px;">Insights</div>
+      <a class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Analytics
+      </a>
+      <a class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        AI Coach
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a class="nav-item" style="border-radius:8px;">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-breadcrumb"><span>Dashboard</span></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-ghost">⌘K Search</button>
+        <button class="btn-primary">+ Import Deck</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Stats -->
+      <div class="stats-strip">
+        <div class="stat-cell">
+          <div class="stat-cell-value">7</div>
+          <div class="stat-cell-label">Total Decks</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-cell-value accent-green">4</div>
+          <div class="stat-cell-label">Analyzed</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-cell-value accent-amber">3</div>
+          <div class="stat-cell-label">Pending</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-cell-value">2,847</div>
+          <div class="stat-cell-label">Collection Cards</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-cell-value accent-blue">31</div>
+          <div class="stat-cell-label">Upgrades Available</div>
+        </div>
+      </div>
+
+      <!-- Two Column -->
+      <div class="two-col">
+        <!-- Deck Table -->
+        <div class="deck-table-wrapper">
+          <table class="deck-table">
+            <thead>
+              <tr>
+                <th>Deck</th>
+                <th>Colors</th>
+                <th>Format</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="deck-name-cell">
+                    <div class="deck-avatar" style="background-image: url('https://cards.scryfall.io/art_crop/front/5/8/58c56cfd-7e31-4084-b7f2-bb7e1c1ce4a1.jpg?1562911444')"></div>
+                    <div>
+                      <div class="deck-name-text">Atraxa Superfriends</div>
+                      <div class="deck-commander-text">Atraxa, Praetors' Voice</div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="color-pips"><div class="pip pip-w"></div><div class="pip pip-u"></div><div class="pip pip-b"></div><div class="pip pip-g"></div></div></td>
+                <td><span style="color:var(--text-dim);font-size:0.8rem">EDH</span></td>
+                <td><span class="badge badge-green">Analyzed</span></td>
+                <td><a class="action-link">View →</a></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="deck-name-cell">
+                    <div class="deck-avatar" style="background: linear-gradient(135deg, #1a1218, #281820)"></div>
+                    <div>
+                      <div class="deck-name-text">Korvold Aristocrats</div>
+                      <div class="deck-commander-text">Korvold, Fae-Cursed King</div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="color-pips"><div class="pip pip-b"></div><div class="pip pip-r"></div><div class="pip pip-g"></div></div></td>
+                <td><span style="color:var(--text-dim);font-size:0.8rem">EDH</span></td>
+                <td><span class="badge badge-green">Analyzed</span></td>
+                <td><a class="action-link">View →</a></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="deck-name-cell">
+                    <div class="deck-avatar" style="background: linear-gradient(135deg, #101520, #1a2030)"></div>
+                    <div>
+                      <div class="deck-name-text">Yuriko Ninja Tribal</div>
+                      <div class="deck-commander-text">Yuriko, the Tiger's Shadow</div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="color-pips"><div class="pip pip-u"></div><div class="pip pip-b"></div></div></td>
+                <td><span style="color:var(--text-dim);font-size:0.8rem">EDH</span></td>
+                <td><span class="badge badge-dim">Pending</span></td>
+                <td><a class="action-link amber">Analyze</a></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="deck-name-cell">
+                    <div class="deck-avatar" style="background: linear-gradient(135deg, #1a1010, #281414)"></div>
+                    <div>
+                      <div class="deck-name-text">Krenko Goblins</div>
+                      <div class="deck-commander-text">Krenko, Mob Boss</div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="color-pips"><div class="pip pip-r"></div></div></td>
+                <td><span style="color:var(--text-dim);font-size:0.8rem">EDH</span></td>
+                <td><span class="badge badge-green">Analyzed</span></td>
+                <td><a class="action-link">View →</a></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="deck-name-cell">
+                    <div class="deck-avatar" style="background: linear-gradient(135deg, #0e1520, #142030)"></div>
+                    <div>
+                      <div class="deck-name-text">Tatyova Landfall</div>
+                      <div class="deck-commander-text">Tatyova, Benthic Druid</div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="color-pips"><div class="pip pip-u"></div><div class="pip pip-g"></div></div></td>
+                <td><span style="color:var(--text-dim);font-size:0.8rem">EDH</span></td>
+                <td><span class="badge badge-dim">Pending</span></td>
+                <td><a class="action-link amber">Analyze</a></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="deck-name-cell">
+                    <div class="deck-avatar" style="background: linear-gradient(135deg, #10100e, #201c14)"></div>
+                    <div>
+                      <div class="deck-name-text">Meren Graveyard Value</div>
+                      <div class="deck-commander-text">Meren of Clan Nel Toth</div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="color-pips"><div class="pip pip-b"></div><div class="pip pip-g"></div></div></td>
+                <td><span style="color:var(--text-dim);font-size:0.8rem">EDH</span></td>
+                <td><span class="badge badge-green">Analyzed</span></td>
+                <td><a class="action-link">View →</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+          <!-- Quick Actions -->
+          <div class="panel-card">
+            <div class="panel-title">Quick Actions</div>
+            <div class="quick-action">
+              <div class="qa-icon amber">⚡</div>
+              <div>
+                <div class="qa-text-label">Import from Moxfield</div>
+                <div class="qa-text-desc">Paste a deck URL to add it</div>
+              </div>
+            </div>
+            <div class="quick-action">
+              <div class="qa-icon blue">📤</div>
+              <div>
+                <div class="qa-text-label">Update Collection</div>
+                <div class="qa-text-desc">Upload new CSV export</div>
+              </div>
+            </div>
+            <div class="quick-action">
+              <div class="qa-icon purple">🧠</div>
+              <div>
+                <div class="qa-text-label">Ask AI Coach</div>
+                <div class="qa-text-desc">Get strategy advice</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Collection -->
+          <div class="panel-card">
+            <div class="panel-title">
+              Collection
+              <span class="panel-title-badge">Updated Apr 10</span>
+            </div>
+            <div class="collection-mini">
+              <div class="collection-ring">
+                <span class="collection-ring-text">✓</span>
+              </div>
+              <div>
+                <div class="collection-detail">2,847 unique cards<br><span>31 potential upgrades across your decks</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity -->
+          <div class="panel-card">
+            <div class="panel-title">Recent Activity</div>
+            <div class="activity-item">
+              <div class="activity-dot green"></div>
+              <div>
+                <div class="activity-text"><strong>Korvold Aristocrats</strong> analyzed — 7.8/10 score</div>
+                <div class="activity-time">2 hours ago</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot amber"></div>
+              <div>
+                <div class="activity-text"><strong>Yuriko Ninja Tribal</strong> imported from Moxfield</div>
+                <div class="activity-time">5 hours ago</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot blue"></div>
+              <div>
+                <div class="activity-text">Collection updated — <strong>+24 cards</strong></div>
+                <div class="activity-time">Yesterday</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="design-label">
+  <h3>Direction 2 — Command Zone</h3>
+  <p>Modern SaaS dashboard (Linear/Vercel vibes). Clean grid-based layout with Space Grotesk display font, data-dense table view, two-column desktop layout with quick actions sidebar, stats strip, activity feed. Clean and tool-like, not toy-like.</p>
+</div>
+</body>
+</html>

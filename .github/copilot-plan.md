@@ -7,15 +7,32 @@
 
 ## Current Status
 
-**Phase 20-21 refinements in progress.** User tested overnight session deliverables (Phases 20-23), reported 3 bugs. Round 2 fixes partially working:
+**Phase 20-21 refinements — Round 3 tooltip fix in progress.** Comprehensive root cause analysis completed. Implementing React Portal solution.
 
-**Round 2 user test results (April 11, 2026):**
-1. ✅ **CMC decimals overlapping** — FIXED. Reduced BOTH numerator (`text-lg` → `text-sm` for CMC only) AND denominator (`text-xs` → `text-[10px]`). User confirms fits properly now.
-2. ❌ **Card tooltips clipped** — STILL BROKEN. Despite Fragment rendering + z-index 99999, tooltips still appear behind other components. Need to investigate further - likely stacking context issue with parent containers.
-3. ✅ **Scryfall search links** — FIXED. Added exact match quotes: `q=!"Card Name"`. User confirms clicking works correctly.
-4. ⚠️  **Tooltip disappears when moving mouse** — Not tested yet (blocked by #2).
+**Root cause analysis (April 11, 2026):**
+Previous tooltip fixes failed due to misunderstanding of CSS stacking contexts:
+1. **Problem**: Tooltips rendered as React Fragment siblings inside parent containers with `overflow-y-auto`
+2. **Why Fragment didn't work**: Fragment is React rendering optimization — doesn't change DOM tree position
+3. **Stacking context trap**: Elements with `overflow` (other than visible) create new stacking contexts. Children cannot escape with z-index alone, even `z-index: 99999`
+4. **position: fixed limitation**: Fixed positioning calculates viewport coordinates correctly, BUT element is still clipped by parent's overflow property when inside a stacking context
+
+**Round 3 fix (deployed):**
+- **React Portal**: Render tooltip directly under `document.body` via `createPortal()` — escapes ALL overflow containers and stacking contexts
+- **Cursor-based positioning**: Track `e.clientX/clientY` and position near cursor (not centered on element) — feels more natural
+- **Faster delay**: 300ms → 150ms (standard tooltip timing, fixes "tooltips not appearing" issue)
+- **Smart positioning**: Check viewport edges, flip tooltip to left/above cursor when needed
+
+**Files changed:**
+- `frontend/src/components/CardTooltip.jsx` — added `createPortal` import, cursor tracking, viewport-aware positioning
 
 **Servers status:**
+- Backend: Running on port 8000 ✓
+- Frontend: Running on port 5173 ✓ (restarted with Portal implementation)
+
+**Ready for testing:** User should test all 3 issues:
+1. Card tooltips no longer clipped by overflow containers (z-index issue fixed)
+2. Card appears near cursor, not far away (cursor tracking + offset positioning)
+3. Card shows on every hover (150ms delay, down from 300ms)
 - Backend: Running on port 8000 (uvicorn, reload enabled)
 - Frontend: Running on port 5173 (Vite dev server)
 - Partial fixes deployed, tooltip z-index issue remains
@@ -74,10 +91,25 @@ User needs to validate at http://localhost:5173:
 16. [x] Phase 23: Deck metadata & iteration tracking schema design — **NEW**
 
 **Next up:**
+- **Full UI/UX redesign** — user reviewing 4 design directions (mockups created)
 - User testing verification (immediate)
 - League tracking feature scoping (if user wants it — not in current plan)
 - Deployment to production (deferred — requires GitHub repo + Render/Vercel setup)
 - Phase 23 implementation (deferred — foundational design complete, no code yet)
+
+---
+
+## Design Redesign — Direction Proposals (April 11, 2026)
+
+**User feedback:** App looks dated, fonts boring, too mobile-first, doesn't lean into MTG enough.
+
+**4 mockups created** in `frontend/mockups/` — open directly in browser:
+1. **Grimoire** (`direction-1-grimoire.html`) — Premium dark luxury. Cormorant Garamond + Crimson Pro. Gold leaf accents, card-art hero images, leather-bound spellbook feel.
+2. **Command Zone** (`direction-2-command-zone.html`) — Modern SaaS dashboard (Linear/Vercel). Space Grotesk font, data-dense table + two-column layout, stats strip, activity feed, quick actions panel.
+3. **Mana Forge** (`direction-3-mana-forge.html`) — Warm workshop aesthetic. Cinzel + Alegreya, MTG card-frame color bars per deck, forge metaphor (Forged = analyzed), copper/amber palette, textured backgrounds.
+4. **Nexus** (`direction-4-nexus.html`) — High-energy tech/neon. Outfit font, top navigation bar, mana-colored glow borders on hover, grid background, vibrant per-stat accent colors. MTG Arena companion feel.
+
+**Awaiting user decision** on which direction (or mix) to implement.
 
 ---
 
