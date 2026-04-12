@@ -402,7 +402,7 @@ serve(async (req: Request) => {
   try {
     const user = await requireAllowedUser(req);
     const url = new URL(req.url);
-    const path = url.pathname.replace(/^\/decks\/?/, "/");
+    const path = url.pathname.replace(/.*\/decks\/?/, "/");
 
     if (req.method === "POST" && (path === "/fetch" || path === "/" + "fetch")) {
       const body = await req.json();

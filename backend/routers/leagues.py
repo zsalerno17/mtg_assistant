@@ -229,6 +229,12 @@ class GameWithResults(BaseModel):
     results: List[GameResultLog]
 
 
+class VoteCast(BaseModel):
+    """Cast a vote for a social award."""
+    category: str = Field(..., pattern="^(entrance|spicy_play)$")
+    nominee_id: UUID
+
+
 # ============================================================================
 # LEAGUE MANAGEMENT
 # ============================================================================
@@ -269,6 +275,37 @@ async def list_leagues(
             .execute()
         
         return {"leagues": result.data}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/bulk/archive")
+async def archive_completed_leagues(
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
+    """Archive all completed leagues (set status to 'completed' for expired active leagues)."""
+    try:
+        # Get user's active leagues where season_end has passed
+        today = date.today().isoformat()
+        
+        result = supabase.table("leagues") \
+            .select("id, name, league_members!inner(user_id)") \
+            .eq("league_members.user_id", user_id) \
+            .eq("status", "active") \
+            .lt("season_end", today) \
+            .execute()
+        
+        archived_ids = []
+        for league in result.data:
+            supabase.table("leagues") \
+                .update({"status": "completed", "updated_at": datetime.now(timezone.utc).isoformat()}) \
+                .eq("id", league["id"]) \
+                .eq("created_by", user_id) \
+                .execute()
+            archived_ids.append(league["id"])
+        
+        return {"archived": len(archived_ids), "league_ids": archived_ids}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -770,6 +807,87 @@ async def get_standings(
         result = supabase.rpc("get_league_standings", {"league_uuid": league_id}).execute()
         
         return {"standings": result.data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============================================================================
+# VOTING
+# ============================================================================
+
+@router.post("/{league_id}/games/{game_id}/votes")
+async def cast_vote(
+    league_id: str,
+    game_id: str,
+    vote: VoteCast,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
+    """Cast or update a vote for a game award."""
+    try:
+        member_id = await verify_league_membership(league_id, user_id, supabase)
+        
+        # Verify game belongs to this league
+        game = supabase.table("league_games") \
+            .select("id") \
+            .eq("id", game_id) \
+            .eq("league_id", league_id) \
+            .single() \
+            .execute()
+        if not game.data:
+            raise HTTPException(status_code=404, detail="Game not found in this league")
+        
+        # Verify nominee is a league member
+        nominee = supabase.table("league_members") \
+            .select("id") \
+            .eq("id", str(vote.nominee_id)) \
+            .eq("league_id", league_id) \
+            .execute()
+        if not nominee.data:
+            raise HTTPException(status_code=400, detail="Nominee is not a member of this league")
+        
+        # Upsert vote (one per voter per category per game)
+        # Delete existing vote first, then insert
+        supabase.table("league_game_votes") \
+            .delete() \
+            .eq("game_id", game_id) \
+            .eq("voter_id", member_id) \
+            .eq("category", vote.category) \
+            .execute()
+        
+        result = supabase.table("league_game_votes").insert({
+            "game_id": game_id,
+            "voter_id": member_id,
+            "category": vote.category,
+            "nominee_id": str(vote.nominee_id),
+        }).execute()
+        
+        return {"vote": result.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{league_id}/games/{game_id}/votes")
+async def get_votes(
+    league_id: str,
+    game_id: str,
+    user_id: str = Depends(require_user_id),
+    supabase = Depends(get_user_supabase_client)
+):
+    """Get vote tallies for a game."""
+    try:
+        await verify_league_membership(league_id, user_id, supabase)
+        
+        result = supabase.table("league_game_votes") \
+            .select("*, league_members!league_game_votes_voter_id_fkey(superstar_name)") \
+            .eq("game_id", game_id) \
+            .execute()
+        
+        return {"votes": result.data}
     except HTTPException:
         raise
     except Exception as e:

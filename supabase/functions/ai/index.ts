@@ -450,7 +450,7 @@ serve(async (req: Request) => {
   try {
     const user = await requireAllowedUser(req);
     const url = new URL(req.url);
-    const path = url.pathname.replace(/^\/ai\/?/, "/");
+    const path = url.pathname.replace(/.*\/ai\/?/, "/");
 
     if (req.method === "POST" && path.startsWith("/strategy")) {
       const body = await req.json();

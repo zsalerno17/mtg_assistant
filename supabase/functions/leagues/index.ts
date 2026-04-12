@@ -633,6 +633,110 @@ async function getStandings(
   return jsonResponse({ standings: data });
 }
 
+// POST /:id/games/:gid/votes — cast vote
+async function castVote(
+  leagueId: string,
+  gameId: string,
+  body: Record<string, unknown>,
+  userId: string,
+  sb: ReturnType<typeof getUserClient>,
+): Promise<Response> {
+  const memberId = await verifyMembership(leagueId, userId, sb);
+
+  const category = body.category as string;
+  if (!category || !/^(entrance|spicy_play)$/.test(category)) {
+    return errorResponse(400, "category must be 'entrance' or 'spicy_play'");
+  }
+
+  const nomineeId = body.nominee_id as string;
+  if (!nomineeId) return errorResponse(400, "nominee_id is required");
+
+  // Verify game belongs to league
+  const { data: game } = await sb
+    .from("league_games")
+    .select("id")
+    .eq("id", gameId)
+    .eq("league_id", leagueId)
+    .maybeSingle();
+  if (!game) throw new HttpError(404, "Game not found in this league");
+
+  // Verify nominee is a league member
+  const { data: nominee } = await sb
+    .from("league_members")
+    .select("id")
+    .eq("id", nomineeId)
+    .eq("league_id", leagueId)
+    .maybeSingle();
+  if (!nominee) throw new HttpError(400, "Nominee is not a member of this league");
+
+  // Delete existing vote, then insert
+  await sb
+    .from("league_game_votes")
+    .delete()
+    .eq("game_id", gameId)
+    .eq("voter_id", memberId)
+    .eq("category", category);
+
+  const { data, error } = await sb
+    .from("league_game_votes")
+    .insert({
+      game_id: gameId,
+      voter_id: memberId,
+      category,
+      nominee_id: nomineeId,
+    })
+    .select()
+    .single();
+
+  if (error) throw new HttpError(400, error.message);
+  return jsonResponse({ vote: data });
+}
+
+// GET /:id/games/:gid/votes — get votes
+async function getVotes(
+  leagueId: string,
+  gameId: string,
+  userId: string,
+  sb: ReturnType<typeof getUserClient>,
+): Promise<Response> {
+  await verifyMembership(leagueId, userId, sb);
+
+  const { data, error } = await sb
+    .from("league_game_votes")
+    .select("*, league_members!league_game_votes_voter_id_fkey(superstar_name)")
+    .eq("game_id", gameId);
+
+  if (error) throw new HttpError(400, error.message);
+  return jsonResponse({ votes: data });
+}
+
+// POST /bulk/archive — archive completed leagues
+async function archiveCompletedLeagues(
+  userId: string,
+  sb: ReturnType<typeof getUserClient>,
+): Promise<Response> {
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data: leagues } = await sb
+    .from("leagues")
+    .select("id, name, league_members!inner(user_id)")
+    .eq("league_members.user_id", userId)
+    .eq("status", "active")
+    .lt("season_end", today);
+
+  const archivedIds: string[] = [];
+  for (const league of leagues || []) {
+    await sb
+      .from("leagues")
+      .update({ status: "completed", updated_at: new Date().toISOString() })
+      .eq("id", league.id)
+      .eq("created_by", userId);
+    archivedIds.push(league.id);
+  }
+
+  return jsonResponse({ archived: archivedIds.length, league_ids: archivedIds });
+}
+
 // ---------------------------------------------------------------------------
 // URL path routing
 // ---------------------------------------------------------------------------
@@ -647,7 +751,7 @@ async function getStandings(
  *   /leagues/join/token        → ["join", "token"]
  */
 function parsePath(pathname: string): string[] {
-  const cleaned = pathname.replace(/^\/leagues\/?/, "");
+  const cleaned = pathname.replace(/.*\/leagues\/?/, "");
   if (!cleaned) return [];
   return cleaned.split("/").filter(Boolean);
 }
@@ -671,6 +775,16 @@ serve(async (req: Request) => {
     ) {
       const body = await req.json();
       return await joinViaInvite(segments[1], body, user.userId, sb);
+    }
+
+    // POST /bulk/archive — must come before /:id routes
+    if (
+      method === "POST" &&
+      segments.length === 2 &&
+      segments[0] === "bulk" &&
+      segments[1] === "archive"
+    ) {
+      return await archiveCompletedLeagues(user.userId, sb);
     }
 
     // POST / — create league
@@ -741,6 +855,17 @@ serve(async (req: Request) => {
 
     // /:id/games routes
     if (segments.length >= 2 && segments[1] === "games") {
+      // /:id/games/:gid/votes routes
+      if (segments.length === 4 && segments[3] === "votes") {
+        if (method === "POST") {
+          const body = await req.json();
+          return await castVote(leagueId, segments[2], body, user.userId, sb);
+        }
+        if (method === "GET") {
+          return await getVotes(leagueId, segments[2], user.userId, sb);
+        }
+      }
+
       if (method === "POST" && segments.length === 2) {
         const body = await req.json();
         return await logGame(leagueId, body, user.userId, sb);
