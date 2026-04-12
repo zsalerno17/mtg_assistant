@@ -61,7 +61,7 @@ export default function TopNavbar() {
   const email = session?.user?.email || ''
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/85 border-b border-[var(--color-border)]">
+    <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/85 border-b border-[var(--color-border)]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="max-w-[1920px] mx-auto px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}

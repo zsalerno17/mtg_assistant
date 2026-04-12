@@ -128,7 +128,7 @@ function DeckCardSkeleton() {
 
 function DeckRowSkeleton() {
   return (
-    <tr className="border-b border-[var(--color-border)]">
+    <tr className="deck-table-row">
       <td className="py-[18px] px-6">
         <div className="flex items-center gap-3">
           <div className="skeleton w-[46px] h-[64px] rounded" />
@@ -151,12 +151,12 @@ function DeckRowSkeleton() {
 
 function StatusBadge({ analyzed }) {
   return analyzed ? (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-emerald-500/[0.12] text-emerald-400 border border-emerald-500/25 whitespace-nowrap font-medium">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-emerald-500/[0.12] text-emerald-500 border border-emerald-500/25 whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Analyzed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-slate-500/[0.12] text-[var(--color-muted)] border border-slate-500/25 whitespace-nowrap font-medium">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-slate-500/[0.12] text-[var(--color-muted)] border border-slate-500/20 whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Pending
     </span>
@@ -246,48 +246,56 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
         <img
           src={commanderUri}
           alt={commanderName}
-          onError={(e) => console.error('❌ Single commander image failed:', commanderUri)}
-          onLoad={() => console.log('✅ Single commander image loaded:', commanderUri)}
           className="w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg shrink-0 transition-all group-hover:border-[var(--color-primary)]/50 group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] group-hover:-translate-y-0.5 cursor-help"
         />
       </CardTooltip>
     )
   }
 
-  // Partner commanders - stacked layout
+  // Partner commanders - stacked layout using flexbox
   return (
     <div
-      className="relative w-[74px] h-[64px] shrink-0"
+      className="flex items-center w-[74px] h-[64px] shrink-0"
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
     >
-      {/* Back card (partner) */}
-      <CardTooltip cardName={commanderNames[1]}>
-        <img
-          src={partnerUri}
-          alt={commanderNames[1]}
-          className={`absolute top-0 w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help ${
-            hovering 
-              ? 'left-[28px] border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-10' 
-              : 'left-[14px] z-0'
-          }`}
-          style={{ transitionDuration: '200ms' }}
-        />
-      </CardTooltip>
-      
       {/* Front card (commander) */}
-      <CardTooltip cardName={commanderNames[0]}>
-        <img
-          src={commanderUri}
-          alt={commanderNames[0]}
-          className={`absolute top-0 left-0 w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help ${
-            hovering 
-              ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-20' 
-              : 'z-10'
-          }`}
-          style={{ transitionDuration: '200ms' }}
-        />
-      </CardTooltip>
+      <div className="shrink-0">
+        <CardTooltip cardName={commanderNames[0]}>
+          <img
+            src={commanderUri}
+            alt={commanderNames[0]}
+            className={`w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help relative ${
+              hovering 
+                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-20' 
+                : 'z-10'
+            }`}
+            style={{ transitionDuration: '200ms' }}
+          />
+        </CardTooltip>
+      </div>
+      
+      {/* Back card (partner) - negative margin on wrapper creates overlap */}
+      <div 
+        className="shrink-0 transition-all"
+        style={{ 
+          marginLeft: hovering ? '-18px' : '-32px',
+          transitionDuration: '200ms'
+        }}
+      >
+        <CardTooltip cardName={commanderNames[1]}>
+          <img
+            src={partnerUri}
+            alt={commanderNames[1]}
+            className={`w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help relative ${
+              hovering 
+                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-10' 
+                : 'z-0'
+            }`}
+            style={{ transitionDuration: '200ms' }}
+          />
+        </CardTooltip>
+      </div>
     </div>
   )
 }
@@ -298,10 +306,10 @@ function DeckTableRow({ item, onAnalyze, analyzingId }) {
   const isAnalyzing = analyzingId === item.moxfield_id
 
   return (
-    <tr className="group border-b border-[var(--color-border)] last:border-b-0 hover:bg-[var(--color-primary)]/5 transition-all">
+    <tr className="group deck-table-row hover:bg-[var(--color-primary)]/5 transition-all">
       {/* Deck name with commander art */}
       <td className="py-[18px] px-6">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <CommanderArtStack 
             commanderUri={item.commander_image_uri}
             partnerUri={item.partner_image_uri}
