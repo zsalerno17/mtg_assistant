@@ -12,6 +12,7 @@ import ImportDeckPage from './pages/ImportDeckPage'
 import LeaguesPage from './pages/LeaguesPage'
 import LeaguePage from './pages/LeaguePage'
 import LogGamePage from './pages/LogGamePage'
+import HelpPage from './pages/HelpPage'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
                     <Route path="/deck/:deckId" element={<DeckPage />} />
                     <Route path="/collection" element={<CollectionPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/help" element={<HelpPage />} />
                     <Route path="/decks/import" element={<ImportDeckPage />} />
                     <Route path="/leagues" element={<LeaguesPage />} />
                     <Route path="/leagues/:leagueId" element={<LeaguePage />} />

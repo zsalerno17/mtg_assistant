@@ -146,6 +146,17 @@ export default function TopNavbar() {
                   </svg>
                   Profile
                 </button>
+                <button
+                  onClick={() => navigate('/help')}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+                    <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+                  </svg>
+                  Help & Resources
+                </button>
                 <div className="border-t border-[var(--color-border)]" />
                 <button
                   onClick={signOut}
