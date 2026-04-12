@@ -126,10 +126,12 @@ function DeckCardSkeleton() {
   )
 }
 
+const rowBorderStyle = { borderBottom: '1px solid #1e293b' }
+
 function DeckRowSkeleton() {
   return (
-    <tr className="deck-table-row">
-      <td className="py-[18px] px-6">
+    <tr>
+      <td className="py-[18px] px-6" style={rowBorderStyle}>
         <div className="flex items-center gap-3">
           <div className="skeleton w-[46px] h-[64px] rounded" />
           <div className="flex flex-col gap-1.5 flex-1">
@@ -138,13 +140,13 @@ function DeckRowSkeleton() {
           </div>
         </div>
       </td>
-      <td className="py-[18px] px-6">
+      <td className="py-[18px] px-6" style={rowBorderStyle}>
         <div className="flex gap-1">{[...Array(3)].map((_, i) => <div key={i} className="skeleton rounded-full w-4 h-4" />)}</div>
       </td>
-      <td className="py-[18px] px-6"><div className="skeleton h-3 rounded w-16" /></td>
-      <td className="py-[18px] px-6"><div className="skeleton h-5 rounded-[7px] w-20" /></td>
-      <td className="py-[18px] px-6"><div className="skeleton h-4 rounded w-8" /></td>
-      <td className="py-[18px] px-6 text-right"><div className="skeleton h-5 rounded w-14 ml-auto" /></td>
+      <td className="py-[18px] px-6" style={rowBorderStyle}><div className="skeleton h-3 rounded w-16" /></td>
+      <td className="py-[18px] px-6" style={rowBorderStyle}><div className="skeleton h-5 rounded-[7px] w-20" /></td>
+      <td className="py-[18px] px-6" style={rowBorderStyle}><div className="skeleton h-4 rounded w-8" /></td>
+      <td className="py-[18px] px-6 text-right" style={rowBorderStyle}><div className="skeleton h-5 rounded w-14 ml-auto" /></td>
     </tr>
   )
 }
@@ -306,9 +308,9 @@ function DeckTableRow({ item, onAnalyze, analyzingId }) {
   const isAnalyzing = analyzingId === item.moxfield_id
 
   return (
-    <tr className="group deck-table-row hover:bg-[var(--color-primary)]/5 transition-all">
+    <tr className="group transition-all" onMouseEnter={e => e.currentTarget.style.background = 'rgba(251,191,36,0.05)'} onMouseLeave={e => e.currentTarget.style.background = ''}>
       {/* Deck name with commander art */}
-      <td className="py-[18px] px-6">
+      <td className="py-[18px] px-6" style={rowBorderStyle}>
         <div className="flex items-center gap-4">
           <CommanderArtStack 
             commanderUri={item.commander_image_uri}
@@ -328,24 +330,24 @@ function DeckTableRow({ item, onAnalyze, analyzingId }) {
         </div>
       </td>
       {/* Colors */}
-      <td className="py-[18px] px-6">
+      <td className="py-[18px] px-6" style={rowBorderStyle}>
         {item.colors?.length > 0
           ? <ColorPips colors={item.colors} size="18px" enableGlow />
           : <span className="text-[var(--color-muted)] opacity-30 text-xs">—</span>
         }
       </td>
       {/* Format */}
-      <td className="py-[18px] px-6">
+      <td className="py-[18px] px-6" style={rowBorderStyle}>
         <span className="text-[var(--color-muted)] text-[11px] font-medium uppercase tracking-[0.3px]">
           {item.format || 'Commander'}
         </span>
       </td>
       {/* Status */}
-      <td className="py-[18px] px-6">
+      <td className="py-[18px] px-6" style={rowBorderStyle}>
         <StatusBadge analyzed={item.analyzed} />
       </td>
       {/* Power Level */}
-      <td className="py-[18px] px-6">
+      <td className="py-[18px] px-6" style={rowBorderStyle}>
         {item.power_level != null ? (
           <span className="text-[var(--color-primary)] font-bold text-sm">
             {item.power_level.toFixed(1)}
@@ -355,7 +357,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId }) {
         )}
       </td>
       {/* Actions */}
-      <td className="py-[18px] px-6 text-right">
+      <td className="py-[18px] px-6 text-right" style={rowBorderStyle}>
         <div className="flex items-center justify-end gap-3">
           {item.analyzed ? (
             <button
@@ -547,15 +549,15 @@ export default function DashboardPage() {
             </div>
             {/* Desktop: table skeleton */}
             <div className="hidden md:block overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead>
-                  <tr className="bg-[#1a202e] border-b border-[#2d3748]">
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{width: '45%'}}>Deck</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Colors</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Format</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Status</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Power</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px] text-right">Actions</th>
+                  <tr style={{ background: '#1a202e' }}>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{width: '45%', borderBottom: '1px solid #2d3748'}}>Deck</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Colors</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Format</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Status</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Power</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px] text-right" style={{borderBottom: '1px solid #2d3748'}}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -592,15 +594,15 @@ export default function DashboardPage() {
 
             {/* Desktop: table */}
             <div className="hidden md:block overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead>
-                  <tr className="bg-[#1a202e] border-b border-[#2d3748]">
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{width: '45%'}}>Deck</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Colors</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Format</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Status</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]">Power</th>
-                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px] text-right">Actions</th>
+                  <tr style={{ background: '#1a202e' }}>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{width: '45%', borderBottom: '1px solid #2d3748'}}>Deck</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Colors</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Format</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Status</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px]" style={{borderBottom: '1px solid #2d3748'}}>Power</th>
+                    <th className="py-4 px-6 text-[var(--color-muted)] text-[11px] font-semibold uppercase tracking-[0.8px] text-right" style={{borderBottom: '1px solid #2d3748'}}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

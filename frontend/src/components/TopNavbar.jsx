@@ -61,9 +61,9 @@ export default function TopNavbar() {
   const email = session?.user?.email || ''
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/85 border-b border-[var(--color-border)]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/85 border-b border-[var(--color-border)]" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)' }}>
       <div className="max-w-[1920px] mx-auto px-4 md:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 min-h-[64px]">
           {/* Logo */}
           <div className="flex items-center gap-8">
             <NavLink
@@ -99,6 +99,18 @@ export default function TopNavbar() {
                 }
               >
                 Collection
+              </NavLink>
+              <NavLink
+                to="/leagues"
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
+                    isActive
+                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
+                  }`
+                }
+              >
+                Leagues
               </NavLink>
             </div>
           </div>
@@ -152,8 +164,8 @@ export default function TopNavbar() {
       </div>
 
       {/* Mobile bottom navigation bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md bg-[var(--color-surface)]/95 border-t border-[var(--color-border)] z-40">
-        <div className="flex items-center justify-around px-2 py-2">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-md bg-[var(--color-surface)]/95 border-t border-[var(--color-border)] z-40" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}>
+        <div className="flex items-center justify-around px-2 pt-2 pb-1">
           <NavLink
             to="/"
             end

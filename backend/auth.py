@@ -65,3 +65,19 @@ def require_allowed_user(
         )
 
     return {"email": email, "user_id": user.id}
+
+
+def get_supabase_client():
+    """Get a Supabase client with service role key (bypasses RLS)."""
+    return _service_supabase()
+
+
+def require_user_id(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer),
+) -> str:
+    """
+    Auth dependency that returns just the user_id string.
+    For routes that only need the user_id, not the full user dict.
+    """
+    user = require_allowed_user(credentials)
+    return user["user_id"]

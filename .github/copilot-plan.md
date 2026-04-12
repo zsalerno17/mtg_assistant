@@ -7,25 +7,58 @@
 
 ## ⚡ CURRENT TASK
 
-**Phase 25 — Feature Planning & Prioritization** (April 12, 2026)
+**Phase 26 — League/Pod Tracking Feature** (April 12, 2026)
 
-Review findings from [.github/mtg-review.md](.github/mtg-review.md) and plan next development phase. User review identified critical Commander accuracy issues and differentiation opportunities.
+Implemented comprehensive league tracking system for Commander pods (e.g., "The Commander Gauntlet" weekly play). This feature fills a gap that no existing MTG tools address well — most pods track manually with spreadsheets or Discord bots.
 
-**Planning objectives:**
-1. Prioritize fixes by impact (trust/accuracy vs polish)
-2. Choose initial implementation scope (Phase 26)
-3. Define success criteria for each fix
-4. Assess resource requirements (backend vs frontend, Gemini dependencies)
+**Implementation Complete:**
+- ✅ **Database schema** (migration 007)
+  - `leagues` table — seasons with name, description, start/end dates, status
+  - `league_members` table — player profiles (superstar name, entrance music, catchphrase, titles)
+  - `league_games` table — game sessions with metadata, special awards
+  - `league_game_results` table — per-player results, placements, points earned
+  - `get_league_standings()` SQL function for calculating leaderboard with tiebreakers
+- ✅ **Backend API** (`backend/routers/leagues.py`)
+  - Full CRUD for leagues, members, games, and results
+  - Automatic points calculation based on placement
+  - Awards system: Win (3pts), First Blood (1pt), Last Stand (1pt), Entrance Bonus (1pt)
+  - Row-level security policies for multi-tenant data isolation
+  - Standings calculation with tiebreaker logic (total points → wins → head-to-head)
+- ✅ **Frontend pages**
+  - `LeaguesPage.jsx` — list all leagues, create new league form
+  - `LeaguePage.jsx` — league detail with tabs (standings, games, members)
+  - `LogGamePage.jsx` — form to log game sessions with player results and special awards
+  - Added "Leagues" link to TopNavbar
+- ✅ **API integration** (`frontend/src/lib/api.js`)
+  - Full client-side API wrapper for all league endpoints
 
-**Review summary:**
-- ✅ **Strengths:** Collection integration, UI polish, educational weakness cards
-- ❌ **Critical gaps:** Flat thresholds, no power level detection, removal bundling
-- ❌ **False positives:** Theme detection triggers on incidental patterns
-- 📊 **User rating:** 4/5 for casual, 2/5 for competitive (accuracy issues)
+**Feature Highlights:**
+- **Standings leaderboard** with rank badges (gold/silver/bronze for top 3)
+- **Game history** showing placements, decks played, and special awards per game
+- **Member profiles** with superstar names, entrance music URLs, catchphrases, and earned titles
+- **Auto-calculated points** based on WWF-style scoring rules
+- **Special awards tracking**: WWE Entrance of the Week, Spicy Play of the Week
+- **Deck integration**: Optional linking of games to user's deck library
 
-**Next phase recommendation:** Phase 26 — Commander Accuracy Sprint (power level + dynamic thresholds)
+**Files Created:**
+- `supabase/migrations/007_league_tracking.sql`
+- `backend/routers/leagues.py`
+- `frontend/src/pages/LeaguesPage.jsx`
+- `frontend/src/pages/LeaguePage.jsx`
+- `frontend/src/pages/LogGamePage.jsx`
 
-**Previous:** Phase 24j — Partner Commander Stacked Display (complete, ready for deployment)
+**Files Modified:**
+- `backend/main.py` — registered leagues router
+- `frontend/src/lib/api.js` — added league API methods
+- `frontend/src/App.jsx` — added league routes
+- `frontend/src/components/TopNavbar.jsx` — added Leagues nav link
+
+**Next steps:**
+- Test migration on Supabase
+- Test full flow: create league → join as members → log games → view standings
+- Consider adding: invite links, export standings to image/PDF, season archives
+
+**Previous:** Phase 25 — Feature Planning & Prioritization
 
 ---
 

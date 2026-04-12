@@ -60,8 +60,10 @@ async def update_profile(body: ProfileUpdate, user: dict = Depends(require_allow
     VALID_PRESET_IDS = {
         # Mana symbols (mana-font)
         "w", "u", "b", "r", "g", "c", "x", "s", "e", "p", "chaos", "tap", "planeswalker",
-        # Creature archetypes (inline SVG)
-        "dragon", "goblin", "wizard", "angel", "zombie", "elf", "vampire", "merfolk",
+        # Creature archetypes (inline SVG) — synced with frontend/src/lib/avatarPresets.js
+        "dragon", "goblin", "wizard", "zombie", "elf", "vampire", "vampire-bat",
+        "knight", "knight-mounted", "rogue", "minotaur", "orc", "dwarf",
+        "ninja", "samurai", "griffin", "wyvern", "skeleton", "pirate",
     }
     if body.avatar_url is not None:
         if body.avatar_url.startswith("preset:"):

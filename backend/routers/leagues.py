@@ -6,7 +6,7 @@ from typing import Optional, List
 from datetime import date, datetime
 from uuid import UUID
 
-from ..auth import require_user_id, get_supabase_client
+from auth import require_user_id, get_supabase_client
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 

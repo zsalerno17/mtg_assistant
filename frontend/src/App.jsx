@@ -9,6 +9,9 @@ import DeckPage from './pages/DeckPage'
 import CollectionPage from './pages/CollectionPage'
 import ProfilePage from './pages/ProfilePage'
 import ImportDeckPage from './pages/ImportDeckPage'
+import LeaguesPage from './pages/LeaguesPage'
+import LeaguePage from './pages/LeaguePage'
+import LogGamePage from './pages/LogGamePage'
 
 export default function App() {
   return (
@@ -28,6 +31,9 @@ export default function App() {
                     <Route path="/collection" element={<CollectionPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/decks/import" element={<ImportDeckPage />} />
+                    <Route path="/leagues" element={<LeaguesPage />} />
+                    <Route path="/leagues/:leagueId" element={<LeaguePage />} />
+                    <Route path="/leagues/:leagueId/log-game" element={<LogGamePage />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

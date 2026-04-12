@@ -96,4 +96,59 @@ export const api = {
 
   /** Get the user's deck library with analysis status for each deck. */
   getDeckLibrary: () => apiFetch('/api/decks/library'),
+
+  // ============================================================================
+  // LEAGUE / POD TRACKING
+  // ============================================================================
+
+  /** Create a new league/season. */
+  createLeague: ({ name, description, season_start, season_end, status = 'active' }) =>
+    apiFetch('/api/leagues', {
+      method: 'POST',
+      body: JSON.stringify({ name, description, season_start, season_end, status }),
+    }),
+
+  /** List all leagues the user is in. */
+  getLeagues: () => apiFetch('/api/leagues'),
+
+  /** Get details for a specific league (includes members). */
+  getLeague: (league_id) => apiFetch(`/api/leagues/${league_id}`),
+
+  /** Update league metadata (creator only). */
+  updateLeague: (league_id, updates) =>
+    apiFetch(`/api/leagues/${league_id}`, { method: 'PATCH', body: JSON.stringify(updates) }),
+
+  /** Delete a league (creator only). */
+  deleteLeague: (league_id) =>
+    apiFetch(`/api/leagues/${league_id}`, { method: 'DELETE' }),
+
+  /** Join a league as a new member. */
+  joinLeague: (league_id, { superstar_name, entrance_music_url = null, catchphrase = null }) =>
+    apiFetch(`/api/leagues/${league_id}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ superstar_name, entrance_music_url, catchphrase }),
+    }),
+
+  /** List all members in a league. */
+  getLeagueMembers: (league_id) => apiFetch(`/api/leagues/${league_id}/members`),
+
+  /** Update your own member profile. */
+  updateMember: (league_id, member_id, updates) =>
+    apiFetch(`/api/leagues/${league_id}/members/${member_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    }),
+
+  /** Log a game with all player results. */
+  logGame: (league_id, game_data) =>
+    apiFetch(`/api/leagues/${league_id}/games`, {
+      method: 'POST',
+      body: JSON.stringify(game_data),
+    }),
+
+  /** Get all games for a league. */
+  getLeagueGames: (league_id) => apiFetch(`/api/leagues/${league_id}/games`),
+
+  /** Get current standings for a league. */
+  getLeagueStandings: (league_id) => apiFetch(`/api/leagues/${league_id}/standings`),
 }
