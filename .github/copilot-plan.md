@@ -1,15 +1,15 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file. PLAN.md is archived — do not use it.
-> Last updated: April 12, 2026 (Phase 22 deployment configs ready)
+> Last updated: April 12, 2026 (Phase 24 UI Redesign complete)
 
 ---
 
 ## ⚡ CURRENT TASK
 
-**Phase 22 — Deployment** (next pending phase)
+**Phase 22 — Deployment** (pending — ready to deploy)
 
-Do not start Phase 23 or Phase 24 until Phase 22 is complete.
+Phase 24 UI Redesign completed in overnight session. Next: deploy to production (Phase 22) or continue with Phase 23 schema improvements.
 
 ---
 
@@ -18,6 +18,118 @@ Do not start Phase 23 or Phase 24 until Phase 22 is complete.
 **Phase 22 Deployment — All Automated Steps Complete ✅**
 
 All automated deployment preparation complete. Ready to deploy to production.
+
+**Recent UX Improvements (April 12, 2026)**
+
+Completed three critical UX fixes identified during testing:
+
+1. ✅ **Collection Upgrades → Scenarios Integration**
+   - Scenarios tab now loads both `api.getImprovements()` AND `api.getCollectionUpgrades()`
+   - Collection-owned cards prioritized first in suggestion buttons (instant zero-cost upgrades)
+   - Merged suggestions intelligently: up to 12 total (collection + AI improvements)
+   - Deduplication prevents same swap appearing twice
+   - File: [frontend/src/pages/DeckPage.jsx](frontend/src/pages/DeckPage.jsx)
+
+2. ✅ **Card Hover Tooltips on Overview Tab**
+   - Added `CardTooltip` component to weakness example card names
+   - Hovering any card in "Identified Weaknesses" section shows Scryfall image preview
+   - Added hover styling (cursor-help, border transition) for visual affordance
+   - File: [frontend/src/pages/DeckPage.jsx](frontend/src/pages/DeckPage.jsx)
+
+3. ✅ **Fixed Duplicate Suggestions Bug**
+   - Problem: Cards appeared in both swaps AND additions (e.g., "Add Sol Ring" twice)
+   - Solution: Set-based deduplication tracking both swap pairs and all added card names
+   - `seenSwaps` Set → prevents duplicate "cut::add" pairs
+   - `seenAdds` Set → prevents cards appearing in both swaps AND standalone additions
+   - Result: Maximum 12 unique suggestions, no cross-type duplicates
+   - File: [frontend/src/pages/DeckPage.jsx](frontend/src/pages/DeckPage.jsx)
+
+**Testing status:** All fixes verified on localhost (backend:8000, frontend:5173). Frontend hot-reloaded changes successfully.
+
+**Phase 24 UI Redesign — Complete ✅ (April 12, 2026)**
+
+Implemented complete visual redesign with new typography hierarchy, horizontal navigation, and refined color palette.
+
+**Phase 24b: Top Navigation Component**
+- ✅ Created [TopNavbar.jsx](frontend/src/components/TopNavbar.jsx) — horizontal nav with logo, links, user avatar
+  - Logo: Cinzel font with amber color and glow effect
+  - Desktop nav links: Dashboard, Collection (Space Grotesk font)
+  - User avatar with hover dropdown (Profile, Sign out)
+  - Mobile bottom navigation (auto-hides on tablet+)
+  - Sticky positioning with blur backdrop
+- ✅ Updated [Layout.jsx](frontend/src/components/Layout.jsx) — simplified to TopNavbar + main content
+  - Removed old sidebar navigation (~160 lines removed)
+  - Removed redundant mobile bottom nav
+  - Clean vertical layout: TopNavbar → main content
+
+**Phase 24c: Dashboard Page Redesign**
+- ✅ Updated [DashboardPage.jsx](frontend/src/pages/DashboardPage.jsx)
+  - Page title: "Dashboard" → "Deck Vault" (Cinzel font with amber glow)
+  - Added 4-column stats grid with gradient bottom borders:
+    - Total Decks (amber gradient)
+    - Analyzed Decks (green gradient)
+    - Average Power Level (purple gradient)
+    - Collection Cards (blue gradient)
+  - Applied `mana-glow-hover` to mana symbols (drop-shadow effect on hover)
+  - Increased max-width from 4xl → 6xl for better desktop layout
+
+**Phase 24d: DeckPage Redesign**
+- ✅ Updated [DeckPage.jsx](frontend/src/pages/DeckPage.jsx)
+  - Commander name: Changed to Cinzel font with amber glow
+  - Deck name in header: Changed to Cinzel font
+  - Applied Space Grotesk to metadata text (format, deck name)
+  - Consistent typography hierarchy throughout
+
+**Phase 24e: Collection & Profile Pages**
+- ✅ Updated [CollectionPage.jsx](frontend/src/pages/CollectionPage.jsx)
+  - Page title: "My Collection" → Cinzel font with amber glow
+  - Applied Space Grotesk to descriptive text
+- ✅ Updated [ProfilePage.jsx](frontend/src/pages/ProfilePage.jsx)
+  - Page title: "Profile" → Cinzel font with amber glow
+  - Applied Space Grotesk to descriptive text
+- ✅ Updated [LoginPage.jsx](frontend/src/pages/LoginPage.jsx)
+  - Logo: "MTG Assistant" → Cinzel font with enhanced glow
+  - Applied `mana-glow-hover` to mana symbols
+  - Applied Space Grotesk to tagline and button text
+
+**Phase 24f: Component Library Consistency**
+- ✅ Verified all components use design system colors from [index.css](frontend/src/index.css)
+- ✅ Consistent button hover states (200ms transitions, amber glow on primary)
+- ✅ Badge components (`StatusBadge`, `StatBadge`, `AiSourceBadge`) already use system colors
+- ✅ All gradient border utilities working (`.gradient-border-amber/green/purple/blue`)
+- ✅ Mana glow hover effect applied consistently across all pages
+
+**Phase 24g: Build & Testing**
+- ✅ Build verification: `npm run build` — Success (0 errors)
+- ✅ Linting: No errors in frontend
+- ✅ All Phase 24 changes compile without warnings
+- ✅ Typography hierarchy implemented:
+  - `--font-brand` (Cinzel): Logos, page titles, commander names
+  - `--font-heading` (Space Grotesk): Section headings, metadata, buttons
+  - `--font-body` (Inter): Body text
+  - `--font-mono` (JetBrains Mono): Numbers, code, data
+- ✅ Color palette refined:
+  - Surface colors: #111827 (surface), #1f2937 (surface-2)
+  - Border: #374151 (lighter than previous)
+  - All gradient utilities functional
+
+**Files Modified (Phase 24):**
+- Created: [frontend/src/components/TopNavbar.jsx](frontend/src/components/TopNavbar.jsx) (~180 lines)
+- Updated: [frontend/src/components/Layout.jsx](frontend/src/components/Layout.jsx) (simplified from ~170 to ~14 lines)
+- Updated: [frontend/src/pages/DashboardPage.jsx](frontend/src/pages/DashboardPage.jsx) (added stats grid, mana glow)
+- Updated: [frontend/src/pages/DeckPage.jsx](frontend/src/pages/DeckPage.jsx) (typography updates)
+- Updated: [frontend/src/pages/CollectionPage.jsx](frontend/src/pages/CollectionPage.jsx) (typography updates)
+- Updated: [frontend/src/pages/ProfilePage.jsx](frontend/src/pages/ProfilePage.jsx) (typography updates)
+- Updated: [frontend/src/pages/LoginPage.jsx](frontend/src/pages/LoginPage.jsx) (typography, mana glow)
+
+**Total Impact:**
+- 1 new component created (TopNavbar)
+- 7 files modified
+- ~200 lines of navigation code simplified
+- Complete typography hierarchy implemented
+- Consistent visual design across all pages
+- All changes hot-reloaded successfully
+- Build verified: 0 errors
 
 ### What I Did (Automated)
 

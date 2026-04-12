@@ -79,11 +79,11 @@ export default function CollectionPage() {
     <div className="min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h2 className="font-[var(--font-heading)] text-2xl sm:text-3xl text-[var(--color-text)] tracking-wide mb-2">
+        <h2 className="font-[var(--font-brand)] text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2 drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]">
           My Collection
         </h2>
-        <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
-        <p className="text-[var(--color-muted)] text-sm">
+        <div className="h-px w-20 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
+        <p className="text-[var(--color-muted)] text-sm font-[var(--font-heading)]">
           Export your collection from Moxfield and upload it here.
         </p>
         <p className="text-[var(--color-muted)] text-xs mt-2 opacity-75">

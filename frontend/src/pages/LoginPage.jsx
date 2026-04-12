@@ -23,24 +23,24 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
-      <h1 className="font-[var(--font-heading)] text-5xl text-[var(--color-primary)] mb-3 tracking-wide">
+      <h1 className="font-[var(--font-brand)] text-5xl text-[var(--color-primary)] mb-3 tracking-wide drop-shadow-[0_0_16px_rgba(251,191,36,0.4)]">
         MTG Assistant
       </h1>
 
       {/* Mana pip row */}
       <div className="flex gap-2 mb-4">
         {['w','u','b','r','g'].map(c => (
-          <i key={c} className={`ms ms-${c} ms-cost ms-shadow`} style={{ fontSize: '1.5rem' }} aria-label={c} />
+          <i key={c} className={`ms ms-${c} ms-cost ms-shadow mana-glow-hover transition-all`} style={{ fontSize: '1.5rem' }} aria-label={c} />
         ))}
       </div>
 
-      <p className="text-[var(--color-muted)] mb-10 text-center max-w-xs text-sm">
+      <p className="text-[var(--color-muted)] mb-10 text-center max-w-xs text-sm font-[var(--font-heading)]">
         Know your deck. Command your game.
       </p>
 
       <button
         onClick={signInWithGoogle}
-        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-lg hover:shadow-amber-500/10 transition-all"
+        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-lg hover:shadow-amber-500/10 transition-all font-[var(--font-heading)]"
       >
         <GoogleIcon />
         <span>Continue with Google</span>

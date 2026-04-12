@@ -324,7 +324,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
           </div>
           {/* Text info */}
           <div>
-            <p className="text-[var(--color-primary)] font-[var(--font-heading)] text-2xl leading-snug">
+            <p className="text-[var(--color-primary)] font-[var(--font-brand)] text-2xl leading-snug drop-shadow-[0_0_12px_rgba(251,191,36,0.3)]">
               {deck.commander?.name || 'Unknown'}
               {deck.partner?.name && (
                 <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
@@ -335,7 +335,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
             </p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               {commanderColors.length > 0 && <ColorPips colors={commanderColors} />}
-              <span className="text-[var(--color-muted)] text-sm">{deck.format} · {deck.name}</span>
+              <span className="text-[var(--color-muted)] text-sm font-[var(--font-heading)]">{deck.format} · {deck.name}</span>
             </div>
           </div>
         </div>
@@ -392,9 +392,11 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                     {w.examples?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-1">
                         {w.examples.map((ex) => (
-                          <span key={ex} className="bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] text-xs px-2 py-0.5 rounded">
-                            {ex}
-                          </span>
+                          <CardTooltip key={ex} cardName={ex}>
+                            <span className="bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] text-xs px-2 py-0.5 rounded cursor-help hover:border-[var(--color-secondary)]/40 transition-colors">
+                              {ex}
+                            </span>
+                          </CardTooltip>
                         ))}
                       </div>
                     )}
@@ -938,31 +940,80 @@ function ScenariosTab({ deckId, deck, analysis }) {
 
   // Load improvements data for suggestions
   const [improvements, setImprovements] = useState(null)
+  const [collectionUpgrades, setCollectionUpgrades] = useState(null)
+  
   useEffect(() => {
     api.getImprovements(deckId)
       .then((res) => setImprovements(res.improvements))
       .catch(() => {}) // Silent fail — suggestions are optional
   }, [deckId])
+  
+  useEffect(() => {
+    api.getCollectionUpgrades(deckId)
+      .then((res) => setCollectionUpgrades(res.upgrades || []))
+      .catch(() => {}) // Silent fail — suggestions are optional
+  }, [deckId])
 
-  // Build list of suggestions from improvements (swaps + pure additions)
+  // Build list of suggestions from improvements + collection upgrades
   const suggestions = (() => {
-    if (!improvements) return []
     const items = []
+    const seenSwaps = new Set() // Track "cut::add" pairs
+    const seenAdds = new Set()  // Track all added card names
     
-    // Add swaps (paired cut → add)
-    ;(improvements.swaps || []).slice(0, 6).forEach(swap => {
-      items.push({ type: 'swap', cut: swap.cut, add: swap.add, category: swap.category })
-    })
+    // Helper to check/add swap
+    const tryAddSwap = (cut, add, category, owned) => {
+      const swapKey = `${cut}::${add}`
+      if (!seenSwaps.has(swapKey) && !seenAdds.has(add)) {
+        seenSwaps.add(swapKey)
+        seenAdds.add(add)
+        items.push({ type: 'swap', cut, add, category, owned })
+        return true
+      }
+      return false
+    }
     
-    // Add pure additions (urgent fixes + additions)
-    ;(improvements.urgent_fixes || []).slice(0, 4).forEach(fix => {
-      items.push({ type: 'addition', card: fix.card, category: fix.category })
-    })
-    ;(improvements.additions || []).slice(0, 4).forEach(add => {
-      items.push({ type: 'addition', card: add.card })
-    })
+    // Helper to check/add addition
+    const tryAddAddition = (card, category, owned) => {
+      if (!seenAdds.has(card)) {
+        seenAdds.add(card)
+        items.push({ type: 'addition', card, category, owned })
+        return true
+      }
+      return false
+    }
     
-    return items.slice(0, 10) // max 10 total suggestions
+    // Prioritize collection upgrades (cards you already own)
+    if (collectionUpgrades) {
+      collectionUpgrades.forEach(u => {
+        if (items.length >= 12) return
+        if (u.cut) {
+          tryAddSwap(u.cut, u.add, 'collection', true)
+        } else {
+          tryAddAddition(u.add, 'collection', true)
+        }
+      })
+    }
+    
+    // Then add AI improvements (may include cards to buy)
+    if (improvements && items.length < 12) {
+      // Add swaps (paired cut → add)
+      ;(improvements.swaps || []).forEach(swap => {
+        if (items.length >= 12) return
+        tryAddSwap(swap.cut, swap.add, swap.category, swap.owned)
+      })
+      
+      // Add pure additions (urgent fixes + additions)
+      ;(improvements.urgent_fixes || []).forEach(fix => {
+        if (items.length >= 12) return
+        tryAddAddition(fix.card, fix.category, fix.owned)
+      })
+      ;(improvements.additions || []).forEach(add => {
+        if (items.length >= 12) return
+        tryAddAddition(add.card, add.category || 'general', add.owned)
+      })
+    }
+    
+    return items
   })()
 
   // Build searchable deck card list from mainboard
@@ -1464,14 +1515,14 @@ export default function DeckPage() {
           Dashboard
         </Link>
         <div className="min-w-0">
-          <h1 className="font-[var(--font-heading)] text-[var(--color-primary)] text-xl truncate leading-tight" style={{ textShadow: '0 0 24px rgba(251,191,36,0.3)' }}>
+          <h1 className="font-[var(--font-brand)] text-[var(--color-primary)] text-xl truncate leading-tight drop-shadow-[0_0_12px_rgba(251,191,36,0.3)]">
             {deckName}
           </h1>
           {analysis?.colors?.length > 0 && (
             <div className="flex items-center gap-2 mt-0.5">
               <ColorPips colors={analysis.colors} size="0.9rem" />
               {analysis.commander && (
-                <span className="text-[var(--color-muted)] text-xs truncate">{analysis.commander}</span>
+                <span className="text-[var(--color-muted)] text-xs truncate font-[var(--font-heading)]">{analysis.commander}</span>
               )}
             </div>
           )}

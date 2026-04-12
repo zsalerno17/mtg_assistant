@@ -99,7 +99,7 @@ function ColorPips({ colors, size = '1.1rem' }) {
         return (
           <i
             key={c}
-            className={`ms ms-${id.toLowerCase()} ms-cost ms-shadow`}
+            className={`ms ms-${id.toLowerCase()} ms-cost ms-shadow mana-glow-hover transition-all`}
             style={{ fontSize: size }}
             aria-label={id}
           />
@@ -377,11 +377,52 @@ export default function DashboardPage() {
           onImported={handleImported}
         />
       )}
-      <div className="max-w-4xl mx-auto">
-        {/* Page title */}
+      <div className="max-w-6xl mx-auto">
+        {/* Page title - "Deck Vault" */}
         <div className="mb-8">
-          <h1 className="font-[var(--font-heading)] text-2xl sm:text-3xl text-[var(--color-text)] tracking-wide mb-2">Dashboard</h1>
-          <div className="h-px w-16 bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
+          <h1 className="font-[var(--font-brand)] text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2 drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]">
+            Deck Vault
+          </h1>
+          <div className="h-px w-20 bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
+        </div>
+
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {/* Total Decks */}
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 gradient-border-amber">
+            <p className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-1">Total Decks</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold font-[var(--font-heading)]">
+              {decksLoading ? '—' : decks.length}
+            </p>
+          </div>
+
+          {/* Analyzed Decks */}
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 gradient-border-green">
+            <p className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-1">Analyzed</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold font-[var(--font-heading)]">
+              {decksLoading ? '—' : decks.filter(d => d.analyzed).length}
+            </p>
+          </div>
+
+          {/* Average Power Level */}
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 gradient-border-purple">
+            <p className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-1">Avg Power</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold font-[var(--font-heading)]">
+              {decksLoading ? '—' : 
+                decks.filter(d => d.power_level != null).length > 0
+                  ? (decks.filter(d => d.power_level != null).reduce((sum, d) => sum + d.power_level, 0) / decks.filter(d => d.power_level != null).length).toFixed(1)
+                  : '—'
+              }
+            </p>
+          </div>
+
+          {/* Collection Cards */}
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 gradient-border-blue">
+            <p className="text-[var(--color-muted)] text-xs uppercase tracking-wider mb-1">Collection</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold font-[var(--font-heading)]">
+              {summaryLoading ? '—' : collectionSummary?.count?.toLocaleString() || '0'}
+            </p>
+          </div>
         </div>
 
         {/* Section header */}

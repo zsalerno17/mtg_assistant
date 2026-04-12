@@ -1,16 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  /* Option A — Dark Arcane color palette */
-  --color-bg:        #0a0f1a;
-  --color-surface:   #0f172a;
-  --color-border:    #334155;
-  --color-primary:   #fbbf24;
-  --color-secondary: #38bdf8;
-  --color-success:   #34d399;
-  --color-danger:    #fb7185;
-  --color-text:      #e2e8f0;
-  --color-muted:     #94a3b8;
+  /* Refined Variant — Phase 24 color palette */
+  --color-bg:        #0a0f1a;  /* Deep background */
+  --color-surface:   #111827;  /* Refined surface (darker than previous #0f172a) */
+  --color-surface-2: #1f2937;  /* Secondary surface (elevated cards) */
+  --color-border:    #374151;  /* Refined border (lighter than previous #334155) */
+  --color-primary:   #fbbf24;  /* Amber accent */
+  --color-secondary: #38bdf8;  /* Sky blue secondary */
+  --color-success:   #34d399;  /* Emerald success */
+  --color-danger:    #fb7185;  /* Rose danger */
+  --color-text:      #e2e8f0;  /* Primary text */
+  --color-muted:     #94a3b8;  /* Muted text */
 
   /* MTG color identity pips */
   --color-mtg-w: #f9fafb;
@@ -19,10 +20,17 @@
   --color-mtg-r: #ef4444;
   --color-mtg-g: #22c55e;
 
-  /* Typography */
-  --font-heading: 'Cinzel', Georgia, serif;
-  --font-body:    'Inter', system-ui, sans-serif;
-  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+  /* Gradient accent colors for stat borders */
+  --color-gradient-amber:  #fbbf24;
+  --color-gradient-green:  #34d399;
+  --color-gradient-purple: #a855f7;
+  --color-gradient-blue:   #3b82f6;
+
+  /* Typography — Phase 24 hierarchy */
+  --font-brand:   'Cinzel', Georgia, serif;           /* Logo, "Deck Vault" */
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;  /* Section headings */
+  --font-body:    'Inter', system-ui, sans-serif;     /* Body text */
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;  /* Code/data */
 }
 
 :root {
@@ -80,4 +88,43 @@ body {
 @keyframes progressShimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
+}
+
+/* Phase 24 — Gradient border utility classes for stat cards */
+.gradient-border-amber {
+  border-bottom: 2px solid transparent;
+  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
+                    linear-gradient(90deg, transparent, var(--color-gradient-amber), transparent);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.gradient-border-green {
+  border-bottom: 2px solid transparent;
+  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
+                    linear-gradient(90deg, transparent, var(--color-gradient-green), transparent);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.gradient-border-purple {
+  border-bottom: 2px solid transparent;
+  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
+                    linear-gradient(90deg, transparent, var(--color-gradient-purple), transparent);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.gradient-border-blue {
+  border-bottom: 2px solid transparent;
+  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
+                    linear-gradient(90deg, transparent, var(--color-gradient-blue), transparent);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* Mana symbol glow effect (Phase 24) */
+.mana-glow-hover:hover {
+  filter: drop-shadow(0 0 8px currentColor);
+  transition: filter 0.2s ease;
 }
