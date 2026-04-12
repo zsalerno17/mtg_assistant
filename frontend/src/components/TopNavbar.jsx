@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { isPresetUrl, urlToPresetId, isCreaturePreset } from '../lib/avatarPresets'
+import { isPresetUrl, urlToPresetId, isCreaturePreset, CREATURE_PRESET_MAP } from '../lib/avatarPresets'
 import { CreaturePresetIcon } from '../lib/creatureIcons'
 
 function UserAvatar({ email, avatarUrl, size = 'md' }) {
@@ -10,9 +10,9 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
     lg: 'w-10 h-10'
   }
   const iconSizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-6 h-6'
+    sm: 'w-5 h-5',
+    md: 'w-7 h-7',
+    lg: 'w-7 h-7'
   }
   const textSizeClasses = {
     sm: 'text-xs',
@@ -23,9 +23,13 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
   if (avatarUrl && isPresetUrl(avatarUrl)) {
     const id = urlToPresetId(avatarUrl)
     if (isCreaturePreset(id)) {
+      const p = CREATURE_PRESET_MAP[id]
       return (
-        <div className={`${sizeClasses[size]} rounded-[7px] bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0`}>
-          <CreaturePresetIcon id={id} className={`${iconSizeClasses[size]} text-amber-400`}/>
+        <div
+          className={`${sizeClasses[size]} rounded-full flex items-center justify-center overflow-hidden shrink-0`}
+          style={{ background: p?.bg ?? '#1e293b', color: p?.iconColor ?? '#94a3b8', border: '2px solid rgba(255,255,255,0.08)' }}
+        >
+          <CreaturePresetIcon id={id} className={iconSizeClasses[size]}/>
         </div>
       )
     }
