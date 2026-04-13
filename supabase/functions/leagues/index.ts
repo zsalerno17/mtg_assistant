@@ -165,6 +165,28 @@ async function createLeague(
   }).select().single();
 
   if (error) throw new HttpError(400, error.message);
+
+  // Auto-add the creator as the first league member so the league appears
+  // in listLeagues (which inner-joins on league_members).
+  const { data: profile } = await sb
+    .from("user_profiles")
+    .select("display_name")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const superstarsName = sanitizeText(
+    (profile as { display_name?: string } | null)?.display_name || "Creator",
+    100,
+  ) ?? "Creator";
+
+  const { error: memberError } = await sb.from("league_members").insert({
+    league_id: data.id,
+    user_id: userId,
+    superstar_name: superstarsName,
+  });
+
+  if (memberError) throw new HttpError(400, memberError.message);
+
   return jsonResponse({ league: data });
 }
 
