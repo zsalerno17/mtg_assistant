@@ -72,11 +72,19 @@ serve(async (req) => {
 
     // GET /collection/summary
     if (req.method === "GET" && path === "summary") {
-      const { data } = await sb
+      const { data, error } = await sb
         .from("collections")
         .select("cards_json, updated_at")
         .eq("user_id", user.userId)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error("[collection/summary] Query error:", error);
+        return new Response(JSON.stringify({ detail: "Failed to load collection summary" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       if (!data) {
         return new Response(JSON.stringify({ count: 0, last_updated: null }), {
@@ -93,11 +101,19 @@ serve(async (req) => {
 
     // GET /collection (default)
     if (req.method === "GET") {
-      const { data } = await sb
+      const { data, error } = await sb
         .from("collections")
         .select("cards_json, updated_at")
         .eq("user_id", user.userId)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error("[collection/GET] Query error:", error);
+        return new Response(JSON.stringify({ detail: "Failed to load collection" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       if (!data) {
         return new Response(JSON.stringify({ cards: [], updated_at: null }), {
