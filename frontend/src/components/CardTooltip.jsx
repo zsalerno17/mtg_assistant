@@ -76,6 +76,9 @@ export default function CardTooltip({ cardName, children }) {
   }
 
   const handleMouseEnter = (e) => {
+    // No card name means no tooltip — skip entirely to avoid stuck skeleton
+    if (!cardName) return
+
     // Track cursor position for tooltip placement
     setCursorPos({ x: e.clientX, y: e.clientY })
 

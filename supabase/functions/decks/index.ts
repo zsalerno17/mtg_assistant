@@ -366,6 +366,13 @@ async function handleGetLibrary(userId: string): Promise<Response> {
       }
     }
 
+    // Commander name: prefer analysis result (already computed), fall back to
+    // cached deck data so unanalyzed decks still get a name for the hover tooltip.
+    const cachedDeckDataForName = cachedDecksMap[mid] || {};
+    const commanderName = (rj.commander as string | null) ||
+      ((cachedDeckDataForName.commander as Record<string, unknown> | null)?.name as string) ||
+      null;
+
     resultList.push({
       id: deck.id,
       moxfield_id: mid,
@@ -373,7 +380,7 @@ async function handleGetLibrary(userId: string): Promise<Response> {
       moxfield_url: deck.moxfield_url,
       added_at: deck.added_at,
       analyzed: !!analysis,
-      commander: rj.commander,
+      commander: commanderName,
       commander_image_uri: deck.commander_image_uri,
       partner_image_uri: deck.partner_image_uri,
       format: deck.format || "commander",
