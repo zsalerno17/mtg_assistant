@@ -1360,7 +1360,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
           <button
             type="submit"
             disabled={loading || (cardsToAdd.length === 0 && cardsToRemove.length === 0)}
-            className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_var(--color-primary-glow)] active:scale-[0.98] transition-all shadow-md shadow-[var(--color-primary-glow)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 active:scale-[0.98] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Analyzing…' : 'Run Simulation'}
           </button>
