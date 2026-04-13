@@ -28,7 +28,7 @@ export default function LeaguesPage() {
     if (!session?.access_token) return
     loadLeagues()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.access_token])
+  }, [session?.user?.id])
 
   async function loadLeagues() {
     setLoading(true)

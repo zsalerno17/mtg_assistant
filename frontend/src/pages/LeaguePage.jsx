@@ -29,9 +29,10 @@ export default function LeaguePage() {
   const [exportingImage, setExportingImage] = useState(false)
 
   useEffect(() => {
+    if (!session?.access_token) return
     loadLeagueData()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leagueId, session?.access_token])
+  }, [leagueId, session?.user?.id])
 
   async function loadLeagueData() {
     setLoading(true)

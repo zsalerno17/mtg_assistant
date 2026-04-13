@@ -34,7 +34,7 @@ export default function CollectionPage() {
       .then(data => setCollection(data))
       .catch(() => {}) // silently ignore; user may not have uploaded yet
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.access_token])
+  }, [session?.user?.id])
 
   useEffect(() => {
     if (!uploading) {

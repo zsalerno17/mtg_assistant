@@ -510,7 +510,7 @@ export default function DashboardPage() {
         if (gen !== loadGenRef.current) return
         setSummaryLoading(false)
       })
-  }, [session?.access_token])
+  }, [session?.user?.id])
 
   const handleImported = () => {
     setShowImportModal(false)

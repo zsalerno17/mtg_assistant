@@ -41,7 +41,12 @@ async function getAuthHeader() {
 /** Force a token refresh and retry a fetch call once on 401. */
 async function refreshAuthHeader() {
   const { data: { session }, error } = await supabase.auth.refreshSession()
-  if (error || !session?.access_token) throw new Error('Session expired, please sign in again')
+  if (error || !session?.access_token) {
+    // Refresh failed (expired, revoked, or rate-limited) — sign out so the
+    // user is redirected to login rather than seeing a cryptic API error.
+    await supabase.auth.signOut()
+    throw new Error('Your session has expired. Please sign in again.')
+  }
   _cachedAccessToken = session.access_token
   return { Authorization: `Bearer ${session.access_token}` }
 }
