@@ -167,7 +167,7 @@ function StatBadge({ label, value }) {
       } else {
         // Between 3.0 and 3.5: map to 75-100%
         percentage = 100 - ((numValue - 3.0) / 0.5 * 25)
-        ringColor = 'text-amber-400'
+        ringColor = 'text-[var(--color-secondary)]'
       }
     } else {
       // Normal scale: higher is better
@@ -176,7 +176,7 @@ function StatBadge({ label, value }) {
       if (percentage >= 100) {
         ringColor = 'text-emerald-400'
       } else if (percentage >= 75) {
-        ringColor = 'text-amber-400'
+        ringColor = 'text-[var(--color-secondary)]'
       } else {
         ringColor = 'text-rose-400'
       }
@@ -282,8 +282,8 @@ function CommanderImage({ name }) {
   const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image`
   return (
     <div
-      className="shrink-0 rounded-[7px] p-px shadow-lg shadow-amber-500/20"
-      style={{ background: 'linear-gradient(145deg, rgba(251,191,36,0.55) 0%, rgba(180,130,18,0.25) 50%, rgba(251,191,36,0.4) 100%)' }}
+      className="shrink-0 rounded-lg p-px shadow-lg shadow-[var(--color-secondary)]/20"
+      style={{ background: 'linear-gradient(145deg, var(--color-secondary-border) 0%, var(--color-secondary-subtle) 50%, var(--color-secondary-border) 100%)' }}
     >
       <img
         src={url}
@@ -315,7 +315,8 @@ function OverviewTab({ deck, analysis, onTabChange }) {
     <div className="space-y-6">
 
       {/* ── Commander Hero ── */}
-      <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-primary)]/20 rounded-xl px-6 py-5 hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
+      <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-primary)]/20 rounded-xl px-6 py-5 hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
+          style={{ transitionDuration: 'var(--duration-fast)' }}>
         <SectionLabel>{deck.partner ? 'Commanders' : 'Commander'}</SectionLabel>
         <div className="flex items-center gap-5 mt-1">
           {/* Card image(s) */}
@@ -726,13 +727,13 @@ function ImprovementsTab({ deckId }) {
   if (!data) return null
 
   const categoryColors = {
-    ramp: 'text-green-400',
-    draw: 'text-sky-400',
-    removal: 'text-red-400',
-    wipes: 'text-orange-400',
-    lands: 'text-amber-400',
-    synergy: 'text-purple-400',
-    upgrade: 'text-sky-400',
+    ramp: 'text-[var(--color-success)]',
+    draw: 'text-[var(--color-primary)]',
+    removal: 'text-[var(--color-danger)]',
+    wipes: 'text-[var(--color-warning)]',
+    lands: 'text-[var(--color-secondary)]',
+    synergy: 'text-[var(--color-mtg-black)]',
+    upgrade: 'text-[var(--color-primary)]',
   }
 
   const renderShowMore = (key, total) => {
@@ -799,7 +800,7 @@ function ImprovementsTab({ deckId }) {
                   )}
                   {!swap.owned && swap.price_tier && (
                     <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${
-                      swap.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : swap.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
+                      swap.price_tier === 'budget' ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]' : swap.price_tier === 'premium' ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
                     }`}>
                       {swap.price_tier}
                     </span>
@@ -852,7 +853,7 @@ function ImprovementsTab({ deckId }) {
                           <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
                           {add.price_tier && (
                             <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${
-                              add.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : add.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
+                              add.price_tier === 'budget' ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]' : add.price_tier === 'premium' ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
                             }`}>
                               {add.price_tier}
                             </span>
@@ -1359,7 +1360,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
           <button
             type="submit"
             disabled={loading || (cardsToAdd.length === 0 && cardsToRemove.length === 0)}
-            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_rgba(251,191,36,0.35)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_var(--color-primary-glow)] active:scale-[0.98] transition-all shadow-md shadow-[var(--color-primary-glow)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Analyzing…' : 'Run Simulation'}
           </button>
@@ -1396,7 +1397,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
                   return (
                     <tr
                       key={key}
-                      className={`border-b border-[var(--color-border)] last:border-0 ${changed ? 'bg-amber-500/5' : ''}`}
+                      className={`border-b border-[var(--color-border)] last:border-0 ${changed ? 'bg-[var(--color-secondary-subtle)]' : ''}`}
                     >
                       <td className="px-4 py-3 text-[var(--color-text)]">{label}</td>
                       <td className="px-4 py-3 text-center text-[var(--color-muted)]">

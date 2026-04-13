@@ -64,7 +64,7 @@ function ImportModal({ onClose, onImported }) {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://www.moxfield.com/decks/..."
             disabled={loading}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all disabled:opacity-50 mb-3"
+            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)] transition-all disabled:opacity-50 mb-3"
           />
           {error && (
             <p className="mb-3 text-[var(--color-danger)] text-xs">{error}</p>
@@ -80,7 +80,7 @@ function ImportModal({ onClose, onImported }) {
             <button
               type="submit"
               disabled={loading || !url.trim()}
-              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 hover:shadow-[0_0_16px_rgba(251,191,36,0.3)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
+              className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 hover:shadow-[0_0_16px_var(--color-primary-glow)] active:scale-[0.98] transition-all shadow-md shadow-[var(--color-primary-glow)] disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
             >
               {loading ? 'Importing…' : 'Import'}
             </button>
@@ -249,7 +249,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
         <img
           src={commanderUri}
           alt={commanderName}
-          className="w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg shrink-0 transition-all group-hover:border-[var(--color-primary)]/50 group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] group-hover:-translate-y-0.5 cursor-help"
+          className="w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg shrink-0 transition-all group-hover:border-[var(--color-primary)]/50 group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_var(--color-primary-glow)] group-hover:-translate-y-0.5 cursor-help"
         />
       </CardTooltip>
     )
@@ -270,7 +270,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
             alt={commanderNames[0]}
             className={`w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help relative ${
               hovering 
-                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-20' 
+                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_var(--color-primary-glow)] -translate-y-0.5 z-20' 
                 : 'z-10'
             }`}
             style={{ transitionDuration: '200ms' }}
@@ -292,7 +292,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
             alt={commanderNames[1]}
             className={`w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help relative ${
               hovering 
-                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-10' 
+                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_var(--color-primary-glow)] -translate-y-0.5 z-10' 
                 : 'z-0'
             }`}
             style={{ transitionDuration: '200ms' }}

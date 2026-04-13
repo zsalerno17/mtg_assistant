@@ -47,7 +47,7 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
       <img
         src={avatarUrl}
         alt="Profile"
-        className={`${sizeClasses[size]} rounded-[7px] object-cover border border-amber-500/30 shrink-0`}
+        className={`${sizeClasses[size]} rounded-lg object-cover border border-[var(--color-secondary-border)] shrink-0`}
       />
     )
   }
@@ -89,10 +89,10 @@ export default function TopNavbar() {
                 to="/"
                 end
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
+                  `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
+                      ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -101,10 +101,10 @@ export default function TopNavbar() {
               <NavLink
                 to="/collection"
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
+                  `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
+                      ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -113,10 +113,10 @@ export default function TopNavbar() {
               <NavLink
                 to="/leagues"
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
+                  `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
+                      ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
