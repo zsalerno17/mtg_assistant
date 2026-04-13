@@ -6,14 +6,19 @@ const imageCache = new Map()
 
 /**
  * CardTooltip — shows Scryfall card image on hover
- * 
- * Wraps a card name string. On hover (delayed 150ms), fetches and displays
- * the Scryfall card image in a floating tooltip positioned near the cursor.
- * Uses React Portal to render outside overflow containers (escapes stacking contexts).
+ *
+ * Props:
+ *   cardName  — card name used for Scryfall lookup (required unless imageUrl given)
+ *   imageUrl  — optional pre-resolved image URL; skips the Scryfall fetch entirely
+ *               (useful when the caller already has the CDN URL)
+ *
+ * On hover (delayed 150ms), fetches and displays the card image in a floating
+ * tooltip positioned near the cursor, rendered via React Portal to escape
+ * overflow/stacking contexts.
  */
-export default function CardTooltip({ cardName, children }) {
+export default function CardTooltip({ cardName, imageUrl: imageUrlProp, children }) {
   const [showTooltip, setShowTooltip] = useState(false)
-  const [imageUrl, setImageUrl] = useState(null)
+  const [imageUrl, setImageUrl] = useState(imageUrlProp || null)
   const [imageError, setImageError] = useState(false)
   const [loading, setLoading] = useState(false)
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 })
@@ -34,8 +39,9 @@ export default function CardTooltip({ cardName, children }) {
     }
   }, [])
 
-  // Fetch Scryfall image (with cache)
+  // Fetch Scryfall image (with cache). Skipped when a direct imageUrl was supplied.
   const fetchImage = async () => {
+    if (imageUrlProp) return  // already have a URL, nothing to fetch
     if (!cardName) return
 
     // Check cache first
@@ -76,8 +82,8 @@ export default function CardTooltip({ cardName, children }) {
   }
 
   const handleMouseEnter = (e) => {
-    // No card name means no tooltip — skip entirely to avoid stuck skeleton
-    if (!cardName) return
+    // No card name and no fallback imageUrl means nothing to show
+    if (!cardName && !imageUrlProp) return
 
     // Track cursor position for tooltip placement
     setCursorPos({ x: e.clientX, y: e.clientY })

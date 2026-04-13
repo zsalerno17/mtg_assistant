@@ -246,7 +246,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
   if (!hasPartner) {
     // Single commander
     return (
-      <CardTooltip cardName={commanderName}>
+      <CardTooltip cardName={commanderName} imageUrl={commanderUri}>
         <img
           src={commanderUri}
           alt={commanderName}
@@ -265,7 +265,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
     >
       {/* Front card (commander) */}
       <div className="shrink-0">
-        <CardTooltip cardName={commanderNames[0]}>
+        <CardTooltip cardName={commanderNames[0]} imageUrl={commanderUri}>
           <img
             src={commanderUri}
             alt={commanderNames[0]}
@@ -287,7 +287,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
           transitionDuration: '200ms'
         }}
       >
-        <CardTooltip cardName={commanderNames[1]}>
+        <CardTooltip cardName={commanderNames[1]} imageUrl={partnerUri}>
           <img
             src={partnerUri}
             alt={commanderNames[1]}
