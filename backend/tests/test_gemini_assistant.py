@@ -20,8 +20,9 @@ def test_key_cards_validation_filters_invalid_cards():
     """Ensure key_cards are validated against actual deck list"""
     # Create mock deck with known cards
     deck = Deck(
+        id="test-deck-1",
         name="Test Deck",
-        commander="Atraxa, Praetors' Voice",
+        commander=Card(name="Atraxa, Praetors' Voice", type_line="Creature", cmc=4),
         mainboard=[
             Card(name="Sol Ring", type_line="Artifact", cmc=1),
             Card(name="Cyclonic Rift", type_line="Instant", cmc=2),
@@ -62,8 +63,9 @@ def test_key_cards_validation_filters_invalid_cards():
 def test_key_cards_validation_handles_empty_list():
     """Ensure validation handles case where AI suggests no key cards"""
     deck = Deck(
+        id="test-deck-2",
         name="Test Deck",
-        commander="Atraxa, Praetors' Voice",
+        commander=Card(name="Atraxa, Praetors' Voice", type_line="Creature", cmc=4),
         mainboard=[
             Card(name="Sol Ring", type_line="Artifact", cmc=1),
         ]
@@ -90,8 +92,9 @@ def test_key_cards_validation_handles_empty_list():
 def test_key_cards_validation_handles_all_invalid():
     """Ensure validation handles case where all AI suggestions are invalid"""
     deck = Deck(
+        id="test-deck-3",
         name="Test Deck",
-        commander="Atraxa, Praetors' Voice",
+        commander=Card(name="Atraxa, Praetors' Voice", type_line="Creature", cmc=4),
         mainboard=[
             Card(name="Sol Ring", type_line="Artifact", cmc=1),
         ]
@@ -123,8 +126,9 @@ def test_key_cards_validation_handles_all_invalid():
 def test_key_cards_validation_preserves_other_fields():
     """Ensure validation doesn't affect other response fields"""
     deck = Deck(
+        id="test-deck-4",
         name="Test Deck",
-        commander="Atraxa, Praetors' Voice",
+        commander=Card(name="Atraxa, Praetors' Voice", type_line="Creature", cmc=4),
         mainboard=[
             Card(name="Sol Ring", type_line="Artifact", cmc=1),
         ]
@@ -163,8 +167,9 @@ def test_key_cards_validation_preserves_other_fields():
 def test_fallback_when_ai_fails():
     """Ensure fallback strategy is used when AI fails"""
     deck = Deck(
+        id="test-deck-5",
         name="Test Deck",
-        commander="Atraxa, Praetors' Voice",
+        commander=Card(name="Atraxa, Praetors' Voice", type_line="Creature", cmc=4),
         mainboard=[
             Card(name="Sol Ring", type_line="Artifact", cmc=1),
         ]
