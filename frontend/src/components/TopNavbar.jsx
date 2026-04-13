@@ -78,7 +78,7 @@ export default function TopNavbar() {
               to="/"
               className="flex items-center gap-3 hover:brightness-110 transition-all"
             >
-              <img src="/logo.svg" alt="MTG Assistant" className="h-[180px] w-auto shrink-0 translate-y-[42px] drop-shadow-[0_6px_20px_rgba(0,0,0,0.6)]" />
+              <img src="/logo.svg" alt="MTG Assistant" className="h-[150px] w-auto shrink-0 translate-y-[27px] drop-shadow-[0_6px_20px_rgba(0,0,0,0.6)]" />
               <span className="font-brand font-bold text-[var(--color-primary)] text-[20px] tracking-wide hidden sm:inline">
                 MTG Assistant
               </span>

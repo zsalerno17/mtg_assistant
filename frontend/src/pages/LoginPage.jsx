@@ -32,7 +32,7 @@ export default function LoginPage() {
       <img 
         src="/logo.svg" 
         alt="MTG Assistant Logo" 
-        className="w-36 h-36 mb-6 opacity-95 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+        className="w-72 h-72 mb-6 opacity-95 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
       />
       
       <h1 className="font-heading text-5xl text-[var(--color-primary)] mb-3 tracking-wide relative font-semibold">
