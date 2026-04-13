@@ -34,6 +34,15 @@ async function getAuthHeader() {
   // Fallback: read from getSession (e.g. if listener hasn't fired yet)
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.access_token) throw new Error('Not authenticated')
+  _cachedAccessToken = session.access_token
+  return { Authorization: `Bearer ${session.access_token}` }
+}
+
+/** Force a token refresh and retry a fetch call once on 401. */
+async function refreshAuthHeader() {
+  const { data: { session }, error } = await supabase.auth.refreshSession()
+  if (error || !session?.access_token) throw new Error('Session expired, please sign in again')
+  _cachedAccessToken = session.access_token
   return { Authorization: `Bearer ${session.access_token}` }
 }
 
@@ -48,14 +57,24 @@ async function edgeFetch(fn, path, options = {}) {
   const url = USE_EDGE
     ? `${EDGE_BASE}/${fn}${path}`
     : `${LEGACY_BASE}/api/${fn}${path}`
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeader,
-      ...options.headers,
-    },
-  })
+  const makeRequest = (headers) =>
+    fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+        ...options.headers,
+      },
+    })
+
+  let res = await makeRequest(authHeader)
+
+  // On 401, refresh the token and retry once
+  if (res.status === 401) {
+    const refreshedHeader = await refreshAuthHeader()
+    res = await makeRequest(refreshedHeader)
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail || `API error ${res.status}`)
@@ -67,14 +86,23 @@ async function edgeFetch(fn, path, options = {}) {
 async function apiFetch(path, options = {}) {
   const authHeader = await getAuthHeader()
   const base = USE_EDGE ? EDGE_BASE : LEGACY_BASE
-  const res = await fetch(`${base}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeader,
-      ...options.headers,
-    },
-  })
+  const makeRequest = (headers) =>
+    fetch(`${base}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+        ...options.headers,
+      },
+    })
+
+  let res = await makeRequest(authHeader)
+
+  if (res.status === 401) {
+    const refreshedHeader = await refreshAuthHeader()
+    res = await makeRequest(refreshedHeader)
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail || `API error ${res.status}`)
