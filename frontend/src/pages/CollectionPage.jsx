@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
-import { CloudUpload } from 'lucide-react'
 
 export default function CollectionPage() {
   const { session } = useAuth()
@@ -90,7 +89,7 @@ export default function CollectionPage() {
         <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
           My Collection
         </h2>
-        <div className="h-px w-20 bg-[var(--color-primary-border)] mb-3" />
+        <div className="h-px w-20 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
         <p className="text-[var(--color-muted)] text-sm font-heading">
           Export your collection from Moxfield and upload it here.
         </p>
@@ -117,14 +116,18 @@ export default function CollectionPage() {
             <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
             
             <div className="text-center space-y-3 max-w-xs">
-              <p className="text-[var(--color-text)] text-sm font-medium transition-all">
+              <p className="text-[var(--color-text)] text-sm font-medium transition-all duration-500">
                 {loadingMessages[loadingMessageIndex]}
               </p>
               
               {/* Progress bar */}
               <div className="w-full bg-[var(--color-border)] rounded-full h-1.5 overflow-hidden">
-                <div className="h-full bg-[var(--color-secondary)] animate-pulse" 
-                     style={{ width: '100%' }} 
+                <div className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 animate-pulse" 
+                     style={{ 
+                       width: '100%',
+                       animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, shimmer 2s linear infinite',
+                       backgroundSize: '200% 100%'
+                     }} 
                 />
               </div>
               
@@ -135,7 +138,11 @@ export default function CollectionPage() {
           </div>
         ) : (
           <>
-            <CloudUpload className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50" strokeWidth={2} aria-hidden="true" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50">
+              <polyline points="16 16 12 12 8 16" />
+              <line x1="12" y1="12" x2="12" y2="21" />
+              <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" />
+            </svg>
             <p className="text-[var(--color-text)] font-medium mb-1">Drop your Moxfield CSV here</p>
             <p className="text-[var(--color-muted)] text-sm mb-2">or click to browse</p>
             <a
@@ -183,8 +190,8 @@ export default function CollectionPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: 0.35,
-                  delay: i * 0.06, // --stagger-delay: 60ms
-                  ease: [0.34, 1.56, 0.64, 1], // --easing-spring
+                  delay: i * 0.03,
+                  ease: [0.34, 1.56, 0.64, 1],
                 }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >

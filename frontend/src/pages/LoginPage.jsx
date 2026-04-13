@@ -26,13 +26,13 @@ export default function LoginPage() {
     <PageTransition>
       <div className="flex flex-col items-center justify-center min-h-screen px-4 relative">
       {/* Stronger radial glow behind login card */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 45%, var(--color-secondary-subtle) 0%, transparent 60%)' }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(251,191,36,0.15) 0%, transparent 60%)' }} />
       
       {/* Logo */}
       <img 
         src="/logo.svg" 
         alt="MTG Assistant Logo" 
-        className="w-36 h-36 mb-6 opacity-95 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+        className="w-20 h-20 mb-4 opacity-90"
       />
       
       <h1 className="font-heading text-5xl text-[var(--color-primary)] mb-3 tracking-wide relative font-semibold">
@@ -52,7 +52,7 @@ export default function LoginPage() {
 
       <button
         onClick={signInWithGoogle}
-        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:-translate-y-0.5 active:translate-y-0 transition-all font-heading relative"
+        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-[0_4px_24px_rgba(251,191,36,0.2)] hover:-translate-y-0.5 active:translate-y-0 transition-all font-heading relative"
       >
         <GoogleIcon />
         <span>Continue with Google</span>

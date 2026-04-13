@@ -119,7 +119,7 @@ export default function LeaguesPage() {
           </div>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="btn btn-primary"
+            className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-black font-semibold font-body rounded-lg px-5 py-2.5 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)] active:translate-y-0 transition-all"
           >
             {showCreateForm ? 'Cancel' : '+ Create League'}
           </button>
@@ -127,7 +127,7 @@ export default function LeaguesPage() {
 
         {/* Error */}
         {error && (
-          <div className="bg-[var(--color-danger-subtle)] border border-[var(--color-danger-border)] text-[var(--color-danger)] px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}
@@ -267,7 +267,7 @@ export default function LeaguesPage() {
               <Link
                 key={league.id}
                 to={`/leagues/${league.id}`}
-                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all group"
+                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all group"
               >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-lg font-brand font-bold text-[var(--color-text)] group-hover:text-[var(--color-text)] transition-colors">
@@ -279,7 +279,7 @@ export default function LeaguesPage() {
                         ? 'bg-green-500/20 text-green-300'
                         : league.status === 'completed'
                         ? 'bg-gray-500/20 text-gray-300'
-                        : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
+                        : 'bg-yellow-500/20 text-yellow-300'
                     }`}
                   >
                     {league.status}

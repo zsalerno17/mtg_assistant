@@ -44,7 +44,7 @@ export default function JoinLeaguePage() {
       </div>
 
       {error && (
-        <div className="bg-[var(--color-danger-subtle)] border border-[var(--color-danger-border)] text-[var(--color-danger)] px-4 py-3 rounded-lg mb-6">
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6">
           {error}
         </div>
       )}
@@ -61,12 +61,12 @@ export default function JoinLeaguePage() {
             placeholder="The Undisputed Champion"
             required
             maxLength={100}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+            className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--color-secondary)] mb-1.5">
+          <label className="block text-sm font-medium text-secondary mb-1.5">
             Catchphrase (optional)
           </label>
           <input
@@ -75,12 +75,12 @@ export default function JoinLeaguePage() {
             onChange={(e) => setCatchphrase(e.target.value)}
             placeholder="Can you smell what The Rock is cooking?"
             maxLength={500}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+            className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--color-secondary)] mb-1.5">
+          <label className="block text-sm font-medium text-secondary mb-1.5">
             Entrance Music URL (optional)
           </label>
           <input
@@ -88,7 +88,7 @@ export default function JoinLeaguePage() {
             value={entranceMusicUrl}
             onChange={(e) => setEntranceMusicUrl(e.target.value)}
             placeholder="https://youtube.com/watch?v=..."
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+            className="w-full bg-black/40 border border-accent/30 rounded-lg px-4 py-2.5 text-primary focus:border-accent focus:ring-1 focus:ring-accent"
           />
         </div>
 

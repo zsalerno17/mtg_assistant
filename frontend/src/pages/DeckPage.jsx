@@ -1,16 +1,51 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { AreaChart, Area, PieChart, Pie, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
-import { LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft } from 'lucide-react'
 
-function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
-function UpgradeIcon() { return <ArrowUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
-function StrategyIcon() { return <ScrollText className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
-function ImprovementsIcon() { return <TrendingUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
-function ScenariosIcon() { return <MessageSquare className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function OverviewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+function UpgradeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <polyline points="17 11 12 6 7 11" />
+      <line x1="12" y1="6" x2="12" y2="18" />
+    </svg>
+  )
+}
+function StrategyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <circle cx="12" cy="12" r="10" />
+      <polygon points="10 8 16 12 10 16 10 8" />
+    </svg>
+  )
+}
+function ImprovementsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <polyline points="3 17 9 11 13 15 21 7" />
+      <polyline points="14 7 21 7 21 14" />
+    </svg>
+  )
+}
+function ScenariosIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </svg>
+  )
+}
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
@@ -68,19 +103,37 @@ function LoadingSpinner() {
 }
 
 function IconWarning({ className = 'w-4 h-4 shrink-0' }) {
-  return <AlertTriangle className={className} strokeWidth={2} aria-hidden="true" />
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  )
 }
 
 function IconCheck({ className = 'w-3.5 h-3.5 shrink-0' }) {
-  return <Check className={className} strokeWidth={2} aria-hidden="true" />
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
 }
 
 function IconChevronDown({ className = 'w-3.5 h-3.5 shrink-0' }) {
-  return <ChevronDown className={className} strokeWidth={2} aria-hidden="true" />
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
 }
 
 function IconChevronLeft({ className = 'w-4 h-4 shrink-0' }) {
-  return <ChevronLeft className={className} strokeWidth={2} aria-hidden="true" />
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  )
 }
 
 function StatBadge({ label, value }) {
@@ -404,36 +457,31 @@ function OverviewTab({ deck, analysis, onTabChange }) {
           <SectionLabel className="mb-3">Mana Curve</SectionLabel>
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={manaCurveData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <XAxis 
-                  dataKey="cmc" 
-                  tick={{ fill: 'var(--color-text-muted)', fontSize: 10 }} 
-                  axisLine={false} 
-                  tickLine={false} 
-                />
+              <BarChart data={manaCurveData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="cmc" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border)', 
-                    borderRadius: 8,
-                    fontSize: 11
-                  }}
+                  cursor={{ fill: 'var(--color-primary-subtle)' }}
+                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
                   labelStyle={{ color: 'var(--color-text)' }}
-                  itemStyle={{ color: 'var(--color-primary)' }}
+                  itemStyle={{ color: 'var(--color-secondary)' }}
                   formatter={(value) => [value, 'Cards']}
                   labelFormatter={(label) => `CMC ${label}`}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="var(--color-primary)"
-                  strokeWidth={2}
-                  fill="var(--color-primary)"
-                  fillOpacity={0.15}
-                  dot={{ fill: 'var(--color-primary)', r: 3, strokeWidth: 0 }}
-                  activeDot={{ r: 5, strokeWidth: 0 }}
-                />
-              </AreaChart>
+                {typeof analysis.average_cmc === 'number' && (
+                  <ReferenceLine
+                    x={String(Math.round(analysis.average_cmc))}
+                    stroke="var(--color-text-muted)"
+                    strokeDasharray="3 3"
+                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: 'var(--color-text-muted)', fontSize: 10, position: 'top' }}
+                  />
+                )}
+                <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={40}>
+                  {manaCurveData.map((_, i) => (
+                    <Cell key={i} fill="var(--color-secondary)" opacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -451,40 +499,20 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                   data={Object.entries(cardTypes).map(([name, value]) => ({ name, value }))}
                   cx="50%"
                   cy="50%"
-                  innerRadius={55}
-                  outerRadius={85}
-                  paddingAngle={4}
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
                   dataKey="value"
-                  stroke="none"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: 'var(--color-border)', strokeWidth: 1 }}
                 >
-                  {Object.entries(cardTypes).map(([type]) => {
-                    // Smart MTG color mapping
-                    const colorMap = {
-                      'Creatures': 'var(--color-mtg-green)',
-                      'Creature': 'var(--color-mtg-green)',
-                      'Instants': 'var(--color-mtg-blue)',
-                      'Instant': 'var(--color-mtg-blue)',
-                      'Sorceries': 'var(--color-mtg-red)',
-                      'Sorcery': 'var(--color-mtg-red)',
-                      'Enchantments': 'var(--color-mtg-white)',
-                      'Enchantment': 'var(--color-mtg-white)',
-                      'Artifacts': 'var(--color-secondary)',
-                      'Artifact': 'var(--color-secondary)',
-                      'Planeswalkers': 'var(--color-mtg-black)',
-                      'Planeswalker': 'var(--color-mtg-black)',
-                      'Lands': 'var(--color-text-muted)',
-                      'Land': 'var(--color-text-muted)'
-                    }
-                    return <Cell key={type} fill={colorMap[type] || 'var(--color-primary)'} />
+                  {Object.keys(cardTypes).map((type, i) => {
+                    const colors = ['var(--color-mtg-green)', 'var(--color-mtg-blue)', 'var(--color-mtg-red)', 'var(--color-mtg-black)', 'var(--color-secondary)', 'var(--color-primary)', 'var(--color-mtg-white)']
+                    return <Cell key={type} fill={colors[i % colors.length]} opacity={0.85} />
                   })}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border)', 
-                    borderRadius: 8,
-                    fontSize: 11
-                  }}
+                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
                   itemStyle={{ color: 'var(--color-text)' }}
                 />
               </PieChart>
@@ -1306,7 +1334,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
           <button
             type="submit"
             disabled={loading || (cardsToAdd.length === 0 && cardsToRemove.length === 0)}
-            className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_var(--color-primary-glow)] active:scale-[0.98] transition-all shadow-md shadow-[var(--color-primary-glow)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_rgba(251,191,36,0.35)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Analyzing…' : 'Run Simulation'}
           </button>

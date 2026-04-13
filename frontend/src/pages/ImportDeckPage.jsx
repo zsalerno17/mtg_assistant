@@ -52,7 +52,7 @@ export default function ImportDeckPage() {
         {/* Form */}
         <form
           onSubmit={handleImport}
-          className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-lg shadow-black/40"
+          className="bg-gradient-to-br from-[var(--color-surface)] to-[#0c1321] border border-[var(--color-border)] rounded-xl p-6 shadow-lg shadow-black/40"
         >
           <label className="block text-[var(--color-muted)] text-sm mb-2">
             Moxfield Deck URL
@@ -69,7 +69,7 @@ export default function ImportDeckPage() {
             <button
               type="submit"
               disabled={loading || !url.trim()}
-              className="btn btn-primary"
+              className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-black font-semibold font-body rounded-lg px-5 py-2 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)] active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 min-w-[100px]"
             >
               {loading ? 'Importing…' : 'Import'}
             </button>

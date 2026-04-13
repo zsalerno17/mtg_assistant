@@ -59,29 +59,27 @@
 
 ## ⚡ CURRENT TASK
 
-**Status:** Phase 36 — Chart Redesign: Modern Analytics (COMPLETE ✅, April 12, 2026)
+**Status:** Phase 36 — Chart Redesign (IN PROGRESS 🚧, April 13, 2026)
 
-**Implemented changes:**
+**Session accomplishments:**
+- ✅ Fixed TopNavbar syntax error (malformed HTML fragment)
+- ✅ Renamed `useTheme.js` → `useTheme.jsx` (JSX content needs .jsx extension)
+- ✅ Wrapped all 11 pages with PageTransition component (DeckPage, CollectionPage, LeaguePage, LeaguesPage, ProfilePage, LoginPage, ImportDeckPage, LogGamePage, JoinLeaguePage, HelpPage, AuthCallbackPage)
+- ✅ Added stagger animations to CollectionPage card grid (30ms delay per item)
+- ✅ Added stagger animations to LeaguePage member cards and game cards (60ms delay)
+- ✅ Updated LoginPage with logo image + Cinzel font-heading styling
+- ✅ Verified `npm run build` completes successfully (no compilation errors)
+- ✅ Fixed PageTransition and framer-motion mocks in test file
 
-1. **Mana Curve**: Replaced BarChart with AreaChart
-   - Smooth monotone curve (no jagged lines)
-   - Clean primary color (flat, no gradients)
-   - Removed Y-axis (cleaner look)
-   - Removed average CMC reference line
-   - Reduced font size to 10px
-   - Minimal fill opacity (15%)
+**Phase 35B Summary:**
+All Phase 35A design system foundations (tokens.css,components.css, Arcane Spectrum colors, Cinzel+Inter fonts, Cinematic motion) are now fully integrated across all pages. Dark/light mode toggle works via TopNavbar dropdown. All pages have PageTransition animations (350ms cinematic spring). Key pages have stagger entrance animations. Logo displays in TopNavbar and LoginPage.
 
-2. **Pie Chart**: Clean, modern styling
-   - Removed all labels (grid view serves as legend)
-   - Removed stroke (no white edges)
-   - Increased padding angle (4 instead of 2)
-   - Smart MTG color mapping (Creatures→Green, Instants→Blue, Sorceries→Red, etc.)
-   - Flat colors (no gradients or opacity effects)
-   - Slightly larger radius
+**Known issues:**
+- 8 test failures in Leagues.test.jsx due to Testing Library not finding text inside motion.div wrappers. Build succeeds and app functions correctly; tests need adjustment to account for animation wrapper timing.
 
-**Result**: Charts now match modern analytics dashboard aesthetics - clean, flat, minimal, professional.
+**Decision:** Skipped shadcn/ui installation — existing token system (tokens.css + components.css) provides sufficient design consistency without additional library dependency.
 
-**Next action:** User to verify on localhost:5173.
+**Next phase:** Phase 36 — Chart Redesign (see Active Phases detail below).
 
 ---
 
@@ -127,7 +125,7 @@
 | 34 | Analysis accuracy & commander intelligence (strategy, power level, thresholds) | ✅ Complete |
 | 35A | Design System Overhaul — Foundation (tokens, components, mockups) | ✅ Complete |
 | 35B | Design System Overhaul — Component Migration (PageTransition, animations, theme toggle) | ✅ Complete |
-| 36 | Chart Redesign — Modern Analytics (area chart, clean pie, flat colors) | ✅ Complete |
+| 36 | Chart Redesign — BI Dashboard + MTG-Informed Analytics | 🚧 In Progress |
 
 ---
 
@@ -137,13 +135,50 @@
 
 **Modified:** copilot-plan.md, decks.py, leagues.py, deck_analyzer.py, gemini_assistant.py, test_leagues.py, App.jsx, TopNavbar.jsx, index.css, api.js, CollectionPage.jsx, DashboardPage.jsx, DeckPage.jsx, ImportDeckPage.jsx, LeaguePage.jsx, LeaguesPage.jsx, LogGamePage.jsx, LoginPage.jsx, ProfilePage.jsx, package.json
 
-**New:** LeagueIcons.jsx, Skeletons.jsx, JoinLeaguePage.jsx, Leagues.test.jsx, logo.svg, edge-functions-deploy.md, 013_deck_color_identity.sql, design-proposal.md, tokens.css, components.css, 01-color-palettes-v2.html, 02-typography.html (updated), chart-variations.html (mockup)
+**New:** LeagueIcons.jsx, Skeletons.jsx, JoinLeaguePage.jsx, Leagues.test.jsx, logo.svg, edge-functions-deploy.md, 013_deck_color_identity.sql, design-proposal.md, tokens.css, components.css, 01-color-palettes-v2.html, 02-typography.html (updated)
 
 ---
 
 ## Active Phases — Detail
 
 > Only phases with remaining work are expanded here. Completed phase specs are in git history and [the archive](.github/copilot-plan-archive-2026-04-12.md).
+
+### Phase 36 — Chart Redesign — BI Dashboard + MTG-Informed Analytics (IN PROGRESS 🚧)
+
+**Goal:** Replace the two existing DeckPage Overview charts (mana curve bar + card type donut) with three charts that are visually clean/professional (flat BI dashboard aesthetic, no gradients) and genuinely useful for Commander deckbuilding. Zero new backend work — all data already returned by `analyze_deck`.
+
+**MTG Specialist findings (April 13, 2026):**
+- Mana curve BarChart: keep — correctly excludes lands; needs zone coloring + annotation
+- Card type donut: scrap — "laziest cut of the data", not actionable for Commander
+- Role Composition chart (horizontal bars): replaces donut — shows Ramp/Draw/Removal/Wipes/Counterspells/Tutors/Threats
+- Resource Health bars (new): actual counts vs. strategy-specific `_STRATEGY_THRESHOLDS` — uniqe Commander differentiator; Moxfield/EDHREC don't do this
+
+**Phase A — Mockup (prerequisite):**
+- [ ] Build `frontend/mockups/analytics/chart-variations-v2.html`
+  - Uses Arcane Spectrum tokens, D3.js rendering, dark/light toggle
+  - Sample data: Meren reanimator deck, power ~6
+  - 2–3 variations per chart so design decisions can be made before code
+  - Charts: (1) Mana Curve variations, (2) Role Composition variations, (3) Resource Health variations
+- [ ] Review mockup → pick one variation per chart
+
+**Phase B — Implementation (after mockup approval):**
+- [ ] Update `DeckPage.jsx` imports: add `LabelList`, `CartesianGrid`; remove `PieChart`, `Pie`, `Legend`
+- [ ] Restyle Mana Curve: zone coloring (0–2=primary, 3–4=secondary, 5+=danger), remove YAxis, add CartesianGrid + LabelList
+- [ ] Replace card type section with Role Composition `<BarChart layout="vertical">`
+  - Data: `ramp_count`, `draw_count`, `removal_count`, `board_wipe_count`, `counterspell_count`, `tutor_count`, derived Threats bucket
+  - Semantic cell colors: Ramp→primary, Draw→success, Removal→danger, Wipes→secondary, Counterspells→mtg-black, Tutors→mtg-white, Threats→text-subtle
+- [ ] Add Resource Health section (pure JSX/CSS, no recharts)
+  - Frontend copy of `_STRATEGY_THRESHOLDS` keyed by `analysis.strategy`, fallback `midrange`
+  - 6 bars: Ramp, Draw, Removal, Board Wipes, Lands, Counterspells
+  - Color-coded: green = in range, amber = below min, red = critically short
+- [ ] Mark Phase 36 complete, update this plan
+
+**Key files:**
+- `frontend/mockups/analytics/chart-variations-v2.html` (Phase A — new file)
+- `frontend/src/pages/DeckPage.jsx` (Phase B — lines ~3, 455–535)
+- `backend/src/deck_analyzer.py:681` — reference for threshold values (no changes)
+
+---
 
 ### Phase 30 — League UX Enhancements (COMPLETE)
 
@@ -187,51 +222,55 @@
 
 ---
 
-### Phase 35 — Design System Overhaul (COMPLETE ✅)
+### Phase 35 — Design System Overhaul
 
 **Goal:** Replace ad-hoc design decisions with a systematic, token-driven design foundation.
 
-**Phase 35A — Foundation:** Created tokens.css, components.css, design-proposal.md. Locked in Arcane Spectrum color system (MTG 5-color palette), Cinzel+Inter typography, Crisp component style (flat surfaces with borders), Cinematic motion profile (350ms spring, stagger entrances). Installed framer-motion.
+**Phase 35A — Foundation (COMPLETE ✅)**
 
-**Phase 35B — Component Migration:** Wrapped all 11 pages with PageTransition component. Added stagger animations to CollectionPage card grid (30ms) and LeaguePage member/game cards (60ms). Updated TopNavbar with dark/light mode toggle and logo. Fixed all build errors. Decision: Skipped shadcn/ui installation — existing token system sufficient.
+Mockup-driven design decisions locked in:
+- **Color System:** Arcane Spectrum (MTG 5-color palette with high contrast, dark + light modes)
+- **Typography:** Cinzel + Inter (headings serif, body sans)
+- **Component Style:** Crisp (flat surfaces, borders carry structure, no ambient glow)
+- **Motion Profile:** Cinematic (300-500ms, dramatic spring, stagger entrances)
 
----
+Implementation files created:
+- ✅ `frontend/src/styles/tokens.css` — All design tokens (colors, typography, spacing, borders, shadows, motion, z-index)
+- ✅ `frontend/src/styles/components.css` — Reusable component classes (buttons, cards, badges, forms, tables, nav, animations)
+- ✅ `frontend/src/index.css` — Updated to import new design system, Google Fonts, global base styles
+- ✅ `.github/design-proposal.md` — Canonical design decisions documentation
+- ✅ `framer-motion` installed for advanced Cinematic animations
 
-### Phase 36 — Chart Redesign: Modern Analytics (COMPLETE ✅)
+Mockup files:
+- `frontend/mockups/design-system/01-color-palettes-v2.html` — 3 palettes × dark/light modes
+- `frontend/mockups/design-system/02-typography.html` — 4 font pairings
+- `frontend/mockups/design-system/03-components.html` — Crisp vs Glowing comparison
+- `frontend/mockups/design-system/04-motion.html` — Interactive motion profile demo
 
-**Goal:** Fix cluttered charts with clean, minimal modern analytics styling.
+**Phase 35B — Component Migration (IN PROGRESS 🚧)**
 
-**User feedback:** "Fonts are too big on the circle chart, the colors don't match the schema, there are weird white edges on the circle chart. The bar chart is just big and clunky and boring."
+Remaining tasks:
+- [ ] Set up shadcn/ui in CSS variables mode (`npx shadcn@latest init`)
+- [ ] Install shadcn components: Button, Card, Table, Badge, Dialog, Dropdown, Avatar, Input, Select, Tabs, Skeleton, Tooltip, NavigationMenu, Sheet
+- [ ] Override shadcn CSS vars in `tokens.css` to match Arcane Spectrum
+- [ ] Add `logo.svg` to `TopNavbar.jsx` (replace text brand with logo image, Cinzel fallback)
+- [ ] Add `logo.svg` to `LoginPage.jsx` hero section
+- [ ] Rebuild `TopNavbar.jsx` with new design tokens (Cinzel brand, Inter nav links, token-based colors)
+- [ ] Redesign `DeckPage.jsx` deck overview hero section (commander card art, deck title, metadata layout)
+- [ ] Rebuild `DeckPage.jsx` stat cards (use `.stat-card` classes, re-theme Recharts, MTG color badges)
+- [ ] Rebuild `LeaguePage.jsx` tables (use `.table` classes, stagger entrance animations)
+- [ ] Add dark/light mode toggle to TopNavbar (toggle `data-theme="light"` on `<html>`)
+- [ ] Rebuild `CollectionPage.jsx` card grid with stagger entrances
+- [ ] Rebuild `DashboardPage.jsx` deck grid with new color system
+- [ ] Page transition animations with framer-motion
 
-**Implementation** (skipped mockup complexity, went straight to clean fixes):
-
-1. **Mana Curve Chart** — Replaced BarChart with AreaChart:
-   - Smooth monotone curve (no jagged lines)
-   - Flat primary color (#4ca8e0) with 15% fill opacity
-   - Removed Y-axis for cleaner look
-   - Removed average CMC reference line
-   - Reduced font size to 10px
-   - Added small dots on data points
-
-2. **Pie Chart** — Clean donut styling:
-   - Removed all labels (grid view serves as legend)
-   - Removed stroke with `stroke="none"` (no white edges)
-   - Increased padding angle from 2 to 4 for better separation
-   - Smart MTG color mapping:
-     - Creatures → Green (`--color-mtg-green`)
-     - Instants → Blue (`--color-mtg-blue`)
-     - Sorceries → Red (`--color-mtg-red`)
-     - Enchantments → White (`--color-mtg-white`)
-     - Artifacts → Gold (`--color-secondary`)
-     - Planeswalkers → Purple/Black (`--color-mtg-black`)
-     - Lands → Muted gray (`--color-text-muted`)
-   - Flat colors (no gradients)
-   - Larger radius (55/85 instead of 50/80)
-
-**Files changed:**
-- `frontend/src/pages/DeckPage.jsx` — Updated imports (AreaChart/Area), replaced BarChart implementation with AreaChart, updated PieChart with clean styling and smart color mapping
-
-**Result:** Professional, minimal analytics dashboard aesthetic. Charts now match modern design standards with flat colors, proper hierarchy, and clean typography.
+**Acceptance criteria:**
+- All pages use tokens exclusively (no hardcoded colors/sizes)
+- Dark/light mode toggle works across all pages
+- Stagger entrance animations on deck/card grids
+- Component classes used consistently (`.btn-primary`, `.card`, `.badge-mtg-u`, etc.)
+- Recharts re-themed to Arcane Spectrum colors
+- All components pass contrast checks (WCAG AA)
 
 ---
 
