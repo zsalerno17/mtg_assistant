@@ -6,6 +6,18 @@ export interface AuthUser {
   email: string;
 }
 
+let _anonClient: ReturnType<typeof createClient> | null = null;
+
+function getAnonClient() {
+  if (!_anonClient) {
+    _anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!
+    );
+  }
+  return _anonClient;
+}
+
 export async function requireAllowedUser(req: Request): Promise<AuthUser> {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -13,10 +25,7 @@ export async function requireAllowedUser(req: Request): Promise<AuthUser> {
   }
   const token = authHeader.slice(7);
 
-  const sb = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!
-  );
+  const sb = getAnonClient();
 
   const { data: { user }, error } = await sb.auth.getUser(token);
   if (error || !user) {

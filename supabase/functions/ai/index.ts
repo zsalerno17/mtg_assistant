@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { getServiceClient } from "../_shared/supabase.ts";
-import { requireAllowedUser, AuthError } from "../_shared/auth.ts";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getServiceClient, getUserClient } from "../_shared/supabase.ts";
+import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/auth.ts";
 import { getDeck } from "../_shared/moxfield.ts";
 import {
   analyzeDeck,
@@ -20,15 +20,15 @@ import type { Card, Deck, Collection } from "../_shared/models.ts";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function jsonResponse(data: unknown, status = 200): Response {
+function jsonResponse(data: unknown, req: Request, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
-function errorResponse(status: number, detail: string): Response {
-  return jsonResponse({ detail }, status);
+function errorResponse(status: number, detail: string, req: Request): Response {
+  return jsonResponse({ detail }, req, status);
 }
 
 /** Reconstruct a Deck object from the Supabase decks cache. */
@@ -153,9 +153,10 @@ async function setCached(
 
 async function handleStrategy(
   body: { moxfield_id?: string },
+  req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
-  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'");
+  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
 
   const sb = getServiceClient();
 
@@ -167,7 +168,7 @@ async function handleStrategy(
         strategy: JSON.parse(cached),
         ai_enhanced: true,
         cached: true,
-      });
+      }, req);
     } catch {
       // corrupted cache, continue
     }
@@ -190,7 +191,7 @@ async function handleStrategy(
     strategy: result.content,
     ai_enhanced: result.ai_enhanced,
     cached: false,
-  });
+  }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -200,9 +201,11 @@ async function handleStrategy(
 async function handleImprovements(
   body: { moxfield_id?: string },
   userId: string,
+  userClient: ReturnType<typeof getUserClient>,
+  req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
-  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'");
+  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
 
   const sb = getServiceClient();
 
@@ -215,7 +218,7 @@ async function handleImprovements(
         improvements: JSON.parse(cached),
         ai_enhanced: true,
         cached: true,
-      });
+      }, req);
     } catch {
       // corrupted cache, continue
     }
@@ -224,8 +227,8 @@ async function handleImprovements(
   const deck = await loadDeck(moxfieldId);
   const analysis = analyzeDeck(deck);
 
-  // Load user collection
-  const { data: colRow } = await sb
+  // Load user collection (user-scoped — user client)
+  const { data: colRow } = await userClient
     .from("collections")
     .select("cards_json")
     .eq("user_id", userId)
@@ -353,7 +356,7 @@ async function handleImprovements(
     improvements: content,
     ai_enhanced: result.ai_enhanced,
     cached: false,
-  });
+  }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -366,16 +369,17 @@ async function handleScenarios(
     cards_to_add?: string[];
     cards_to_remove?: string[];
   },
+  req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
-  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'");
+  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
 
   const cardsToAdd = body.cards_to_add || [];
   const cardsToRemove = body.cards_to_remove || [];
   if (cardsToAdd.length === 0 && cardsToRemove.length === 0) {
     return errorResponse(
       400,
-      "Provide at least one card to add or remove.",
+      "Provide at least one card to add or remove.", req,
     );
   }
 
@@ -390,7 +394,7 @@ async function handleScenarios(
         scenarios: JSON.parse(cachedScenario),
         ai_enhanced: true,
         cached: true,
-      });
+      }, req);
     } catch {
       // corrupted cache entry — continue to regenerate
     }
@@ -421,13 +425,13 @@ async function handleScenarios(
 
   if (!aiEnhanced) {
     const fallback = scenariosFallback(deck, cardsToAdd, cardsToRemove);
-    return jsonResponse({ scenarios: fallback, ai_enhanced: false });
+    return jsonResponse({ scenarios: fallback, ai_enhanced: false }, req);
   }
 
   // Cache successful AI response
   await setCached(sb, cacheKey, "scenarios_v1", JSON.stringify(result));
 
-  return jsonResponse({ scenarios: result, ai_enhanced: true, cached: false });
+  return jsonResponse({ scenarios: result, ai_enhanced: true, cached: false }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -437,20 +441,21 @@ async function handleScenarios(
 async function handleCollectionUpgrades(
   body: { moxfield_id?: string },
   userId: string,
+  userClient: ReturnType<typeof getUserClient>,
+  req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
-  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'");
+  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
 
-  const sb = getServiceClient();
-
-  const { data: colRow } = await sb
+  // Load user collection (user-scoped — user client)
+  const { data: colRow } = await userClient
     .from("collections")
     .select("cards_json")
     .eq("user_id", userId)
     .maybeSingle();
 
   if (!colRow?.cards_json?.length) {
-    return jsonResponse({ upgrades: [], has_collection: false });
+    return jsonResponse({ upgrades: [], has_collection: false }, req);
   }
 
   const deck = await loadDeck(moxfieldId);
@@ -484,7 +489,7 @@ async function handleCollectionUpgrades(
     },
   );
 
-  return jsonResponse({ upgrades, has_collection: true });
+  return jsonResponse({ upgrades, has_collection: true }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -496,22 +501,24 @@ serve(async (req: Request) => {
 
   try {
     const user = await requireAllowedUser(req);
+    const token = getTokenFromRequest(req);
+    const userClient = getUserClient(token);
     const url = new URL(req.url);
     const path = url.pathname.replace(/.*\/ai\/?/, "/");
 
     if (req.method === "POST" && path.startsWith("/strategy")) {
       const body = await req.json();
-      return await handleStrategy(body);
+      return await handleStrategy(body, req);
     }
 
     if (req.method === "POST" && path.startsWith("/improvements")) {
       const body = await req.json();
-      return await handleImprovements(body, user.userId);
+      return await handleImprovements(body, user.userId, userClient, req);
     }
 
     if (req.method === "POST" && path.startsWith("/scenarios")) {
       const body = await req.json();
-      return await handleScenarios(body);
+      return await handleScenarios(body, req);
     }
 
     if (
@@ -519,15 +526,15 @@ serve(async (req: Request) => {
       path.startsWith("/collection-upgrades")
     ) {
       const body = await req.json();
-      return await handleCollectionUpgrades(body, user.userId);
+      return await handleCollectionUpgrades(body, user.userId, userClient, req);
     }
 
-    return errorResponse(404, "Not found");
+    return errorResponse(404, "Not found", req);
   } catch (e) {
     if (e instanceof AuthError) {
-      return errorResponse(e.status, e.message);
+      return errorResponse(e.status, e.message, req);
     }
     console.error("Unhandled error:", e);
-    return errorResponse(500, "Internal server error");
+    return errorResponse(500, "Internal server error", req);
   }
 });

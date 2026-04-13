@@ -21,7 +21,8 @@ export default function AuthCallbackPage() {
     })
 
     // Also poll getSession as a fallback — it awaits initialization
-    // which includes the PKCE code exchange.
+    // which includes the PKCE code exchange. 10s allows for slow networks
+    // and cold starts during the code exchange.
     const timer = setTimeout(async () => {
       const { data: { session }, error: err } = await supabase.auth.getSession()
       if (err) {
@@ -32,7 +33,7 @@ export default function AuthCallbackPage() {
       } else {
         setError('Sign-in failed — no session received. Please try again.')
       }
-    }, 3000)
+    }, 10000)
 
     return () => {
       clearTimeout(timer)
