@@ -26,7 +26,7 @@ export default function LoginPage() {
     <PageTransition>
       <div className="flex flex-col items-center justify-center min-h-screen px-4 relative">
       {/* Stronger radial glow behind login card */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(251,191,36,0.15) 0%, transparent 60%)' }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 45%, var(--color-secondary-subtle) 0%, transparent 60%)' }} />
       
       {/* Logo */}
       <img 

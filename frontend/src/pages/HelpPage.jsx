@@ -1,3 +1,4 @@
+import { CircleHelp, Library, BookOpen, WandSparkles, Users, Search, ExternalLink, ChevronRight, Info } from 'lucide-react'
 import PageTransition from '../components/PageTransition'
 
 export default function HelpPage() {
@@ -5,11 +6,7 @@ export default function HelpPage() {
     {
       title: "Getting Started",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-          <circle cx="12" cy="17" r="0.5" fill="currentColor" />
-        </svg>
+        <CircleHelp className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -25,10 +22,7 @@ export default function HelpPage() {
     {
       title: "Managing Your Collection",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <rect x="2" y="7" width="20" height="14" rx="2" />
-          <path d="M16 3v4M8 3v4" />
-        </svg>
+        <Library className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -37,28 +31,22 @@ export default function HelpPage() {
           </p>
           <div className="bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg p-4 mb-3">
             <p className="text-sm text-[var(--color-muted)] mb-2">CSV Format Required:</p>
-            <code className="text-xs text-amber-400 font-mono block bg-slate-900/50 p-2 rounded">
+            <code className="text-xs text-[var(--color-secondary)] font-mono block bg-[var(--color-surface-2)] p-2 rounded">
               Card Name,Set Code,Quantity,Foil
             </code>
           </div>
           <p className="text-[var(--color-text)] leading-relaxed mb-3">
-            <strong className="text-amber-400">Generate your collection CSV:</strong>
+            <strong className="text-[var(--color-secondary)]">Generate your collection CSV:</strong>
           </p>
           <a
             href="https://vredeza.github.io/bimf/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-sm font-medium transition-all group"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             BIMF Collection Manager
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
           </a>
         </>
       )
@@ -66,10 +54,7 @@ export default function HelpPage() {
     {
       title: "Adding & Analyzing Decks",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-        </svg>
+        <BookOpen className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -84,23 +69,17 @@ export default function HelpPage() {
             <li>Mana curve and color distribution</li>
           </ul>
           <p className="text-[var(--color-text)] leading-relaxed mb-3">
-            <strong className="text-amber-400">Build decks on Moxfield:</strong>
+            <strong className="text-[var(--color-secondary)]">Build decks on Moxfield:</strong>
           </p>
           <a
             href="https://www.moxfield.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-sm font-medium transition-all group"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             Moxfield Deck Builder
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
           </a>
         </>
       )
@@ -108,10 +87,7 @@ export default function HelpPage() {
     {
       title: "AI Analysis Features",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" />
-          <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-        </svg>
+        <WandSparkles className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -124,8 +100,11 @@ export default function HelpPage() {
             <li><strong>Collection Upgrades</strong> — Upgrade suggestions pulled from cards you already own</li>
             <li><strong>Scenarios</strong> — Pick cards to add or remove and see an AI analysis of how the change would affect the deck</li>
           </ul>
-          <div className="bg-slate-900/30 border border-amber-500/20 rounded-lg p-4">
-            <p className="text-sm text-amber-400 font-medium mb-2">💡 Pro Tip:</p>
+          <div className="bg-[var(--color-surface-2)] border border-[var(--color-secondary-border)] rounded-lg p-4">
+            <p className="text-sm text-[var(--color-secondary)] font-medium mb-2 flex items-center gap-2">
+              <Info className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+              Pro Tip:
+            </p>
             <p className="text-sm text-[var(--color-muted)]">
               Upload your collection first — the Collection Upgrades tab only suggests cards you already own, so you get actionable upgrades without spending a dime.
             </p>
@@ -136,11 +115,7 @@ export default function HelpPage() {
     {
       title: "Tracking Leagues & Pods",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-        </svg>
+        <Users className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -168,10 +143,7 @@ export default function HelpPage() {
     {
       title: "Card Information & Resources",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
+        <Search className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -182,17 +154,11 @@ export default function HelpPage() {
             href="https://scryfall.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 text-sm font-medium transition-all group mb-4"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group mb-4"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             Scryfall Card Search
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
           </a>
           <p className="text-sm text-[var(--color-muted)]">
             Scryfall provides card images, Oracle text, prices, legality, and advanced search filters.
@@ -204,7 +170,7 @@ export default function HelpPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -224,7 +190,7 @@ export default function HelpPage() {
               className="backdrop-blur-sm bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(251,191,36,0.1)] transition-all"
             >
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-amber-500/10 rounded-lg text-amber-400 shrink-0">
+                <div className="p-3 bg-[var(--color-secondary-subtle)] rounded-lg text-[var(--color-secondary)] shrink-0">
                   {section.icon}
                 </div>
                 <div className="flex-1">
@@ -239,7 +205,7 @@ export default function HelpPage() {
         </div>
 
         {/* Footer CTA */}
-        <div className="mt-12 text-center backdrop-blur-sm bg-[var(--color-surface)]/80 border border-amber-500/30 rounded-xl p-8">
+        <div className="mt-12 text-center backdrop-blur-sm bg-[var(--color-surface)]/80 border border-[var(--color-secondary-border)] rounded-xl p-8">
           <h3 className="text-xl font-bold text-[var(--color-text)] mb-2">
             Still have questions?
           </h3>
@@ -249,13 +215,13 @@ export default function HelpPage() {
           <div className="flex flex-wrap gap-3 justify-center">
             <a
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-semibold rounded-lg transition-all shadow-lg shadow-amber-500/25"
+              className="btn btn-primary"
             >
               Go to Dashboard
             </a>
             <a
               href="/collection"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] font-semibold rounded-lg transition-all"
+              className="btn btn-secondary"
             >
               Manage Collection
             </a>

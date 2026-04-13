@@ -4,48 +4,13 @@ import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
+import { LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft } from 'lucide-react'
 
-function OverviewIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  )
-}
-function UpgradeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <polyline points="17 11 12 6 7 11" />
-      <line x1="12" y1="6" x2="12" y2="18" />
-    </svg>
-  )
-}
-function StrategyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="10 8 16 12 10 16 10 8" />
-    </svg>
-  )
-}
-function ImprovementsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <polyline points="3 17 9 11 13 15 21 7" />
-      <polyline points="14 7 21 7 21 14" />
-    </svg>
-  )
-}
-function ScenariosIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-    </svg>
-  )
-}
+function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function UpgradeIcon() { return <ArrowUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function StrategyIcon() { return <ScrollText className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function ImprovementsIcon() { return <TrendingUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function ScenariosIcon() { return <MessageSquare className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
@@ -103,37 +68,19 @@ function LoadingSpinner() {
 }
 
 function IconWarning({ className = 'w-4 h-4 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  )
+  return <AlertTriangle className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function IconCheck({ className = 'w-3.5 h-3.5 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
+  return <Check className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function IconChevronDown({ className = 'w-3.5 h-3.5 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  )
+  return <ChevronDown className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function IconChevronLeft({ className = 'w-4 h-4 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  )
+  return <ChevronLeft className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function StatBadge({ label, value }) {
