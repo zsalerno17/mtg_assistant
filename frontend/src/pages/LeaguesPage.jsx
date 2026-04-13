@@ -119,7 +119,7 @@ export default function LeaguesPage() {
           </div>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-black font-semibold font-body rounded-lg px-5 py-2.5 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)] active:translate-y-0 transition-all"
+            className="btn btn-primary"
           >
             {showCreateForm ? 'Cancel' : '+ Create League'}
           </button>

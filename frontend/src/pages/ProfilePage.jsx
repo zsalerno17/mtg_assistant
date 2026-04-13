@@ -256,7 +256,7 @@ export default function ProfilePage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-black text-sm font-semibold font-body hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)] active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            className="btn btn-primary w-full"
           >
             {saving ? 'Saving…' : 'Save changes'}
           </button>
