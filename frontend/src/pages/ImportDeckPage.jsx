@@ -52,7 +52,7 @@ export default function ImportDeckPage() {
         {/* Form */}
         <form
           onSubmit={handleImport}
-          className="bg-gradient-to-br from-[var(--color-surface)] to-[#0c1321] border border-[var(--color-border)] rounded-xl p-6 shadow-lg shadow-black/40"
+          className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-lg shadow-black/40"
         >
           <label className="block text-[var(--color-muted)] text-sm mb-2">
             Moxfield Deck URL

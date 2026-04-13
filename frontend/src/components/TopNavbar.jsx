@@ -47,14 +47,14 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
       <img
         src={avatarUrl}
         alt="Profile"
-        className={`${sizeClasses[size]} rounded-[7px] object-cover border border-amber-500/30 shrink-0`}
+        className={`${sizeClasses[size]} rounded-lg object-cover border border-[var(--color-secondary-border)] shrink-0`}
       />
     )
   }
   const initials = email ? email.slice(0, 2).toUpperCase() : '?'
   return (
-    <div className={`${sizeClasses[size]} rounded-[7px] bg-gradient-to-br from-[var(--color-primary)] to-[#f59e0b] flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(251,191,36,0.25)]`}>
-      <span className={`${textSizeClasses[size]} text-black font-semibold font-mono`}>{initials}</span>
+    <div className={`${sizeClasses[size]} rounded-lg bg-[var(--color-primary)] flex items-center justify-center shrink-0 shadow-[0_2px_8px_var(--color-primary-glow)]`}>
+      <span className={`${textSizeClasses[size]} text-[var(--color-text-on-primary)] font-semibold font-mono`}>{initials}</span>
     </div>
   )
 }
@@ -89,10 +89,10 @@ export default function TopNavbar() {
                 to="/"
                 end
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
+                  `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
+                      ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -101,10 +101,10 @@ export default function TopNavbar() {
               <NavLink
                 to="/collection"
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
+                  `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
+                      ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -113,10 +113,10 @@ export default function TopNavbar() {
               <NavLink
                 to="/leagues"
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-[7px] text-sm font-body font-medium transition-all ${
+                  `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
-                      ? 'bg-amber-500/[0.12] text-[var(--color-text)] border border-amber-500/20'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-amber-500/[0.08]'
+                      ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -144,7 +144,7 @@ export default function TopNavbar() {
               </button>
 
               {/* Dropdown menu */}
-              <div className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-2xl shadow-black/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-2xl shadow-black/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all overflow-hidden">
                 <button
                   onClick={() => navigate('/profile')}
                   className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"

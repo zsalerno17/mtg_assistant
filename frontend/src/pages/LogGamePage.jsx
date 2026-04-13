@@ -185,15 +185,15 @@ export default function LogGamePage() {
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-[var(--color-danger-subtle)] border border-[var(--color-danger-border)] text-[var(--color-danger)] px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-6 py-4 rounded-lg mb-6 text-center">
+          <div className="bg-green-500/10 border border-[var(--color-success-border)] text-[var(--color-success)] px-6 py-4 rounded-lg mb-6 text-center">
             <div className="text-2xl font-brand font-bold mb-1">{success}</div>
-            <div className="text-sm text-green-400/70">Redirecting to league page...</div>
+            <div className="text-sm text-[var(--color-success)]">Redirecting to league page...</div>
           </div>
         )}
 
@@ -352,7 +352,7 @@ export default function LogGamePage() {
                       <span className="text-[var(--color-muted)]">
                         {placement === 1 ? '1st → 3 pts' : placement === 2 ? '2nd → 2 pts' : placement === 3 ? '3rd → 1 pt' : `${placement}th → 0 pts`}
                       </span>
-                      {entrancePts > 0 && <span className="text-yellow-400">+1 entrance</span>}
+                      {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+1 entrance</span>}
                       <span className="ml-auto font-bold text-[var(--color-primary)]">{totalPreview} pts total</span>
                     </div>
                   )}

@@ -44,7 +44,7 @@ export default function AuthCallbackPage() {
     return (
       <PageTransition>
         <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--color-bg)] px-4 gap-4">
-        <p className="text-red-400">{error}</p>
+        <p className="text-[var(--color-danger)]">{error}</p>
         <button
           onClick={() => navigate('/login', { replace: true })}
           className="text-[var(--color-primary)] underline"
