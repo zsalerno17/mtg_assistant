@@ -59,7 +59,18 @@
 
 ## ⚡ CURRENT TASK
 
-**Status:** Phase 36 — Chart Redesign (COMPLETE ✅, April 13, 2026)
+**Status:** Phase 38 — Full App Design Overhaul (PLANNING COMPLETE, April 13, 2026)
+
+**Full plan:** See `.github/phase-38-design-overhaul.md`
+
+**Next action:** Run designer agent to create Phase 0 mockups in `frontend/mockups/redesign-38/`. No implementation code until mockups are approved.
+
+**Phase 38 summary:**
+Root cause analysis identified 7 reasons previous redesigns failed (competing philosophies, design system underused, hierarchy never fixed, layer-on-layer approach). Core reframing: stop making the UI chrome look like MTG — let card art + mana pips provide the MTG flavor. Modern premium dark SaaS aesthetic (Vercel/Linear energy). Inter everywhere except logo, page H1 titles, and commander names. Hybrid glass/crisp visual system. Full scope: all 15 pages. Phase 37 (buttons) bundled in. Phase 0 (mockups) is a hard gate before any implementation.
+
+---
+
+**Previous task:** Phase 36 — Chart Redesign (COMPLETE ✅, April 13, 2026)
 
 **Session accomplishments:**
 - ✅ MTG specialist consultation — confirmed card type donut is not useful for Commander; recommended Role Composition + Resource Health charts
@@ -139,6 +150,7 @@ All Phase 35A design system foundations (tokens.css,components.css, Arcane Spect
 | 35A | Design System Overhaul — Foundation (tokens, components, mockups) | ✅ Complete |
 | 35B | Design System Overhaul — Component Migration (PageTransition, animations, theme toggle) | ✅ Complete |
 | 36 | Chart Redesign — BI Dashboard + MTG-Informed Analytics | ✅ Complete |
+| 38 | Full App Design Overhaul (Phase 0: mockups → A-G: implementation) | 🔲 Phase 0 — Mockups |
 
 ---
 
