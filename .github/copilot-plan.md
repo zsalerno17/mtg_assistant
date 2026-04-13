@@ -59,7 +59,20 @@
 
 ## ⚡ CURRENT TASK
 
-**Status:** Phase 36 — Chart Redesign (IN PROGRESS 🚧, April 13, 2026)
+**Status:** Phase 36 — Chart Redesign (COMPLETE ✅, April 13, 2026)
+
+**Session accomplishments:**
+- ✅ MTG specialist consultation — confirmed card type donut is not useful for Commander; recommended Role Composition + Resource Health charts
+- ✅ Built `frontend/mockups/analytics/chart-variations-v2.html` — dark/light mockup with 2 variations per chart; user selected Variation A for all three
+- ✅ Restyled Mana Curve — zone coloring (0–2 blue, 3–4 gold, 5+ red), removed YAxis, added CartesianGrid + LabelList count labels, inline zone legend
+- ✅ Replaced card type donut with Role Composition — horizontal bar chart showing Ramp/Draw/Removal/Board Wipes/Counterspells/Tutors/Threats derived from computed analysis fields
+- ✅ Added Resource Health section — 6 thin progress bars (2×3 grid) with color-coded status (green/amber/red) against strategy-specific thresholds from `_STRATEGY_THRESHOLDS`
+- ✅ `npm run build` clean (632ms)
+
+**Phase 36 Summary:**
+All three charts now use flat BI dashboard aesthetic (no gradients), full token compliance (dark + light mode), and provide Commander-specific insight. Resource Health is a unique differentiator — no other tool shows whether your counts meet your deck strategy’s specific targets.
+
+**Next phase:** Phase 37 — Button Design System Consolidation (see `.github/button-design-system-plan.md`)
 
 **Session accomplishments:**
 - ✅ Fixed TopNavbar syntax error (malformed HTML fragment)
@@ -125,7 +138,7 @@ All Phase 35A design system foundations (tokens.css,components.css, Arcane Spect
 | 34 | Analysis accuracy & commander intelligence (strategy, power level, thresholds) | ✅ Complete |
 | 35A | Design System Overhaul — Foundation (tokens, components, mockups) | ✅ Complete |
 | 35B | Design System Overhaul — Component Migration (PageTransition, animations, theme toggle) | ✅ Complete |
-| 36 | Chart Redesign — BI Dashboard + MTG-Informed Analytics | 🚧 In Progress |
+| 36 | Chart Redesign — BI Dashboard + MTG-Informed Analytics | ✅ Complete |
 
 ---
 
@@ -143,40 +156,9 @@ All Phase 35A design system foundations (tokens.css,components.css, Arcane Spect
 
 > Only phases with remaining work are expanded here. Completed phase specs are in git history and [the archive](.github/copilot-plan-archive-2026-04-12.md).
 
-### Phase 36 — Chart Redesign — BI Dashboard + MTG-Informed Analytics (IN PROGRESS 🚧)
+### Phase 36 — Chart Redesign (COMPLETE ✅)
 
-**Goal:** Replace the two existing DeckPage Overview charts (mana curve bar + card type donut) with three charts that are visually clean/professional (flat BI dashboard aesthetic, no gradients) and genuinely useful for Commander deckbuilding. Zero new backend work — all data already returned by `analyze_deck`.
-
-**MTG Specialist findings (April 13, 2026):**
-- Mana curve BarChart: keep — correctly excludes lands; needs zone coloring + annotation
-- Card type donut: scrap — "laziest cut of the data", not actionable for Commander
-- Role Composition chart (horizontal bars): replaces donut — shows Ramp/Draw/Removal/Wipes/Counterspells/Tutors/Threats
-- Resource Health bars (new): actual counts vs. strategy-specific `_STRATEGY_THRESHOLDS` — uniqe Commander differentiator; Moxfield/EDHREC don't do this
-
-**Phase A — Mockup (prerequisite):**
-- [ ] Build `frontend/mockups/analytics/chart-variations-v2.html`
-  - Uses Arcane Spectrum tokens, D3.js rendering, dark/light toggle
-  - Sample data: Meren reanimator deck, power ~6
-  - 2–3 variations per chart so design decisions can be made before code
-  - Charts: (1) Mana Curve variations, (2) Role Composition variations, (3) Resource Health variations
-- [ ] Review mockup → pick one variation per chart
-
-**Phase B — Implementation (after mockup approval):**
-- [ ] Update `DeckPage.jsx` imports: add `LabelList`, `CartesianGrid`; remove `PieChart`, `Pie`, `Legend`
-- [ ] Restyle Mana Curve: zone coloring (0–2=primary, 3–4=secondary, 5+=danger), remove YAxis, add CartesianGrid + LabelList
-- [ ] Replace card type section with Role Composition `<BarChart layout="vertical">`
-  - Data: `ramp_count`, `draw_count`, `removal_count`, `board_wipe_count`, `counterspell_count`, `tutor_count`, derived Threats bucket
-  - Semantic cell colors: Ramp→primary, Draw→success, Removal→danger, Wipes→secondary, Counterspells→mtg-black, Tutors→mtg-white, Threats→text-subtle
-- [ ] Add Resource Health section (pure JSX/CSS, no recharts)
-  - Frontend copy of `_STRATEGY_THRESHOLDS` keyed by `analysis.strategy`, fallback `midrange`
-  - 6 bars: Ramp, Draw, Removal, Board Wipes, Lands, Counterspells
-  - Color-coded: green = in range, amber = below min, red = critically short
-- [ ] Mark Phase 36 complete, update this plan
-
-**Key files:**
-- `frontend/mockups/analytics/chart-variations-v2.html` (Phase A — new file)
-- `frontend/src/pages/DeckPage.jsx` (Phase B — lines ~3, 455–535)
-- `backend/src/deck_analyzer.py:681` — reference for threshold values (no changes)
+Restyled Mana Curve (zone colors, no YAxis, count labels, grid lines). Replaced card type donut with Role Composition horizontal bar chart (Ramp/Draw/Removal/Board Wipes/Counterspells/Tutors/Threats). Added Resource Health section (6 progress bars, green/amber/red vs. strategy-specific `_STRATEGY_THRESHOLDS`). Design based on `frontend/mockups/analytics/chart-variations-v2.html`. MTG specialist confirmed card type chart was not actionable for Commander; Role + Health charts are differentiated vs. EDHREC/Moxfield.
 
 ---
 

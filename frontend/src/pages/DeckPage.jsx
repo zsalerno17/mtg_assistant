@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
@@ -456,15 +456,15 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <div>
           <SectionLabel className="mb-3">Mana Curve</SectionLabel>
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={manaCurveData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <XAxis dataKey="cmc" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={manaCurveData} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="var(--color-border)" strokeOpacity={0.5} />
+                <XAxis dataKey="cmc" tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: 'var(--color-primary-subtle)' }}
-                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, fontSize: 12 }}
                   labelStyle={{ color: 'var(--color-text)' }}
-                  itemStyle={{ color: 'var(--color-secondary)' }}
+                  itemStyle={{ color: 'var(--color-text-muted)' }}
                   formatter={(value) => [value, 'Cards']}
                   labelFormatter={(label) => `CMC ${label}`}
                 />
@@ -472,64 +472,130 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                   <ReferenceLine
                     x={String(Math.round(analysis.average_cmc))}
                     stroke="var(--color-text-muted)"
-                    strokeDasharray="3 3"
-                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: 'var(--color-text-muted)', fontSize: 10, position: 'top' }}
+                    strokeDasharray="4 3"
+                    strokeWidth={1.5}
+                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: 'var(--color-text-muted)', fontSize: 9, position: 'insideTopRight' }}
                   />
                 )}
-                <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={40}>
-                  {manaCurveData.map((_, i) => (
-                    <Cell key={i} fill="var(--color-secondary)" opacity={0.85} />
-                  ))}
+                <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={40} isAnimationActive={false}>
+                  <LabelList dataKey="count" position="top" style={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }} />
+                  {manaCurveData.map((d) => {
+                    const n = parseInt(d.cmc)
+                    const fill = n <= 2 ? 'var(--color-primary)' : n <= 4 ? 'var(--color-secondary)' : 'var(--color-danger)'
+                    return <Cell key={d.cmc} fill={fill} />
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            {/* Zone legend */}
+            <div className="flex gap-4 mt-2 justify-end">
+              {[['var(--color-primary)', '0–2 Acceleration'], ['var(--color-secondary)', '3–4 Core spells'], ['var(--color-danger)', '5+ Haymakers']].map(([color, label]) => (
+                <span key={label} className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
+                  <span className="text-[10px] text-[var(--color-text-muted)]">{label}</span>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Card Types ── */}
-      <div>
-        <SectionLabel className="mb-3">Card Type Distribution</SectionLabel>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* PieChart visualization */}
-          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={Object.entries(cardTypes).map(([name, value]) => ({ name, value }))}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={{ stroke: 'var(--color-border)', strokeWidth: 1 }}
-                >
-                  {Object.keys(cardTypes).map((type, i) => {
-                    const colors = ['var(--color-mtg-green)', 'var(--color-mtg-blue)', 'var(--color-mtg-red)', 'var(--color-mtg-black)', 'var(--color-secondary)', 'var(--color-primary)', 'var(--color-mtg-white)']
-                    return <Cell key={type} fill={colors[i % colors.length]} opacity={0.85} />
-                  })}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
-                  itemStyle={{ color: 'var(--color-text)' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+      {/* ── Role Composition ── */}
+      {(() => {
+        const ramp = analysis.ramp_count || 0
+        const draw = analysis.draw_count || 0
+        const removal = analysis.removal_count || 0
+        const wipes = analysis.board_wipe_count || 0
+        const counters = analysis.counterspell_count || 0
+        const tutors = analysis.tutor_count || 0
+        const landCount = cardTypes['Lands'] || 0
+        const threats = Math.max(0, (analysis.total_cards || 99) - landCount - ramp - draw - removal - wipes - counters - tutors)
+        const roles = [
+          { name: 'Threats / Other', value: threats,  color: 'var(--color-text-subtle)' },
+          { name: 'Ramp',           value: ramp,      color: 'var(--color-primary)' },
+          { name: 'Card Draw',      value: draw,      color: 'var(--color-success)' },
+          { name: 'Removal',        value: removal,   color: 'var(--color-danger)' },
+          { name: 'Board Wipes',    value: wipes,     color: 'var(--color-secondary)' },
+          { name: 'Counterspells',  value: counters,  color: 'var(--color-mtg-black)' },
+          { name: 'Tutors',         value: tutors,    color: 'var(--color-mtg-white)' },
+        ].filter(r => r.value > 0).sort((a, b) => b.value - a.value)
+        if (roles.length === 0) return null
+        const maxVal = Math.max(...roles.map(r => r.value))
+        return (
+          <div>
+            <SectionLabel className="mb-3">Role Composition</SectionLabel>
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 space-y-2.5">
+              {roles.map((role) => (
+                <div key={role.name} className="flex items-center gap-3">
+                  <span className="text-[11px] text-[var(--color-text-muted)] w-[108px] shrink-0 text-right">{role.name}</span>
+                  <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 14 }}>
+                    <div
+                      className="h-full rounded-sm"
+                      style={{ width: `${Math.round((role.value / maxVal) * 100)}%`, background: role.color }}
+                    />
+                  </div>
+                  <span className="text-[11px] font-mono text-[var(--color-text-muted)] w-6 shrink-0">{role.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          
-          {/* Grid view */}
-          <div className="grid grid-cols-2 gap-2 content-start">
-            {Object.entries(cardTypes).map(([type, count]) => (
-              <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all duration-150">
-                <span className="text-[var(--color-muted)] text-sm">{type}</span>
-                <span className="text-[var(--color-primary)] font-mono text-sm font-medium">{count}</span>
-              </div>
-            ))}
+        )
+      })()}
+
+      {/* ── Resource Health ── */}
+      {(() => {
+        const THRESHOLDS = {
+          aggro:    { ramp: [6,8],   draw: [8,10],  removal: [6,8],   lands: [33,35], wipes: [1,3], counters: [0,2] },
+          tokens:   { ramp: [8,10],  draw: [8,10],  removal: [7,9],   lands: [34,36], wipes: [2,4], counters: [1,3] },
+          combo:    { ramp: [12,16], draw: [14,18], removal: [8,10],  lands: [30,33], wipes: [2,4], counters: [4,8] },
+          midrange: { ramp: [10,12], draw: [10,12], removal: [9,11],  lands: [36,38], wipes: [2,4], counters: [3,6] },
+          control:  { ramp: [8,10],  draw: [14,18], removal: [12,15], lands: [36,38], wipes: [3,5], counters: [6,10] },
+          stax:     { ramp: [8,10],  draw: [10,12], removal: [10,12], lands: [34,36], wipes: [2,4], counters: [3,6] },
+          ramp:     { ramp: [14,18], draw: [10,12], removal: [8,10],  lands: [38,42], wipes: [2,4], counters: [1,3] },
+        }
+        const strategy = analysis.strategy?.toLowerCase() || 'midrange'
+        const t = THRESHOLDS[strategy] || THRESHOLDS.midrange
+        const landCount = cardTypes['Lands'] || 0
+        const metrics = [
+          { label: 'Ramp',        actual: analysis.ramp_count || 0,         range: t.ramp },
+          { label: 'Card Draw',   actual: analysis.draw_count || 0,         range: t.draw },
+          { label: 'Removal',     actual: analysis.removal_count || 0,      range: t.removal },
+          { label: 'Board Wipes', actual: analysis.board_wipe_count || 0,   range: t.wipes },
+          { label: 'Lands',       actual: landCount,                        range: t.lands },
+          { label: 'Counterspells', actual: analysis.counterspell_count || 0, range: t.counters },
+        ]
+        const getStatus = (actual, [min, max]) => {
+          if (actual >= min) return 'green'
+          if (actual >= min - 2) return 'amber'
+          return 'red'
+        }
+        const statusColor = { green: 'var(--color-success)', amber: 'var(--color-secondary)', red: 'var(--color-danger)' }
+        return (
+          <div>
+            <SectionLabel className="mb-1">Resource Health</SectionLabel>
+            <p className="text-[10px] text-[var(--color-text-subtle)] mb-3 capitalize">{strategy} deck targets</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              {metrics.map(({ label, actual, range }) => {
+                const status = getStatus(actual, range)
+                const pct = Math.min(100, Math.round((actual / range[1]) * 100))
+                return (
+                  <div key={label} className="flex flex-col gap-1">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[11px] font-medium text-[var(--color-text)]">{label}</span>
+                      <span className="text-[10px] font-mono" style={{ color: statusColor[status] }}>
+                        {actual} <span className="text-[var(--color-text-subtle)]">/ {range[0]}–{range[1]}</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-[var(--color-surface-2)]">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: statusColor[status] }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
-      </div>
+        )
+      })()}
 
       {/* ── What else can you do? (Differentiator section) ── */}
       <div className="border-t border-[var(--color-border)] pt-5">
