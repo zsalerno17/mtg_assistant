@@ -177,22 +177,7 @@ pre code {
  * rounded-sm  (6px via --radius-sm)   — inline code, compact elements
  * rounded-full                        — circular avatars, pill badges
  */
-@keyframes shimmer {
-  0%   { background-position: -600px 0; }
-  100% { background-position:  600px 0; }
-}
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-surface) 0%,
-    rgba(255, 255, 255, 0.05) 40%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.05) 60%,
-    var(--color-surface) 100%
-  );
-  background-size: 1200px 100%;
-  animation: shimmer 1.5s linear infinite;
-}
+/* Skeleton shimmer animation removed — use components.css .skeleton class instead */
 
 /* Progress bar shimmer */
 @keyframes progressShimmer {
@@ -224,90 +209,30 @@ pre code {
 }
 .deck-table td {
   padding: 18px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-bottom: 1px solid var(--color-border) !important;
 }
 .deck-table tbody tr:last-child td {
   border-bottom: none !important;
 }
 .deck-table tbody tr {
-  transition: all 0.2s;
+  transition: all var(--duration-fast) var(--easing-default);
 }
 .deck-table tbody tr:hover {
-  background: rgba(251, 191, 36, 0.05);
+  background: var(--color-secondary-subtle);
 }
 .deck-table tbody tr:hover td {
-  border-bottom-color: rgba(251, 191, 36, 0.25) !important;
+  border-bottom-color: var(--color-secondary-border) !important;
   border-right: 1px solid var(--color-bg) !important;
 }
 .deck-table tbody tr:hover td:last-child {
   border-right: none !important;
 }
 
-/* Phase 24 — Gradient border utility classes for stat cards */
-.gradient-border-amber {
-  border-bottom: 2px solid transparent;
-  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
-                    linear-gradient(90deg, transparent, var(--color-gradient-amber), transparent);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
-
-.gradient-border-green {
-  border-bottom: 2px solid transparent;
-  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
-                    linear-gradient(90deg, transparent, var(--color-gradient-green), transparent);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
-
-.gradient-border-purple {
-  border-bottom: 2px solid transparent;
-  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
-                    linear-gradient(90deg, transparent, var(--color-gradient-purple), transparent);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
-
-.gradient-border-blue {
-  border-bottom: 2px solid transparent;
-  background-image: linear-gradient(var(--color-surface), var(--color-surface)),
-                    linear-gradient(90deg, transparent, var(--color-gradient-blue), transparent);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
-
-/* Mana symbol glow effect (Phase 24) */
+/* Mana symbol glow effect — uses design tokens */
 .mana-glow-hover {
-  filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.2));
-  transition: filter 0.2s ease;
+  filter: drop-shadow(0 0 3px var(--color-secondary-subtle));
+  transition: filter var(--duration-fast) var(--easing-default);
 }
 .group:hover .mana-glow-hover {
-  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
-}
-
-/* Stat card bottom gradient borders (Phase 24i) */
-.stat-card::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-.stat-card:hover::after {
-  opacity: 1;
-}
-.stat-card-1::after {
-  background: linear-gradient(90deg, #fbbf24, #f59e0b);
-}
-.stat-card-2::after {
-  background: linear-gradient(90deg, #10b981, #059669);
-}
-.stat-card-3::after {
-  background: linear-gradient(90deg, #8b5cf6, #6366f1);
-}
-.stat-card-4::after {
-  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  filter: drop-shadow(0 0 8px var(--color-secondary-border));
 }

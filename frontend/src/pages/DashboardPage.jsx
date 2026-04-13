@@ -64,7 +64,7 @@ function ImportModal({ onClose, onImported }) {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://www.moxfield.com/decks/..."
             disabled={loading}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all disabled:opacity-50 mb-3"
+            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)] transition-all disabled:opacity-50 mb-3"
           />
           {error && (
             <p className="mb-3 text-[var(--color-danger)] text-xs">{error}</p>
@@ -80,7 +80,7 @@ function ImportModal({ onClose, onImported }) {
             <button
               type="submit"
               disabled={loading || !url.trim()}
-              className="bg-[var(--color-primary)] text-[var(--color-bg)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 hover:shadow-[0_0_16px_rgba(251,191,36,0.3)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
+              className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 hover:shadow-[0_0_16px_var(--color-primary-glow)] active:scale-[0.98] transition-all shadow-md shadow-[var(--color-primary-glow)] disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
             >
               {loading ? 'Importing…' : 'Import'}
             </button>
@@ -145,7 +145,7 @@ function DeckRowSkeleton() {
         <div className="flex gap-1">{[...Array(3)].map((_, i) => <div key={i} className="skeleton rounded-full w-4 h-4" />)}</div>
       </td>
       <td><div className="skeleton h-3 rounded w-16" /></td>
-      <td><div className="skeleton h-5 rounded-[7px] w-20" /></td>
+      <td><div className="skeleton h-5 rounded-lg w-20" /></td>
       <td><div className="skeleton h-4 rounded w-8" /></td>
       <td className="text-right"><div className="skeleton h-5 rounded w-14 ml-auto" /></td>
     </tr>
@@ -154,12 +154,12 @@ function DeckRowSkeleton() {
 
 function StatusBadge({ analyzed }) {
   return analyzed ? (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-emerald-500/[0.12] text-emerald-500 border border-emerald-500/25 whitespace-nowrap font-semibold">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-emerald-500/[0.12] text-emerald-500 border border-emerald-500/25 whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Analyzed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-slate-500/[0.12] text-[var(--color-muted)] border border-slate-500/20 whitespace-nowrap font-semibold">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-[var(--color-surface-2)] text-[var(--color-muted)] border border-[var(--color-border)] whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Pending
     </span>
@@ -249,7 +249,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
         <img
           src={commanderUri}
           alt={commanderName}
-          className="w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg shrink-0 transition-all group-hover:border-[var(--color-primary)]/50 group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] group-hover:-translate-y-0.5 cursor-help"
+          className="w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg shrink-0 transition-all group-hover:border-[var(--color-primary)]/50 group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_var(--color-primary-glow)] group-hover:-translate-y-0.5 cursor-help"
         />
       </CardTooltip>
     )
@@ -270,7 +270,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
             alt={commanderNames[0]}
             className={`w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help relative ${
               hovering 
-                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-20' 
+                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_var(--color-primary-glow)] -translate-y-0.5 z-20' 
                 : 'z-10'
             }`}
             style={{ transitionDuration: '200ms' }}
@@ -292,7 +292,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
             alt={commanderNames[1]}
             className={`w-[46px] h-[64px] rounded object-cover border-[1.5px] border-[var(--color-primary)]/25 shadow-lg transition-all cursor-help relative ${
               hovering 
-                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_rgba(251,191,36,0.2)] -translate-y-0.5 z-10' 
+                ? 'border-[var(--color-primary)]/50 shadow-[0_6px_16px_rgba(0,0,0,0.5),_0_0_12px_var(--color-primary-glow)] -translate-y-0.5 z-10' 
                 : 'z-0'
             }`}
             style={{ transitionDuration: '200ms' }}
@@ -311,8 +311,8 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
   return (
     <motion.tr
       className="group"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 8 }}  // Cinematic entrance — upward slide
+      animate={{ opacity: 1, y: 0 }}
       transition={{
         duration: 0.35,
         delay: index * 0.06,
@@ -587,17 +587,17 @@ export default function DashboardPage() {
         )}
 
         {decksError && (
-          <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start justify-between gap-3">
+          <div className="mb-4 bg-[var(--color-danger-subtle)] border border-[var(--color-danger-border)] rounded-lg p-4 flex items-start justify-between gap-3">
             <div className="flex-1">
-              <p className="text-red-400 text-sm font-semibold mb-1">Failed to load decks</p>
-              <p className="text-red-300/80 text-xs">{decksError}</p>
+              <p className="text-[var(--color-danger)] text-sm font-semibold mb-1">Failed to load decks</p>
+              <p className="text-[var(--color-danger)] text-xs">{decksError}</p>
             </div>
             <button
               onClick={() => {
                 setDecksLoading(true)
                 loadDecks()
               }}
-              className="text-red-400 text-xs font-medium hover:text-red-300 underline shrink-0"
+              className="text-[var(--color-danger)] text-xs font-medium hover:text-red-300 underline shrink-0"
             >
               Retry
             </button>
