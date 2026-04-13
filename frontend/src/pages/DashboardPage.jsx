@@ -159,7 +159,7 @@ function StatusBadge({ analyzed }) {
       Analyzed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-slate-500/[0.12] text-[var(--color-muted)] border border-slate-500/20 whitespace-nowrap font-semibold">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-[var(--color-surface-2)] text-[var(--color-muted)] border border-[var(--color-border)] whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Pending
     </span>
@@ -587,17 +587,17 @@ export default function DashboardPage() {
         )}
 
         {decksError && (
-          <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start justify-between gap-3">
+          <div className="mb-4 bg-[var(--color-danger-subtle)] border border-[var(--color-danger-border)] rounded-lg p-4 flex items-start justify-between gap-3">
             <div className="flex-1">
-              <p className="text-red-400 text-sm font-semibold mb-1">Failed to load decks</p>
-              <p className="text-red-300/80 text-xs">{decksError}</p>
+              <p className="text-[var(--color-danger)] text-sm font-semibold mb-1">Failed to load decks</p>
+              <p className="text-[var(--color-danger)] text-xs">{decksError}</p>
             </div>
             <button
               onClick={() => {
                 setDecksLoading(true)
                 loadDecks()
               }}
-              className="text-red-400 text-xs font-medium hover:text-red-300 underline shrink-0"
+              className="text-[var(--color-danger)] text-xs font-medium hover:text-red-300 underline shrink-0"
             >
               Retry
             </button>

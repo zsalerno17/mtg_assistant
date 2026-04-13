@@ -213,19 +213,25 @@ export default function LeaguePage() {
         const y = tableY + (idx + 1) * rowHeight
         // Highlight first place
         if (idx === 0) {
-          ctx.fillStyle = 'rgba(251, 191, 36, 0.1)'
+          // Get --color-secondary-subtle value
+          const styles = getComputedStyle(document.documentElement)
+          ctx.fillStyle = styles.getPropertyValue('--color-secondary-subtle').trim() || 'rgba(216,168,72,0.12)'
           ctx.fillRect(padding - 8, y - rowHeight + 12, width - padding * 2 + 16, rowHeight)
         }
 
-        ctx.fillStyle = idx === 0 ? '#fbbf24' : '#f1f5f9'
+        const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim() || '#d8a848'
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#ecf2fa'
+        const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim() || '#92a8c8'
+        
+        ctx.fillStyle = idx === 0 ? secondaryColor : textColor
         ctx.font = 'bold 14px sans-serif'
         ctx.fillText(`${idx + 1}`, cols[0].x, y)
         ctx.font = idx === 0 ? 'bold 14px serif' : '14px sans-serif'
         ctx.fillText(m.superstar_name || '', cols[1].x, y)
-        ctx.fillStyle = '#fbbf24'
+        ctx.fillStyle = secondaryColor
         ctx.font = 'bold 14px sans-serif'
         ctx.fillText(`${m.total_points}`, cols[2].x, y)
-        ctx.fillStyle = '#94a3b8'
+        ctx.fillStyle = mutedColor
         ctx.font = '13px sans-serif'
         ctx.fillText(`${m.wins}`, cols[3].x, y)
         ctx.fillText(`${m.second_places || 0}`, cols[4].x, y)
@@ -339,7 +345,7 @@ export default function LeaguePage() {
   if (error) {
     return (
         <div className="max-w-[1400px] mx-auto px-8 py-10">
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
+          <div className="bg-[var(--color-danger-subtle)] border border-[var(--color-danger-border)] text-[var(--color-danger)] px-4 py-3 rounded-lg">
             {error}
           </div>
         </div>
@@ -380,7 +386,7 @@ export default function LeaguePage() {
                       ? 'bg-green-500/20 text-green-300'
                       : league.status === 'completed'
                       ? 'bg-gray-500/20 text-gray-300'
-                      : 'bg-yellow-500/20 text-yellow-300'
+                      : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                   }`}
                 >
                   {league.status}
@@ -402,7 +408,7 @@ export default function LeaguePage() {
                 <button
                   onClick={handleLeaveLeague}
                   disabled={leaving}
-                  className="px-4 py-2.5 rounded-lg font-medium text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+                  className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-danger-border)] text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
                 >
                   {leaving ? 'Leaving...' : 'Leave League'}
                 </button>
@@ -550,11 +556,11 @@ export default function LeaguePage() {
                       <span
                         className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
                           idx === 0
-                            ? 'bg-yellow-500/20 text-yellow-400'
+                            ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                             : idx === 1
                             ? 'bg-gray-400/20 text-gray-300'
                             : idx === 2
-                            ? 'bg-amber-700/20 text-amber-600'
+                            ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                             : 'bg-[var(--color-primary)]/10 text-[var(--color-muted)]'
                         }`}
                       >
@@ -566,12 +572,12 @@ export default function LeaguePage() {
                       <span className={`font-brand font-bold ${idx === 0 ? 'text-lg text-[var(--color-text)]' : idx < 3 ? 'text-base text-[var(--color-text)]' : 'text-[var(--color-text)]'}`}>
                         {member.superstar_name}
                       </span>
-                      {idx === 0 && <span className="ml-2 text-xs text-yellow-400 font-medium">Champion</span>}
+                      {idx === 0 && <span className="ml-2 text-xs text-[var(--color-secondary)] font-medium">Champion</span>}
                       {idx > 0 && standings[idx - 1].total_points === member.total_points && (() => {
                         const h2h = getH2H(member.member_id, standings[idx - 1].member_id)
                         if (!h2h) return null
                         return (
-                          <span className={`ml-2 text-xs font-medium ${h2h.wins1 > h2h.wins2 ? 'text-green-400' : h2h.wins1 < h2h.wins2 ? 'text-red-400' : 'text-[var(--color-muted)]'}`} title={`H2H vs ${standings[idx - 1].superstar_name}`}>
+                          <span className={`ml-2 text-xs font-medium ${h2h.wins1 > h2h.wins2 ? 'text-[var(--color-success)]' : h2h.wins1 < h2h.wins2 ? 'text-[var(--color-danger)]' : 'text-[var(--color-muted)]'}`} title={`H2H vs ${standings[idx - 1].superstar_name}`}>
                             H2H {h2h.wins1}-{h2h.wins2}
                           </span>
                         )
@@ -633,7 +639,7 @@ export default function LeaguePage() {
                   delay: index * 0.06,
                   ease: [0.34, 1.56, 0.64, 1],
                 }}
-                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all"
+                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
@@ -670,7 +676,7 @@ export default function LeaguePage() {
                           <span
                             className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
                               result.placement === 1
-                                ? 'bg-yellow-500/20 text-yellow-400'
+                                ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                                 : 'bg-[var(--color-primary)]/10 text-[var(--color-muted)]'
                             }`}
                           >
@@ -686,9 +692,9 @@ export default function LeaguePage() {
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-sm">
-                          {result.earned_win && <span className="text-green-400">Win</span>}
+                          {result.earned_win && <span className="text-[var(--color-success)]">Win</span>}
                           {result.earned_entrance_bonus && (
-                            <span className="text-yellow-400">Entrance</span>
+                            <span className="text-[var(--color-secondary)]">Entrance</span>
                           )}
                           <span className="font-bold text-[var(--color-primary)]">{result.total_points} pts</span>
                         </div>
@@ -795,7 +801,7 @@ export default function LeaguePage() {
                   delay: index * 0.06,
                   ease: [0.34, 1.56, 0.64, 1],
                 }}
-                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all"
+                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
               >
                 <div className="flex items-start gap-4">
                   {member.user_profiles?.avatar_url ? (
