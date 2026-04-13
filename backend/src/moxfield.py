@@ -109,6 +109,14 @@ def parse_moxfield_card(entry: Dict[str, Any]) -> Card:
     if not oracle_text and card.get("card_faces"):
         oracle_text = card["card_faces"][0].get("oracle_text", "")
 
+    # Build image URI: prefer image_uris, fall back to constructing from scryfall_id
+    image_uri = image_uris.get("normal", "")
+    if not image_uri:
+        scryfall_id = card.get("scryfall_id", "")
+        if scryfall_id:
+            # Use Scryfall's image API redirect
+            image_uri = f"https://api.scryfall.com/cards/{scryfall_id}?format=image"
+
     return Card(
         name=card.get("name", ""),
         quantity=quantity,
@@ -121,6 +129,6 @@ def parse_moxfield_card(entry: Dict[str, Any]) -> Card:
         keywords=card.get("keywords", []),
         rarity=card.get("rarity", ""),
         set_code=card.get("set", ""),
-        image_uri=image_uris.get("normal", ""),
+        image_uri=image_uri,
         scryfall_id=card.get("scryfall_id", ""),
     )

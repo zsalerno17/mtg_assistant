@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend } from 'recharts'
+import { AreaChart, Area, PieChart, Pie, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
@@ -457,31 +457,36 @@ function OverviewTab({ deck, analysis, onTabChange }) {
           <SectionLabel className="mb-3">Mana Curve</SectionLabel>
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={manaCurveData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <XAxis dataKey="cmc" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <AreaChart data={manaCurveData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <XAxis 
+                  dataKey="cmc" 
+                  tick={{ fill: 'var(--color-text-muted)', fontSize: 10 }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                />
                 <Tooltip
-                  cursor={{ fill: 'var(--color-primary-subtle)' }}
-                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+                  contentStyle={{ 
+                    background: 'var(--color-surface)', 
+                    border: '1px solid var(--color-border)', 
+                    borderRadius: 8,
+                    fontSize: 11
+                  }}
                   labelStyle={{ color: 'var(--color-text)' }}
-                  itemStyle={{ color: 'var(--color-secondary)' }}
+                  itemStyle={{ color: 'var(--color-primary)' }}
                   formatter={(value) => [value, 'Cards']}
                   labelFormatter={(label) => `CMC ${label}`}
                 />
-                {typeof analysis.average_cmc === 'number' && (
-                  <ReferenceLine
-                    x={String(Math.round(analysis.average_cmc))}
-                    stroke="var(--color-text-muted)"
-                    strokeDasharray="3 3"
-                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: 'var(--color-text-muted)', fontSize: 10, position: 'top' }}
-                  />
-                )}
-                <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={40}>
-                  {manaCurveData.map((_, i) => (
-                    <Cell key={i} fill="var(--color-secondary)" opacity={0.85} />
-                  ))}
-                </Bar>
-              </BarChart>
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="var(--color-primary)"
+                  strokeWidth={2}
+                  fill="var(--color-primary)"
+                  fillOpacity={0.15}
+                  dot={{ fill: 'var(--color-primary)', r: 3, strokeWidth: 0 }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -499,20 +504,40 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                   data={Object.entries(cardTypes).map(([name, value]) => ({ name, value }))}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={2}
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={4}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={{ stroke: 'var(--color-border)', strokeWidth: 1 }}
+                  stroke="none"
                 >
-                  {Object.keys(cardTypes).map((type, i) => {
-                    const colors = ['var(--color-mtg-green)', 'var(--color-mtg-blue)', 'var(--color-mtg-red)', 'var(--color-mtg-black)', 'var(--color-secondary)', 'var(--color-primary)', 'var(--color-mtg-white)']
-                    return <Cell key={type} fill={colors[i % colors.length]} opacity={0.85} />
+                  {Object.entries(cardTypes).map(([type]) => {
+                    // Smart MTG color mapping
+                    const colorMap = {
+                      'Creatures': 'var(--color-mtg-green)',
+                      'Creature': 'var(--color-mtg-green)',
+                      'Instants': 'var(--color-mtg-blue)',
+                      'Instant': 'var(--color-mtg-blue)',
+                      'Sorceries': 'var(--color-mtg-red)',
+                      'Sorcery': 'var(--color-mtg-red)',
+                      'Enchantments': 'var(--color-mtg-white)',
+                      'Enchantment': 'var(--color-mtg-white)',
+                      'Artifacts': 'var(--color-secondary)',
+                      'Artifact': 'var(--color-secondary)',
+                      'Planeswalkers': 'var(--color-mtg-black)',
+                      'Planeswalker': 'var(--color-mtg-black)',
+                      'Lands': 'var(--color-text-muted)',
+                      'Land': 'var(--color-text-muted)'
+                    }
+                    return <Cell key={type} fill={colorMap[type] || 'var(--color-primary)'} />
                   })}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+                  contentStyle={{ 
+                    background: 'var(--color-surface)', 
+                    border: '1px solid var(--color-border)', 
+                    borderRadius: 8,
+                    fontSize: 11
+                  }}
                   itemStyle={{ color: 'var(--color-text)' }}
                 />
               </PieChart>

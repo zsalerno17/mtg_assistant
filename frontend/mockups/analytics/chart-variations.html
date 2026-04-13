@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart Redesign Mockups - Recharts vs D3</title>
+  
+  <!-- Design System Tokens (Arcane Spectrum) -->
+  <style>
+    :root {
+      /* Colors - Dark Mode */
+      --color-bg: #070813;
+      --color-surface: #0d1020;
+      --color-surface-2: #14182d;
+      --color-border: #1e2540;
+      --color-border-light: #2a3458;
+      --color-text: #ecf2fa;
+      --color-text-muted: #92a8c8;
+      --color-text-subtle: #4a5a78;
+      --color-primary: #4ca8e0;
+      --color-secondary: #d8a848;
+      --color-success: #5ec070;
+      --color-danger: #e85868;
+      
+      /* MTG Colors */
+      --color-mtg-w: #f4f0e0;
+      --color-mtg-u: #4ca8e0;
+      --color-mtg-b: #9875d8;
+      --color-mtg-r: #e85868;
+      --color-mtg-g: #5ec070;
+      
+      /* Typography */
+      --font-heading: 'Cinzel', serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      font-family: var(--font-heading);
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--color-primary);
+    }
+    
+    h2 {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      margin: 2rem 0 1rem;
+      color: var(--color-text);
+    }
+    
+    h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      margin: 1.5rem 0 0.75rem;
+      color: var(--color-text-muted);
+    }
+    
+    .header {
+      max-width: 1400px;
+      margin: 0 auto 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    
+    .subtitle {
+      font-size: 1rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1rem;
+    }
+    
+    .problem-statement {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-left: 4px solid var(--color-danger);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    
+    .tabs {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 0.5rem;
+    }
+    
+    .tab-button {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .tab-button:hover {
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+    
+    .tab-button.active {
+      background: var(--color-surface);
+      border-bottom-color: var(--color-surface);
+      color: var(--color-primary);
+      border-bottom: 1px solid var(--color-surface);
+      margin-bottom: -1px;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+    
+    .chart-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+    }
+    
+    .chart-card:hover {
+      border-color: var(--color-border-light);
+      transform: translateY(-2px);
+    }
+    
+    .chart-title {
+      font-family: var(--font-heading);
+      font-size: 1.125rem;
+      margin-bottom: 0.5rem;
+      color: var(--color-text);
+    }
+    
+    .chart-label {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .badge-recharts {
+      background: rgba(76, 168, 224, 0.2);
+      color: var(--color-primary);
+    }
+    
+    .badge-d3 {
+      background: rgba(216, 168, 72, 0.2);
+      color: var(--color-secondary);
+    }
+    
+    .chart-container {
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .controls {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .controls h3 {
+      margin-top: 0;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    
+    .control-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .control-item label {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    
+    .control-item input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+    }
+    
+    .control-item select {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+    }
+    
+    .comparison-notes {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    
+    .comparison-table th,
+    .comparison-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+    }
+    
+    .comparison-table th {
+      font-weight: 600;
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+    }
+    
+    .comparison-table td {
+      font-size: 0.875rem;
+    }
+    
+    .pro {
+      color: var(--color-success);
+    }
+    
+    .con {
+      color: var(--color-danger);
+    }
+
+    /* Chart-specific styles */
+    svg text {
+      font-family: var(--font-body);
+    }
+  </style>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="header">
+    <h1>Chart Redesign Mockups</h1>
+    <p class="subtitle">Recharts vs D3.js — Visual Quality & Implementation Comparison</p>
+    <div class="problem-statement">
+      <strong>User Feedback:</strong> "Fonts are too big on the circle chart, the colors don't match the schema, there are weird white edges on the circle chart. The bar chart is just big and clunky and boring."
+    </div>
+    <p class="subtitle">
+      <strong>Goal:</strong> Apply Arcane Spectrum design system with smart MTG color mapping, reduced font sizes, smooth gradients, and modern aesthetics. Evaluate Recharts vs D3.js before production implementation.
+    </p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab-buttons">
+      <button class="tab-button active" onclick="switchTab('d3')">Chart Design Mockups</button>
+      <button class="tab-button" onclick="switchTab('notes')">Implementation Notes</button>
+    </div>
+
+    <!-- Recharts Tab - Hidden due to CDN issues -->
+    <div id="recharts" class="tab-content" style="display: none;">
+      <h2>Recharts Variations</h2>
+      <p class="subtitle">React wrapper for D3.js — declarative, component-based, already integrated in project</p>
+      
+      <div class="controls">
+        <h3>Interactive Controls</h3>
+        <div class="control-group">
+          <div class="control-item">
+            <input type="checkbox" id="recharts-labels" onchange="toggleRechartsLabels()">
+            <label for="recharts-labels">Show Labels</label>
+          </div>
+          <div class="control-item">
+            <label>Color Palette:</label>
+            <select id="recharts-palette" onchange="updateRechartsPalette()">
+              <option value="mtg">MTG Smart Mapping (Semantic)</option>
+              <option value="primary">Primary Shades (Sequential)</option>
+              <option value="rainbow">Rainbow Spectrum</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <h3>Pie Charts (Card Type Distribution)</h3>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Variation A: Donut + Gradients</div>
+          <div class="chart-label">
+            <span class="badge badge-recharts">RECHARTS</span>
+            <span>No labels, radial gradients, smart MTG colors</span>
+          </div>
+          <div id="recharts-pie-a" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation B: Full Pie + Sequential</div>
+          <div class="chart-label">
+            <span class="badge badge-recharts">RECHARTS</span>
+            <span>No inner radius, primary color shades</span>
+          </div>
+          <div id="recharts-pie-b" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation C: Donut + Glow</div>
+          <div class="chart-label">
+            <span class="badge badge-recharts">RECHARTS</span>
+            <span>Subtle glow effects, crisp aesthetic</span>
+          </div>
+          <div id="recharts-pie-c" class="chart-container"></div>
+        </div>
+      </div>
+
+      <h3>Mana Curve Charts</h3>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Variation A: Area Chart</div>
+          <div class="chart-label">
+            <span class="badge badge-recharts">RECHARTS</span>
+            <span>Smooth curve, gradient fill, no Y-axis</span>
+          </div>
+          <div id="recharts-mana-a" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation B: Gradient Bars</div>
+          <div class="chart-label">
+            <span class="badge badge-recharts">RECHARTS</span>
+            <span>Vertical gradients, counts inside, rounded</span>
+          </div>
+          <div id="recharts-mana-b" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation C: Sparkline</div>
+          <div class="chart-label">
+            <span class="badge badge-recharts">RECHARTS</span>
+            <span>Minimal style, thin bars, no axes</span>
+          </div>
+          <div id="recharts-mana-c" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- D3.js Tab -->
+    <div id="d3" class="tab-content active">
+      <h2>Chart Design Variations</h2>
+      <p class="subtitle">Visual mockups showing different design approaches — production will use Recharts with these same styles</p>
+      
+      <div class="controls">
+        <h3>Interactive Controls</h3>
+        <div class="control-group">
+          <div class="control-item">
+            <input type="checkbox" id="d3-labels" onchange="toggleD3Labels()">
+            <label for="d3-labels">Show Labels</label>
+          </div>
+          <div class="control-item">
+            <label>Color Palette:</label>
+            <select id="d3-palette" onchange="updateD3Palette()">
+              <option value="mtg">MTG Smart Mapping (Semantic)</option>
+              <option value="primary">Primary Shades (Sequential)</option>
+              <option value="rainbow">Rainbow Spectrum</option>
+            </select>
+          </div>
+          <div class="control-item">
+            <input type="checkbox" id="d3-animate" checked onchange="toggleD3Animation()">
+            <label for="d3-animate">Enable Animations</label>
+          </div>
+        </div>
+      </div>
+
+      <h3>Pie Charts (Card Type Distribution)</h3>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Variation A: Donut + Gradients</div>
+          <div class="chart-label">
+            <span>No labels, radial gradients, smart MTG colors</span>
+          </div>
+          <div id="d3-pie-a" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation B: Full Pie + Sequential</div>
+          <div class="chart-label">
+            <span>No inner radius, primary color shades</span>
+          </div>
+          <div id="d3-pie-b" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation C: Donut + Glow</div>
+          <div class="chart-label">
+            <span>Subtle glow effects, crisp aesthetic</span>
+          </div>
+          <div id="d3-pie-c" class="chart-container"></div>
+        </div>
+      </div>
+
+      <h3>Mana Curve Charts</h3>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Variation A: Area Chart</div>
+          <div class="chart-label">
+            <span>Smooth bezier curves, animated path drawing</span>
+          </div>
+          <div id="d3-mana-a" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation B: Gradient Bars</div>
+          <div class="chart-label">
+            <span>Staggered entrance animation, counts visible</span>
+          </div>
+          <div id="d3-mana-b" class="chart-container"></div>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-title">Variation C: Sparkline</div>
+          <div class="chart-label">
+            <span>Ultra-minimal, single-line rendering</span>
+          </div>
+          <div id="d3-mana-c" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side-by-Side Comparison Tab - Hidden -->
+    <div id="comparison" class="tab-content" style="display: none;">
+      <h2>Side-by-Side Comparison</h2>
+      <p class="subtitle">Direct visual comparison of matching chart types</p>
+      
+      <h3>Donut Chart: Recharts vs D3</h3>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Recharts</div>
+          <div id="comparison-recharts-pie" class="chart-container"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">D3.js</div>
+          <div id="comparison-d3-pie" class="chart-container"></div>
+        </div>
+      </div>
+
+      <h3>Area Chart: Recharts vs D3</h3>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Recharts</div>
+          <div id="comparison-recharts-mana" class="chart-container"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">D3.js</div>
+          <div id="comparison-d3-mana" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Implementation Notes Tab -->
+    <div id="notes" class="tab-content">
+      <h2>Implementation Notes</h2>
+      
+      <div class="comparison-notes">
+        <h3>About These Mockups</h3>
+        <p>These charts are rendered with D3.js to demonstrate visual design direction only. <strong>Production implementation will use Recharts</strong>, which is already integrated in the project and provides the same visual capabilities with cleaner, more maintainable React component code.</p>
+        <p style="margin-top: 0.5rem;">All design elements shown here (gradients, colors, font sizes, animations) can be replicated in Recharts using the same SVG techniques.</p>
+      </div>
+
+      <div class="comparison-notes">
+        <h3>Why Recharts for Production?</h3>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Recharts</th>
+              <th>Pure D3</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Lines of Code (per chart)</td>
+              <td class="pro">~20-30 lines (JSX components)</td>
+              <td class="con">~80-120 lines (imperative SVG)</td>
+            </tr>
+            <tr>
+              <td>Learning Curve</td>
+              <td class="pro">Easy (React-like declarative)</td>
+              <td class="con">Steep (D3 selections, scales)</td>
+            </tr>
+            <tr>
+              <td>Maintainability</td>
+              <td class="pro">High (component-based)</td>
+              <td class="con">Medium (imperative cleanup)</td>
+            </tr>
+            <tr>
+              <td>Visual Quality</td>
+              <td class="pro">Excellent (same SVG capabilities)</td>
+              <td class="pro">Excellent</td>
+            </tr>
+            <tr>
+              <td>Already Integrated</td>
+              <td class="pro">Yes (v2.8.0 installed)</td>
+              <td class="con">No (would need to add)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="comparison-notes">
+        <h3>Recommendation: Which Designs to Implement?</h3>
+        <p><strong>Recommended selections:</strong></p>
+        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--color-text-muted);">
+          <li><strong>Pie Chart:</strong> Variation A (Donut + Gradients) — best balance of visual interest and clarity</li>
+          <li><strong>Mana Curve:</strong> Variation A (Area Chart) — smooth, modern, engaging</li>
+        </ul>
+        
+        <p style="margin-top: 1rem;"><strong>Key improvements to implement in DeckPage.jsx:</strong></p>
+        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--color-text-muted);">
+          <li>Remove all labels from PieChart (use grid view as legend)</li>
+          <li>Apply smart MTG color mapping (Creatures→Green, Instants→Blue, etc.)</li>
+          <li>Add radial gradients to pie slices via SVG defs</li>
+          <li>Replace mana curve BarChart with AreaChart (smooth curves)</li>
+          <li>Reduce font sizes to 10-11px (design system scale)</li>
+          <li>Remove Y-axis from mana curve (cleaner look)</li>
+          <li>Increase padding angle between pie slices (4 instead of 2)</li>
+          <li>Add hover states that highlight corresponding grid items</li>
+        </ul>
+      </div>
+
+      <div class="comparison-notes">
+        <h3>Sample Implementation (Recharts Donut with Gradients)</h3>
+        <pre style="background: var(--color-surface); padding: 1rem; border-radius: 8px; overflow-x: auto; color: var(--color-text-muted); font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.5;">
+<code>&lt;ResponsiveContainer width="100%" height={200}&gt;
+  &lt;PieChart&gt;
+    &lt;defs&gt;
+      &lt;radialGradient id="grad-creatures"&gt;
+        &lt;stop offset="0%" stopColor="var(--color-mtg-g)" stopOpacity={1} /&gt;
+        &lt;stop offset="100%" stopColor="var(--color-mtg-g)" stopOpacity={0.6} /&gt;
+      &lt;/radialGradient&gt;
+      {/* ...repeat for each card type */}
+    &lt;/defs&gt;
+    &lt;Pie
+      data={cardTypesData}
+      dataKey="value"
+      nameKey="name"
+      cx="50%"
+      cy="50%"
+      innerRadius={60}
+      outerRadius={85}
+      paddingAngle={4}
+      stroke="none"
+    &gt;
+      {cardTypesData.map((entry, index) =&gt; (
+        &lt;Cell key={index} fill={`url(#grad-${entry.name.toLowerCase()})`} /&gt;
+      ))}
+    &lt;/Pie&gt;
+    &lt;Tooltip 
+      contentStyle={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '8px',
+        fontSize: '11px',
+        fontFamily: 'var(--font-body)'
+      }}
+    /&gt;
+  &lt;/PieChart&gt;
+&lt;/ResponsiveContainer&gt;</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load D3.js from CDN -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <script>
+    // Wait for all libraries to load before rendering
+    function checkLibrariesLoaded() {
+      if (typeof d3 === 'undefined') {
+        console.error('D3 not loaded');
+        return false;
+      }
+      return true;
+    }
+
+    // Add loading indicators
+    document.addEventListener('DOMContentLoaded', function() {
+      const chartContainers = document.querySelectorAll('.chart-container');
+      chartContainers.forEach(container => {
+        container.innerHTML = '<div style="color: #92a8c8; text-align: center;">Loading...</div>';
+      });
+    });
+  </script>
+
+  <script>
+    // Sample deck data
+    const SAMPLE_DECK = {
+      card_types: [
+        { name: 'Creatures', value: 28 },
+        { name: 'Instants', value: 9 },
+        { name: 'Sorceries', value: 8 },
+        { name: 'Enchantments', value: 6 },
+        { name: 'Artifacts', value: 5 },
+        { name: 'Planeswalkers', value: 2 },
+        { name: 'Lands', value: 38 }
+      ],
+      mana_curve: [
+        { cmc: '0', count: 3 },
+        { cmc: '1', count: 8 },
+        { cmc: '2', count: 12 },
+        { cmc: '3', count: 15 },
+        { cmc: '4', count: 9 },
+        { cmc: '5', count: 6 },
+        { cmc: '6', count: 4 },
+        { cmc: '7+', count: 3 }
+      ],
+      average_cmc: 3.2
+    };
+
+    // Color palettes
+    const COLOR_PALETTES = {
+      mtg: {
+        'Creatures': '#5ec070',
+        'Instants': '#4ca8e0',
+        'Sorceries': '#e85868',
+        'Artifacts': '#d8a848',
+        'Enchantments': '#f4f0e0',
+        'Planeswalkers': '#9875d8',
+        'Lands': '#92a8c8'
+      },
+      primary: {
+        'Creatures': '#4ca8e0',
+        'Instants': '#3a8cc8',
+        'Sorceries': '#2970b0',
+        'Artifacts': '#1a5498',
+        'Enchantments': '#0a3878',
+        'Planeswalkers': '#082860',
+        'Lands': '#061848'
+      },
+      rainbow: {
+        'Creatures': '#e85868',
+        'Instants': '#d8a848',
+        'Sorceries': '#5ec070',
+        'Artifacts': '#4ca8e0',
+        'Enchantments': '#9875d8',
+        'Planeswalkers': '#e85868',
+        'Lands': '#92a8c8'
+      }
+    };
+
+    let currentD3Palette = 'mtg';
+    let showD3Labels = false;
+    let d3AnimationEnabled = true;
+
+    // Tab switching
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Control handlers
+    function toggleD3Labels() {
+      showD3Labels = document.getElementById('d3-labels').checked;
+      renderD3Charts();
+    }
+
+    function updateD3Palette() {
+      currentD3Palette = document.getElementById('d3-palette').value;
+      renderD3Charts();
+    }
+
+    function toggleD3Animation() {
+      d3AnimationEnabled = document.getElementById('d3-animate').checked;
+      renderD3Charts();
+    }
+
+    // D3 rendering functions
+    function renderD3Charts() {
+      const palette = COLOR_PALETTES[currentD3Palette];
+      
+      // Render pie charts
+      ['d3-pie-a', 'd3-pie-b', 'd3-pie-c'].forEach(id => {
+        const container = document.getElementById(id);
+        if (!container) return;
+        
+        const variation = id.includes('-a') ? 'a' : id.includes('-b') ? 'b' : 'c';
+        renderD3Pie(container, variation, palette);
+      });
+
+      // Render mana curve charts
+      ['d3-mana-a', 'd3-mana-b', 'd3-mana-c'].forEach(id => {
+        const container = document.getElementById(id);
+        if (!container) return;
+        
+        const variation = id.includes('-a') ? 'a' : id.includes('-b') ? 'b' : 'c';
+        renderD3Mana(container, variation);
+      });
+    }
+
+    function renderD3Pie(container, variation, palette) {
+      // Clear existing
+      d3.select(container).selectAll('*').remove();
+
+      const width = 450;
+      const height = 280;
+      const radius = Math.min(width, height) / 2 - 30;
+      const innerRadius = variation === 'b' ? 0 : 60;
+
+      const svg = d3.select(container)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .append('g')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+      // Add gradients
+      const defs = svg.append('defs');
+      SAMPLE_DECK.card_types.forEach(type => {
+        const gradient = defs.append('radialGradient')
+          .attr('id', `d3-grad-${type.name.toLowerCase().replace(/\s/g, '-')}-${variation}`);
+        
+        gradient.append('stop')
+          .attr('offset', '0%')
+          .attr('stop-color', palette[type.name])
+          .attr('stop-opacity', 1);
+        
+        gradient.append('stop')
+          .attr('offset', '100%')
+          .attr('stop-color', palette[type.name])
+          .attr('stop-opacity', 0.6);
+      });
+
+      const pie = d3.pie()
+        .value(d => d.value)
+        .padAngle(variation === 'a' ? 0.04 : variation === 'b' ? 0.02 : 0.03)
+        .sort(null);
+
+      const arc = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(radius);
+
+      const arcs = svg.selectAll('arc')
+        .data(pie(SAMPLE_DECK.card_types))
+        .enter()
+        .append('g')
+        .attr('class', 'arc');
+
+      const paths = arcs.append('path')
+        .attr('fill', d => {
+          if (variation === 'c') {
+            return palette[d.data.name];
+          }
+          return `url(#d3-grad-${d.data.name.toLowerCase().replace(/\s/g, '-')}-${variation})`;
+        })
+        .attr('stroke', 'none');
+
+      if (variation === 'c') {
+        paths.attr('filter', 'drop-shadow(0 0 4px rgba(76, 168, 224, 0.3))');
+      }
+
+      if (d3AnimationEnabled) {
+        paths
+          .transition()
+          .duration(800)
+          .attrTween('d', function(d) {
+            const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+            return function(t) {
+              return arc(interpolate(t));
+            };
+          });
+      } else {
+        paths.attr('d', arc);
+      }
+
+      // Hover effects
+      paths
+        .on('mouseenter', function(event, d) {
+          if (variation === 'b') {
+            // Explode effect
+            const [x, y] = arc.centroid(d);
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('transform', `translate(${x * 0.1}, ${y * 0.1})`);
+          } else {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('opacity', 0.8);
+          }
+        })
+        .on('mouseleave', function() {
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .attr('transform', 'translate(0, 0)')
+            .attr('opacity', 1);
+        });
+
+      // Add labels if enabled
+      if (showD3Labels) {
+        arcs.append('text')
+          .attr('transform', d => `translate(${arc.centroid(d)})`)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', '11px')
+          .attr('font-family', 'Inter, sans-serif')
+          .attr('fill', '#ecf2fa')
+          .text(d => d.data.value);
+      }
+    }
+
+    function renderD3Mana(container, variation) {
+      // Clear existing
+      d3.select(container).selectAll('*').remove();
+
+      const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+      const width = 450 - margin.left - margin.right;
+      const height = 260 - margin.top - margin.bottom;
+
+      const svg = d3.select(container)
+        .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+      const x = d3.scaleBand()
+        .domain(SAMPLE_DECK.mana_curve.map(d => d.cmc))
+        .range([0, width])
+        .padding(variation === 'c' ? 0.3 : 0.2);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(SAMPLE_DECK.mana_curve, d => d.count)])
+        .range([height, 0]);
+
+      // X axis
+      svg.append('g')
+        .attr('transform', `translate(0, ${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll('text')
+        .style('font-size', '10px')
+        .style('font-family', 'Inter, sans-serif')
+        .style('fill', '#92a8c8');
+
+      if (variation === 'a') {
+        // Area chart
+        const area = d3.area()
+          .x(d => x(d.cmc) + x.bandwidth() / 2)
+          .y0(height)
+          .y1(d => y(d.count))
+          .curve(d3.curveMonotoneX);
+
+        const line = d3.line()
+          .x(d => x(d.cmc) + x.bandwidth() / 2)
+          .y(d => y(d.count))
+          .curve(d3.curveMonotoneX);
+
+        // Gradient
+        const gradient = svg.append('defs')
+          .append('linearGradient')
+          .attr('id', 'd3-area-gradient')
+          .attr('x1', '0%')
+          .attr('y1', '0%')
+          .attr('x2', '0%')
+          .attr('y2', '100%');
+
+        gradient.append('stop')
+          .attr('offset', '0%')
+          .attr('stop-color', '#4ca8e0')
+          .attr('stop-opacity', 0.4);
+
+        gradient.append('stop')
+          .attr('offset', '100%')
+          .attr('stop-color', '#4ca8e0')
+          .attr('stop-opacity', 0.05);
+
+        // Draw area
+        const areaPath = svg.append('path')
+          .datum(SAMPLE_DECK.mana_curve)
+          .attr('fill', 'url(#d3-area-gradient)')
+          .attr('d', area);
+
+        // Draw line
+        const linePath = svg.append('path')
+          .datum(SAMPLE_DECK.mana_curve)
+          .attr('fill', 'none')
+          .attr('stroke', '#4ca8e0')
+          .attr('stroke-width', 2.5)
+          .attr('d', line);
+
+        // Animated path drawing
+        if (d3AnimationEnabled) {
+          const pathLength = linePath.node().getTotalLength();
+          linePath
+            .attr('stroke-dasharray', pathLength)
+            .attr('stroke-dashoffset', pathLength)
+            .transition()
+            .duration(1000)
+            .attr('stroke-dashoffset', 0);
+        }
+
+        // Add dots
+        svg.selectAll('dot')
+          .data(SAMPLE_DECK.mana_curve)
+          .enter()
+          .append('circle')
+          .attr('cx', d => x(d.cmc) + x.bandwidth() / 2)
+          .attr('cy', d => y(d.count))
+          .attr('r', 4)
+          .attr('fill', '#4ca8e0');
+
+      } else if (variation === 'b') {
+        // Gradient bars
+        const barGradient = svg.append('defs')
+          .append('linearGradient')
+          .attr('id', 'd3-bar-gradient')
+          .attr('x1', '0%')
+          .attr('y1', '0%')
+          .attr('x2', '0%')
+          .attr('y2', '100%');
+
+        barGradient.append('stop')
+          .attr('offset', '0%')
+          .attr('stop-color', '#4ca8e0')
+          .attr('stop-opacity', 1);
+
+        barGradient.append('stop')
+          .attr('offset', '100%')
+          .attr('stop-color', '#d8a848')
+          .attr('stop-opacity', 0.8);
+
+        svg.selectAll('rect')
+          .data(SAMPLE_DECK.mana_curve)
+          .enter()
+          .append('rect')
+          .attr('x', d => x(d.cmc))
+          .attr('width', x.bandwidth())
+          .attr('fill', 'url(#d3-bar-gradient)')
+          .attr('rx', 8)
+          .attr('ry', 8)
+          .attr('y', height)
+          .attr('height', 0)
+          .transition()
+          .duration(d3AnimationEnabled ? 600 : 0)
+          .delay((d, i) => d3AnimationEnabled ? i * 60 : 0)
+          .attr('y', d => y(d.count))
+          .attr('height', d => height - y(d.count));
+
+        // Add count labels
+        svg.selectAll('text.label')
+          .data(SAMPLE_DECK.mana_curve)
+          .enter()
+          .append('text')
+          .attr('class', 'label')
+          .attr('x', d => x(d.cmc) + x.bandwidth() / 2)
+          .attr('y', d => y(d.count) - 5)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', '11px')
+          .attr('font-family', 'Inter, sans-serif')
+          .attr('fill', '#ecf2fa')
+          .text(d => d.count);
+
+      } else {
+        // Sparkline
+        svg.selectAll('rect')
+          .data(SAMPLE_DECK.mana_curve)
+          .enter()
+          .append('rect')
+          .attr('x', d => x(d.cmc))
+          .attr('width', x.bandwidth())
+          .attr('fill', '#4ca8e0')
+          .attr('rx', 2)
+          .attr('y', d => y(d.count))
+          .attr('height', d => height - y(d.count));
+      }
+    }
+
+    // Initial render
+    window.addEventListener('load', function() {
+      console.log('Window loaded, checking libraries...');
+      
+      if (!checkLibrariesLoaded()) {
+        document.querySelectorAll('.chart-container').forEach(container => {
+          container.innerHTML = '<div style="color: #e85868; text-align: center; padding: 2rem;">Error: D3.js failed to load. Please check your internet connection.</div>';
+        });
+        return;
+      }
+
+      console.log('D3 loaded successfully');
+      console.log('D3 version:', d3.version);
+      
+      try {
+        renderD3Charts();
+        console.log('Charts rendered successfully');
+      } catch (error) {
+        console.error('Error rendering charts:', error);
+        document.querySelectorAll('.chart-container').forEach(container => {
+          container.innerHTML = '<div style="color: #e85868; text-align: center; padding: 2rem;">Error: ' + error.message + '</div>';
+        });
+      }
+    });
+  </script>
+</body>
+</html>
