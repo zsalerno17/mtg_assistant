@@ -52,7 +52,7 @@ export default function LoginPage() {
 
       <button
         onClick={signInWithGoogle}
-        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-[0_4px_24px_var(--color-secondary-subtle)] hover:-translate-y-0.5 active:translate-y-0 transition-all font-heading relative"
+        className="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:-translate-y-0.5 active:translate-y-0 transition-all font-heading relative"
       >
         <GoogleIcon />
         <span>Continue with Google</span>

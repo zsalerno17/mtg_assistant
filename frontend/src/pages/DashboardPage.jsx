@@ -80,7 +80,7 @@ function ImportModal({ onClose, onImported }) {
             <button
               type="submit"
               disabled={loading || !url.trim()}
-              className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 hover:shadow-[0_0_16px_var(--color-primary-glow)] active:scale-[0.98] transition-all shadow-md shadow-[var(--color-primary-glow)] disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
+              className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px]"
             >
               {loading ? 'Importing…' : 'Import'}
             </button>
