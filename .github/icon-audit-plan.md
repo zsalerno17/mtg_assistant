@@ -1,7 +1,7 @@
 # Icon System Audit & Migration Plan
 
 > **Status:** In Progress  
-> **Date:** April 12, 2026  
+> **Date:** April 13, 2026  
 > **Phase:** Phase 38 (follows Phase 37 Button Design System)
 
 ---
@@ -58,11 +58,11 @@ Consolidate 40+ scattered inline SVG icons into a unified system using **[Lucide
 |---|---|---|
 | `OverviewIcon` | 2x2 grid of squares | `LayoutGrid` |
 | `UpgradeIcon` | Arrow pointing up | `ArrowUp` |
-| `StrategyIcon` | Play button in circle | `CirclePlay` |
+| `StrategyIcon` | Play button in circle | `ScrollText` ✦ |
 | `ImprovementsIcon` | Trending up chart | `TrendingUp` |
 | `ScenariosIcon` | Chat bubble | `MessageSquare` |
 | `IconWarning` | Triangle warning | `AlertTriangle` |
-| `IconCheck` | Checkbox with check | `ClipboardCheck` |
+| `IconCheck` | Bare checkmark | `Check` |
 | `IconChevronDown` | Chevron down | `ChevronDown` |
 | `IconChevronLeft` | Chevron left | `ChevronLeft` |
 
@@ -76,7 +76,7 @@ Consolidate 40+ scattered inline SVG icons into a unified system using **[Lucide
 | Sign out | Door with arrow | `LogOut` |
 | Mobile: Home | House | `House` |
 | Mobile: Leagues | Trophy/chalice | `Trophy` |
-| Mobile: Collection | Box/chest | `Package` |
+| Mobile: Collection | Box/chest | `Library` ✦ |
 | Mobile: Profile | User silhouette | `User` |
 
 ### DashboardPage.jsx (4 icons, all inline)
@@ -96,13 +96,15 @@ Consolidate 40+ scattered inline SVG icons into a unified system using **[Lucide
 | Usage | Description | Lucide Replacement |
 |---|---|---|
 | Getting Started section | Question mark circle | `CircleHelp` |
-| Collection section | Box/calendar | `Package` |
-| Decks section | Document/file | `FileText` |
-| AI Features section | Stack of layers | `Layers` |
+| Collection section | Box/calendar | `Library` ✦ |
+| Decks section | Document/file | `BookOpen` ✦ |
+| AI Features section | Stack of layers | `WandSparkles` ✦ |
 | League Tracking section | Group of users | `Users` |
 | Card Resources section | Magnifying glass | `Search` |
 | External link × 3 | Arrow top-right | `ExternalLink` |
 | Chevron right (links) | Right arrow | `ChevronRight` |
+
+> ✦ **MTG-thematic choice** — selected during audit review to better match MTG vocabulary and aesthetics.
 
 ---
 
@@ -111,12 +113,14 @@ Consolidate 40+ scattered inline SVG icons into a unified system using **[Lucide
 ### Step 1 — Visual Audit (current)
 - [x] Create `frontend/src/pages/IconShowcasePage.jsx` displaying all current icons
 - [x] Add temporary `/icons-dev` route in `App.jsx`
-- [ ] Review showcase page to spot visual inconsistencies
+- [x] Update showcase to show side-by-side current → Lucide comparison
+- [x] Review showcase page and finalize all Lucide replacements (thematic overrides applied)
 
 ### Step 2 — Install Lucide
 ```bash
 cd frontend && npm install lucide-react
 ```
+> **Done** — `lucide-react@1.8.0` installed April 13, 2026.
 
 ### Step 3 — Map and verify replacements
 For each icon in the inventory above, visit [lucide.dev/icons/{name}](https://lucide.dev/icons/) and confirm the visual match is acceptable. Note any icons that need custom alternatives.
@@ -166,8 +170,9 @@ All icons should use:
 
 ## Verification Checklist
 
-- [ ] `/icons-dev` shows all current icons in grid
-- [ ] `lucide-react` installed
+- [x] `/icons-dev` shows all current icons in grid
+- [x] Side-by-side current → Lucide comparison on every card
+- [x] `lucide-react` installed
 - [ ] All Lucide replacements visually validated on showcase page
 - [ ] `LeagueIcons.jsx` migrated
 - [ ] `DeckPage.jsx` migrated

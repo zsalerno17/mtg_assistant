@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CardTooltip from '../components/CardTooltip'
+import { Eye, LoaderCircle, ClipboardCheck, Swords } from 'lucide-react'
 import PageTransition from '../components/PageTransition'
 
 function ImportModal({ onClose, onImported }) {
@@ -374,7 +375,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
               onClick={() => navigate(`/deck/${item.moxfield_id}`)}
               className="btn btn-secondary btn-sm"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+              <Eye className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
               View Deck
             </button>
           ) : (
@@ -385,12 +386,12 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
             >
               {isAnalyzing ? (
                 <>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 animate-spin"><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
+                  <LoaderCircle className="w-3.5 h-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
                   Analyzing…
                 </>
               ) : (
                 <>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 group-hover:scale-110 transition-transform"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                  <ClipboardCheck className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" strokeWidth={2} aria-hidden="true" />
                   Analyze
                 </>
               )}
@@ -632,12 +633,7 @@ export default function DashboardPage() {
         ) : decks.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 text-[var(--color-muted)] opacity-30">
-              <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
-              <path d="M13 19l6-6-1-1-6 6" />
-              <path d="M14.5 14.5L19 19" />
-              <path d="M3 21l4-4" />
-            </svg>
+            <Swords className="w-10 h-10 text-[var(--color-muted)] opacity-30" strokeWidth={2} aria-hidden="true" />
             <p className="text-[var(--color-text)] font-semibold text-sm">No decks in your library yet</p>
             <p className="text-[var(--color-muted)] text-xs text-center">Click <span className="text-[var(--color-primary)] font-medium">+ Import Deck</span> above to get started.</p>
           </div>

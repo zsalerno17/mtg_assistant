@@ -4,48 +4,13 @@ import { AreaChart, Area, PieChart, Pie, XAxis, Tooltip, ResponsiveContainer, Ce
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
+import { LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft } from 'lucide-react'
 
-function OverviewIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  )
-}
-function UpgradeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <polyline points="17 11 12 6 7 11" />
-      <line x1="12" y1="6" x2="12" y2="18" />
-    </svg>
-  )
-}
-function StrategyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="10 8 16 12 10 16 10 8" />
-    </svg>
-  )
-}
-function ImprovementsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <polyline points="3 17 9 11 13 15 21 7" />
-      <polyline points="14 7 21 7 21 14" />
-    </svg>
-  )
-}
-function ScenariosIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-    </svg>
-  )
-}
+function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function UpgradeIcon() { return <ArrowUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function StrategyIcon() { return <ScrollText className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function ImprovementsIcon() { return <TrendingUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function ScenariosIcon() { return <MessageSquare className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
@@ -103,37 +68,19 @@ function LoadingSpinner() {
 }
 
 function IconWarning({ className = 'w-4 h-4 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  )
+  return <AlertTriangle className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function IconCheck({ className = 'w-3.5 h-3.5 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
+  return <Check className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function IconChevronDown({ className = 'w-3.5 h-3.5 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  )
+  return <ChevronDown className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function IconChevronLeft({ className = 'w-4 h-4 shrink-0' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  )
+  return <ChevronLeft className={className} strokeWidth={2} aria-hidden="true" />
 }
 
 function StatBadge({ label, value }) {
@@ -167,7 +114,7 @@ function StatBadge({ label, value }) {
       } else {
         // Between 3.0 and 3.5: map to 75-100%
         percentage = 100 - ((numValue - 3.0) / 0.5 * 25)
-        ringColor = 'text-[var(--color-secondary)]'
+        ringColor = 'text-amber-400'
       }
     } else {
       // Normal scale: higher is better
@@ -176,7 +123,7 @@ function StatBadge({ label, value }) {
       if (percentage >= 100) {
         ringColor = 'text-emerald-400'
       } else if (percentage >= 75) {
-        ringColor = 'text-[var(--color-secondary)]'
+        ringColor = 'text-amber-400'
       } else {
         ringColor = 'text-rose-400'
       }
@@ -212,7 +159,7 @@ function StatBadge({ label, value }) {
             stroke="currentColor"
             strokeWidth="4"
             strokeLinecap="round"
-            className={`transition-all ease-out ${ringColor}`}
+            className={`transition-all duration-500 ease-out ${ringColor}`}
             style={{
               strokeDasharray: circumference,
               strokeDashoffset: strokeDashoffset,
@@ -282,15 +229,15 @@ function CommanderImage({ name }) {
   const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image`
   return (
     <div
-      className="shrink-0 rounded-lg p-px shadow-lg shadow-[var(--color-secondary)]/20"
-      style={{ background: 'linear-gradient(145deg, var(--color-secondary-border) 0%, var(--color-secondary-subtle) 50%, var(--color-secondary-border) 100%)' }}
+      className="shrink-0 rounded-[7px] p-px shadow-lg shadow-amber-500/20"
+      style={{ background: 'linear-gradient(145deg, rgba(251,191,36,0.55) 0%, rgba(180,130,18,0.25) 50%, rgba(251,191,36,0.4) 100%)' }}
     >
       <img
         src={url}
         alt={name}
         onError={() => setError(true)}
         loading="lazy"
-        className="rounded-sm block object-cover"
+        className="rounded-[6px] block object-cover"
         style={{ width: 72, height: 100 }}
       />
     </div>
@@ -315,8 +262,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
     <div className="space-y-6">
 
       {/* ── Commander Hero ── */}
-      <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-primary)]/20 rounded-xl px-6 py-5 hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
-          style={{ transitionDuration: 'var(--duration-fast)' }}>
+      <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-primary)]/20 rounded-xl px-6 py-5 hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
         <SectionLabel>{deck.partner ? 'Commanders' : 'Commander'}</SectionLabel>
         <div className="flex items-center gap-5 mt-1">
           {/* Card image(s) */}
@@ -439,7 +385,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                     {name}{count != null ? ` (${count})` : ''}
                   </span>
                   {def && (
-                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
                       <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{name}</span>
                       <span className="block text-[var(--color-muted)] text-xs leading-relaxed">{def}</span>
                       <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[#0f1d2e]" />
@@ -548,7 +494,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
           {/* Grid view */}
           <div className="grid grid-cols-2 gap-2 content-start">
             {Object.entries(cardTypes).map(([type, count]) => (
-              <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all">
+              <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-muted)] text-sm">{type}</span>
                 <span className="text-[var(--color-primary)] font-mono text-sm font-medium">{count}</span>
               </div>
@@ -563,14 +509,14 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <div className="grid gap-3 sm:grid-cols-2">
           <button
             onClick={() => onTabChange?.('Strategy')}
-            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-secondary)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-secondary)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/5 transition-all"
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-secondary)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-secondary)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/5 transition-all duration-200"
           >
             <p className="text-[var(--color-secondary)] font-semibold text-sm">AI Strategy Guide →</p>
             <p className="text-[var(--color-muted)] text-xs mt-0.5">Game plan, win conditions, mulligan advice, matchup tips</p>
           </button>
           <button
             onClick={() => onTabChange?.('Upgrades')}
-            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/5 transition-all"
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/5 transition-all duration-200"
           >
             <p className="text-[var(--color-success)] font-semibold text-sm">Upgrade with Your Collection →</p>
             <p className="text-[var(--color-muted)] text-xs mt-0.5">Cards you already own that would strengthen this deck</p>
@@ -634,7 +580,7 @@ function StrategyTab({ deckId }) {
           <SectionLabel className="mb-3">Win Conditions</SectionLabel>
           <div className="space-y-2">
             {data.win_conditions.map((wc, i) => (
-              <div key={i} className="flex items-start gap-2 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
+              <div key={i} className="flex items-start gap-2 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <IconCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 shrink-0" />
                 <div>
                   <span className="text-[var(--color-text)] font-semibold text-sm">{wc.name}</span>
@@ -652,7 +598,7 @@ function StrategyTab({ deckId }) {
           <SectionLabel className="mb-3">Key Cards</SectionLabel>
           <div className="grid gap-2 sm:grid-cols-2">
             {data.key_cards.map((kc, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-primary)] font-semibold text-sm"><CardTooltip cardName={kc.name}>{kc.name}</CardTooltip></span>
                 <p className="text-[var(--color-muted)] text-xs mt-0.5">{kc.role}</p>
               </div>
@@ -690,7 +636,7 @@ function StrategyTab({ deckId }) {
           <SectionLabel className="mb-3">Matchup Tips</SectionLabel>
           <div className="space-y-2">
             {data.matchup_tips.map((tip, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-primary)] font-semibold text-sm">vs {tip.against}</span>
                 <p className="text-[var(--color-muted)] text-xs mt-0.5">{tip.advice}</p>
               </div>
@@ -727,13 +673,13 @@ function ImprovementsTab({ deckId }) {
   if (!data) return null
 
   const categoryColors = {
-    ramp: 'text-[var(--color-success)]',
-    draw: 'text-[var(--color-primary)]',
-    removal: 'text-[var(--color-danger)]',
-    wipes: 'text-[var(--color-warning)]',
-    lands: 'text-[var(--color-secondary)]',
-    synergy: 'text-[var(--color-mtg-black)]',
-    upgrade: 'text-[var(--color-primary)]',
+    ramp: 'text-green-400',
+    draw: 'text-sky-400',
+    removal: 'text-red-400',
+    wipes: 'text-orange-400',
+    lands: 'text-amber-400',
+    synergy: 'text-purple-400',
+    upgrade: 'text-sky-400',
   }
 
   const renderShowMore = (key, total) => {
@@ -762,7 +708,7 @@ function ImprovementsTab({ deckId }) {
           <p className="text-[var(--color-muted)] text-xs mb-3">Cards to add that address critical gaps in your deck.</p>
           <div className="space-y-2">
             {(expanded['fixes'] ? data.urgent_fixes : data.urgent_fixes.slice(0, MAX_VISIBLE)).map((fix, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/30 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-[var(--color-danger)]/50 hover:-translate-y-0.5 transition-all">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/30 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-[var(--color-danger)]/50 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
                 <div className="flex-1">
                   <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={fix.card}>{fix.card}</CardTooltip></span>
@@ -785,7 +731,7 @@ function ImprovementsTab({ deckId }) {
           <p className="text-[var(--color-muted)] text-xs mb-3">Paired cut → add recommendations to improve your deck.</p>
           <div className="space-y-2">
             {(expanded['swaps'] ? data.swaps : data.swaps.slice(0, MAX_VISIBLE)).map((swap, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={swap.cut}>{swap.cut}</CardTooltip></span>
                   <span className="text-[var(--color-muted)] text-xs">→</span>
@@ -800,7 +746,7 @@ function ImprovementsTab({ deckId }) {
                   )}
                   {!swap.owned && swap.price_tier && (
                     <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${
-                      swap.price_tier === 'budget' ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]' : swap.price_tier === 'premium' ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+                      swap.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : swap.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
                     }`}>
                       {swap.price_tier}
                     </span>
@@ -827,7 +773,7 @@ function ImprovementsTab({ deckId }) {
                 <p className="font-heading text-[var(--color-success)] text-[10px] font-semibold uppercase tracking-widest mb-1.5">In Your Collection</p>
                 <div className="space-y-2">
                   {(expanded['additions_owned'] ? ownedCards : ownedCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all">
+                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
@@ -846,14 +792,14 @@ function ImprovementsTab({ deckId }) {
                 <p className="font-heading text-[var(--color-muted)] text-[10px] font-semibold uppercase tracking-widest mb-1.5">Worth Acquiring</p>
                 <div className="space-y-2">
                   {(expanded['additions_buy'] ? buyCards : buyCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all">
+                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
                           {add.price_tier && (
                             <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${
-                              add.price_tier === 'budget' ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]' : add.price_tier === 'premium' ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+                              add.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : add.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
                             }`}>
                               {add.price_tier}
                             </span>
@@ -969,7 +915,7 @@ function CollectionUpgradesTab({ deckId }) {
             {sortedOptions.map((u, i) => (
               <div
                 key={i}
-                className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all ${
+                className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150 ${
                   multipleOptions && hasCut ? 'ml-4' : ''
                 }`}
               >
@@ -1360,7 +1306,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
           <button
             type="submit"
             disabled={loading || (cardsToAdd.length === 0 && cardsToRemove.length === 0)}
-            className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_var(--color-primary-glow)] active:scale-[0.98] transition-all shadow-md shadow-[var(--color-primary-glow)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_rgba(251,191,36,0.35)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Analyzing…' : 'Run Simulation'}
           </button>
@@ -1397,7 +1343,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
                   return (
                     <tr
                       key={key}
-                      className={`border-b border-[var(--color-border)] last:border-0 ${changed ? 'bg-[var(--color-secondary-subtle)]' : ''}`}
+                      className={`border-b border-[var(--color-border)] last:border-0 ${changed ? 'bg-amber-500/5' : ''}`}
                     >
                       <td className="px-4 py-3 text-[var(--color-text)]">{label}</td>
                       <td className="px-4 py-3 text-center text-[var(--color-muted)]">

@@ -1,3 +1,4 @@
+import { CircleHelp, Library, BookOpen, WandSparkles, Users, Search, ExternalLink, ChevronRight, Info } from 'lucide-react'
 import PageTransition from '../components/PageTransition'
 
 export default function HelpPage() {
@@ -5,11 +6,7 @@ export default function HelpPage() {
     {
       title: "Getting Started",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-          <circle cx="12" cy="17" r="0.5" fill="currentColor" />
-        </svg>
+        <CircleHelp className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -25,10 +22,7 @@ export default function HelpPage() {
     {
       title: "Managing Your Collection",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <rect x="2" y="7" width="20" height="14" rx="2" />
-          <path d="M16 3v4M8 3v4" />
-        </svg>
+        <Library className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -50,15 +44,9 @@ export default function HelpPage() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             BIMF Collection Manager
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
           </a>
         </>
       )
@@ -66,10 +54,7 @@ export default function HelpPage() {
     {
       title: "Adding & Analyzing Decks",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-        </svg>
+        <BookOpen className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -92,15 +77,9 @@ export default function HelpPage() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             Moxfield Deck Builder
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
           </a>
         </>
       )
@@ -108,10 +87,7 @@ export default function HelpPage() {
     {
       title: "AI Analysis Features",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" />
-          <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-        </svg>
+        <WandSparkles className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -126,10 +102,7 @@ export default function HelpPage() {
           </ul>
           <div className="bg-[var(--color-surface-2)] border border-[var(--color-secondary-border)] rounded-lg p-4">
             <p className="text-sm text-[var(--color-secondary)] font-medium mb-2 flex items-center gap-2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
-              </svg>
+              <Info className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
               Pro Tip:
             </p>
             <p className="text-sm text-[var(--color-muted)]">
@@ -142,11 +115,7 @@ export default function HelpPage() {
     {
       title: "Tracking Leagues & Pods",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-        </svg>
+        <Users className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -174,10 +143,7 @@ export default function HelpPage() {
     {
       title: "Card Information & Resources",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
+        <Search className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
@@ -190,15 +156,9 @@ export default function HelpPage() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group mb-4"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             Scryfall Card Search
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
           </a>
           <p className="text-sm text-[var(--color-muted)]">
             Scryfall provides card images, Oracle text, prices, legality, and advanced search filters.
