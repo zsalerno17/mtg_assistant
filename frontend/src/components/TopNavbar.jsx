@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../lib/useTheme'
@@ -66,6 +67,18 @@ export default function TopNavbar() {
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const email = session?.user?.email || ''
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
     <>
@@ -129,10 +142,10 @@ export default function TopNavbar() {
           {/* Right side: user avatar + dropdown */}
           <div className="flex items-center gap-3">
             {/* User button with dropdown */}
-            <div className="relative group">
+            <div className="relative" ref={menuRef}>
               <button
-                onClick={() => navigate('/profile')}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] transition-all group"
+                onClick={() => setMenuOpen(o => !o)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] transition-all"
                 title="Profile"
               >
                 <UserAvatar email={email} avatarUrl={profile?.avatar_url} size="md" />
@@ -145,23 +158,23 @@ export default function TopNavbar() {
               </button>
 
               {/* Dropdown menu */}
-              <div className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-2xl shadow-black/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all overflow-hidden">
+              <div className={`absolute right-0 mt-2 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-2xl shadow-black/50 transition-all overflow-hidden ${menuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
                 <button
-                  onClick={() => navigate('/profile')}
+                  onClick={() => { navigate('/profile'); setMenuOpen(false) }}
                   className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
                 >
                   <User className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                   Profile
                 </button>
                 <button
-                  onClick={() => navigate('/help')}
+                  onClick={() => { navigate('/help'); setMenuOpen(false) }}
                   className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
                 >
                   <CircleHelp className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                   Help & Resources
                 </button>
                 <button
-                  onClick={toggleTheme}
+                  onClick={() => { toggleTheme(); setMenuOpen(false) }}
                   className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
                 >
                   {theme === 'dark' ? (
@@ -178,7 +191,7 @@ export default function TopNavbar() {
                 </button>
                 <div className="border-t border-[var(--color-border)]" />
                 <button
-                  onClick={signOut}
+                  onClick={() => { signOut(); setMenuOpen(false) }}
                   className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
                 >
                   <LogOut className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
