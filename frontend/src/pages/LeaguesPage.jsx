@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { LeagueCardSkeleton } from '../components/Skeletons'
 import { SwordsIcon, TrophyIcon } from '../components/LeagueIcons'
+import PageTransition from '../components/PageTransition'
 
 export default function LeaguesPage() {
   const [leagues, setLeagues] = useState([])
@@ -104,6 +105,7 @@ export default function LeaguesPage() {
   const displayLeagues = showCompleted ? leagues : activeLeagues
 
   return (
+    <PageTransition>
       <div className="max-w-[1400px] mx-auto px-8 py-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -320,5 +322,6 @@ export default function LeaguesPage() {
           </div>
         )}
       </div>
+    </PageTransition>
   )
 }

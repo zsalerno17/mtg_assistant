@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CardTooltip from '../components/CardTooltip'
+import PageTransition from '../components/PageTransition'
 
 function ImportModal({ onClose, onImported }) {
   const [url, setUrl] = useState('')
@@ -302,12 +304,21 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
 }
 
 // Desktop table row
-function DeckTableRow({ item, onAnalyze, analyzingId }) {
+function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
   const navigate = useNavigate()
   const isAnalyzing = analyzingId === item.moxfield_id
 
   return (
-    <tr className="group">
+    <motion.tr
+      className="group"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{
+        duration: 0.35,
+        delay: index * 0.06,
+        ease: [0.34, 1.56, 0.64, 1],
+      }}
+    >
       {/* Deck name with commander art */}
       <td>
         <div className="flex items-center gap-4">
@@ -387,7 +398,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId }) {
           )}
         </div>
       </td>
-    </tr>
+    </motion.tr>
   )
 }
 
@@ -484,9 +495,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen px-8 pt-10 pb-6">
-      {showImportModal && (
-        <ImportModal
+    <PageTransition>
+      <div className="min-h-screen px-8 pt-10 pb-6">
+        {showImportModal && (
+          <ImportModal
           onClose={() => setShowImportModal(false)}
           onImported={handleImported}
         />
@@ -597,13 +609,23 @@ export default function DashboardPage() {
           <>
             {/* Mobile: card grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
-              {decks.map((item) => (
-                <DeckCard
+              {decks.map((item, index) => (
+                <motion.div
                   key={item.moxfield_id}
-                  item={item}
-                  onAnalyze={handleAnalyze}
-                  analyzingId={analyzingId}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.35,
+                    delay: index * 0.06,
+                    ease: [0.34, 1.56, 0.64, 1],
+                  }}
+                >
+                  <DeckCard
+                    item={item}
+                    onAnalyze={handleAnalyze}
+                    analyzingId={analyzingId}
+                  />
+                </motion.div>
               ))}
             </div>
 
@@ -621,12 +643,13 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {decks.map((item) => (
+                  {decks.map((item, index) => (
                     <DeckTableRow
                       key={item.moxfield_id}
                       item={item}
                       onAnalyze={handleAnalyze}
                       analyzingId={analyzingId}
+                      index={index}
                     />
                   ))}
                 </tbody>
@@ -639,5 +662,6 @@ export default function DashboardPage() {
         <CollectionSummaryWidget summary={collectionSummary} loading={summaryLoading} />
       </div>
     </div>
+    </PageTransition>
   )
 }

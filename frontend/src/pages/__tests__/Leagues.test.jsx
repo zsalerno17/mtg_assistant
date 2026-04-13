@@ -3,6 +3,25 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { api } from '../../lib/api'
 
+// Mock PageTransition first
+vi.mock('../../components/PageTransition', () => ({
+  default: ({ children }) => children,
+}))
+
+// Mock framer-motion
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }) => {
+      const { initial, animate, transition, exit, ...rest } = props
+      return <div {...rest}>{children}</div>
+    },
+    tr: ({ children, ...props }) => {
+      const { initial, animate, transition, exit, ...rest } = props
+      return <tr {...rest}>{children}</tr>
+    },
+  },
+}))
+
 // Mock the api module
 vi.mock('../../lib/api', () => ({
   api: {

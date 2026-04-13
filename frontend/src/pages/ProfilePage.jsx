@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
 import { AVATAR_PRESETS, CREATURE_PRESETS, CREATURE_PRESET_MAP, isPresetUrl, urlToPresetId, presetIdToUrl, isCreaturePreset } from '../lib/avatarPresets'
 import { CreaturePresetIcon } from '../lib/creatureIcons'
+import PageTransition from '../components/PageTransition'
 
 export default function ProfilePage() {
   const { session, profile, refreshProfile, signOut } = useAuth()
@@ -106,7 +107,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <PageTransition>
+      <div className="min-h-screen">
       <div className="max-w-lg mx-auto px-8 pt-10 pb-6">
         {/* First-time welcome banner */}
         {isFirstTime && (
@@ -272,5 +274,6 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+    </PageTransition>
   )
 }

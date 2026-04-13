@@ -69,23 +69,35 @@ def main():
             
             deck_data = cached.data[0]["data_json"]
             
-            # Extract commander image URI
+            # Extract commander and partner image URIs
             commander_image_uri = None
+            partner_image_uri = None
             format_val = deck_data.get("format", "commander")
             
             commander_data = deck_data.get("commander")
             if commander_data and isinstance(commander_data, dict):
                 commander_image_uri = commander_data.get("image_uri")
             
+            partner_data = deck_data.get("partner")
+            if partner_data and isinstance(partner_data, dict):
+                partner_image_uri = partner_data.get("image_uri")
+            
             # Update user_decks entry
             update_data = {"format": format_val}
             if commander_image_uri:
                 update_data["commander_image_uri"] = commander_image_uri
+            if partner_image_uri:
+                update_data["partner_image_uri"] = partner_image_uri
             
             sb.table("user_decks").update(update_data).eq("user_id", user_id).eq("moxfield_id", moxfield_id).execute()
             
-            status = "✅" if commander_image_uri else "⚠️ "
-            print(f"{status} Updated {moxfield_id} (user {user_id[:8]}...): {commander_image_uri or 'no image'}")
+            images = []
+            if commander_image_uri:
+                images.append("commander")
+            if partner_image_uri:
+                images.append("partner")
+            status = "✅" if images else "⚠️ "
+            print(f"{status} Updated {moxfield_id} (user {user_id[:8]}...): {', '.join(images) if images else 'no images'}")
             updated += 1
             
         except Exception as e:

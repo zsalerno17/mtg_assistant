@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PageTransition from '../components/PageTransition'
 
 /**
  * Handles the OAuth redirect from Supabase.
@@ -41,7 +42,8 @@ export default function AuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--color-bg)] px-4 gap-4">
+      <PageTransition>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--color-bg)] px-4 gap-4">
         <p className="text-red-400">{error}</p>
         <button
           onClick={() => navigate('/login', { replace: true })}
@@ -50,12 +52,15 @@ export default function AuthCallbackPage() {
           Back to sign in
         </button>
       </div>
+      </PageTransition>
     )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[var(--color-bg)]">
+    <PageTransition>
+      <div className="flex items-center justify-center min-h-screen bg-[var(--color-bg)]">
       <div className="text-[var(--color-muted)]">Signing in...</div>
     </div>
+    </PageTransition>
   )
 }

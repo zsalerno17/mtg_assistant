@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
@@ -15,6 +16,27 @@ import LogGamePage from './pages/LogGamePage'
 import JoinLeaguePage from './pages/JoinLeaguePage'
 import HelpPage from './pages/HelpPage'
 
+function AnimatedRoutes() {
+  const location = useLocation()
+  
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/deck/:deckId" element={<DeckPage />} />
+        <Route path="/collection" element={<CollectionPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/help" element={<HelpPage />} />
+        <Route path="/decks/import" element={<ImportDeckPage />} />
+        <Route path="/leagues" element={<LeaguesPage />} />
+        <Route path="/leagues/:leagueId" element={<LeaguePage />} />
+        <Route path="/leagues/:leagueId/log-game" element={<LogGamePage />} />
+        <Route path="/leagues/join/:inviteToken" element={<JoinLeaguePage />} />
+      </Routes>
+    </AnimatePresence>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -27,18 +49,7 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route path="/deck/:deckId" element={<DeckPage />} />
-                    <Route path="/collection" element={<CollectionPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/help" element={<HelpPage />} />
-                    <Route path="/decks/import" element={<ImportDeckPage />} />
-                    <Route path="/leagues" element={<LeaguesPage />} />
-                    <Route path="/leagues/:leagueId" element={<LeaguePage />} />
-                    <Route path="/leagues/:leagueId/log-game" element={<LogGamePage />} />
-                    <Route path="/leagues/join/:inviteToken" element={<JoinLeaguePage />} />
-                  </Routes>
+                  <AnimatedRoutes />
                 </Layout>
               </ProtectedRoute>
             }

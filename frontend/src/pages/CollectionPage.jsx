@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import PageTransition from '../components/PageTransition'
 
 export default function CollectionPage() {
   const { session } = useAuth()
@@ -80,7 +82,8 @@ export default function CollectionPage() {
     : []
 
   return (
-    <div className="min-h-screen">
+    <PageTransition>
+      <div className="min-h-screen">
       <div className="max-w-[1600px] mx-auto px-8 pt-10 pb-6">
       <div className="mb-8">
         <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
@@ -181,13 +184,20 @@ export default function CollectionPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
             {filteredCards.map((card, i) => (
-              <div
+              <motion.div
                 key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.35,
+                  delay: i * 0.03,
+                  ease: [0.34, 1.56, 0.64, 1],
+                }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >
                 <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
                 <span className="text-[var(--color-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -198,5 +208,6 @@ export default function CollectionPage() {
       )}
       </div>
     </div>
+    </PageTransition>
   )
 }

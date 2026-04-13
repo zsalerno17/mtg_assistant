@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { StandingsRowSkeleton, MemberCardSkeleton, GameCardSkeleton } from '../components/Skeletons'
 import { TrophyIcon, CrownIcon, SwordsIcon } from '../components/LeagueIcons'
+import PageTransition from '../components/PageTransition'
 
 export default function LeaguePage() {
   const { leagueId } = useParams()
@@ -347,6 +349,7 @@ export default function LeaguePage() {
   if (!league) return null
 
   return (
+    <PageTransition>
       <div className="max-w-[1400px] mx-auto px-8 py-10">
         {/* Header */}
         <div className="mb-8">
@@ -620,9 +623,16 @@ export default function LeaguePage() {
               </div>
             )}
 
-            {games.map((game) => (
-              <div
+            {games.map((game, index) => (
+              <motion.div
                 key={game.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.35,
+                  delay: index * 0.06,
+                  ease: [0.34, 1.56, 0.64, 1],
+                }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
@@ -742,7 +752,7 @@ export default function LeaguePage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))}
 
             {hasMoreGames && (
@@ -775,9 +785,16 @@ export default function LeaguePage() {
         {/* Members Tab */}
         {activeTab === 'members' && (
           <div role="tabpanel" id="tabpanel-members" aria-labelledby="tab-members" className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {league.league_members?.map((member) => (
-              <div
+            {league.league_members?.map((member, index) => (
+              <motion.div
                 key={member.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.35,
+                  delay: index * 0.06,
+                  ease: [0.34, 1.56, 0.64, 1],
+                }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all"
               >
                 <div className="flex items-start gap-4">
@@ -864,10 +881,10 @@ export default function LeaguePage() {
                     })()}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        )}
-      </div>
+        )}      </div>
+    </PageTransition>
   )
 }

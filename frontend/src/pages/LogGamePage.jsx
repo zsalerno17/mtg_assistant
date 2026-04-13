@@ -175,6 +175,7 @@ export default function LogGamePage() {
   }
 
   return (
+    <PageTransition>
       <div className="max-w-[900px] mx-auto px-8 py-10">
         <div className="mb-8">
           <h1 className="text-3xl font-brand font-bold text-[var(--color-text)] mb-2">
@@ -446,5 +447,6 @@ export default function LogGamePage() {
         </form>
         )}
       </div>
+    </PageTransition>
   )
 }

@@ -9,10 +9,13 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
 
   const refreshProfile = useCallback(async () => {
+    console.log('[AuthContext] Fetching profile...')
     try {
       const p = await api.getProfile()
+      console.log('[AuthContext] Profile loaded:', p)
       setProfile(p)
-    } catch {
+    } catch (err) {
+      console.error('[AuthContext] Failed to load profile:', err.message)
       setProfile(null)
     }
   }, [])

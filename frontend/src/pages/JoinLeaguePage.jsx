@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { SwordsIcon } from '../components/LeagueIcons'
+import PageTransition from '../components/PageTransition'
 
 export default function JoinLeaguePage() {
   const { inviteToken } = useParams()
@@ -30,7 +31,8 @@ export default function JoinLeaguePage() {
   }
 
   return (
-    <div className="max-w-[600px] mx-auto px-8 py-10">
+    <PageTransition>
+      <div className="max-w-[600px] mx-auto px-8 py-10">
       <div className="text-center mb-8">
         <SwordsIcon className="w-14 h-14 text-[var(--color-primary)] mx-auto mb-4" />
         <h1 className="text-3xl font-brand font-bold text-primary mb-2">
@@ -99,5 +101,6 @@ export default function JoinLeaguePage() {
         </button>
       </form>
     </div>
+    </PageTransition>
   )
 }

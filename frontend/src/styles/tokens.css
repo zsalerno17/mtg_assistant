@@ -298,3 +298,53 @@
 *:where(:not(:active):not(:focus):not(:hover)) {
   transition-timing-function: var(--easing-default);
 }
+
+/* ══════════════════════════════════════════════════════
+   SHADCN/UI VARIABLE MAPPINGS
+   Map shadcn CSS variables to Arcane Spectrum tokens
+══════════════════════════════════════════════════════ */
+
+:root {
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-text-on-primary);
+  --secondary: var(--color-secondary);
+  --secondary-foreground: var(--color-text-on-primary);
+  --muted: var(--color-surface-2);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-surface-2);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--color-text);
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-primary);
+  --radius: 0.625rem;
+}
+
+[data-theme="light"] {
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-text-on-primary);
+  --secondary: var(--color-secondary);
+  --secondary-foreground: var(--color-text-on-primary);
+  --muted: var(--color-surface-2);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-surface-2);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--color-text);
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-primary);
+}

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
+import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
+import PageTransition from '../components/PageTransition'
 
 function OverviewIcon() {
   return (
@@ -457,27 +458,27 @@ function OverviewTab({ deck, analysis, onTabChange }) {
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={manaCurveData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <XAxis dataKey="cmc" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <XAxis dataKey="cmc" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  cursor={{ fill: 'rgba(251,191,36,0.08)' }}
-                  contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 6 }}
-                  labelStyle={{ color: '#e2e8f0' }}
-                  itemStyle={{ color: '#fbbf24' }}
+                  cursor={{ fill: 'var(--color-primary-subtle)' }}
+                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+                  labelStyle={{ color: 'var(--color-text)' }}
+                  itemStyle={{ color: 'var(--color-secondary)' }}
                   formatter={(value) => [value, 'Cards']}
                   labelFormatter={(label) => `CMC ${label}`}
                 />
                 {typeof analysis.average_cmc === 'number' && (
                   <ReferenceLine
                     x={String(Math.round(analysis.average_cmc))}
-                    stroke="#94a3b8"
+                    stroke="var(--color-text-muted)"
                     strokeDasharray="3 3"
-                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: '#94a3b8', fontSize: 10, position: 'top' }}
+                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: 'var(--color-text-muted)', fontSize: 10, position: 'top' }}
                   />
                 )}
                 <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={40}>
                   {manaCurveData.map((_, i) => (
-                    <Cell key={i} fill="#fbbf24" opacity={0.85} />
+                    <Cell key={i} fill="var(--color-secondary)" opacity={0.85} />
                   ))}
                 </Bar>
               </BarChart>
@@ -488,14 +489,45 @@ function OverviewTab({ deck, analysis, onTabChange }) {
 
       {/* ── Card Types ── */}
       <div>
-        <SectionLabel className="mb-3">Card Types</SectionLabel>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {Object.entries(cardTypes).map(([type, count]) => (
-            <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all duration-150">
-              <span className="text-[var(--color-muted)] text-sm">{type}</span>
-              <span className="text-[var(--color-primary)] font-mono text-sm font-medium">{count}</span>
-            </div>
-          ))}
+        <SectionLabel className="mb-3">Card Type Distribution</SectionLabel>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* PieChart visualization */}
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={Object.entries(cardTypes).map(([name, value]) => ({ name, value }))}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: 'var(--color-border)', strokeWidth: 1 }}
+                >
+                  {Object.keys(cardTypes).map((type, i) => {
+                    const colors = ['var(--color-mtg-green)', 'var(--color-mtg-blue)', 'var(--color-mtg-red)', 'var(--color-mtg-black)', 'var(--color-secondary)', 'var(--color-primary)', 'var(--color-mtg-white)']
+                    return <Cell key={type} fill={colors[i % colors.length]} opacity={0.85} />
+                  })}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+                  itemStyle={{ color: 'var(--color-text)' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          
+          {/* Grid view */}
+          <div className="grid grid-cols-2 gap-2 content-start">
+            {Object.entries(cardTypes).map(([type, count]) => (
+              <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all duration-150">
+                <span className="text-[var(--color-muted)] text-sm">{type}</span>
+                <span className="text-[var(--color-primary)] font-mono text-sm font-medium">{count}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1519,7 +1551,8 @@ export default function DeckPage() {
   const deckName = deck?.name || deckId
 
   return (
-    <div className="min-h-screen">
+    <PageTransition>
+      <div className="min-h-screen">
       {/* Top bar */}
       <div className="border-b border-[var(--color-border)]">
       <div className="max-w-[1600px] mx-auto px-8 py-3 flex items-center gap-4">
@@ -1609,5 +1642,6 @@ export default function DeckPage() {
         </div>
       </div>
     </div>
+    </PageTransition>
   )
 }

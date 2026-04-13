@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import PageTransition from '../components/PageTransition'
 
 export default function ImportDeckPage() {
   const navigate = useNavigate()
@@ -28,7 +29,8 @@ export default function ImportDeckPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <PageTransition>
+      <div className="min-h-screen">
       <div className="max-w-xl mx-auto px-8 pt-10 pb-6">
         {/* Header */}
         <div className="mb-8">
@@ -104,5 +106,6 @@ export default function ImportDeckPage() {
         )}
       </div>
     </div>
+    </PageTransition>
   )
 }

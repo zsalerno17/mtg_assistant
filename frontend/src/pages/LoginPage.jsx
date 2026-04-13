@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import PageTransition from '../components/PageTransition'
 
 function GoogleIcon() {
   return (
@@ -22,10 +23,19 @@ export default function LoginPage() {
   }, [session, navigate])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 relative">
+    <PageTransition>
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 relative">
       {/* Stronger radial glow behind login card */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(251,191,36,0.15) 0%, transparent 60%)' }} />
-      <h1 className="font-brand text-5xl text-[var(--color-primary)] mb-3 tracking-wide relative">
+      
+      {/* Logo */}
+      <img 
+        src="/logo.svg" 
+        alt="MTG Assistant Logo" 
+        className="w-20 h-20 mb-4 opacity-90"
+      />
+      
+      <h1 className="font-heading text-5xl text-[var(--color-primary)] mb-3 tracking-wide relative font-semibold">
         MTG Assistant
       </h1>
 
@@ -48,5 +58,6 @@ export default function LoginPage() {
         <span>Continue with Google</span>
       </button>
     </div>
+    </PageTransition>
   )
 }
