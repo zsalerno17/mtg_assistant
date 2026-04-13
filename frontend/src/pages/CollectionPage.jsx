@@ -129,12 +129,12 @@ export default function CollectionPage() {
               </div>
               
               <p className="text-[var(--color-muted)] text-xs">
-                This may take up to a minute for large collections
+                Usually takes just a few seconds
               </p>
             </div>
           </div>
         ) : (
-          <>
+          <> 
             <CloudUpload className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50" strokeWidth={2} aria-hidden="true" />
             <p className="text-[var(--color-text)] font-medium mb-1">Drop your Moxfield CSV here</p>
             <p className="text-[var(--color-muted)] text-sm mb-2">or click to browse</p>
@@ -183,8 +183,8 @@ export default function CollectionPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: 0.35,
-                  delay: i * 0.06, // --stagger-delay: 60ms
-                  ease: [0.34, 1.56, 0.64, 1], // --easing-spring
+                  delay: i * 0.06,
+                  ease: [0.34, 1.56, 0.64, 1],
                 }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >
