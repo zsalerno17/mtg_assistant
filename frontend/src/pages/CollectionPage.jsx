@@ -116,7 +116,7 @@ export default function CollectionPage() {
             <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
             
             <div className="text-center space-y-3 max-w-xs">
-              <p className="text-[var(--color-text)] text-sm font-medium transition-all duration-500">
+              <p className="text-[var(--color-text)] text-sm font-medium transition-all">
                 {loadingMessages[loadingMessageIndex]}
               </p>
               
@@ -186,8 +186,8 @@ export default function CollectionPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: 0.35,
-                  delay: i * 0.03,
-                  ease: [0.34, 1.56, 0.64, 1],
+                  delay: i * 0.06, // --stagger-delay: 60ms
+                  ease: [0.34, 1.56, 0.64, 1], // --easing-spring
                 }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >

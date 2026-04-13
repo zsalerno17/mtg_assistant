@@ -212,7 +212,7 @@ function StatBadge({ label, value }) {
             stroke="currentColor"
             strokeWidth="4"
             strokeLinecap="round"
-            className={`transition-all duration-500 ease-out ${ringColor}`}
+            className={`transition-all ease-out ${ringColor}`}
             style={{
               strokeDasharray: circumference,
               strokeDashoffset: strokeDashoffset,
@@ -439,7 +439,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                     {name}{count != null ? ` (${count})` : ''}
                   </span>
                   {def && (
-                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                       <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{name}</span>
                       <span className="block text-[var(--color-muted)] text-xs leading-relaxed">{def}</span>
                       <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[#0f1d2e]" />
@@ -548,7 +548,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
           {/* Grid view */}
           <div className="grid grid-cols-2 gap-2 content-start">
             {Object.entries(cardTypes).map(([type, count]) => (
-              <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all duration-150">
+              <div key={type} className="flex justify-between items-center bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 hover:border-[var(--color-muted)]/60 hover:-translate-y-0.5 transition-all">
                 <span className="text-[var(--color-muted)] text-sm">{type}</span>
                 <span className="text-[var(--color-primary)] font-mono text-sm font-medium">{count}</span>
               </div>
@@ -563,14 +563,14 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <div className="grid gap-3 sm:grid-cols-2">
           <button
             onClick={() => onTabChange?.('Strategy')}
-            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-secondary)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-secondary)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/5 transition-all duration-200"
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-secondary)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-secondary)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/5 transition-all"
           >
             <p className="text-[var(--color-secondary)] font-semibold text-sm">AI Strategy Guide →</p>
             <p className="text-[var(--color-muted)] text-xs mt-0.5">Game plan, win conditions, mulligan advice, matchup tips</p>
           </button>
           <button
             onClick={() => onTabChange?.('Upgrades')}
-            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/5 transition-all duration-200"
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/5 transition-all"
           >
             <p className="text-[var(--color-success)] font-semibold text-sm">Upgrade with Your Collection →</p>
             <p className="text-[var(--color-muted)] text-xs mt-0.5">Cards you already own that would strengthen this deck</p>
@@ -634,7 +634,7 @@ function StrategyTab({ deckId }) {
           <SectionLabel className="mb-3">Win Conditions</SectionLabel>
           <div className="space-y-2">
             {data.win_conditions.map((wc, i) => (
-              <div key={i} className="flex items-start gap-2 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
+              <div key={i} className="flex items-start gap-2 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
                 <IconCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 shrink-0" />
                 <div>
                   <span className="text-[var(--color-text)] font-semibold text-sm">{wc.name}</span>
@@ -652,7 +652,7 @@ function StrategyTab({ deckId }) {
           <SectionLabel className="mb-3">Key Cards</SectionLabel>
           <div className="grid gap-2 sm:grid-cols-2">
             {data.key_cards.map((kc, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
                 <span className="text-[var(--color-primary)] font-semibold text-sm"><CardTooltip cardName={kc.name}>{kc.name}</CardTooltip></span>
                 <p className="text-[var(--color-muted)] text-xs mt-0.5">{kc.role}</p>
               </div>
@@ -690,7 +690,7 @@ function StrategyTab({ deckId }) {
           <SectionLabel className="mb-3">Matchup Tips</SectionLabel>
           <div className="space-y-2">
             {data.matchup_tips.map((tip, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
                 <span className="text-[var(--color-primary)] font-semibold text-sm">vs {tip.against}</span>
                 <p className="text-[var(--color-muted)] text-xs mt-0.5">{tip.advice}</p>
               </div>
@@ -762,7 +762,7 @@ function ImprovementsTab({ deckId }) {
           <p className="text-[var(--color-muted)] text-xs mb-3">Cards to add that address critical gaps in your deck.</p>
           <div className="space-y-2">
             {(expanded['fixes'] ? data.urgent_fixes : data.urgent_fixes.slice(0, MAX_VISIBLE)).map((fix, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/30 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-[var(--color-danger)]/50 hover:-translate-y-0.5 transition-all duration-150">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/30 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-[var(--color-danger)]/50 hover:-translate-y-0.5 transition-all">
                 <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
                 <div className="flex-1">
                   <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={fix.card}>{fix.card}</CardTooltip></span>
@@ -785,7 +785,7 @@ function ImprovementsTab({ deckId }) {
           <p className="text-[var(--color-muted)] text-xs mb-3">Paired cut → add recommendations to improve your deck.</p>
           <div className="space-y-2">
             {(expanded['swaps'] ? data.swaps : data.swaps.slice(0, MAX_VISIBLE)).map((swap, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
+              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={swap.cut}>{swap.cut}</CardTooltip></span>
                   <span className="text-[var(--color-muted)] text-xs">→</span>
@@ -827,7 +827,7 @@ function ImprovementsTab({ deckId }) {
                 <p className="font-heading text-[var(--color-success)] text-[10px] font-semibold uppercase tracking-widest mb-1.5">In Your Collection</p>
                 <div className="space-y-2">
                   {(expanded['additions_owned'] ? ownedCards : ownedCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
+                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
@@ -846,7 +846,7 @@ function ImprovementsTab({ deckId }) {
                 <p className="font-heading text-[var(--color-muted)] text-[10px] font-semibold uppercase tracking-widest mb-1.5">Worth Acquiring</p>
                 <div className="space-y-2">
                   {(expanded['additions_buy'] ? buyCards : buyCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
+                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -969,7 +969,7 @@ function CollectionUpgradesTab({ deckId }) {
             {sortedOptions.map((u, i) => (
               <div
                 key={i}
-                className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150 ${
+                className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all ${
                   multipleOptions && hasCut ? 'ml-4' : ''
                 }`}
               >

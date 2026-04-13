@@ -125,7 +125,13 @@ export default function HelpPage() {
             <li><strong>Scenarios</strong> — Pick cards to add or remove and see an AI analysis of how the change would affect the deck</li>
           </ul>
           <div className="bg-[var(--color-surface-2)] border border-[var(--color-secondary-border)] rounded-lg p-4">
-            <p className="text-sm text-[var(--color-secondary)] font-medium mb-2">💡 Pro Tip:</p>
+            <p className="text-sm text-[var(--color-secondary)] font-medium mb-2 flex items-center gap-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4M12 8h.01" />
+              </svg>
+              Pro Tip:
+            </p>
             <p className="text-sm text-[var(--color-muted)]">
               Upload your collection first — the Collection Upgrades tab only suggests cards you already own, so you get actionable upgrades without spending a dime.
             </p>

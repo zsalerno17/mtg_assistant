@@ -311,8 +311,8 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
   return (
     <motion.tr
       className="group"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 8 }}  // Cinematic entrance — upward slide
+      animate={{ opacity: 1, y: 0 }}
       transition={{
         duration: 0.35,
         delay: index * 0.06,
