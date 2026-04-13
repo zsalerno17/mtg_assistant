@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
+import { CloudUpload } from 'lucide-react'
 
 export default function CollectionPage() {
   const { session } = useAuth()
@@ -134,11 +135,7 @@ export default function CollectionPage() {
           </div>
         ) : (
           <>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50">
-              <polyline points="16 16 12 12 8 16" />
-              <line x1="12" y1="12" x2="12" y2="21" />
-              <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" />
-            </svg>
+            <CloudUpload className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50" strokeWidth={2} aria-hidden="true" />
             <p className="text-[var(--color-text)] font-medium mb-1">Drop your Moxfield CSV here</p>
             <p className="text-[var(--color-muted)] text-sm mb-2">or click to browse</p>
             <a

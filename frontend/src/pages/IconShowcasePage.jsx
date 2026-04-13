@@ -1,9 +1,18 @@
 /**
  * DEV-ONLY: Icon Showcase Page
  * Visual audit of all current inline SVG icons across the app.
+ * Each card shows the current icon side-by-side with its Lucide replacement.
  * Route: /icons-dev
  * See: .github/icon-audit-plan.md
  */
+import {
+  Trophy, Crown, Swords, Flame,
+  LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare,
+  AlertTriangle, Check, ChevronDown, ChevronLeft,
+  House, Library, User, CircleHelp, Sun, Moon, LogOut,
+  Eye, LoaderCircle, ClipboardCheck, CloudUpload,
+  BookOpen, WandSparkles, Users, Search, ExternalLink, ChevronRight,
+} from 'lucide-react'
 
 // ─── LeagueIcons.jsx ──────────────────────────────────────────────────────────
 
@@ -320,92 +329,107 @@ const ICON_GROUPS = [
     title: 'League Icons',
     file: 'LeagueIcons.jsx',
     icons: [
-      { name: 'TrophyIcon', lucide: 'Trophy', strokeWidth: '1.5', component: TrophyIcon },
-      { name: 'CrownIcon', lucide: 'Crown', strokeWidth: 'fill', component: CrownIcon },
-      { name: 'SwordsIcon', lucide: 'Swords', strokeWidth: '1.5', component: SwordsIcon },
-      { name: 'FlameIcon', lucide: 'Flame', strokeWidth: 'fill', component: FlameIcon },
+      { name: 'TrophyIcon', lucide: 'Trophy', strokeWidth: '1.5', component: TrophyIcon, lucideComponent: Trophy },
+      { name: 'CrownIcon', lucide: 'Crown', strokeWidth: 'fill', component: CrownIcon, lucideComponent: Crown },
+      { name: 'SwordsIcon', lucide: 'Swords', strokeWidth: '1.5', component: SwordsIcon, lucideComponent: Swords },
+      { name: 'FlameIcon', lucide: 'Flame', strokeWidth: 'fill', component: FlameIcon, lucideComponent: Flame },
     ],
   },
   {
     title: 'Deck Page — Tabs',
     file: 'DeckPage.jsx',
     icons: [
-      { name: 'OverviewIcon', lucide: 'LayoutGrid', strokeWidth: '2', component: OverviewIcon },
-      { name: 'UpgradeIcon', lucide: 'ArrowUp', strokeWidth: '2', component: UpgradeIcon },
-      { name: 'StrategyIcon', lucide: 'CirclePlay', strokeWidth: '2', component: StrategyIcon },
-      { name: 'ImprovementsIcon', lucide: 'TrendingUp', strokeWidth: '2', component: ImprovementsIcon },
-      { name: 'ScenariosIcon', lucide: 'MessageSquare', strokeWidth: '2', component: ScenariosIcon },
+      { name: 'OverviewIcon', lucide: 'LayoutGrid', strokeWidth: '2', component: OverviewIcon, lucideComponent: LayoutGrid },
+      { name: 'UpgradeIcon', lucide: 'ArrowUp', strokeWidth: '2', component: UpgradeIcon, lucideComponent: ArrowUp },
+      { name: 'StrategyIcon', lucide: 'ScrollText', strokeWidth: '2', component: StrategyIcon, lucideComponent: ScrollText },
+      { name: 'ImprovementsIcon', lucide: 'TrendingUp', strokeWidth: '2', component: ImprovementsIcon, lucideComponent: TrendingUp },
+      { name: 'ScenariosIcon', lucide: 'MessageSquare', strokeWidth: '2', component: ScenariosIcon, lucideComponent: MessageSquare },
     ],
   },
   {
     title: 'Deck Page — Utility',
     file: 'DeckPage.jsx',
     icons: [
-      { name: 'WarningIcon', lucide: 'AlertTriangle', strokeWidth: '2', component: WarningIcon },
-      { name: 'CheckIcon', lucide: 'Check', strokeWidth: '2', component: CheckIcon },
-      { name: 'ChevronDownIcon', lucide: 'ChevronDown', strokeWidth: '2', component: ChevronDownIcon },
-      { name: 'ChevronLeftIcon', lucide: 'ChevronLeft', strokeWidth: '2', component: ChevronLeftIcon },
+      { name: 'WarningIcon', lucide: 'AlertTriangle', strokeWidth: '2', component: WarningIcon, lucideComponent: AlertTriangle },
+      { name: 'CheckIcon', lucide: 'Check', strokeWidth: '2', component: CheckIcon, lucideComponent: Check },
+      { name: 'ChevronDownIcon', lucide: 'ChevronDown', strokeWidth: '2', component: ChevronDownIcon, lucideComponent: ChevronDown },
+      { name: 'ChevronLeftIcon', lucide: 'ChevronLeft', strokeWidth: '2', component: ChevronLeftIcon, lucideComponent: ChevronLeft },
     ],
   },
   {
     title: 'Navigation',
     file: 'TopNavbar.jsx',
     icons: [
-      { name: 'HomeIcon', lucide: 'House', strokeWidth: '2', component: HomeIcon },
-      { name: 'TrophyIcon (nav)', lucide: 'Trophy', strokeWidth: '2', component: TrophyIcon },
-      { name: 'CollectionNavIcon', lucide: 'Package', strokeWidth: '2', component: CollectionNavIcon },
-      { name: 'UserIcon', lucide: 'User', strokeWidth: '2', component: UserIcon },
-      { name: 'HelpCircleIcon', lucide: 'CircleHelp', strokeWidth: '2', component: HelpCircleIcon },
-      { name: 'SunIcon', lucide: 'Sun', strokeWidth: '2', component: SunIcon },
-      { name: 'MoonIcon', lucide: 'Moon', strokeWidth: '2', component: MoonIcon },
-      { name: 'LogOutIcon', lucide: 'LogOut', strokeWidth: '2', component: LogOutIcon },
+      { name: 'HomeIcon', lucide: 'House', strokeWidth: '2', component: HomeIcon, lucideComponent: House },
+      { name: 'TrophyIcon (nav)', lucide: 'Trophy', strokeWidth: '2', component: TrophyIcon, lucideComponent: Trophy },
+      { name: 'CollectionNavIcon', lucide: 'Library', strokeWidth: '2', component: CollectionNavIcon, lucideComponent: Library },
+      { name: 'UserIcon', lucide: 'User', strokeWidth: '2', component: UserIcon, lucideComponent: User },
+      { name: 'HelpCircleIcon', lucide: 'CircleHelp', strokeWidth: '2', component: HelpCircleIcon, lucideComponent: CircleHelp },
+      { name: 'SunIcon', lucide: 'Sun', strokeWidth: '2', component: SunIcon, lucideComponent: Sun },
+      { name: 'MoonIcon', lucide: 'Moon', strokeWidth: '2', component: MoonIcon, lucideComponent: Moon },
+      { name: 'LogOutIcon', lucide: 'LogOut', strokeWidth: '2', component: LogOutIcon, lucideComponent: LogOut },
     ],
   },
   {
     title: 'Dashboard — Status & Empty State',
     file: 'DashboardPage.jsx',
     icons: [
-      { name: 'EyeIcon', lucide: 'Eye', strokeWidth: '2.5', component: EyeIcon },
-      { name: 'SpinnerIcon', lucide: 'LoaderCircle', strokeWidth: '2', component: SpinnerIcon },
-      { name: 'AnalyzeCheckIcon', lucide: 'ClipboardCheck', strokeWidth: '2.5', component: AnalyzeCheckIcon },
-      { name: 'SwordsIcon (empty)', lucide: 'Swords', strokeWidth: '1.5', component: SwordsIcon },
+      { name: 'EyeIcon', lucide: 'Eye', strokeWidth: '2.5', component: EyeIcon, lucideComponent: Eye },
+      { name: 'SpinnerIcon', lucide: 'LoaderCircle', strokeWidth: '2', component: SpinnerIcon, lucideComponent: LoaderCircle },
+      { name: 'AnalyzeCheckIcon', lucide: 'ClipboardCheck', strokeWidth: '2.5', component: AnalyzeCheckIcon, lucideComponent: ClipboardCheck },
+      { name: 'SwordsIcon (empty)', lucide: 'Swords', strokeWidth: '1.5', component: SwordsIcon, lucideComponent: Swords },
     ],
   },
   {
     title: 'Collection — Empty State',
     file: 'CollectionPage.jsx',
     icons: [
-      { name: 'CloudUploadIcon', lucide: 'CloudUpload', strokeWidth: '1.5', component: CloudUploadIcon },
+      { name: 'CloudUploadIcon', lucide: 'CloudUpload', strokeWidth: '1.5', component: CloudUploadIcon, lucideComponent: CloudUpload },
     ],
   },
   {
     title: 'Help Page — Sections & Links',
     file: 'HelpPage.jsx',
     icons: [
-      { name: 'HelpCircleIcon', lucide: 'CircleHelp', strokeWidth: '2', component: HelpCircleIcon },
-      { name: 'PackageIcon', lucide: 'Package', strokeWidth: '2', component: PackageIcon },
-      { name: 'FileTextIcon', lucide: 'FileText', strokeWidth: '2', component: FileTextIcon },
-      { name: 'LayersIcon', lucide: 'Layers', strokeWidth: '2', component: LayersIcon },
-      { name: 'UsersIcon', lucide: 'Users', strokeWidth: '2', component: UsersIcon },
-      { name: 'SearchIcon', lucide: 'Search', strokeWidth: '2', component: SearchIcon },
-      { name: 'ExternalLinkIcon', lucide: 'ExternalLink', strokeWidth: '2', component: ExternalLinkIcon },
-      { name: 'ChevronRightIcon', lucide: 'ChevronRight', strokeWidth: '2', component: ChevronRightIcon },
+      { name: 'HelpCircleIcon', lucide: 'CircleHelp', strokeWidth: '2', component: HelpCircleIcon, lucideComponent: CircleHelp },
+      { name: 'PackageIcon', lucide: 'Library', strokeWidth: '2', component: PackageIcon, lucideComponent: Library },
+      { name: 'FileTextIcon', lucide: 'BookOpen', strokeWidth: '2', component: FileTextIcon, lucideComponent: BookOpen },
+      { name: 'LayersIcon', lucide: 'WandSparkles', strokeWidth: '2', component: LayersIcon, lucideComponent: WandSparkles },
+      { name: 'UsersIcon', lucide: 'Users', strokeWidth: '2', component: UsersIcon, lucideComponent: Users },
+      { name: 'SearchIcon', lucide: 'Search', strokeWidth: '2', component: SearchIcon, lucideComponent: Search },
+      { name: 'ExternalLinkIcon', lucide: 'ExternalLink', strokeWidth: '2', component: ExternalLinkIcon, lucideComponent: ExternalLink },
+      { name: 'ChevronRightIcon', lucide: 'ChevronRight', strokeWidth: '2', component: ChevronRightIcon, lucideComponent: ChevronRight },
     ],
   },
 ]
 
-function IconCard({ name, lucide, strokeWidth, component: Icon }) {
+function IconCard({ name, lucide, strokeWidth, component: Current, lucideComponent: LucideIcon }) {
   return (
-    <div className="flex flex-col items-center gap-3 p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)]/50 transition-colors group">
-      <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-[var(--color-surface-2)] group-hover:bg-[var(--color-primary)]/10 transition-colors text-[var(--color-text)]">
-        <Icon size={24} />
+    <div className="flex flex-col gap-2 p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)]/50 transition-colors">
+      {/* Side-by-side icon comparison */}
+      <div className="flex items-center gap-2">
+        {/* Current icon */}
+        <div className="flex-1 flex flex-col items-center gap-1">
+          <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text)]">
+            <Current size={20} />
+          </div>
+          <span className="text-[9px] text-[var(--color-muted)] font-mono">now</span>
+        </div>
+        {/* Arrow */}
+        <span className="text-[var(--color-muted)] text-xs opacity-60 flex-shrink-0">→</span>
+        {/* Lucide replacement */}
+        <div className="flex-1 flex flex-col items-center gap-1">
+          <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+            <LucideIcon size={20} strokeWidth={2} />
+          </div>
+          <span className="text-[9px] text-[var(--color-primary)] font-mono">lucide</span>
+        </div>
       </div>
-      <div className="text-center space-y-1 w-full">
-        <p className="text-xs font-mono text-[var(--color-text)] truncate" title={name}>{name}</p>
-        <p className="text-[10px] text-[var(--color-primary)] font-medium truncate" title={`→ lucide: ${lucide}`}>
-          → {lucide}
-        </p>
-        <p className="text-[10px] text-[var(--color-muted)]">sw: {strokeWidth}</p>
+      {/* Labels */}
+      <div className="text-center space-y-0.5">
+        <p className="text-[10px] font-mono text-[var(--color-text)] truncate leading-tight" title={name}>{name}</p>
+        <p className="text-[10px] text-[var(--color-primary)] font-medium truncate leading-tight" title={lucide}>{lucide}</p>
+        <p className="text-[9px] text-[var(--color-muted)]">sw: {strokeWidth}</p>
       </div>
     </div>
   )
