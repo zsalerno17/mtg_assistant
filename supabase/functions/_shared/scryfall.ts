@@ -35,6 +35,44 @@ export async function getCardByName(name: string): Promise<Card | null> {
   return parseCard(data);
 }
 
+/**
+ * Batch-fetch cards by name using Scryfall's /cards/collection endpoint.
+ * Accepts up to any number of names, chunks into batches of 75, and returns
+ * a Map keyed by lowercase card name for easy lookup.
+ */
+export async function getCardsByNames(names: string[]): Promise<Map<string, Card>> {
+  const result = new Map<string, Card>();
+  const BATCH_SIZE = 75;
+
+  for (let i = 0; i < names.length; i += BATCH_SIZE) {
+    const batch = names.slice(i, i + BATCH_SIZE);
+    const identifiers = batch.map((name) => ({ name }));
+
+    if (i > 0) {
+      await sleep(REQUEST_DELAY);
+    }
+
+    try {
+      const res = await fetch(`${SCRYFALL_API_BASE}/cards/collection`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ identifiers }),
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const cardDataArray: Record<string, unknown>[] = Array.isArray(json?.data) ? json.data : [];
+      for (const cardData of cardDataArray) {
+        const card = parseCard(cardData);
+        result.set(card.name.toLowerCase(), card);
+      }
+    } catch {
+      // ignore batch errors; missing cards will fall back to stubs
+    }
+  }
+
+  return result;
+}
+
 export async function searchCards(query: string, order = "edhrec", page = 1): Promise<Card[]> {
   const url = `${SCRYFALL_API_BASE}/cards/search`;
   const data = await scryfallGet(url, { q: query, order, page: String(page) });

@@ -3,7 +3,7 @@ import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/auth.ts";
 import { getUserClient } from "../_shared/supabase.ts";
 import { parseMoxfieldCsv, parseTextList } from "../_shared/collection_parser.ts";
-import { getCardByName } from "../_shared/scryfall.ts";
+import { getCardsByNames } from "../_shared/scryfall.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -41,18 +41,18 @@ serve(async (req) => {
         );
       }
 
-      // Enrich cards with Scryfall data
-      const enriched = [];
-      for (let i = 0; i < collection.cards.length; i++) {
-        const card = collection.cards[i];
-        const scryfallCard = await getCardByName(card.name);
+      // Enrich cards with Scryfall data using batch endpoint
+      const cardNames = collection.cards.map((c) => c.name);
+      const scryfallMap = await getCardsByNames(cardNames);
+
+      const enriched = collection.cards.map((card) => {
+        const scryfallCard = scryfallMap.get(card.name.toLowerCase());
         if (scryfallCard) {
           scryfallCard.quantity = card.quantity;
-          enriched.push(scryfallCard);
-        } else {
-          enriched.push(card);
+          return scryfallCard;
         }
-      }
+        return card;
+      });
 
       const cardsData = enriched.map((c) => ({
         name: c.name,
