@@ -16,7 +16,22 @@ const USE_EDGE = import.meta.env.VITE_USE_EDGE !== 'false' && !!SUPABASE_URL
 const EDGE_BASE = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1` : ''
 const LEGACY_BASE = LEGACY_API_BASE || 'http://localhost:8000'
 
+// ---------------------------------------------------------------------------
+// Auth token cache — kept in sync via onAuthStateChange so that getAuthHeader
+// never has to call getSession() which can return stale/null during client
+// initialization or token refresh.
+// ---------------------------------------------------------------------------
+let _cachedAccessToken = null
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  _cachedAccessToken = session?.access_token || null
+})
+
 async function getAuthHeader() {
+  if (_cachedAccessToken) {
+    return { Authorization: `Bearer ${_cachedAccessToken}` }
+  }
+  // Fallback: read from getSession (e.g. if listener hasn't fired yet)
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.access_token) throw new Error('Not authenticated')
   return { Authorization: `Bearer ${session.access_token}` }
