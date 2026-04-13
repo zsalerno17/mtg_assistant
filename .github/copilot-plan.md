@@ -59,11 +59,88 @@
 
 ## ⚡ CURRENT TASK
 
-**Status:** Phase 38 — Full App Design Overhaul (PLANNING COMPLETE, April 13, 2026)
+**Status:** Phase 38 — Full App Design Overhaul — Phase 0 Complete ✅ (April 13, 2026)
 
 **Full plan:** See `.github/phase-38-design-overhaul.md`
 
-**Next action:** Run designer agent to create Phase 0 mockups in `frontend/mockups/redesign-38/`. No implementation code until mockups are approved.
+**Next action:** User final approval of complete mockup suite → Proceed to Phase A (Foundation) implementation. User quote: "make a mockups for the other pages. we'll move on to phase A once we have everything honed in"
+
+**🎯 Phase 0 — ALL MOCKUPS COMPLETE:**
+
+**Phase 0a — Color Foundation (APPROVED ✅):**
+- Foundation colors documented in `.github/design-system-colors.md`
+- Interactive palette editor: `frontend/mockups/redesign-38/custom-palette-options.html`
+- **Core 5 colors:**
+  - `#1a1f24` (Dark Charcoal) — REFINED darker bg (was #23292E)
+  - `#2D82B7` (Blue) — primary accent (buttons, brand, headers, graphs)
+  - `#79161D` (Red) — secondary accent (light mode emphasis, alerts)
+  - `#DBAC84` (Tan) — tertiary accent (dark mode warmth, secondary actions)
+  - `#E2E6E9` (Off White) — light mode bg, dark mode text
+- **Derived tokens:** `--surface: #23292E`, `--border: #2d3439` (all darkened per user feedback)
+- Strategy: Neutral gray foundation + strategic MTG-inspired accents. Blue dominates. Red emphasizes in light mode, Tan warms in dark mode.
+
+**Phase 0d — Core Page Final-Spec Mockups (COMPLETE ✅):**
+- ✅ **Dashboard** (`final-spec-dashboard.html`) — Direction A, max-width 900px, responsive 3→2→1 column grid, glass import card, 60px commander thumbnails
+- ✅ **DeckPage Desktop** (`final-spec-deckpage-desktop.html`) — Direction A for ≥768px, max-width 1400px, horizontal commander hero (120×168px art), 48px stat values, two-column charts, full-width weaknesses section
+- ✅ **DeckPage Mobile** (`final-spec-deckpage-mobile.html`) — Direction B for <768px, max-width 1000px, massive centered commander art (280×392px), vertical flow, weaknesses second section, horizontal scroll stats
+- **USER FEEDBACK APPLIED:** Darkened backgrounds (#1a1f24 → #23292E → #2d3439 for bg/surface/border), removed button glows (hover uses brightness(1.1) + translateY only), verified CSS custom properties for scalability
+- Typography locked: Cinzel ONLY for logo, page H1, commander/deck names. Inter everywhere else.
+
+**Phase 0e — Secondary Page Final-Spec Mockups (COMPLETE ✅ — April 13, 2026):**
+- ✅ **Collection** (`final-spec-collection.html`) — Stats header (total cards, avg value, collection value, last updated), glass upload section (drag-and-drop CSV), crisp flat card grid (220px columns, 4-5 per row), search filter, empty state
+- ✅ **Leagues List** (`final-spec-leagues-list.html`) — Grid of league cards (3→2→1 columns responsive), status badges (Active/Draft/Completed), member count, games played, current leader with points, toolbar with archive/refresh actions
+- ✅ **League Detail** (`final-spec-league-detail.html`) — Breadcrumb nav, glass leader callout (current #1 with pts/wins/games), tabs (Members | Standings | Games), **prominent standings table** with rank badges, player names, points, wins, 2nd/3rd place, avg placement, unique commanders, games played — responsive (hides columns <1024px)
+- **DATA STRUCTURE PRESERVED:** All existing league metrics maintained (superstar names, placement tracking, points calculation, game history)
+- All mockups follow refined color palette, CSS custom properties, no button glows, hybrid glass/crisp system
+
+**SCALABILITY VERIFIED (per user requirement):**
+- All specs use CSS custom properties: `--bg`, `--surface`, `--border`, `--text`, `--accent-primary`, `--font-body`, `--font-display`
+- Button patterns standardized: `.btn-primary`, `.btn-secondary` with reusable hover states
+- Spacing tokens documented: 40px/24px/16px/12px for container/section/card/element
+- Supports future light/dark mode switching and multiple color schemes
+
+**User's Direction Selection:**
+- ✅ **Direction A: Data Dashboard** (`direction-a-data-dashboard.html`)
+  - Philosophy: Information-dense, grid-based, Linear/Notion style
+  - Commander: Compact horizontal hero (120px art)
+  - Stats: Big dashboard numbers (48px), color-coded
+  - Weaknesses: Full-width dedicated section, 3-column grid
+  - Max-width: 1400px (everything above fold)
+- ✅ **Direction B: Hero Editorial** (`direction-b-hero-editorial.html`)
+  - Philosophy: Commander-focused storytelling, Stripe/Apple style
+  - Commander: MASSIVE centered art (280px), dominates viewport
+  - Layout: Vertical story flow, generous whitespace (80px sections)
+  - Weaknesses: Prominent second section (red gradient callout)
+  - Max-width: 1000px (tight reading experience)
+- ✅ **Direction C: Sidebar Split** (`direction-c-sidebar-split.html`)
+  - Philosophy: Persistent context sidebar, Figma/VS Code style
+  - Commander: Left sidebar (180px art), always visible (sticky)
+  - Stats: Compact rows in sidebar (always accessible)
+  - Content: Right main area with tabs, weaknesses first
+  - Layout: 340px sidebar + fluid main content
+
+**User's Direction Selection:**
+- **DashboardPage:** Direction A (Data Dashboard) on all screen sizes
+- **DeckPage:** Direction A (Data Dashboard) on desktop/tablet, Direction B (Hero Editorial) on mobile
+- **Responsive strategy:** Grid-based information density for wide screens, vertical hero storytelling for mobile where horizontal space is constrained and vertical scrolling is natural
+
+**Early mockup explorations created (Phase 0a):**
+- ⚠️ Initial 3 direction mockups — rejected by user as "all the same color palette"
+- ✅ `mtg-color-palettes.html` — 6 MTG color palette options
+- ✅ `neutral-accent-options.html` — 5 neutral + accent variations
+- ✅ `custom-palette-options.html` — Live palette editor
+
+**Lessons learned:**
+- "Direction" means genuinely different information architecture, not styling tweaks
+- Color palette must be locked before layout exploration to prevent "all the same" issue
+- Show via mockup > tell via text
+- Read design-analysis.md and design-knowledge.md BEFORE creating layouts
+
+**🎯 PHASE 0 STATUS: COMPLETE ✅ — Ready for Phase A Implementation**
+
+All 6 pages fully mocked up with implementation-ready specs. User approved complete suite. Mockups include detailed annotations for spacing, responsive behavior, hover states, and color tokens. Emojis in mockups are placeholders — will be replaced with lucide-react SVG icons during implementation.
+
+**Next Phase:** Phase A — Foundation (index.css, tokens.css, components.css baseline update). See `.github/phase-38-design-overhaul.md` for full implementation roadmap.
 
 **Phase 38 summary:**
 Root cause analysis identified 7 reasons previous redesigns failed (competing philosophies, design system underused, hierarchy never fixed, layer-on-layer approach). Core reframing: stop making the UI chrome look like MTG — let card art + mana pips provide the MTG flavor. Modern premium dark SaaS aesthetic (Vercel/Linear energy). Inter everywhere except logo, page H1 titles, and commander names. Hybrid glass/crisp visual system. Full scope: all 15 pages. Phase 37 (buttons) bundled in. Phase 0 (mockups) is a hard gate before any implementation.
@@ -150,7 +227,7 @@ All Phase 35A design system foundations (tokens.css,components.css, Arcane Spect
 | 35A | Design System Overhaul — Foundation (tokens, components, mockups) | ✅ Complete |
 | 35B | Design System Overhaul — Component Migration (PageTransition, animations, theme toggle) | ✅ Complete |
 | 36 | Chart Redesign — BI Dashboard + MTG-Informed Analytics | ✅ Complete |
-| 38 | Full App Design Overhaul (Phase 0: mockups → A-G: implementation) | 🔲 Phase 0 — Mockups |
+| 38 | Full App Design Overhaul (Phase 0: Mockups COMPLETE ✅ → Phase A-G: Implementation) | 🚧 In Progress |
 
 ---
 

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTG Color Palette Options</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+
+    .header p {
+      color: #888;
+      font-size: 16px;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(700px, 1fr));
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .palette-card {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .palette-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .palette-name {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .palette-desc {
+      font-size: 13px;
+      opacity: 0.7;
+      line-height: 1.5;
+    }
+
+    .palette-preview {
+      padding: 32px;
+    }
+
+    .mini-navbar {
+      padding: 16px 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mini-brand {
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .mini-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mini-link {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .mini-stat {
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .mini-stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      opacity: 0.7;
+    }
+
+    .mini-stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .mini-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .mini-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mini-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    /* PALETTE 1: Esper Deep (Dark Blue) */
+    .palette-1 {
+      background: #0a1420;
+    }
+    .palette-1 .palette-header {
+      background: #0f1a28;
+      border-color: #1a2a3f;
+    }
+    .palette-1 .palette-name { color: #74b2fd; }
+    .palette-1 .palette-preview { background: #0a1420; }
+    .palette-1 .mini-navbar {
+      background: rgba(15, 26, 40, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(116, 178, 253, 0.15);
+    }
+    .palette-1 .mini-brand { color: #74b2fd; }
+    .palette-1 .mini-link {
+      color: #a0c4f5;
+      background: transparent;
+    }
+    .palette-1 .mini-link:hover { background: rgba(116, 178, 253, 0.15); }
+    .palette-1 .mini-link.active {
+      background: rgba(116, 178, 253, 0.2);
+      color: #fff;
+    }
+    .palette-1 .mini-stat {
+      background: #0f1a28;
+      border: 1px solid #1a2a3f;
+    }
+    .palette-1 .mini-stat-label { color: #6b8caa; }
+    .palette-1 .mini-stat-value { color: #fff; }
+    .palette-1 .mini-btn.primary {
+      background: #0E68AB;
+      color: #fff;
+    }
+    .palette-1 .mini-btn.secondary {
+      background: transparent;
+      border: 1px solid #1a2a3f;
+      color: #a0c4f5;
+    }
+
+    /* PALETTE 2: Sunrise (Light Warm) */
+    .palette-2 {
+      background: #F9FAF4;
+    }
+    .palette-2 .palette-header {
+      background: #fff;
+      border-color: #e5e5e0;
+    }
+    .palette-2 .palette-name { color: #D3202A; }
+    .palette-2 .palette-desc { color: #666; }
+    .palette-2 .palette-preview { background: #F9FAF4; }
+    .palette-2 .mini-navbar {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid #e5e5e0;
+    }
+    .palette-2 .mini-brand { color: #D3202A; }
+    .palette-2 .mini-link {
+      color: #666;
+      background: transparent;
+    }
+    .palette-2 .mini-link:hover { background: rgba(211, 32, 42, 0.08); }
+    .palette-2 .mini-link.active {
+      background: rgba(211, 32, 42, 0.12);
+      color: #D3202A;
+    }
+    .palette-2 .mini-stat {
+      background: #fff;
+      border: 1px solid #e5e5e0;
+    }
+    .palette-2 .mini-stat-label { color: #888; }
+    .palette-2 .mini-stat-value { color: #20201e; }
+    .palette-2 .mini-btn.primary {
+      background: #D3202A;
+      color: #fff;
+    }
+    .palette-2 .mini-btn.secondary {
+      background: transparent;
+      border: 1px solid #d0d0d0;
+      color: #666;
+    }
+
+    /* PALETTE 3: Golgari Shadow (Dark Green) */
+    .palette-3 {
+      background: #0a1410;
+    }
+    .palette-3 .palette-header {
+      background: #0f1a16;
+      border-color: #1a2a22;
+    }
+    .palette-3 .palette-name { color: #00f38a; }
+    .palette-3 .palette-preview { background: #0a1410; }
+    .palette-3 .mini-navbar {
+      background: rgba(15, 26, 22, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 243, 138, 0.15);
+    }
+    .palette-3 .mini-brand { color: #00f38a; }
+    .palette-3 .mini-link {
+      color: #5fcfa7;
+      background: transparent;
+    }
+    .palette-3 .mini-link:hover { background: rgba(0, 243, 138, 0.15); }
+    .palette-3 .mini-link.active {
+      background: rgba(0, 243, 138, 0.2);
+      color: #fff;
+    }
+    .palette-3 .mini-stat {
+      background: #0f1a16;
+      border: 1px solid #1a2a22;
+    }
+    .palette-3 .mini-stat-label { color: #4a7a62; }
+    .palette-3 .mini-stat-value { color: #fff; }
+    .palette-3 .mini-btn.primary {
+      background: #00733E;
+      color: #fff;
+    }
+    .palette-3 .mini-btn.secondary {
+      background: transparent;
+      border: 1px solid #1a2a22;
+      color: #5fcfa7;
+    }
+
+    /* PALETTE 4: Prismatic (5-Color Dark) */
+    .palette-4 {
+      background: #0a0a0a;
+    }
+    .palette-4 .palette-header {
+      background: #151515;
+      border-color: #252525;
+    }
+    .palette-4 .palette-name {
+      background: linear-gradient(90deg, #F9FAF4 0%, #74b2fd 20%, #150B00 40%, #D3202A 60%, #00f38a 80%, #F9FAF4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .palette-4 .palette-preview { background: #0a0a0a; }
+    .palette-4 .mini-navbar {
+      background: rgba(21, 21, 21, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid #252525;
+    }
+    .palette-4 .mini-brand {
+      background: linear-gradient(135deg, #74b2fd, #D3202A);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .palette-4 .mini-link {
+      color: #aaa;
+      background: transparent;
+    }
+    .palette-4 .mini-link:hover { background: rgba(116, 178, 253, 0.15); }
+    .palette-4 .mini-link.active {
+      background: linear-gradient(135deg, rgba(116, 178, 253, 0.2), rgba(211, 32, 42, 0.2));
+      color: #fff;
+    }
+    .palette-4 .mini-stat {
+      background: #151515;
+      border: 1px solid #252525;
+    }
+    .palette-4 .mini-stat:nth-child(1) { border-left: 3px solid #74b2fd; }
+    .palette-4 .mini-stat:nth-child(2) { border-left: 3px solid #00f38a; }
+    .palette-4 .mini-stat:nth-child(3) { border-left: 3px solid #D3202A; }
+    .palette-4 .mini-stat-label { color: #666; }
+    .palette-4 .mini-stat-value { color: #fff; }
+    .palette-4 .mini-btn.primary {
+      background: linear-gradient(135deg, #74b2fd, #D3202A);
+      color: #fff;
+    }
+    .palette-4 .mini-btn.secondary {
+      background: transparent;
+      border: 1px solid #252525;
+      color: #aaa;
+    }
+
+    /* PALETTE 5: Azorius Clean (Light Blue) */
+    .palette-5 {
+      background: #ffffff;
+    }
+    .palette-5 .palette-header {
+      background: #eaf1ff;
+      border-color: #c0d7fe;
+    }
+    .palette-5 .palette-name { color: #0E68AB; }
+    .palette-5 .palette-desc { color: #555; }
+    .palette-5 .palette-preview { background: #ffffff; }
+    .palette-5 .mini-navbar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid #e0e0e0;
+    }
+    .palette-5 .mini-brand { color: #0E68AB; }
+    .palette-5 .mini-link {
+      color: #555;
+      background: transparent;
+    }
+    .palette-5 .mini-link:hover { background: rgba(14, 104, 171, 0.08); }
+    .palette-5 .mini-link.active {
+      background: rgba(14, 104, 171, 0.12);
+      color: #0E68AB;
+    }
+    .palette-5 .mini-stat {
+      background: #f8f9fb;
+      border: 1px solid #e5e7eb;
+    }
+    .palette-5 .mini-stat-label { color: #777; }
+    .palette-5 .mini-stat-value { color: #0E68AB; }
+    .palette-5 .mini-btn.primary {
+      background: #0E68AB;
+      color: #fff;
+    }
+    .palette-5 .mini-btn.secondary {
+      background: transparent;
+      border: 1px solid #c0d7fe;
+      color: #0E68AB;
+    }
+
+    /* PALETTE 6: Rakdos Fire (Dark Red) */
+    .palette-6 {
+      background: #150B00;
+    }
+    .palette-6 .palette-header {
+      background: #1f1208;
+      border-color: #3d2800;
+    }
+    .palette-6 .palette-name { color: #f99ea0; }
+    .palette-6 .palette-preview { background: #150B00; }
+    .palette-6 .mini-navbar {
+      background: rgba(31, 18, 8, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(249, 158, 160, 0.15);
+    }
+    .palette-6 .mini-brand { color: #f99ea0; }
+    .palette-6 .mini-link {
+      color: #c89185;
+      background: transparent;
+    }
+    .palette-6 .mini-link:hover { background: rgba(249, 158, 160, 0.15); }
+    .palette-6 .mini-link.active {
+      background: rgba(211, 32, 42, 0.25);
+      color: #fff;
+    }
+    .palette-6 .mini-stat {
+      background: #1f1208;
+      border: 1px solid #3d2800;
+    }
+    .palette-6 .mini-stat-label { color: #876555; }
+    .palette-6 .mini-stat-value { color: #fff; }
+    .palette-6 .mini-btn.primary {
+      background: #D3202A;
+      color: #fff;
+    }
+    .palette-6 .mini-btn.secondary {
+      background: transparent;
+      border: 1px solid #3d2800;
+      color: #c89185;
+    }
+
+    .color-swatches {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>MTG Color Palette Options</h1>
+      <p>Based on official MTG mana colors — compare how each palette feels in actual UI</p>
+    </div>
+
+    <div class="palette-grid">
+      <!-- PALETTE 1: Esper Deep -->
+      <div class="palette-card palette-1">
+        <div class="palette-header">
+          <div class="palette-name">Esper Deep</div>
+          <div class="palette-desc">Dark blue control aesthetic — sophisticated, data-focused, professional. Uses blue as primary accent on deep navy backgrounds.</div>
+          <div class="color-swatches">
+            <div class="swatch" style="background: #0a1420;"></div>
+            <div class="swatch" style="background: #0f1a28;"></div>
+            <div class="swatch" style="background: #0E68AB;"></div>
+            <div class="swatch" style="background: #74b2fd;"></div>
+          </div>
+        </div>
+        <div class="palette-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PALETTE 2: Sunrise -->
+      <div class="palette-card palette-2">
+        <div class="palette-header">
+          <div class="palette-name">Sunrise</div>
+          <div class="palette-desc">Light warm palette — approachable, energetic, bold. Red primary on cream/white backgrounds with warm grays.</div>
+          <div class="color-swatches">
+            <div class="swatch" style="background: #F9FAF4; border-color: #ccc;"></div>
+            <div class="swatch" style="background: #fff; border-color: #ccc;"></div>
+            <div class="swatch" style="background: #D3202A;"></div>
+            <div class="swatch" style="background: #f4ab00;"></div>
+          </div>
+        </div>
+        <div class="palette-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PALETTE 3: Golgari Shadow -->
+      <div class="palette-card palette-3">
+        <div class="palette-header">
+          <div class="palette-name">Golgari Shadow</div>
+          <div class="palette-desc">Dark forest green — organic, grounded, MTG-authentic. Green primary on very dark black-green backgrounds.</div>
+          <div class="color-swatches">
+            <div class="swatch" style="background: #0a1410;"></div>
+            <div class="swatch" style="background: #0f1a16;"></div>
+            <div class="swatch" style="background: #00733E;"></div>
+            <div class="swatch" style="background: #00f38a;"></div>
+          </div>
+        </div>
+        <div class="palette-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PALETTE 4: Prismatic -->
+      <div class="palette-card palette-4">
+        <div class="palette-header">
+          <div class="palette-name">Prismatic</div>
+          <div class="palette-desc">5-color celebration — playful, MTG-forward, uses all mana colors strategically. Gradients and color-coded sections.</div>
+          <div class="color-swatches">
+            <div class="swatch" style="background: #0a0a0a;"></div>
+            <div class="swatch" style="background: #74b2fd;"></div>
+            <div class="swatch" style="background: #00f38a;"></div>
+            <div class="swatch" style="background: #D3202A;"></div>
+          </div>
+        </div>
+        <div class="palette-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PALETTE 5: Azorius Clean -->
+      <div class="palette-card palette-5">
+        <div class="palette-header">
+          <div class="palette-name">Azorius Clean</div>
+          <div class="palette-desc">Light blue/white — clean, trustworthy, modern SaaS feel. Blue primary on white with soft blue tints.</div>
+          <div class="color-swatches">
+            <div class="swatch" style="background: #ffffff; border-color: #ccc;"></div>
+            <div class="swatch" style="background: #eaf1ff; border-color: #ccc;"></div>
+            <div class="swatch" style="background: #0E68AB;"></div>
+            <div class="swatch" style="background: #74b2fd;"></div>
+          </div>
+        </div>
+        <div class="palette-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PALETTE 6: Rakdos Fire -->
+      <div class="palette-card palette-6">
+        <div class="palette-header">
+          <div class="palette-name">Rakdos Fire</div>
+          <div class="palette-desc">Dark warm/red — dramatic, energetic, aggressive. Red/orange primary on very dark brown-black backgrounds.</div>
+          <div class="color-swatches">
+            <div class="swatch" style="background: #150B00;"></div>
+            <div class="swatch" style="background: #1f1208;"></div>
+            <div class="swatch" style="background: #D3202A;"></div>
+            <div class="swatch" style="background: #f99ea0;"></div>
+          </div>
+        </div>
+        <div class="palette-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

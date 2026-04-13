@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direction 3: Hybrid Premium — Phase 38 Redesign</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cinzel:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../node_modules/mana-font/css/mana.css">
+  <style>
+    :root {
+      --color-bg: #070813;
+      --color-surface: #0f111d;
+      --color-surface-elevated: #1a1d2e;
+      --color-border: #262a40;
+      --color-border-subtle: #1a1d2e;
+      --color-text: #f1f3f9;
+      --color-text-secondary: #9ba3b8;
+      --color-text-muted: #6b7280;
+      --color-primary: #d4af37;
+      --color-primary-dim: #b8963d;
+      --font-body: 'Inter', sans-serif;
+      --font-display: 'Cinzel', serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Direction 3: Hybrid Premium — strategic mix; commander gets glass hero, data is crisp */
+    
+    .direction-label {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: var(--color-primary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ========== SHELL / TOPNAVBAR ========== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 17, 29, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .navbar-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .navbar-brand {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--color-primary);
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+    }
+
+    .navbar-links {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+      max-width: 450px;
+    }
+
+    .navbar-link {
+      padding: 9px 18px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      border-radius: 7px;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .navbar-link:hover {
+      color: var(--color-text);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .navbar-link.active {
+      color: var(--color-text);
+      background: rgba(212, 175, 55, 0.13);
+    }
+
+    .navbar-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 10px;
+      right: 10px;
+      height: 2px;
+      background: var(--color-primary);
+      border-radius: 2px 2px 0 0;
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+    }
+
+    .navbar-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .navbar-avatar {
+      width: 37px;
+      height: 37px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.95), rgba(184, 150, 61, 0.95));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #070813;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+    }
+
+    .navbar-avatar:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 16px rgba(212, 175, 55, 0.35);
+    }
+
+    /* ========== DASHBOARD PAGE ========== */
+    .page-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 56px 28px 120px;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 45px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+
+    .page-subtitle {
+      font-size: 15px;
+      color: var(--color-text-muted);
+      margin-bottom: 44px;
+      font-weight: 400;
+    }
+
+    /* Import card uses glass */
+    .import-card {
+      background: rgba(15, 17, 29, 0.65);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 36px;
+      margin-bottom: 52px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .import-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      margin-bottom: 14px;
+    }
+
+    .import-input-wrapper {
+      display: flex;
+      gap: 14px;
+    }
+
+    .import-input {
+      flex: 1;
+      background: rgba(7, 8, 19, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 9px;
+      padding: 13px 17px;
+      font-size: 14px;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      transition: all 0.15s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .import-input:focus {
+      outline: none;
+      border-color: rgba(212, 175, 55, 0.6);
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15), 0 4px 12px rgba(212, 175, 55, 0.2);
+      background: rgba(7, 8, 19, 0.85);
+    }
+
+    .import-input::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 1), rgba(200, 165, 50, 1));
+      color: #070813;
+      border: none;
+      border-radius: 9px;
+      padding: 13px 30px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      font-family: var(--font-body);
+      box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+    }
+
+    /* Deck list uses crisp flat surfaces for scannable data */
+    .deck-grid {
+      display: grid;
+      gap: 1px;
+      background: var(--color-border-subtle);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .deck-row {
+      background: var(--color-surface);
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 22px;
+      align-items: center;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .deck-row:hover {
+      background: var(--color-surface-elevated);
+    }
+
+    .deck-info {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .deck-commander {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text);
+      letter-spacing: 0.3px;
+    }
+
+    .deck-name {
+      font-size: 13px;
+      color: var(--color-text-muted);
+      font-weight: 400;
+    }
+
+    .deck-pips {
+      display: flex;
+      gap: 5px;
+    }
+
+    .deck-date {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ========== DECK PAGE (OVERVIEW) ========== */
+    .deckpage-container {
+      background: var(--color-bg);
+      min-height: 100vh;
+      padding-top: 67px;
+    }
+
+    /* Commander hero uses glass - this is premium elevated content */
+    .deck-hero {
+      background: rgba(15, 17, 29, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .deck-hero-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 52px 28px;
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      gap: 36px;
+      align-items: start;
+    }
+
+    .commander-art {
+      width: 190px;
+      height: 266px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(26, 29, 46, 0.7), rgba(38, 42, 64, 0.7));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    .commander-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .deck-hero-content {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .deck-hero-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .deck-hero-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .commander-name {
+      font-family: var(--font-display);
+      font-size: 39px;
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.4px;
+      line-height: 1.1;
+      text-shadow: 0 2px 10px rgba(241, 243, 249, 0.12);
+    }
+
+    .deck-title {
+      font-size: 15px;
+      color: var(--color-text-muted);
+      font-weight: 400;
+    }
+
+    .color-pips-large {
+      display: flex;
+      gap: 7px;
+      margin-top: 5px;
+    }
+
+    .deck-verdict {
+      margin-top: 6px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--color-text-secondary);
+    }
+
+    /* Tabs use glass - they're part of the chrome */
+    .deck-tabs {
+      background: rgba(15, 17, 29, 0.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: sticky;
+      top: 67px;
+      z-index: 40;
+    }
+
+    .deck-tabs-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .deck-tab {
+      padding: 15px 22px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+      font-family: var(--font-body);
+      border-radius: 7px 7px 0 0;
+    }
+
+    .deck-tab:hover {
+      color: var(--color-text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .deck-tab.active {
+      color: var(--color-text);
+      background: rgba(212, 175, 55, 0.11);
+    }
+
+    .deck-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-primary);
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+    }
+
+    .deck-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 44px 28px 120px;
+    }
+
+    /* Stats use crisp flat - this is scannable data */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--color-border-subtle);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 44px;
+    }
+
+    .stat-item {
+      background: var(--color-surface);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      transition: background 0.15s ease;
+    }
+
+    .stat-item:hover {
+      background: var(--color-surface-elevated);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--color-text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .stat-value.good {
+      color: #4ade80;
+    }
+
+    .stat-value.warning {
+      color: #fb923c;
+    }
+
+    .stat-target {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      font-weight: 400;
+    }
+
+    /* Weaknesses section uses crisp flat with accent borders */
+    .section-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 34px;
+      margin-bottom: 26px;
+    }
+
+    .section-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      margin-bottom: 22px;
+    }
+
+    .weaknesses-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .weakness-card {
+      background: var(--color-bg);
+      border: 1px solid rgba(251, 146, 60, 0.3);
+      border-left: 3px solid #fb923c;
+      border-radius: 9px;
+      padding: 22px;
+      transition: all 0.15s ease;
+    }
+
+    .weakness-card:hover {
+      background: rgba(26, 29, 46, 0.4);
+      border-color: rgba(251, 146, 60, 0.4);
+      transform: translateX(3px);
+    }
+
+    .weakness-header {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 13px;
+    }
+
+    .weakness-icon {
+      width: 21px;
+      height: 21px;
+      color: #fb923c;
+    }
+
+    .weakness-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .weakness-body {
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--color-text-secondary);
+    }
+
+    .weakness-label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin-top: 13px;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="direction-label">Direction 3: Hybrid Premium</div>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <div class="navbar-brand">MTG Assistant</div>
+      <div class="navbar-links">
+        <a href="#" class="navbar-link active">Dashboard</a>
+        <a href="#" class="navbar-link">Collection</a>
+        <a href="#" class="navbar-link">Leagues</a>
+      </div>
+      <div class="navbar-user">
+        <div class="navbar-avatar">ZS</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========== DASHBOARD PAGE ========== -->
+  <div class="page-container">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Analyze your Commander decks and get AI-powered insights</p>
+
+    <div class="import-card">
+      <div class="import-label">Analyze a Deck</div>
+      <div class="import-input-wrapper">
+        <input 
+          type="text" 
+          class="import-input" 
+          placeholder="Paste Moxfield deck URL…"
+        />
+        <button class="btn-primary">Analyze</button>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Recent Analyses</div>
+    </div>
+
+    <div class="deck-grid">
+      <div class="deck-row">
+        <div class="deck-info">
+          <div class="deck-commander">Atraxa, Praetors' Voice</div>
+          <div class="deck-name">Superfriends Control</div>
+        </div>
+        <div class="deck-pips">
+          <i class="ms ms-w ms-cost" style="font-size: 1.25rem;"></i>
+          <i class="ms ms-u ms-cost" style="font-size: 1.25rem;"></i>
+          <i class="ms ms-b ms-cost" style="font-size: 1.25rem;"></i>
+          <i class="ms ms-g ms-cost" style="font-size: 1.25rem;"></i>
+        </div>
+        <div class="deck-date">2h ago</div>
+      </div>
+      <div class="deck-row">
+        <div class="deck-info">
+          <div class="deck-commander">Gishath, Sun's Avatar</div>
+          <div class="deck-name">Dinosaur Tribal Aggro</div>
+        </div>
+        <div class="deck-pips">
+          <i class="ms ms-r ms-cost" style="font-size: 1.25rem;"></i>
+          <i class="ms ms-g ms-cost" style="font-size: 1.25rem;"></i>
+          <i class="ms ms-w ms-cost" style="font-size: 1.25rem;"></i>
+        </div>
+        <div class="deck-date">1d ago</div>
+      </div>
+      <div class="deck-row">
+        <div class="deck-info">
+          <div class="deck-commander">Meren of Clan Nel Toth</div>
+          <div class="deck-name">Graveyard Aristocrats</div>
+        </div>
+        <div class="deck-pips">
+          <i class="ms ms-b ms-cost" style="font-size: 1.25rem;"></i>
+          <i class="ms ms-g ms-cost" style="font-size: 1.25rem;"></i>
+        </div>
+        <div class="deck-date">3d ago</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 60px; background: var(--color-bg);"></div>
+
+  <!-- ========== DECK PAGE (OVERVIEW TAB) ========== -->
+  <div class="deckpage-container">
+    <div class="deck-hero">
+      <div class="deck-hero-inner">
+        <div class="commander-art">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='266'%3E%3Crect fill='%231a1d2e' width='190' height='266'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter' font-size='12' fill='%236b7280'%3ECommander Art%3C/text%3E%3C/svg%3E" alt="Atraxa">
+        </div>
+        <div class="deck-hero-content">
+          <div class="deck-hero-header">
+            <div class="deck-hero-title-group">
+              <h1 class="commander-name">Atraxa, Praetors' Voice</h1>
+              <div class="color-pips-large">
+                <i class="ms ms-w ms-cost" style="font-size: 1.45rem;"></i>
+                <i class="ms ms-u ms-cost" style="font-size: 1.45rem;"></i>
+                <i class="ms ms-b ms-cost" style="font-size: 1.45rem;"></i>
+                <i class="ms ms-g ms-cost" style="font-size: 1.45rem;"></i>
+              </div>
+            </div>
+          </div>
+          <div class="deck-title">Superfriends Control</div>
+          <p class="deck-verdict">
+            A classic Superfriends build with strong synergy and excellent protection. Your planeswalker suite is well-balanced, but the deck could benefit from more board wipes to handle aggressive strategies. Resource generation is healthy with consistent ramp and draw, though interaction is slightly below optimal for a 4-color control deck.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="deck-tabs">
+      <div class="deck-tabs-inner">
+        <button class="deck-tab active">Overview</button>
+        <button class="deck-tab">Upgrades</button>
+        <button class="deck-tab">Strategy</button>
+        <button class="deck-tab">Improvements</button>
+        <button class="deck-tab">Scenarios</button>
+      </div>
+    </div>
+
+    <div class="deck-content">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-label">Lands</div>
+          <div class="stat-value good">37</div>
+          <div class="stat-target">Target: 37</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Ramp</div>
+          <div class="stat-value good">12</div>
+          <div class="stat-target">Target: 10+</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Draw</div>
+          <div class="stat-value good">11</div>
+          <div class="stat-target">Target: 10+</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Removal</div>
+          <div class="stat-value warning">6</div>
+          <div class="stat-target">Target: 8+</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Wipes</div>
+          <div class="stat-value warning">1</div>
+          <div class="stat-target">Target: 2+</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Avg CMC</div>
+          <div class="stat-value good">3.2</div>
+          <div class="stat-target">Target: ≤3.5</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Creatures</div>
+          <div class="stat-value">18</div>
+          <div class="stat-target">18% of deck</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Planeswalkers</div>
+          <div class="stat-value">16</div>
+          <div class="stat-target">16% of deck</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">Weaknesses</div>
+        <div class="weaknesses-grid">
+          <div class="weakness-card">
+            <div class="weakness-header">
+              <svg class="weakness-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <div class="weakness-title">Insufficient Board Wipes</div>
+            </div>
+            <div class="weakness-body">
+              Your deck runs only 1 board wipe (Cyclonic Rift), which is below the recommended 2-3 for a control-oriented strategy. Against aggressive creature-heavy decks or token strategies, you may struggle to stabilize if your planeswalkers are under pressure.
+              <div class="weakness-label">Look For</div>
+              Supreme Verdict, Damnation, Wrath of God, Toxic Deluge
+            </div>
+          </div>
+
+          <div class="weakness-card">
+            <div class="weakness-header">
+              <svg class="weakness-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <div class="weakness-title">Light on Interaction</div>
+            </div>
+            <div class="weakness-body">
+              With 6 removal spells, you're below the recommended 8-10 for a 4-color control deck. You may find yourself unable to answer opponent threats efficiently, especially combo pieces or key enchantments.
+              <div class="weakness-label">Look For</div>
+              Counterspell, Swan Song, Nature's Claim, Anguished Unmaking
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

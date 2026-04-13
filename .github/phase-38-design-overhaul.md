@@ -90,41 +90,71 @@ The UI wrapper steps back and lets the content breathe.
 - `.github/archive/design-analysis.md` — full diagnosis of current problems
 - `.github/agents/references/design-knowledge.md` — design principles + modern style guide
 
+**Status Update — April 13, 2026:**
+
+**✅ 0a — Color Palette Foundation (COMPLETE)**
+- User provided 5-color foundation palette rooted in strategic neutral + accent approach
+- Foundation colors documented in `.github/design-system-colors.md`:
+  - `#23292E` (Dark Charcoal) — dark mode bg, light mode text
+  - `#2D82B7` (Blue) — primary accent (buttons, brand, headers)
+  - `#79161D` (Red) — secondary accent (light mode emphasis)
+  - `#DBAC84` (Tan) — tertiary accent (dark mode warmth)
+  - `#E2E6E9` (Off White) — light mode bg, dark mode text
+- Derived surface/border tokens defined for both modes
+- Interactive live editor created: `frontend/mockups/redesign-38/custom-palette-options.html`
+- Strategy: Neutral gray foundation with Blue dominating, Red for light mode emphasis, Tan for dark mode warmth
+- This palette is now LOCKED for all Phase 0 layout mockups
+
+**✅ 0b — Layout Direction Mockups (COMPLETE, AWAITING USER REVIEW)**
+- Created 3 genuinely different layout approaches using approved color palette:
+  - **Direction A: Data Dashboard** (`direction-a-data-dashboard.html`) — Information-dense, grid-based, Linear/Notion style. Compact horizontal commander hero (120px art), big dashboard stat numbers (48px), two-column charts, full-width weaknesses section.
+  - **Direction B: Hero Editorial** (`direction-b-hero-editorial.html`) — Commander-focused storytelling, Stripe/Apple style. Massive centered commander art (280px), generous whitespace (80px sections), vertical story flow, weaknesses as prominent second section.
+  - **Direction C: Sidebar Split** (`direction-c-sidebar-split.html`) — Persistent context sidebar, Figma/VS Code style. Commander + quick stats in left sidebar (180px art, sticky), main content on right with tabs, weaknesses first in content area.
+- All three mockups show: Navbar, DashboardPage, DeckPage Overview
+- Used real content (Atraxa, Gishath, actual stat numbers)
+- Mockups opened in browser for user review
+
+**✅ 0d — Final-Spec Mockups for Core Pages (COMPLETE):**
+- Created implementation-ready mockups with detailed annotations:
+  - **Dashboard** (`final-spec-dashboard.html`) — Direction A, all screen sizes, 900px max-width, responsive grid, glass import card, 60px commander thumbnails, detailed hover states
+  - **DeckPage Desktop** (`final-spec-deckpage-desktop.html`) — Direction A for ≥768px, 1400px max-width, horizontal commander hero (120×168px art), 48px stat values, two-column charts, full-width weaknesses section
+  - **DeckPage Mobile** (`final-spec-deckpage-mobile.html`) — Direction B for <768px, 1000px max-width, massive centered commander art (280×392px), vertical flow, weaknesses second section, horizontal scroll stats
+- **USER FEEDBACK REFINEMENTS APPLIED (April 13, 2026):**
+  - Darkened backgrounds: `--bg: #1a1f24` (was #23292E), `--surface: #23292E` (was #2d3439), `--border: #2d3439` (was #3a4248)
+  - Removed button glow effects: Hover now only uses `brightness(1.1) + translateY(-1px)` — no box-shadow
+  - Verified scalability: All specs use CSS custom properties for colors, typography, buttons (future light/dark mode switching, multiple color schemes)
+- All specs include: Spacing tokens (40px/24px/16px/12px), hover states, responsive breakpoints, color-coded stats, implementation checklists, accessibility notes
+- Typography specifications: Cinzel ONLY for logo/H1/commander names, Inter everywhere else
+- Color palette: All specs use refined Phase 38 tokens with darker backgrounds
+- These mockups are the engineering contract for Phase A-G implementation
+
+**✅ 0e — Final-Spec Mockups for Secondary Pages (COMPLETE — April 13, 2026):**
+- Created remaining page mockups using Direction A (information-dense) approach:
+  - **Collection** (`final-spec-collection.html`) — Stats header (total cards, avg value, collection value, last updated), glass upload section (drag-and-drop CSV), crisp flat card grid (220px columns, 4-5 per row), search filter, empty state
+  - **Leagues List** (`final-spec-leagues-list.html`) — Grid of league cards (3→2→1 columns responsive), each showing status badge (Active/Draft/Completed), member count, games played, current leader with points, toolbar with archive/refresh actions
+  - **League Detail** (`final-spec-league-detail.html`) — Breadcrumb navigation, glass leader callout (current #1 with pts/wins/games), tabs (Members | Standings | Games), **prominent standings table** with rank badges (gold/silver/bronze), player names, points, wins, 2nd/3rd place, avg placement, unique commanders, games played — responsive (hides columns <1024px, minimal on mobile)
+- **DATA STRUCTURE PRESERVED:** All existing league metrics maintained (superstar names, placement tracking, points calculation, game history with placements/decks/awards)
+- All mockups follow refined color palette (#1a1f24 bg, #23292E surface, #2d3439 border), CSS custom properties, no button glows
+- Hybrid glass/crisp system: Glass for elevated surfaces (upload section, leader callout), flat crisp for data display (collections grid, standings table, league cards)
+
+**🎯 Phase 0 Status: COMPLETE ✅ — APPROVED FOR IMPLEMENTATION (April 13, 2026)**
+
+All page mockups created (Dashboard, DeckPage Desktop/Mobile, Collection, Leagues List/Detail). User feedback refinements applied (darker backgrounds, no button glows, CSS variables for scalability). **Emojis in mockups are visual placeholders only — will be replaced with lucide-react SVG icons during implementation.** User has approved complete mockup suite. Ready to proceed to Phase A (Foundation) implementation.
+
 **Deliverables:**
-- `0b` — Create 2–3 direction mockups for each high-stakes surface:
-  - Shell / TopNavbar
-  - DeckPage (Overview tab — the most important screen)
-  - DashboardPage
-  - Save as standalone HTML files in `frontend/mockups/redesign-38/`
-  - Use REAL content (actual commander names, deck names, stat numbers) — no lorem ipsum
-- `0c` — **USER REVIEWS AND APPROVES one direction per surface** ← mandatory gate
-- `0d` — Create final-spec mockups incorporating feedback. These become the implementation contract.
-- `0e` — League page mockups (LeaguesPage, LeaguePage) as a second batch after core pages are approved.
+- 6 final-spec HTML mockups with detailed implementation annotations
+- Color system documented with refined darker backgrounds (#1a1f24 base)
+- Typography specifications locked (Cinzel ONLY for logo/H1/commander names)
+- Spacing tokens defined (40px/24px/16px/12px)
+- Button patterns standardized (no glows)
+- Responsive breakpoints specified (≥1024px, 768-1023px, <768px)
+- All mockups use CSS custom properties for future theme switching
 
-**Brief for the designer agent:**
-```
-Direction: Modern premium dark SaaS — think Vercel or Linear energy, but Magic cards live in it.
-
-Typography rule: Inter everywhere. ONLY the logo text, page H1 titles, and commander names get Cinzel. 
-That's it. Cinzel is earned, not default.
-
-MTG flavor: Commander card art (large), mana color pips, card images. The UI chrome is neutral.
-No arcane body gradients. No amber glow on every heading. No decorative dividers.
-
-Visual system: Hybrid.
-- Glass morphism (backdrop-blur, semi-transparent): navbar, modals, commander hero card, stat summary card
-- Crisp flat (solid surface, 1px border): data tables, list rows, form inputs, badges, utility buttons
-
-DeckPage priority: Commander art + name + color pips must be the dominant visual hero ABOVE THE FOLD.
-Stat badges, mana curve, and weaknesses come BELOW. Weaknesses must be prominent — not buried.
-
-DashboardPage: Deck list must show commander name. Stat cards should feel like data, not decoration.
-
-Reference: fireart.studio/blog/designing-modern-ui-ux — study the layering, typography hierarchy, and 
-depth in those examples.
-```
+**User quote:** "we'll move on to phase A once we have everything honed in" ✅
 
 ---
+
+## Implementation Phases (A-G)
 
 ### Phase A — Foundation
 > **Depends on:** Phase 0 approval  

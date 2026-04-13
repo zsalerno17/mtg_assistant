@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Final Spec — Leagues List Page</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ============================================
+       FINAL SPEC — LEAGUES LIST PAGE
+       Direction A — Information-Dense Grid Layout
+       Phase 38 Hybrid Glass/Crisp System
+       
+       Color Palette (REFINED):
+       --bg:       #1a1f24 (darkened from #23292E)
+       --surface:  #23292E (darkened from #2d3439)
+       --border:   #2d3439 (darkened from #3a4248)
+       --text:     #E2E6E9
+       --accent-primary:   #2D82B7 (Blue)
+       --accent-secondary: #79161D (Red)
+       --accent-tan:       #DBAC84 (Tan)
+       
+       BUTTON HOVER: brightness(1.1) + translateY ONLY
+       No glow/shadow effects per user feedback
+       
+       ============================================ */
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    :root {
+      /* Foundation Colors (REFINED - darker backgrounds) */
+      --color-charcoal: #1a1f24;
+      --color-blue: #2D82B7;
+      --color-red: #79161D;
+      --color-tan: #DBAC84;
+      --color-off-white: #E2E6E9;
+      
+      /* Derived Tokens */
+      --bg: #1a1f24;
+      --surface: #23292E;
+      --border: #2d3439;
+      --text: #E2E6E9;
+      --text-muted: #94a3b8;
+      --accent-primary: #2D82B7;
+      --accent-secondary: #79161D;
+      --accent-warning: #f59e0b;
+      --accent-success: #10b981;
+      --accent-tan: #DBAC84;
+      
+      /* Typography */
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: 'Cinzel', serif;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 24px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* ══════════════════════════════════════════
+       HEADER
+       ══════════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    
+    .header-left h1 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .header-subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    /* ══════════════════════════════════════════
+       BUTTONS
+       Standardized button patterns
+       ══════════════════════════════════════════ */
+    .btn-primary {
+      background: var(--accent-primary);
+      color: var(--text);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      /* No glow/shadow on hover */
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+    
+    /* ══════════════════════════════════════════
+       TOOLBAR (filters, actions)
+       ══════════════════════════════════════════ */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    /* ══════════════════════════════════════════
+       LEAGUE GRID
+       3→2→1 columns responsive
+       Crisp flat cards for data display
+       ══════════════════════════════════════════ */
+    .league-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    
+    .league-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 150ms ease;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    
+    .league-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+    
+    .league-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    
+    .league-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-family: var(--font-display);
+    }
+    
+    .league-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-draft {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-completed {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    
+    .league-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .meta-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    
+    .meta-value.accent-blue {
+      color: var(--accent-primary);
+    }
+    
+    .meta-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    
+    .league-leader {
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .leader-badge {
+      font-size: 16px;
+    }
+    
+    .leader-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .leader-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    
+    .leader-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .leader-points {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--accent-primary);
+    }
+    
+    /* ══════════════════════════════════════════
+       EMPTY STATE
+       ══════════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 80px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+    
+    .empty-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      font-family: var(--font-display);
+    }
+    
+    .empty-description {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    
+    /* ══════════════════════════════════════════
+       RESPONSIVE
+       ══════════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .league-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 24px 16px;
+      }
+      
+      .header-left h1 {
+        font-size: 28px;
+      }
+      
+      .league-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      
+      .league-card {
+        padding: 20px;
+      }
+    }
+    
+    /* ══════════════════════════════════════════
+       IMPLEMENTATION NOTES
+       
+       SPACING TOKEN SYSTEM:
+       - Container padding: 40px (desktop), 24px (mobile)
+       - Card padding: 24px (desktop), 20px (mobile)
+       - Grid gaps: 20px (desktop), 16px (mobile)
+       - Section margin-bottom: 32px
+       
+       BUTTON PATTERNS:
+       - .btn-primary: Blue background, white text
+       - .btn-secondary: Transparent bg, border, muted text
+       - Hover: brightness(1.1) + translateY(-1px) ONLY
+       - NO box-shadow glow effects
+       
+       RESPONSIVE BREAKPOINTS:
+       - Desktop: ≥1024px (3 columns)
+       - Tablet: 768-1023px (2 columns)
+       - Mobile: <768px (1 column)
+       
+       LEAGUE CARD STATES:
+       - Active: Green badge, full data
+       - Draft: Orange badge, setup in progress
+       - Completed: Gray badge, archived
+       
+       DATA STRUCTURE PRESERVED:
+       - League name, status, member count
+       - Games played, standings leader
+       - All existing metrics maintained
+       
+       CSS CUSTOM PROPERTIES:
+       All colors defined as CSS variables for easy
+       theme switching and future color scheme variants
+       
+       ══════════════════════════════════════════ */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <h1>My Leagues</h1>
+        <p class="header-subtitle">
+          Track pod sessions, standings, and legendary moments
+        </p>
+      </div>
+      
+      <button class="btn-primary">+ Create League</button>
+    </div>
+    
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="toolbar-actions">
+        <button class="btn-secondary">Archive Completed</button>
+        <button class="btn-secondary">Refresh Decks</button>
+      </div>
+    </div>
+    
+    <!-- LEAGUE GRID -->
+    <div class="league-grid">
+      <!-- League Card 1 - Active -->
+      <a href="#" class="league-card">
+        <div class="league-header">
+          <div>
+            <div class="league-name">Wednesday Night Commander</div>
+          </div>
+          <div class="league-status status-active">Active</div>
+        </div>
+        
+        <div class="league-meta">
+          <div class="meta-item">
+            <div class="meta-label">Members</div>
+            <div class="meta-value">8</div>
+          </div>
+          
+          <div class="meta-item">
+            <div class="meta-label">Games Played</div>
+            <div class="meta-value accent-blue">23</div>
+          </div>
+        </div>
+        
+        <div class="league-leader">
+          <div class="leader-badge">🥇</div>
+          <div class="leader-info">
+            <div class="leader-label">Current Leader</div>
+            <div class="leader-name">The Archmage Supreme</div>
+          </div>
+          <div class="leader-points">47</div>
+        </div>
+      </a>
+      
+      <!-- League Card 2 - Active -->
+      <a href="#" class="league-card">
+        <div class="league-header">
+          <div>
+            <div class="league-name">Power Level 7 League</div>
+          </div>
+          <div class="league-status status-active">Active</div>
+        </div>
+        
+        <div class="league-meta">
+          <div class="meta-item">
+            <div class="meta-label">Members</div>
+            <div class="meta-value">6</div>
+          </div>
+          
+          <div class="meta-item">
+            <div class="meta-label">Games Played</div>
+            <div class="meta-value accent-blue">15</div>
+          </div>
+        </div>
+        
+        <div class="league-leader">
+          <div class="leader-badge">🥇</div>
+          <div class="leader-info">
+            <div class="leader-label">Current Leader</div>
+            <div class="leader-name">Goblin King</div>
+          </div>
+          <div class="leader-points">32</div>
+        </div>
+      </a>
+      
+      <!-- League Card 3 - Draft -->
+      <a href="#" class="league-card">
+        <div class="league-header">
+          <div>
+            <div class="league-name">Tribal Throwdown 2026</div>
+          </div>
+          <div class="league-status status-draft">Draft</div>
+        </div>
+        
+        <div class="league-meta">
+          <div class="meta-item">
+            <div class="meta-label">Members</div>
+            <div class="meta-value">4</div>
+          </div>
+          
+          <div class="meta-item">
+            <div class="meta-label">Games Played</div>
+            <div class="meta-value accent-blue">0</div>
+          </div>
+        </div>
+        
+        <div class="league-leader">
+          <div class="leader-info" style="flex: 1;">
+            <div class="meta-subtext">No games logged yet — invite members to begin</div>
+          </div>
+        </div>
+      </a>
+      
+      <!-- League Card 4 - Active -->
+      <a href="#" class="league-card">
+        <div class="league-header">
+          <div>
+            <div class="league-name">Casual Fridays</div>
+          </div>
+          <div class="league-status status-active">Active</div>
+        </div>
+        
+        <div class="league-meta">
+          <div class="meta-item">
+            <div class="meta-label">Members</div>
+            <div class="meta-value">5</div>
+          </div>
+          
+          <div class="meta-item">
+            <div class="meta-label">Games Played</div>
+            <div class="meta-value accent-blue">8</div>
+          </div>
+        </div>
+        
+        <div class="league-leader">
+          <div class="leader-badge">🥇</div>
+          <div class="leader-info">
+            <div class="leader-label">Current Leader</div>
+            <div class="leader-name">Commander Keen</div>
+          </div>
+          <div class="leader-points">19</div>
+        </div>
+      </a>
+      
+      <!-- League Card 5 - Completed -->
+      <a href="#" class="league-card">
+        <div class="league-header">
+          <div>
+            <div class="league-name">Winter 2025 Season</div>
+          </div>
+          <div class="league-status status-completed">Completed</div>
+        </div>
+        
+        <div class="league-meta">
+          <div class="meta-item">
+            <div class="meta-label">Members</div>
+            <div class="meta-value">10</div>
+          </div>
+          
+          <div class="meta-item">
+            <div class="meta-label">Games Played</div>
+            <div class="meta-value accent-blue">42</div>
+          </div>
+        </div>
+        
+        <div class="league-leader">
+          <div class="leader-badge">👑</div>
+          <div class="leader-info">
+            <div class="leader-label">Champion</div>
+            <div class="leader-name">Timmy the Destroyer</div>
+          </div>
+          <div class="leader-points">87</div>
+        </div>
+      </a>
+      
+      <!-- League Card 6 - Active -->
+      <a href="#" class="league-card">
+        <div class="league-header">
+          <div>
+            <div class="league-name">Budget Battlemages</div>
+          </div>
+          <div class="league-status status-active">Active</div>
+        </div>
+        
+        <div class="league-meta">
+          <div class="meta-item">
+            <div class="meta-label">Members</div>
+            <div class="meta-value">7</div>
+          </div>
+          
+          <div class="meta-item">
+            <div class="meta-label">Games Played</div>
+            <div class="meta-value accent-blue">12</div>
+          </div>
+        </div>
+        
+        <div class="league-leader">
+          <div class="leader-badge">🥇</div>
+          <div class="leader-info">
+            <div class="leader-label">Current Leader</div>
+            <div class="leader-name">The Penny Pincher</div>
+          </div>
+          <div class="leader-points">28</div>
+        </div>
+      </a>
+    </div>
+    
+    <!-- EMPTY STATE (shown when no leagues) -->
+    <!-- Uncomment to preview:
+    <div class="empty-state">
+      <div class="empty-icon">⚔️</div>
+      <div class="empty-title">No leagues yet</div>
+      <p class="empty-description">
+        Create a league to start tracking pod sessions, standings, and legendary moments.
+      </p>
+      <button class="btn-primary">Create Your First League</button>
+    </div>
+    -->
+  </div>
+</body>
+</html>

@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Final Spec: DeckPage Desktop — MTG Assistant Phase 38</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.min.css">
+  <style>
+    /*
+    ═══════════════════════════════════════════════════════════════════
+    FINAL SPEC: DECKPAGE DESKTOP (Direction A - Data Dashboard)
+    Screen sizes: ≥768px (Desktop and Tablet)
+    Max-width: 1400px centered
+    ═══════════════════════════════════════════════════════════════════
+    
+    IMPLEMENTATION NOTES:
+    - This spec uses Direction A (Data Dashboard) layout for desktop
+    - Mobile (<768px) uses Direction B (Hero Editorial) - see separate spec
+    - Navbar consistent across all pages
+    - Commander hero is COMPACT HORIZONTAL layout (120px art + info + actions)
+    - Stats grid uses BIG DASHBOARD NUMBERS (48px)
+    - Charts use TWO-COLUMN layout side-by-side
+    - Weaknesses section gets FULL-WIDTH dedicated area
+    
+    SPACING TOKENS:
+    - Container padding: 40px (desktop), maintains throughout
+    - Card padding: 20px (stats), 24px (charts), 24px (weaknesses)
+    - Section spacing: 32px between major sections
+    - Grid gap: 16px (stats), 24px (charts)
+    - Element spacing: 12px between related items
+    
+    HIERARCHY PRIORITIES:
+    1. Commander hero (horizontal, above fold, gradient background)
+    2. Stats grid (big numbers, color-coded, immediately scannable)
+    3. Weaknesses section (full-width, red-tinted, prominent)
+    4. Charts (two-column, supporting analysis)
+    
+    RESPONSIVE STRATEGY:
+    - @media (max-width: 1400px): Charts stack to single column
+    - @media (max-width: 1024px): Stats grid reduces to 3 columns
+    - @media (max-width: 767px): SWITCH TO DIRECTION B (mobile spec)
+    */
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* APPROVED COLOR PALETTE - Phase 38 */
+      --color-charcoal: #1a1f24;
+      --color-blue: #2D82B7;
+      --color-red: #79161D;
+      --color-tan: #DBAC84;
+      --color-off-white: #E2E6E9;
+      
+      /* DERIVED TOKENS - Dark Mode (default) */
+      --bg: #1a1f24;
+      --surface: #23292E;
+      --border: #2d3439;
+      --text: #E2E6E9;
+      --text-muted: #9ba1a6;
+      --accent-primary: #2D82B7;
+      --accent-secondary: #DBAC84;
+      --accent-danger: #79161D;
+      
+      /* TYPOGRAPHY TOKENS */
+      --font-body: 'Inter', sans-serif;
+      --font-display: 'Cinzel', serif;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* IMPLEMENTATION HEADER */
+    .spec-header {
+      background: linear-gradient(135deg, #1a1f24, #2d3439);
+      border-bottom: 2px solid var(--accent-primary);
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    .spec-header h1 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      margin-bottom: 8px;
+      color: var(--accent-primary);
+    }
+
+    .spec-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .spec-section {
+      margin: 60px 0;
+      padding: 0 24px;
+    }
+
+    .spec-label {
+      display: inline-block;
+      background: rgba(45, 130, 183, 0.2);
+      color: var(--accent-primary);
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NAVBAR - Consistent across all pages
+       ═══════════════════════════════════════════════════════════════ */
+    .navbar {
+      background: rgba(45, 52, 57, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .navbar-brand {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-primary);
+      letter-spacing: 0.5px;
+    }
+
+    .navbar-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-link {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+
+    .nav-link:hover {
+      background: rgba(45, 130, 183, 0.1);
+      color: var(--text);
+    }
+
+    .nav-link.active {
+      background: rgba(45, 130, 183, 0.2);
+      color: var(--text);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       DECK CONTAINER
+       Max-width: 1400px centered
+       Padding: 40px horizontal
+       ═══════════════════════════════════════════════════════════════ */
+    .deck-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BACK LINK
+       Appears above commander hero
+       Font-size: 13px text-muted
+       Hover: text brightens
+       Margin-bottom: 24px
+       ═══════════════════════════════════════════════════════════════ */
+    .back-link {
+      color: var(--text-muted);
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 24px;
+      cursor: pointer;
+      transition: color 0.15s;
+      font-family: var(--font-body);
+    }
+
+    .back-link:hover {
+      color: var(--text);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       COMMANDER HERO - COMPACT HORIZONTAL LAYOUT (Direction A)
+       
+       Layout: Flexbox row (art + info + actions)
+       Background: Glass with gradient tint
+       Border: 1px var(--accent-primary)
+       Border-radius: 16px
+       Padding: 24px
+       Margin-bottom: 32px
+       Gap: 24px (between flex children)
+       
+       STRUCTURE:
+       - Commander art: 120px × 168px (left)
+       - Commander info: Flex 1 grows (center)
+         - Name: Cinzel 32px - EARNED
+         - Color pips: 20px
+         - Theme tags: 14px muted
+       - Commander actions: Fixed width (right)
+         - Button stack with 12px gap
+       ═══════════════════════════════════════════════════════════════ */
+    .commander-hero {
+      background: linear-gradient(135deg, rgba(45, 130, 183, 0.1), rgba(45, 52, 57, 0.5));
+      border: 1px solid var(--accent-primary);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /*
+    COMMANDER ART SPECIFICATIONS:
+    - Size: 120px × 168px (5:7 card aspect ratio, compact)
+    - Border-radius: 12px
+    - Box-shadow: 0 8px 24px rgba(0,0,0,0.5) (elevated)
+    - Background: Gradient placeholder (real implementation shows card art)
+    - Flex-shrink: 0 (prevent squishing)
+    */
+    .commander-art {
+      width: 120px;
+      height: 168px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2D3B4E, #1A2332);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+      line-height: 1.4;
+    }
+
+    /*
+    COMMANDER INFO SPECIFICATIONS:
+    - Flex: 1 (grows to fill space)
+    - Min-width: 0 (allow text wrapping if needed)
+    
+    H2 (Commander name):
+    - Font: Cinzel 32px - EARNED for commander identity
+    - Color: var(--accent-primary)
+    - Margin-bottom: 8px
+    - Line-height: 1.2
+    
+    Color pips:
+    - Display: flex row, gap 6px
+    - Size: 20px mana symbols
+    - Margin-bottom: 8px
+    
+    Theme tags:
+    - Font-size: 14px
+    - Color: var(--text-muted)
+    - Separator: • (bullet)
+    */
+    .commander-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .commander-info h2 {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--accent-primary);
+      line-height: 1.2;
+    }
+
+    .color-pips {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .pip {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .commander-meta {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /*
+    COMMANDER ACTIONS:
+    - Display: flex column, gap 12px
+    - Flex-shrink: 0 (maintain button width)
+    
+    Button specs:
+    - Primary: var(--accent-primary) background, dark text
+    - Secondary: Transparent with tan border
+    - Padding: 10px 20px
+    - Border-radius: 8px
+    - Font-size: 13px, weight 600
+    - Transition: 150ms
+    
+    Hover states:
+    - Primary: brightness(1.1)
+    - Secondary: rgba(219, 172, 132, 0.1) background
+    */
+    .commander-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .btn-primary-small {
+      background: var(--accent-primary);
+      color: var(--bg);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      font-family: var(--font-body);
+    }
+
+    .btn-primary-small:hover {
+      filter: brightness(1.1);
+      /* No glow/shadow on hover */
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--accent-secondary);
+      color: var(--accent-secondary);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      font-family: var(--font-body);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(219, 172, 132, 0.1);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TABS - Content navigation
+       Border-bottom: 1px var(--border)
+       Gap: 8px between tabs
+       Margin-bottom: 40px
+       
+       Tab button:
+       - Padding: 12px 20px
+       - Font-size: 14px, weight 500
+       - Color: text-muted (inactive), accent-primary (active)
+       - Border-bottom: 2px transparent (inactive), accent-primary (active)
+       - Transition: 150ms
+       ═══════════════════════════════════════════════════════════════ */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .tab-btn {
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-body);
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-primary);
+      border-bottom-color: var(--accent-primary);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       STATS GRID - BIG DASHBOARD NUMBERS (Direction A key feature)
+       
+       Grid: auto-fit minmax(140px, 1fr)
+       Gap: 16px
+       Margin-bottom: 32px
+       
+       Stat card:
+       - Background: var(--surface)
+       - Border: 1px var(--border)
+       - Border-radius: 12px
+       - Padding: 20px
+       - Text-align: center
+       
+       Stat label:
+       - Font-size: 11px uppercase
+       - Letter-spacing: 0.5px
+       - Color: text-muted
+       - Margin-bottom: 12px
+       
+       Stat value:
+       - Font-size: 48px (BIG)
+       - Font-weight: 800
+       - Line-height: 1
+       - Color: Color-coded by status
+         * Good: #10b981 (green)
+         * Warning: #f59e0b (amber)
+         * Bad: var(--accent-danger) (red)
+       ═══════════════════════════════════════════════════════════════ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.15s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+      font-family: var(--font-body);
+    }
+
+    .stat-value {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--accent-primary);
+      font-family: var(--font-body);
+    }
+
+    .stat-value.good {
+      color: #10b981;
+    }
+
+    .stat-value.warning {
+      color: #f59e0b;
+    }
+
+    .stat-value.bad {
+      color: var(--accent-danger);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       WEAKNESSES SECTION - FULL-WIDTH DEDICATED AREA
+       
+       Background: rgba(121, 22, 29, 0.05) (subtle red tint)
+       Border: 1px rgba(121, 22, 29, 0.3)
+       Border-left: 4px var(--accent-danger) (emphasis)
+       Border-radius: 12px
+       Padding: 32px
+       Margin-bottom: 32px
+       
+       Section header:
+       - Font-size: 24px, weight 700
+       - Color: var(--accent-danger)
+       - Display: flex with warning icon
+       - Gap: 10px
+       - Margin-bottom: 24px
+       
+       Weaknesses grid:
+       - Grid: 3 columns (auto-fit, minmax 280px)
+       - Gap: 20px
+       
+       Weakness item:
+       - Background: rgba(121, 22, 29, 0.1)
+       - Border: 1px rgba(121, 22, 29, 0.3)
+       - Border-left: 4px var(--accent-danger)
+       - Border-radius: 8px
+       - Padding: 20px
+       
+       H4 (weakness title): 16px weight 600
+       P (weakness description): 14px line-height 1.7 text-muted
+       ═══════════════════════════════════════════════════════════════ */
+    .weaknesses-section {
+      background: rgba(121, 22, 29, 0.05);
+      border: 1px solid rgba(121, 22, 29, 0.3);
+      border-left: 4px solid var(--accent-danger);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 32px;
+    }
+
+    .weaknesses-section h3 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent-danger);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      font-family: var(--font-body);
+    }
+
+    .weaknesses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .weakness-item {
+      background: rgba(121, 22, 29, 0.1);
+      border: 1px solid rgba(121, 22, 29, 0.3);
+      border-left: 4px solid var(--accent-danger);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .weakness-item h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--text);
+      font-family: var(--font-body);
+    }
+
+    .weakness-item p {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ANALYSIS GRID - TWO-COLUMN CHARTS (Direction A key feature)
+       
+       Grid: 1fr 1fr (equal columns)
+       Gap: 24px
+       Margin-bottom: 32px
+       
+       Responsive: Stacks to single column below 1200px
+       
+       Chart card:
+       - Background: var(--surface)
+       - Border: 1px var(--border)
+       - Border-radius: 16px
+       - Padding: 24px
+       
+       Chart title: 20px weight 700, margin-bottom 24px
+       Chart placeholder: 240px height
+       ═══════════════════════════════════════════════════════════════ */
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .chart-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text);
+      font-family: var(--font-body);
+    }
+
+    .chart-placeholder {
+      height: 240px;
+      background: linear-gradient(135deg, var(--bg), var(--border));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE BREAKPOINTS
+       ═══════════════════════════════════════════════════════════════ */
+    
+    /* Large desktop: 1200px - 1400px */
+    @media (max-width: 1399px) {
+      .analysis-grid {
+        grid-template-columns: 1fr; /* Stack charts */
+      }
+    }
+
+    /* Tablet: 768px - 1023px */
+    @media (max-width: 1023px) {
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns fixed */
+      }
+
+      .weaknesses-grid {
+        grid-template-columns: 1fr 1fr; /* 2 columns */
+      }
+    }
+
+    /* Mobile: <768px - SWITCH TO DIRECTION B (see mobile spec) */
+    @media (max-width: 767px) {
+      /* This entire spec should not be used below 768px */
+      /* Direction B (Hero Editorial) takes over for mobile */
+      body::before {
+        content: "⚠️ Mobile view (<768px) should use Direction B (Hero Editorial) spec";
+        display: block;
+        background: var(--accent-danger);
+        color: white;
+        padding: 16px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- IMPLEMENTATION HEADER -->
+  <div class="spec-header">
+    <h1>Final Spec: DeckPage Desktop</h1>
+    <p>
+      <strong>Direction A (Data Dashboard)</strong> — Desktop/Tablet ≥768px • Max-width 1400px • 
+      Compact horizontal commander hero (120px art) • Big dashboard stat numbers (48px) • 
+      Two-column charts • Full-width weaknesses section • For mobile &lt;768px use Direction B spec
+    </p>
+  </div>
+
+  <!-- NAVBAR -->
+  <div class="spec-section">
+    <span class="spec-label">NAVBAR — Consistent Across All Pages</span>
+    
+    <div class="navbar">
+      <div class="navbar-brand">MTG Assistant</div>
+      <div class="navbar-nav">
+        <div class="nav-link">Dashboard</div>
+        <div class="nav-link">Collection</div>
+        <div class="nav-link">Leagues</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECKPAGE CONTENT -->
+  <div class="spec-section">
+    <span class="spec-label">DECKPAGE DESKTOP CONTENT (≥768px)</span>
+    
+    <div class="deck-container">
+      <!-- BACK LINK -->
+      <div class="back-link">← Back to Dashboard</div>
+
+      <!-- COMMANDER HERO - COMPACT HORIZONTAL LAYOUT -->
+      <div class="commander-hero">
+        <div class="commander-art">
+          Commander<br>Card Art<br>120×168px
+        </div>
+        <div class="commander-info">
+          <h2>Atraxa, Praetors' Voice</h2>
+          <div class="color-pips">
+            <i class="ms ms-w ms-cost pip"></i>
+            <i class="ms ms-u ms-cost pip"></i>
+            <i class="ms ms-b ms-cost pip"></i>
+            <i class="ms ms-g ms-cost pip"></i>
+          </div>
+          <div class="commander-meta">Control • Counters • Proliferate</div>
+        </div>
+        <div class="commander-actions">
+          <button class="btn-primary-small">Analyze Deck</button>
+          <button class="btn-secondary">View Strategy</button>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs">
+        <button class="tab-btn active">Overview</button>
+        <button class="tab-btn">Upgrades</button>
+        <button class="tab-btn">Strategy</button>
+        <button class="tab-btn">Scenarios</button>
+      </div>
+
+      <!-- STATS GRID - BIG DASHBOARD NUMBERS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Lands</div>
+          <div class="stat-value good">37</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ramp</div>
+          <div class="stat-value warning">12</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Card Draw</div>
+          <div class="stat-value good">11</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Removal</div>
+          <div class="stat-value bad">6</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Board Wipes</div>
+          <div class="stat-value good">3</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg CMC</div>
+          <div class="stat-value good">3.2</div>
+        </div>
+      </div>
+
+      <!-- WEAKNESSES SECTION - FULL-WIDTH DEDICATED -->
+      <div class="weaknesses-section">
+        <h3>
+          <span>⚠</span>
+          Critical Weaknesses
+        </h3>
+        <div class="weaknesses-grid">
+          <div class="weakness-item">
+            <h4>Insufficient Removal</h4>
+            <p>Only 6 removal spells detected. Control decks typically need 8-10 targeted removal pieces to survive early threats and maintain board control through the mid-game.</p>
+          </div>
+          <div class="weakness-item">
+            <h4>Limited Board Wipes</h4>
+            <p>With only 3 board wipes, you may struggle against wide strategies like tokens or go-wide tribal. Consider adding 1-2 more mass removal effects.</p>
+          </div>
+          <div class="weakness-item">
+            <h4>CMC Distribution</h4>
+            <p>Average CMC of 3.2 is acceptable, but your curve shows concentration in the 3-4 range. Adding cheaper interaction would improve early game consistency.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALYSIS GRID - TWO-COLUMN CHARTS -->
+      <div class="analysis-grid">
+        <div class="chart-card">
+          <h3>Mana Curve</h3>
+          <div class="chart-placeholder">Mana Curve Chart (Phase 36)</div>
+        </div>
+        <div class="chart-card">
+          <h3>Role Composition</h3>
+          <div class="chart-placeholder">Role Bar Chart (Phase 36)</div>
+        </div>
+      </div>
+
+      <!-- RESOURCE HEALTH CHART -->
+      <div class="chart-card">
+        <h3>Resource Health</h3>
+        <div class="chart-placeholder">Resource Health Progress Bars (Phase 36)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPLEMENTATION NOTES FOOTER -->
+  <div style="max-width: 1400px; margin: 80px auto 40px; padding: 32px 24px; background: rgba(45, 52, 57, 0.5); border-radius: 16px; border: 1px solid var(--border);">
+    <h3 style="font-size: 18px; margin-bottom: 16px; color: var(--accent-primary);">Implementation Checklist — Desktop (≥768px)</h3>
+    <ul style="color: var(--text-muted); font-size: 14px; line-height: 2; padding-left: 20px;">
+      <li><strong>Screen size:</strong> This spec applies to ≥768px only. Below 768px, switch to Direction B (Hero Editorial) mobile spec.</li>
+      <li><strong>Commander hero:</strong> Horizontal layout, 120×168px art, Cinzel 32px name, gradient background, blue border</li>
+      <li><strong>Stats grid:</strong> Auto-fit minmax(140px, 1fr), 48px stat values (BIG), color-coded good/warning/bad</li>
+      <li><strong>Weaknesses section:</strong> Full-width dedicated area, red tinted background, 3-column grid (responsive to 2→1)</li>
+      <li><strong>Charts:</strong> Two-column layout (1fr 1fr), stacks to single column below 1200px</li>
+      <li><strong>Typography:</strong> Cinzel ONLY for commander name. Inter everywhere else (tabs, labels, descriptions).</li>
+      <li><strong>Tabs:</strong> Active state with blue underline, 150ms transition, Inter font</li>
+      <li><strong>Max-width:</strong> 1400px container for desktop information density</li>
+      <li><strong>Colors:</strong> Approved palette tokens (--accent-primary, --accent-danger, --surface, --border)</li>
+      <li><strong>Accessibility:</strong> Focus rings, semantic HTML, ARIA labels where needed</li>
+    </ul>
+  </div>
+</body>
+</html>
