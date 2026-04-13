@@ -319,7 +319,7 @@ Replaced broken achievements-based scoring (First Blood/Last Stand had backwards
 - Glass morphism: `bg-surface/80 backdrop-blur-sm border border-border`
 - Hover lift: `-translate-y-0.5 hover:shadow-md transition-all`
 - Border-radius: `rounded-xl` (16px cards) | `rounded-lg` (10px buttons) | `rounded-md` (8px badges)
-- Icons: inline SVG only — no Unicode emoji
+- Icons: use **Lucide Icons** (`lucide-react`) — no Unicode emoji, no other SVG icon libraries. See `.github/icon-audit-plan.md` for migration plan.
 - CTA buttons: primary with glow shadow in dark mode
 
 **All design tokens:** See `frontend/src/styles/tokens.css`  

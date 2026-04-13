@@ -15,6 +15,7 @@ import LeaguePage from './pages/LeaguePage'
 import LogGamePage from './pages/LogGamePage'
 import JoinLeaguePage from './pages/JoinLeaguePage'
 import HelpPage from './pages/HelpPage'
+import IconShowcasePage from './pages/IconShowcasePage'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -27,6 +28,7 @@ function AnimatedRoutes() {
         <Route path="/collection" element={<CollectionPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/help" element={<HelpPage />} />
+        {import.meta.env.DEV && <Route path="/icons-dev" element={<IconShowcasePage />} />}
         <Route path="/decks/import" element={<ImportDeckPage />} />
         <Route path="/leagues" element={<LeaguesPage />} />
         <Route path="/leagues/:leagueId" element={<LeaguePage />} />
