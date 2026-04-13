@@ -74,20 +74,47 @@ async function loadDeck(moxfieldId: string): Promise<Deck> {
     return await getDeck(moxfieldId);
   } catch (e) {
     // Moxfield unreachable — fall back to Supabase cache
-    const { data } = await sb
-      .from("decks")
-      .select("data_json")
-      .eq("moxfield_id", moxfieldId)
-      .maybeSingle();
+    try {
+      const { data } = await sb
+        .from("decks")
+        .select("data_json")
+        .eq("moxfield_id", moxfieldId)
+        .maybeSingle();
 
-    if (data) {
-      console.warn(
-        `Moxfield error for ${moxfieldId}, using cache: ${String(e)}`,
+      if (data) {
+        console.warn(
+          `Moxfield error for ${moxfieldId}, using cache: ${String(e)}`,
+        );
+        return deckFromCache(data.data_json);
+      }
+    } catch (dbErr) {
+      console.error(
+        `Cache fallback also failed for ${moxfieldId}:`,
+        dbErr instanceof Error ? dbErr.message : String(dbErr),
       );
-      return deckFromCache(data.data_json);
     }
     throw new Error(`Could not load deck: ${String(e)}`);
   }
+}
+
+/** Generate a stable cache key for a scenario request. */
+async function getScenarioCacheKey(
+  moxfieldId: string,
+  cardsToAdd: string[],
+  cardsToRemove: string[],
+): Promise<string> {
+  const input = [
+    moxfieldId,
+    [...cardsToAdd].sort().join(","),
+    [...cardsToRemove].sort().join(","),
+  ].join("|");
+  const data = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hash = Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
+  return `${moxfieldId}:scenario_${hash}`;
 }
 
 async function getCached(
@@ -352,6 +379,23 @@ async function handleScenarios(
     );
   }
 
+  const sb = getServiceClient();
+
+  // Serve from cache — scenario analysis is expensive (Gemini call)
+  const cacheKey = await getScenarioCacheKey(moxfieldId, cardsToAdd, cardsToRemove);
+  const cachedScenario = await getCached(sb, cacheKey, "scenarios_v1");
+  if (cachedScenario) {
+    try {
+      return jsonResponse({
+        scenarios: JSON.parse(cachedScenario),
+        ai_enhanced: true,
+        cached: true,
+      });
+    } catch {
+      // corrupted cache entry — continue to regenerate
+    }
+  }
+
   const deck = await loadDeck(moxfieldId);
   const analysis = analyzeDeck(deck);
 
@@ -380,7 +424,10 @@ async function handleScenarios(
     return jsonResponse({ scenarios: fallback, ai_enhanced: false });
   }
 
-  return jsonResponse({ scenarios: result, ai_enhanced: true });
+  // Cache successful AI response
+  await setCached(sb, cacheKey, "scenarios_v1", JSON.stringify(result));
+
+  return jsonResponse({ scenarios: result, ai_enhanced: true, cached: false });
 }
 
 // ---------------------------------------------------------------------------

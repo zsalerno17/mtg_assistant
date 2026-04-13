@@ -57,9 +57,14 @@ async function edgeFetch(fn, path, options = {}) {
   const url = USE_EDGE
     ? `${EDGE_BASE}/${fn}${path}`
     : `${LEGACY_BASE}/api/${fn}${path}`
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30000)
+
   const makeRequest = (headers) =>
     fetch(url, {
       ...options,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...headers,
@@ -67,28 +72,42 @@ async function edgeFetch(fn, path, options = {}) {
       },
     })
 
-  let res = await makeRequest(authHeader)
+  try {
+    let res = await makeRequest(authHeader)
 
-  // On 401, refresh the token and retry once
-  if (res.status === 401) {
-    const refreshedHeader = await refreshAuthHeader()
-    res = await makeRequest(refreshedHeader)
-  }
+    // On 401, refresh the token and retry once
+    if (res.status === 401) {
+      const refreshedHeader = await refreshAuthHeader()
+      res = await makeRequest(refreshedHeader)
+    }
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail || `API error ${res.status}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throw new Error(err.detail || `API error ${res.status}`)
+    }
+    return res.json()
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.')
+    }
+    throw e
+  } finally {
+    clearTimeout(timeoutId)
   }
-  return res.json()
 }
 
 /** Legacy apiFetch for any non-edge paths (backwards compat during migration). */
 async function apiFetch(path, options = {}) {
   const authHeader = await getAuthHeader()
   const base = USE_EDGE ? EDGE_BASE : LEGACY_BASE
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30000)
+
   const makeRequest = (headers) =>
     fetch(`${base}${path}`, {
       ...options,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...headers,
@@ -96,18 +115,27 @@ async function apiFetch(path, options = {}) {
       },
     })
 
-  let res = await makeRequest(authHeader)
+  try {
+    let res = await makeRequest(authHeader)
 
-  if (res.status === 401) {
-    const refreshedHeader = await refreshAuthHeader()
-    res = await makeRequest(refreshedHeader)
-  }
+    if (res.status === 401) {
+      const refreshedHeader = await refreshAuthHeader()
+      res = await makeRequest(refreshedHeader)
+    }
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail || `API error ${res.status}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throw new Error(err.detail || `API error ${res.status}`)
+    }
+    return res.json()
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.')
+    }
+    throw e
+  } finally {
+    clearTimeout(timeoutId)
   }
-  return res.json()
 }
 
 export const api = {

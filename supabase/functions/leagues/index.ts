@@ -4,26 +4,43 @@ import { getServiceClient, getUserClient } from "../_shared/supabase.ts";
 import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/auth.ts";
 
 // ---------------------------------------------------------------------------
-// Rate limiting (in-memory, per-league game logging)
+// Rate limiting (DB-backed, survives cold starts)
 // ---------------------------------------------------------------------------
 
-const gameLogTimestamps: Record<string, number[]> = {};
 const GAME_LOG_RATE_LIMIT = 10;
-const GAME_LOG_WINDOW = 3600; // 1 hour
+const GAME_LOG_WINDOW_MS = 3600 * 1000; // 1 hour
 
-function checkGameRateLimit(leagueId: string): void {
-  const now = Date.now() / 1000;
-  const timestamps = gameLogTimestamps[leagueId] || [];
-  gameLogTimestamps[leagueId] = timestamps.filter(
-    (t) => now - t < GAME_LOG_WINDOW,
-  );
-  if (gameLogTimestamps[leagueId].length >= GAME_LOG_RATE_LIMIT) {
-    throw new HttpError(
-      429,
-      `Rate limit exceeded: maximum ${GAME_LOG_RATE_LIMIT} games per hour per league`,
-    );
+/**
+ * DB-backed rate limit: counts league_games created in the last hour.
+ * Fails open (allows request) if the DB check itself errors, to avoid
+ * blocking legitimate traffic due to transient DB issues.
+ */
+async function checkGameRateLimit(
+  leagueId: string,
+  sb: ReturnType<typeof getUserClient>,
+): Promise<void> {
+  const windowStart = new Date(Date.now() - GAME_LOG_WINDOW_MS).toISOString();
+  try {
+    const { count, error } = await sb
+      .from("league_games")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .gte("created_at", windowStart);
+    if (error) {
+      console.warn("Rate limit DB check failed, allowing request:", error.message);
+      return; // fail open
+    }
+    if ((count ?? 0) >= GAME_LOG_RATE_LIMIT) {
+      throw new HttpError(
+        429,
+        `Rate limit exceeded: maximum ${GAME_LOG_RATE_LIMIT} games per hour per league`,
+      );
+    }
+  } catch (e) {
+    if (e instanceof HttpError) throw e;
+    console.warn("Rate limit check threw unexpectedly, allowing request:", e);
+    // fail open
   }
-  gameLogTimestamps[leagueId].push(now);
 }
 
 // ---------------------------------------------------------------------------
@@ -459,7 +476,7 @@ async function logGame(
   userId: string,
   sb: ReturnType<typeof getUserClient>,
 ): Promise<Response> {
-  checkGameRateLimit(leagueId);
+  await checkGameRateLimit(leagueId, sb);
   await verifyMembership(leagueId, userId, sb);
 
   const game = body.game as Record<string, unknown>;

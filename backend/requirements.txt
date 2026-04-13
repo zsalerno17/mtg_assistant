@@ -18,6 +18,3 @@ pandas>=2.1.0
 
 # AI
 google-genai>=0.8.0
-
-# Legacy (remove after Phase 5 Gemini migration is verified)
-openai>=1.14.0

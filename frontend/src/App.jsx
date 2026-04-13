@@ -16,6 +16,7 @@ import LogGamePage from './pages/LogGamePage'
 import JoinLeaguePage from './pages/JoinLeaguePage'
 import HelpPage from './pages/HelpPage'
 import IconShowcasePage from './pages/IconShowcasePage'
+import NotFoundPage from './pages/NotFoundPage'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -34,6 +35,7 @@ function AnimatedRoutes() {
         <Route path="/leagues/:leagueId" element={<LeaguePage />} />
         <Route path="/leagues/:leagueId/log-game" element={<LogGamePage />} />
         <Route path="/leagues/join/:inviteToken" element={<JoinLeaguePage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AnimatePresence>
   )
