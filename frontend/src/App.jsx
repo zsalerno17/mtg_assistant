@@ -13,6 +13,7 @@ import ImportDeckPage from './pages/ImportDeckPage'
 import LeaguesPage from './pages/LeaguesPage'
 import LeaguePage from './pages/LeaguePage'
 import LogGamePage from './pages/LogGamePage'
+import EditGamePage from './pages/EditGamePage'
 import JoinLeaguePage from './pages/JoinLeaguePage'
 import HelpPage from './pages/HelpPage'
 import IconShowcasePage from './pages/IconShowcasePage'
@@ -34,6 +35,7 @@ function AnimatedRoutes() {
         <Route path="/leagues" element={<LeaguesPage />} />
         <Route path="/leagues/:leagueId" element={<LeaguePage />} />
         <Route path="/leagues/:leagueId/log-game" element={<LogGamePage />} />
+        <Route path="/leagues/:leagueId/games/:gameId/edit" element={<EditGamePage />} />
         <Route path="/leagues/join/:inviteToken" element={<JoinLeaguePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

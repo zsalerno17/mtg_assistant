@@ -162,6 +162,7 @@ async function createLeague(
     season_start: seasonStart,
     season_end: seasonEnd,
     status,
+    scoring_config: body.scoring_config ?? { first_blood: true, entrance_bonus: true, spicy_play: true },
   }).select().single();
 
   if (error) throw new HttpError(400, error.message);
@@ -170,12 +171,12 @@ async function createLeague(
   // in listLeagues (which inner-joins on league_members).
   const { data: profile } = await sb
     .from("user_profiles")
-    .select("display_name")
+    .select("username")
     .eq("user_id", userId)
     .maybeSingle();
 
   const superstarsName = sanitizeText(
-    (profile as { display_name?: string } | null)?.display_name || "Creator",
+    (profile as { username?: string } | null)?.username || "Creator",
     100,
   ) ?? "Creator";
 
@@ -210,13 +211,35 @@ async function getLeague(
   sb: ReturnType<typeof getUserClient>,
 ): Promise<Response> {
   await verifyMembership(leagueId, userId, sb);
-  const { data, error } = await sb
+
+  // PostgREST cannot auto-join league_members → user_profiles because there is
+  // no FK between those two tables (both reference auth.users separately).
+  // Fetch them independently and merge.
+  const { data: leagueData, error: leagueError } = await sb
     .from("leagues")
-    .select("*, league_members(*, user_profiles(display_name))")
+    .select("*, league_members(*)")
     .eq("id", leagueId)
     .single();
-  if (error) throw new HttpError(400, error.message);
-  return jsonResponse({ league: data });
+  if (leagueError) throw new HttpError(400, leagueError.message);
+
+  const memberUserIds = ((leagueData as Record<string, unknown>).league_members as Record<string, unknown>[] || []).map((m) => m.user_id as string);
+  let profilesByUserId: Record<string, Record<string, unknown>> = {};
+  if (memberUserIds.length > 0) {
+    const { data: profiles } = await sb
+      .from("user_profiles")
+      .select("user_id, username, avatar_url")
+      .in("user_id", memberUserIds);
+    for (const p of profiles || []) {
+      profilesByUserId[(p as Record<string, unknown>).user_id as string] = p as Record<string, unknown>;
+    }
+  }
+
+  const membersWithProfiles = ((leagueData as Record<string, unknown>).league_members as Record<string, unknown>[] || []).map((m) => ({
+    ...m,
+    user_profiles: profilesByUserId[m.user_id as string] || null,
+  }));
+
+  return jsonResponse({ league: { ...(leagueData as Record<string, unknown>), league_members: membersWithProfiles } });
 }
 
 // PATCH /:id — update league (creator only)
@@ -317,7 +340,7 @@ async function listMembers(
   await verifyMembership(leagueId, userId, sb);
   const { data, error } = await sb
     .from("league_members")
-    .select("*, user_profiles(display_name, avatar_url)")
+    .select("*")
     .eq("league_id", leagueId);
   if (error) throw new HttpError(400, error.message);
   return jsonResponse({ members: data });
@@ -601,6 +624,7 @@ async function logGame(
     else if (r.earned_second_place) points += 2;
     else if (r.earned_third_place) points += 1;
     if (r.earned_entrance_bonus) points += 1;
+    if (r.earned_first_blood) points += 1;
 
     return {
       game_id: gameId,
@@ -608,6 +632,8 @@ async function logGame(
       deck_id: r.deck_id ? String(r.deck_id) : null,
       placement: r.placement,
       earned_win: r.earned_win || false,
+      earned_second_place: r.earned_second_place || false,
+      earned_third_place: r.earned_third_place || false,
       earned_first_blood: r.earned_first_blood || false,
       earned_last_stand: r.earned_last_stand || false,
       earned_entrance_bonus: r.earned_entrance_bonus || false,
@@ -626,7 +652,138 @@ async function logGame(
   return jsonResponse({ game: gameRecord, results: resultsData });
 }
 
-// GET /:id/games — list games (paginated)
+// GET /:id/games/:gid — single game detail
+async function getGame(
+  leagueId: string,
+  gameId: string,
+  userId: string,
+  sb: ReturnType<typeof getUserClient>,
+): Promise<Response> {
+  await verifyMembership(leagueId, userId, sb);
+
+  const { data, error } = await sb
+    .from("league_games")
+    .select("*, league_game_results(*, league_members(superstar_name), user_decks(deck_name))")
+    .eq("id", gameId)
+    .eq("league_id", leagueId)
+    .single();
+
+  if (error || !data) return errorResponse(404, "Game not found");
+  return jsonResponse({ game: data });
+}
+
+// PUT /:id/games/:gid — edit a game (any member)
+async function editGame(
+  leagueId: string,
+  gameId: string,
+  body: Record<string, unknown>,
+  userId: string,
+  sb: ReturnType<typeof getUserClient>,
+): Promise<Response> {
+  await verifyMembership(leagueId, userId, sb);
+
+  // Verify game belongs to this league
+  const { data: existingGame, error: gameCheckErr } = await sb
+    .from("league_games")
+    .select("id")
+    .eq("id", gameId)
+    .eq("league_id", leagueId)
+    .single();
+  if (gameCheckErr || !existingGame) return errorResponse(404, "Game not found");
+
+  const game = body.game as Record<string, unknown>;
+  const results = body.results as Record<string, unknown>[];
+  if (!game || !results?.length)
+    return errorResponse(400, "game and results are required");
+
+  // Validate member_ids
+  const submittedMemberIds = results.map((r) => String(r.member_id));
+  const { data: validMembers } = await sb
+    .from("league_members")
+    .select("id, user_id")
+    .eq("league_id", leagueId)
+    .in("id", submittedMemberIds);
+  const validMemberIds = new Set((validMembers || []).map((m: Record<string, unknown>) => m.id as string));
+  const invalid = submittedMemberIds.filter((id) => !validMemberIds.has(id));
+  if (invalid.length > 0)
+    return errorResponse(400, `Invalid member_ids: ${invalid.join(", ")}`);
+
+  const memberToUser: Record<string, string> = {};
+  for (const m of validMembers || []) memberToUser[m.id as string] = m.user_id as string;
+
+  // Validate deck ownership
+  for (const result of results) {
+    if (result.deck_id) {
+      const { data: deck, error: deckErr } = await sb
+        .from("user_decks")
+        .select("user_id")
+        .eq("id", String(result.deck_id))
+        .single();
+      if (deckErr || !deck) return errorResponse(404, `Deck ${result.deck_id} not found`);
+      if (deck.user_id !== memberToUser[String(result.member_id)])
+        return errorResponse(403, `Deck ${result.deck_id} does not belong to member ${result.member_id}`);
+    }
+  }
+
+  const placements = results.map((r) => r.placement as number);
+  if (new Set(placements).size !== placements.length)
+    return errorResponse(400, "Each player must have a unique placement");
+
+  const playedAt = game.played_at
+    ? new Date(game.played_at as string).toISOString()
+    : new Date().toISOString();
+  const screenshotUrl = validateHttpUrl(game.screenshot_url as string);
+
+  const { data: gameRecord, error: gameErr } = await sb
+    .from("league_games")
+    .update({
+      game_number: game.game_number,
+      played_at: playedAt,
+      screenshot_url: screenshotUrl,
+      spicy_play_description: sanitizeText(game.spicy_play_description as string, 2000),
+      spicy_play_winner_id: game.spicy_play_winner_id ? String(game.spicy_play_winner_id) : null,
+      entrance_winner_id: game.entrance_winner_id ? String(game.entrance_winner_id) : null,
+      notes: sanitizeText(game.notes as string, 2000),
+    })
+    .eq("id", gameId)
+    .select()
+    .single();
+  if (gameErr) throw new HttpError(400, gameErr.message);
+
+  // Delete old results, re-insert updated ones
+  await sb.from("league_game_results").delete().eq("game_id", gameId);
+
+  const resultsToInsert = results.map((r) => {
+    let points = 0;
+    if (r.earned_win) points += 3;
+    else if (r.earned_second_place) points += 2;
+    else if (r.earned_third_place) points += 1;
+    if (r.earned_entrance_bonus) points += 1;
+    if (r.earned_first_blood) points += 1;
+    return {
+      game_id: gameId,
+      member_id: String(r.member_id),
+      deck_id: r.deck_id ? String(r.deck_id) : null,
+      placement: r.placement,
+      earned_win: r.earned_win || false,
+      earned_second_place: r.earned_second_place || false,
+      earned_third_place: r.earned_third_place || false,
+      earned_first_blood: r.earned_first_blood || false,
+      earned_last_stand: false,
+      earned_entrance_bonus: r.earned_entrance_bonus || false,
+      total_points: points,
+      notes: r.notes ? sanitizeText(r.notes as string, 2000) : null,
+    };
+  });
+
+  const { data: resultsData, error: resultsErr } = await sb
+    .from("league_game_results")
+    .insert(resultsToInsert)
+    .select();
+  if (resultsErr) throw new HttpError(400, resultsErr.message);
+
+  return jsonResponse({ game: gameRecord, results: resultsData });
+}
 async function listGames(
   leagueId: string,
   url: URL,
@@ -659,17 +816,90 @@ async function listGames(
 }
 
 // GET /:id/standings
+// Computed via direct table queries rather than an RPC to avoid schema-cache
+// type-mismatch issues and to return the fields the frontend actually needs
+// (second_places, third_places) instead of the deprecated first_bloods/last_stands.
 async function getStandings(
   leagueId: string,
   userId: string,
   sb: ReturnType<typeof getUserClient>,
 ): Promise<Response> {
   await verifyMembership(leagueId, userId, sb);
-  const { data, error } = await sb.rpc("get_league_standings", {
-    league_uuid: leagueId,
-  });
-  if (error) throw new HttpError(400, error.message);
-  return jsonResponse({ standings: data });
+
+  // 1. Get all members for this league
+  const { data: members, error: membersError } = await sb
+    .from("league_members")
+    .select("id, superstar_name")
+    .eq("league_id", leagueId);
+  if (membersError) throw new HttpError(400, membersError.message);
+  if (!members?.length) return jsonResponse({ standings: [] });
+
+  // 2. Get all game IDs that belong to this league
+  const { data: games, error: gamesError } = await sb
+    .from("league_games")
+    .select("id")
+    .eq("league_id", leagueId);
+  if (gamesError) throw new HttpError(400, gamesError.message);
+
+  // 3. Build a standings map seeded with zero totals for every member
+  type StandingEntry = {
+    member_id: string;
+    superstar_name: string;
+    total_points: number;
+    games_played: number;
+    wins: number;
+    second_places: number;
+    third_places: number;
+    entrance_bonuses: number;
+    first_bloods: number;
+    last_stands: number;
+  };
+  const standingsMap = new Map<string, StandingEntry>();
+  for (const m of members) {
+    standingsMap.set(m.id as string, {
+      member_id: m.id as string,
+      superstar_name: m.superstar_name as string,
+      total_points: 0,
+      games_played: 0,
+      wins: 0,
+      second_places: 0,
+      third_places: 0,
+      entrance_bonuses: 0,
+      first_bloods: 0,
+      last_stands: 0,
+    });
+  }
+
+  // 4. Aggregate results (only if games exist)
+  const gameIds = (games || []).map((g) => (g as Record<string, unknown>).id as string);
+  if (gameIds.length > 0) {
+    const { data: results, error: resultsError } = await sb
+      .from("league_game_results")
+      .select(
+        "member_id, total_points, earned_win, earned_second_place, earned_third_place, earned_entrance_bonus, earned_first_blood, earned_last_stand",
+      )
+      .in("game_id", gameIds);
+    if (resultsError) throw new HttpError(400, resultsError.message);
+
+    for (const r of results || []) {
+      const entry = standingsMap.get(r.member_id as string);
+      if (!entry) continue;
+      entry.total_points += (r.total_points as number) || 0;
+      entry.games_played += 1;
+      if (r.earned_win) entry.wins += 1;
+      if (r.earned_second_place) entry.second_places += 1;
+      if (r.earned_third_place) entry.third_places += 1;
+      if (r.earned_entrance_bonus) entry.entrance_bonuses += 1;
+      if (r.earned_first_blood) entry.first_bloods += 1;
+      if (r.earned_last_stand) entry.last_stands += 1;
+    }
+  }
+
+  const standings = Array.from(standingsMap.values()).sort(
+    (a, b) => b.total_points - a.total_points || b.wins - a.wins,
+  );
+
+  return jsonResponse({ standings });
 }
 
 // POST /:id/games/:gid/votes — cast vote
@@ -911,6 +1141,16 @@ serve(async (req: Request) => {
       }
       if (method === "GET" && segments.length === 2) {
         return await listGames(leagueId, url, user.userId, sb);
+      }
+      // /:id/games/:gid — single game GET or edit PUT
+      if (segments.length === 3) {
+        if (method === "GET") {
+          return await getGame(leagueId, segments[2], user.userId, sb);
+        }
+        if (method === "PUT") {
+          const body = await req.json();
+          return await editGame(leagueId, segments[2], body, user.userId, sb);
+        }
       }
     }
 

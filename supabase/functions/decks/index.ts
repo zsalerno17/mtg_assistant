@@ -335,6 +335,7 @@ async function handleGetLibrary(userId: string): Promise<Response> {
     }
 
     resultList.push({
+      id: deck.id,
       moxfield_id: mid,
       deck_name: deck.deck_name,
       moxfield_url: deck.moxfield_url,

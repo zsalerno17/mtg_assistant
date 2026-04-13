@@ -223,10 +223,10 @@ export const api = {
   // ============================================================================
 
   /** Create a new league/season. */
-  createLeague: ({ name, description, season_start, season_end, status = 'active' }) =>
+  createLeague: ({ name, description, season_start, season_end, status = 'active', scoring_config }) =>
     edgeFetch('leagues', '', {
       method: 'POST',
-      body: JSON.stringify({ name, description, season_start, season_end, status }),
+      body: JSON.stringify({ name, description, season_start, season_end, status, scoring_config }),
     }),
 
   /** List all leagues the user is in. */
@@ -264,6 +264,16 @@ export const api = {
   logGame: (league_id, game_data) =>
     edgeFetch('leagues', `/${league_id}/games`, {
       method: 'POST',
+      body: JSON.stringify(game_data),
+    }),
+
+  /** Get a single game by ID. */
+  getGame: (league_id, game_id) => edgeFetch('leagues', `/${league_id}/games/${game_id}`, {}),
+
+  /** Edit an existing game. */
+  editGame: (league_id, game_id, game_data) =>
+    edgeFetch('leagues', `/${league_id}/games/${game_id}`, {
+      method: 'PUT',
       body: JSON.stringify(game_data),
     }),
 

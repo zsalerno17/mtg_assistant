@@ -21,6 +21,11 @@ export default function LeaguesPage() {
   const [description, setDescription] = useState('')
   const [seasonStart, setSeasonStart] = useState('')
   const [seasonEnd, setSeasonEnd] = useState('')
+  const [scoringConfig, setScoringConfig] = useState({
+    first_blood: true,
+    entrance_bonus: true,
+    spicy_play: true,
+  })
 
   const { session } = useAuth()
 
@@ -54,12 +59,14 @@ export default function LeaguesPage() {
         season_start: seasonStart,
         season_end: seasonEnd,
         status: 'active',
+        scoring_config: scoringConfig,
       })
       // Reset form
       setName('')
       setDescription('')
       setSeasonStart('')
       setSeasonEnd('')
+      setScoringConfig({ first_blood: true, entrance_bonus: true, spicy_play: true })
       setShowCreateForm(false)
       // Reload leagues
       await loadLeagues()
@@ -218,6 +225,30 @@ export default function LeaguesPage() {
                     required
                     className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-muted)] mb-2">
+                  Bonus Awards (per-game pts)
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { key: 'entrance_bonus', label: 'WWE Entrance of the Week', desc: '+1 pt' },
+                    { key: 'first_blood', label: 'First Blood — First to Deal Damage', desc: '+1 pt' },
+                    { key: 'spicy_play', label: 'Spicy Play of the Week', desc: 'narrative only' },
+                  ].map(({ key, label, desc }) => (
+                    <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={scoringConfig[key]}
+                        onChange={(e) => setScoringConfig(prev => ({ ...prev, [key]: e.target.checked }))}
+                        className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                      />
+                      <span className="text-sm text-[var(--color-text)]">{label}</span>
+                      <span className="text-xs text-[var(--color-muted)]">{desc}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext'
 import { StandingsRowSkeleton, MemberCardSkeleton, GameCardSkeleton } from '../components/Skeletons'
 import { TrophyIcon, CrownIcon, SwordsIcon } from '../components/LeagueIcons'
 import PageTransition from '../components/PageTransition'
+import { isPresetUrl, urlToPresetId, isCreaturePreset, CREATURE_PRESET_MAP } from '../lib/avatarPresets'
+import { CreaturePresetIcon } from '../lib/creatureIcons'
 
 export default function LeaguePage() {
   const { leagueId } = useParams()
@@ -652,16 +654,24 @@ export default function LeaguePage() {
                       {new Date(game.played_at).toLocaleTimeString()}
                     </div>
                   </div>
-                  {game.screenshot_url && (
-                    <a
-                      href={game.screenshot_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[var(--color-primary)] hover:underline"
+                  <div className="flex items-center gap-3">
+                    {game.screenshot_url && (
+                      <a
+                        href={game.screenshot_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-[var(--color-primary)] hover:underline"
+                      >
+                        📸 Screenshot
+                      </a>
+                    )}
+                    <Link
+                      to={`/leagues/${leagueId}/games/${game.id}/edit`}
+                      className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] rounded-lg px-2.5 py-1 hover:border-[var(--color-primary)] transition-colors"
                     >
-                      📸 Screenshot
-                    </a>
-                  )}
+                      Edit
+                    </Link>
+                  </div>
                 </div>
 
                 {/* Results */}
@@ -696,6 +706,9 @@ export default function LeaguePage() {
                           {result.earned_win && <span className="text-[var(--color-success)]">Win</span>}
                           {result.earned_entrance_bonus && (
                             <span className="text-[var(--color-secondary)]">Entrance</span>
+                          )}
+                          {result.earned_first_blood && (
+                            <span className="text-red-400">First Blood</span>
                           )}
                           <span className="font-bold text-[var(--color-primary)]">{result.total_points} pts</span>
                         </div>
@@ -805,26 +818,46 @@ export default function LeaguePage() {
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  {member.user_profiles?.avatar_url ? (
-                    <img
-                      src={member.user_profiles.avatar_url}
-                      alt={member.superstar_name}
-                      className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)]"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/20 border-2 border-[var(--color-primary)] flex items-center justify-center">
-                      <SwordsIcon className="w-7 h-7 text-[var(--color-primary)]" />
-                    </div>
-                  )}
+                  {(() => {
+                    const rawAvatar = member.user_profiles?.avatar_url
+                    if (!rawAvatar) {
+                      return (
+                        <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/20 border-2 border-[var(--color-primary)] flex items-center justify-center">
+                          <SwordsIcon className="w-7 h-7 text-[var(--color-primary)]" />
+                        </div>
+                      )
+                    }
+                    if (isPresetUrl(rawAvatar)) {
+                      const presetId = urlToPresetId(rawAvatar)
+                      if (isCreaturePreset(presetId)) {
+                        const preset = CREATURE_PRESET_MAP[presetId]
+                        return (
+                          <div
+                            className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] flex items-center justify-center flex-shrink-0"
+                            style={{ background: preset.bg }}
+                          >
+                            <CreaturePresetIcon id={presetId} className="w-8 h-8" />
+                          </div>
+                        )
+                      }
+                      return (
+                        <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/20 border-2 border-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
+                          <i className={`ms ms-${presetId} ms-cost ms-shadow`} style={{ fontSize: '1.75rem' }} aria-hidden="true" />
+                        </div>
+                      )
+                    }
+                    return (
+                      <img
+                        src={rawAvatar}
+                        alt={member.superstar_name}
+                        className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] flex-shrink-0"
+                      />
+                    )
+                  })()}
                   <div className="flex-1">
                     <h3 className="text-2xl font-brand font-bold text-[var(--color-text)] mb-1">
                       {member.superstar_name}
                     </h3>
-                    {member.user_profiles?.display_name && (
-                      <div className="text-sm text-[var(--color-muted)] mb-2">
-                        @{member.user_profiles.display_name}
-                      </div>
-                    )}
                     {member.current_title && (
                       <div className="inline-block px-3 py-1 bg-[var(--color-primary)]/20 text-[var(--color-primary)] text-xs font-bold rounded-full mb-3">
                         {member.current_title}

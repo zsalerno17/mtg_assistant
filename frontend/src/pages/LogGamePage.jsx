@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import PageTransition from '../components/PageTransition'
 
 export default function LogGamePage() {
   const { leagueId } = useParams()
@@ -23,6 +24,7 @@ export default function LogGamePage() {
   const [spicyPlayDescription, setSpicyPlayDescription] = useState('')
   const [spicyPlayWinnerId, setSpicyPlayWinnerId] = useState('')
   const [entranceWinnerId, setEntranceWinnerId] = useState('')
+  const [firstBloodWinnerId, setFirstBloodWinnerId] = useState('')
   const [notes, setNotes] = useState('')
 
   // Pod size (determines placement options)
@@ -131,8 +133,7 @@ export default function LogGamePage() {
             earned_second_place,
             earned_third_place,
             earned_entrance_bonus,
-            // Legacy fields for backward compatibility (always false now)
-            earned_first_blood: false,
+            earned_first_blood: memberId === firstBloodWinnerId,
             earned_last_stand: false,
             notes: r.notes || null,
           }
@@ -288,7 +289,8 @@ export default function LogGamePage() {
                 const placement = results[member.id]?.placement ? Number(results[member.id].placement) : null
                 const placementPts = placement === 1 ? 3 : placement === 2 ? 2 : placement === 3 ? 1 : 0
                 const entrancePts = member.id === entranceWinnerId ? 1 : 0
-                const totalPreview = placement ? placementPts + entrancePts : null
+                const firstBloodPts = member.id === firstBloodWinnerId ? 1 : 0
+                const totalPreview = placement ? placementPts + entrancePts + firstBloodPts : null
                 
                 return (
                 <div
@@ -354,6 +356,7 @@ export default function LogGamePage() {
                         {placement === 1 ? '1st → 3 pts' : placement === 2 ? '2nd → 2 pts' : placement === 3 ? '3rd → 1 pt' : `${placement}th → 0 pts`}
                       </span>
                       {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+1 entrance</span>}
+                      {firstBloodPts > 0 && <span className="text-red-400">+1 first blood</span>}
                       <span className="ml-auto font-bold text-[var(--color-primary)]">{totalPreview} pts total</span>
                     </div>
                   )}
@@ -363,7 +366,7 @@ export default function LogGamePage() {
             </div>
 
             <div className="mt-4 text-xs text-[var(--color-muted)]">
-              <strong>Points awarded automatically:</strong> 1st = 3pts, 2nd = 2pts, 3rd = 1pt, 4th+ = 0pts. Entrance bonus = +1pt.
+              <strong>Points awarded automatically:</strong> 1st = 3pts, 2nd = 2pts, 3rd = 1pt, 4th+ = 0pts. Entrance &amp; First Blood bonus = +1pt each.
             </div>
           </div>
 
@@ -374,6 +377,7 @@ export default function LogGamePage() {
             </h2>
 
             <div className="space-y-4">
+              {(league?.scoring_config?.entrance_bonus !== false) && (
               <div>
                 <label htmlFor="entrance-winner" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                   WWE Entrance of the Week (+1pt)
@@ -392,7 +396,31 @@ export default function LogGamePage() {
                   ))}
                 </select>
               </div>
+              )}
 
+              {(league?.scoring_config?.first_blood !== false) && (
+              <div>
+                <label htmlFor="first-blood-winner" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  First Blood — First to Deal Damage (+1pt)
+                </label>
+                <select
+                  id="first-blood-winner"
+                  value={firstBloodWinnerId}
+                  onChange={(e) => setFirstBloodWinnerId(e.target.value)}
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                >
+                  <option value="">— No winner —</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.superstar_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              )}
+
+              {(league?.scoring_config?.spicy_play !== false) && (
+              <>
               <div>
                 <label htmlFor="spicy-play" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                   Spicy Play of the Week
@@ -425,10 +453,10 @@ export default function LogGamePage() {
                   ))}
                 </select>
               </div>
+              </>
+              )}
             </div>
           </div>
-
-          {/* Submit */}
           <div className="flex items-center justify-between">
             <button
               type="button"

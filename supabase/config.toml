@@ -361,6 +361,31 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Edge function configuration
+# verify_jwt = false for all functions: each function handles its own JWT validation
+# via requireAllowedUser(). Supabase's infra-level JWT check rejects PKCE-flow
+# tokens (flowType: 'pkce'), causing 401s before the function code ever runs.
+[functions.leagues]
+verify_jwt = false
+
+[functions.users]
+verify_jwt = false
+
+[functions.decks]
+verify_jwt = false
+
+[functions.ai]
+verify_jwt = false
+
+[functions.analyses]
+verify_jwt = false
+
+[functions.collection]
+verify_jwt = false
+
+[functions.health]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
