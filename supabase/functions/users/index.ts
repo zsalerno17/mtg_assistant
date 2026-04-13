@@ -82,11 +82,19 @@ serve(async (req) => {
 
       const now = new Date().toISOString();
 
-      const { data: existing } = await sb
+      const { data: existing, error: existingError } = await sb
         .from("user_profiles")
         .select("user_id")
         .eq("user_id", user.userId)
-        .single();
+        .maybeSingle();
+
+      if (existingError) {
+        console.error("[users/PUT] Error checking existing profile:", existingError);
+        return new Response(
+          JSON.stringify({ detail: "Failed to check existing profile" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       try {
         if (existing) {

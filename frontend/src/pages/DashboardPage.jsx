@@ -459,40 +459,57 @@ export default function DashboardPage() {
   const [analyzeError, setAnalyzeError] = useState(null)
   const [showImportModal, setShowImportModal] = useState(false)
 
-  const loadDecks = () => {
+  // loadDecks is used by the main useEffect AND by the retry button / import
+  // callback.  We keep a ref-based "generation" counter so that when the
+  // session token changes (e.g. token refresh) and the effect re-fires, any
+  // in-flight response from a previous call is ignored — preventing a stale
+  // 401 failure from overwriting a successful fresh response.
+  const loadGenRef = useRef(0)
+
+  const loadDecks = (gen) => {
     setDecksError(null)
     api.getDeckLibrary()
       .then(data => {
+        if (gen !== undefined && gen !== loadGenRef.current) return
         setDecks(data.decks || [])
         setDecksError(null)
       })
       .catch(err => {
+        if (gen !== undefined && gen !== loadGenRef.current) return
         console.error('[DashboardPage] Failed to load decks:', err)
         console.error('[DashboardPage] Error details:', err.message, err.stack)
         setDecks([])
         setDecksError(err.message || 'Failed to load decks. Please try again.')
       })
-      .finally(() => setDecksLoading(false))
+      .finally(() => {
+        if (gen !== undefined && gen !== loadGenRef.current) return
+        setDecksLoading(false)
+      })
   }
 
   useEffect(() => {
     if (!session?.access_token) return
-    setDecksLoading(true)
+    const gen = ++loadGenRef.current
+    setDecksLoading(true) // eslint-disable-line react-hooks/set-state-in-effect -- loading state must be set synchronously before the async fetch begins
     setSummaryLoading(true)
-    loadDecks()
+    loadDecks(gen)
 
     api.getCollectionSummary()
       .then(data => {
+        if (gen !== loadGenRef.current) return
         setCollectionSummary(data)
         setSummaryError(null)
       })
       .catch(err => {
+        if (gen !== loadGenRef.current) return
         console.error('[DashboardPage] Failed to load collection summary:', err)
         setCollectionSummary(null)
         setSummaryError(err.message)
       })
-      .finally(() => setSummaryLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      .finally(() => {
+        if (gen !== loadGenRef.current) return
+        setSummaryLoading(false)
+      })
   }, [session?.access_token])
 
   const handleImported = () => {
