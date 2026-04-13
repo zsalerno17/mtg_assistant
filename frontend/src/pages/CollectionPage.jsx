@@ -89,7 +89,7 @@ export default function CollectionPage() {
         <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
           My Collection
         </h2>
-        <div className="h-px w-20 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
+        <div className="h-px w-20 bg-[var(--color-primary-border)] mb-3" />
         <p className="text-[var(--color-muted)] text-sm font-heading">
           Export your collection from Moxfield and upload it here.
         </p>
@@ -122,12 +122,8 @@ export default function CollectionPage() {
               
               {/* Progress bar */}
               <div className="w-full bg-[var(--color-border)] rounded-full h-1.5 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 animate-pulse" 
-                     style={{ 
-                       width: '100%',
-                       animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, shimmer 2s linear infinite',
-                       backgroundSize: '200% 100%'
-                     }} 
+                <div className="h-full bg-[var(--color-secondary)] animate-pulse" 
+                     style={{ width: '100%' }} 
                 />
               </div>
               

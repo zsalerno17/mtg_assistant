@@ -442,12 +442,12 @@ export default function LeaguePage() {
 
         {/* Current Champion Hero */}
         {standings.length > 0 ? (
-          <div className="bg-gradient-to-r from-yellow-500/10 to-amber-500/5 border border-yellow-500/30 rounded-xl p-6 mb-8">
+          <div className="bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <TrophyIcon className="w-10 h-10 text-yellow-400" />
+                <TrophyIcon className="w-10 h-10 text-[var(--color-secondary)]" />
                 <div>
-                  <div className="text-xs font-brand font-medium text-yellow-400/80 uppercase tracking-wider mb-1">Current Champion</div>
+                  <div className="text-xs font-brand font-medium text-[var(--color-secondary)] uppercase tracking-wider mb-1">Current Champion</div>
                   <div className="text-3xl font-brand font-bold text-[var(--color-text)]">{standings[0].superstar_name}</div>
                   <div className="text-sm text-[var(--color-muted)] mt-1">
                     {standings[0].total_points} pts · {standings[0].wins} wins · {standings[0].games_played} games
@@ -457,8 +457,8 @@ export default function LeaguePage() {
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-yellow-500/5 to-amber-500/5 border border-yellow-500/20 rounded-xl p-6 mb-8 text-center">
-            <CrownIcon className="w-8 h-8 text-yellow-400/60 mx-auto mb-2" />
+          <div className="bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-xl p-6 mb-8 text-center">
+            <CrownIcon className="w-8 h-8 text-[var(--color-secondary)] opacity-60 mx-auto mb-2" />
             <div className="text-lg font-brand font-bold text-[var(--color-text)]">The throne is empty.</div>
             <div className="text-sm text-[var(--color-muted)]">Who will claim it first?</div>
           </div>
@@ -544,7 +544,7 @@ export default function LeaguePage() {
               <tbody className="divide-y divide-accent/20">
                 {standings.map((member, idx) => (
                   <tr key={member.member_id} className={`hover:bg-[var(--color-surface)]/40 transition-colors ${
-                    idx === 0 ? 'bg-gradient-to-r from-yellow-500/10 to-transparent' : ''
+                    idx === 0 ? 'bg-[var(--color-secondary-subtle)]' : ''
                   }`}>
                     <td className="px-6 py-4">
                       <span

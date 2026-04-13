@@ -204,7 +204,7 @@ export default function HelpPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-12">

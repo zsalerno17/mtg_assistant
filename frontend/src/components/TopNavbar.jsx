@@ -53,8 +53,8 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
   }
   const initials = email ? email.slice(0, 2).toUpperCase() : '?'
   return (
-    <div className={`${sizeClasses[size]} rounded-[7px] bg-gradient-to-br from-[var(--color-primary)] to-[#f59e0b] flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(251,191,36,0.25)]`}>
-      <span className={`${textSizeClasses[size]} text-black font-semibold font-mono`}>{initials}</span>
+    <div className={`${sizeClasses[size]} rounded-lg bg-[var(--color-primary)] flex items-center justify-center shrink-0 shadow-[0_2px_8px_var(--color-primary-glow)]`}>
+      <span className={`${textSizeClasses[size]} text-[var(--color-text-on-primary)] font-semibold font-mono`}>{initials}</span>
     </div>
   )
 }

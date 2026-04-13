@@ -122,7 +122,7 @@ export default function ProfilePage() {
           <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
             Profile
           </h2>
-          <div className="h-px w-20 bg-gradient-to-r from-[var(--color-primary)] to-transparent mb-3" />
+          <div className="h-px w-20 bg-[var(--color-primary-border)] mb-3" />
           <p className="text-[var(--color-muted)] text-sm font-heading">
             Set a username and profile picture for use across the app.
           </p>
