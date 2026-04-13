@@ -147,11 +147,25 @@ async function handleAnalyze(
     return jsonResponse({ analysis: existing.result_json, cached: true });
   }
 
-  // Update deck cache with fresh data
+  // Update deck cache with fresh data. Preserve any existing image URIs if the
+  // new Moxfield fetch returned empty ones — Moxfield intermittently omits
+  // image_uris, and we must never regress a previously-good cached URL to null.
   try {
+    const serialized = serializeDeck(deck);
+    const cachedData = cachedDeck.data_json as Record<string, unknown>;
+    const oldCommander = cachedData?.commander as Record<string, unknown> | null;
+    const newCommander = serialized.commander as Record<string, unknown> | null;
+    if (newCommander && !newCommander.image_uri && oldCommander?.image_uri) {
+      newCommander.image_uri = oldCommander.image_uri;
+    }
+    const oldPartner = cachedData?.partner as Record<string, unknown> | null;
+    const newPartner = serialized.partner as Record<string, unknown> | null;
+    if (newPartner && !newPartner.image_uri && oldPartner?.image_uri) {
+      newPartner.image_uri = oldPartner.image_uri;
+    }
     await sb
       .from("decks")
-      .update({ data_json: serializeDeck(deck) })
+      .update({ data_json: serialized })
       .eq("moxfield_id", moxfieldId);
   } catch (e) {
     console.warn(`Failed to update deck cache for ${moxfieldId}:`, e);
@@ -236,6 +250,24 @@ async function handleAddToLibrary(
   }
   if (partnerObj && typeof partnerObj === "object") {
     partnerImageUri = (partnerObj.image_uri as string) || null;
+  }
+
+  // Never overwrite a previously-good image URI with null. If the cache returned
+  // empty images (e.g. corrupted from an earlier bad Moxfield response), preserve
+  // whatever is already stored in user_decks for this row.
+  if (!commanderImageUri || !partnerImageUri) {
+    const { data: existingRow } = await sb
+      .from("user_decks")
+      .select("commander_image_uri, partner_image_uri")
+      .eq("user_id", userId)
+      .eq("moxfield_id", deckId)
+      .maybeSingle();
+    if (!commanderImageUri && existingRow?.commander_image_uri) {
+      commanderImageUri = existingRow.commander_image_uri;
+    }
+    if (!partnerImageUri && existingRow?.partner_image_uri) {
+      partnerImageUri = existingRow.partner_image_uri;
+    }
   }
 
   const row = {

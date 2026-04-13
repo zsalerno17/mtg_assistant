@@ -112,6 +112,13 @@ function parseMoxfieldCard(entry: Record<string, unknown>): Card {
     oracleText = (cardFaces[0].oracle_text as string) || "";
   }
 
+  const scryfallId = (card.scryfall_id as string) || "";
+  // Prefer image_uris.normal; fall back to Scryfall CDN via scryfall_id.
+  // Moxfield intermittently omits image_uris for some cards, but always
+  // includes scryfall_id, so we can construct a reliable fallback URL.
+  const imageUri = imageUris.normal ||
+    (scryfallId ? `https://api.scryfall.com/cards/${scryfallId}?format=image` : "");
+
   return createCard({
     name: (card.name as string) || "",
     quantity,
@@ -124,7 +131,7 @@ function parseMoxfieldCard(entry: Record<string, unknown>): Card {
     keywords: (card.keywords as string[]) || [],
     rarity: (card.rarity as string) || "",
     set_code: (card.set as string) || "",
-    image_uri: imageUris.normal || "",
-    scryfall_id: (card.scryfall_id as string) || "",
+    image_uri: imageUri,
+    scryfall_id: scryfallId,
   });
 }
