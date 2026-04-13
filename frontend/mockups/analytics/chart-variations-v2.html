@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phase 36 — Chart Redesign Mockups v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Arcane Spectrum Tokens ───────────────────────────────────────────── */
+    :root {
+      --color-bg:           #070813;
+      --color-surface:      #0d1020;
+      --color-surface-2:    #14182d;
+      --color-border:       #1e2540;
+      --color-border-light: #2a3458;
+      --color-primary:      #4ca8e0;
+      --color-secondary:    #d8a848;
+      --color-success:      #5ec070;
+      --color-danger:       #e85868;
+      --color-mtg-white:    #f4f0e0;
+      --color-mtg-blue:     #4ca8e0;
+      --color-mtg-black:    #9875d8;
+      --color-mtg-red:      #e85868;
+      --color-mtg-green:    #5ec070;
+      --color-text:         #ecf2fa;
+      --color-text-muted:   #92a8c8;
+      --color-text-subtle:  #4a5a78;
+      --font-brand:         'Cinzel', serif;
+      --font-body:          'Inter', sans-serif;
+      --font-mono:          'JetBrains Mono', monospace;
+    }
+    [data-theme="light"] {
+      --color-bg:           #f9fafb;
+      --color-surface:      #ffffff;
+      --color-surface-2:    #f0f4f8;
+      --color-border:       #d8e2ec;
+      --color-border-light: #c0d0e0;
+      --color-primary:      #2080b8;
+      --color-secondary:    #b8842e;
+      --color-success:      #2e9050;
+      --color-danger:       #c8303c;
+      --color-mtg-white:    #4a4035;
+      --color-mtg-blue:     #2080b8;
+      --color-mtg-black:    #6838a8;
+      --color-mtg-red:      #c8303c;
+      --color-mtg-green:    #2e9050;
+      --color-text:         #0a1828;
+      --color-text-muted:   #475a70;
+      --color-text-subtle:  #8a9cb0;
+    }
+
+    /* ── Base ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      padding: 2rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────────────── */
+    .page-header {
+      max-width: 900px;
+      margin: 0 auto 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .page-header h1 {
+      font-family: var(--font-brand);
+      font-size: 1.5rem;
+      color: var(--color-primary);
+      margin-bottom: 0.25rem;
+    }
+    .page-header p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    .deck-pill {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      margin-top: 0.25rem;
+    }
+    .theme-toggle {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover { border-color: var(--color-primary); color: var(--color-text); }
+
+    /* ── Layout ───────────────────────────────────────────────────────────── */
+    .main { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 3rem; }
+
+    /* ── Chart Section ────────────────────────────────────────────────────── */
+    .chart-section { display: flex; flex-direction: column; gap: 0.75rem; }
+    .section-label {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+    .section-title {
+      font-family: var(--font-brand);
+      font-size: 1rem;
+      color: var(--color-text);
+      margin-top: 0.1rem;
+    }
+    .section-desc {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      margin-top: 0.15rem;
+      line-height: 1.5;
+    }
+    .variations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.25rem;
+      margin-top: 0.25rem;
+    }
+    .variation-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: border-color 0.15s;
+    }
+    .variation-card:hover { border-color: var(--color-border-light); }
+    .variation-card.recommended { border-color: var(--color-primary); }
+    .variation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .variation-title { font-size: 0.8rem; font-weight: 600; color: var(--color-text-muted); }
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge-rec { background: rgba(76,168,224,0.15); color: var(--color-primary); border: 1px solid rgba(76,168,224,0.3); }
+    .badge-alt { background: var(--color-surface-2); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+    .chart-container { width: 100%; }
+
+    /* ── Divider ──────────────────────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--color-border);
+    }
+
+    /* ── Resource Health (pure CSS, no D3) ───────────────────────────────── */
+    .rh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; }
+    .rh-row { display: flex; flex-direction: column; gap: 0.3rem; }
+    .rh-meta { display: flex; justify-content: space-between; align-items: baseline; }
+    .rh-label { font-size: 0.75rem; font-weight: 500; color: var(--color-text); }
+    .rh-target { font-size: 0.7rem; color: var(--color-text-subtle); font-family: var(--font-mono); }
+    .rh-bar-track {
+      width: 100%;
+      height: 6px;
+      background: var(--color-surface-2);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .rh-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+    .rh-bar-fill.green  { background: var(--color-success); }
+    .rh-bar-fill.amber  { background: var(--color-secondary); }
+    .rh-bar-fill.red    { background: var(--color-danger); }
+    .rh-count { font-size: 0.7rem; font-family: var(--font-mono); }
+    .rh-count.green     { color: var(--color-success); }
+    .rh-count.amber     { color: var(--color-secondary); }
+    .rh-count.red       { color: var(--color-danger); }
+
+    /* Variation B — score badges */
+    .rh-badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .rh-badge {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .rh-badge-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .rh-badge-label { font-size: 0.7rem; font-weight: 500; color: var(--color-text-muted); }
+    .rh-badge-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+    .rh-badge-dot.green  { background: var(--color-success); }
+    .rh-badge-dot.amber  { background: var(--color-secondary); }
+    .rh-badge-dot.red    { background: var(--color-danger); }
+    .rh-badge-value { font-size: 1.25rem; font-weight: 700; font-family: var(--font-mono); color: var(--color-text); line-height: 1; }
+    .rh-badge-range { font-size: 0.65rem; font-family: var(--font-mono); color: var(--color-text-subtle); }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <div>
+      <h1>Phase 36 — Chart Redesign Mockups</h1>
+      <p>BI Dashboard · Clean · No gradients · Full token support (dark + light)</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+        <span class="deck-pill">Sample deck: Meren of Clan Nel Toth (Reanimator/Aristocrats, Power 6)</span>
+        <span class="deck-pill">99 cards · Avg CMC 3.1 · Sultai (B/G/U)</span>
+      </div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">☀ Light Mode</button>
+  </div>
+
+  <div class="main">
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CHART 1 — MANA CURVE -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="chart-section">
+      <div>
+        <div class="section-label">Chart 1 of 3</div>
+        <div class="section-title">Mana Curve</div>
+        <div class="section-desc">Non-land card count by mana value. Both variations keep the vertical bar histogram — the differences are in color strategy and annotation style. The avg CMC reference line is always included.</div>
+      </div>
+
+      <div class="variations-grid">
+        <!-- Variation A: Zone Colors -->
+        <div class="variation-card recommended">
+          <div class="variation-header">
+            <span class="variation-title">Variation A — Zone Colors</span>
+            <span class="badge badge-rec">Recommended</span>
+          </div>
+          <div class="chart-container" id="curve-a" style="height:200px;"></div>
+          <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.75rem;line-height:1.5;">
+            CMC 0–2 = acceleration (primary blue) · 3–4 = spell density (secondary gold) · 5+ = haymakers (danger red). Three zones give instant visual read of deck tempo. Count labels above each bar replace Y-axis noise.
+          </p>
+        </div>
+
+        <!-- Variation B: Single Accent -->
+        <div class="variation-card">
+          <div class="variation-header">
+            <span class="variation-title">Variation B — Single Accent</span>
+            <span class="badge badge-alt">Alternative</span>
+          </div>
+          <div class="chart-container" id="curve-b" style="height:200px;"></div>
+          <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.75rem;line-height:1.5;">
+            All bars in primary blue at uniform opacity. Cleaner/more minimal — lets the shape speak for itself. Count labels still shown. Avg CMC dashed reference line.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CHART 2 — ROLE COMPOSITION -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="chart-section">
+      <div>
+        <div class="section-label">Chart 2 of 3 — replaces card type donut</div>
+        <div class="section-title">Role Composition</div>
+        <div class="section-desc">What each card actually <em>does</em> in the deck. Based on computed role counts already returned by the backend. "Threats/Other" is a derived remainder bucket. Semantic MTG colors per role.</div>
+      </div>
+
+      <div class="variations-grid">
+        <!-- Variation A: Horizontal Bars -->
+        <div class="variation-card recommended">
+          <div class="variation-header">
+            <span class="variation-title">Variation A — Horizontal Bars</span>
+            <span class="badge badge-rec">Recommended</span>
+          </div>
+          <div class="chart-container" id="role-a" style="height:260px;"></div>
+          <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.75rem;line-height:1.5;">
+            One bar per functional role. Bar length = proportion of deck. Count at right edge. Labels along Y-axis (left). Easiest to scan; natural for ranking/comparison. BI standard.
+          </p>
+        </div>
+
+        <!-- Variation B: Stacked Single Bar -->
+        <div class="variation-card">
+          <div class="variation-header">
+            <span class="variation-title">Variation B — Stacked Bar + Legend</span>
+            <span class="badge badge-alt">Alternative</span>
+          </div>
+          <div class="chart-container" id="role-b" style="height:260px;"></div>
+          <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.75rem;line-height:1.5;">
+            All roles in a single proportional bar. Legend below with counts. Very compact — good for small screen. Harder to compare segment sizes precisely. More visual/decorative.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CHART 3 — RESOURCE HEALTH -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="chart-section">
+      <div>
+        <div class="section-label">Chart 3 of 3 — new, unique to this app</div>
+        <div class="section-title">Resource Health</div>
+        <div class="section-desc">Actual counts vs. strategy-specific recommended ranges from <code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-primary);">_STRATEGY_THRESHOLDS</code>. This deck is a Reanimator/Aristocrats (≈ midrange thresholds: ramp 10–12, draw 10–12, removal 9–11, lands 36–38). No other Commander tool shows you whether <em>your counts</em> are right for <em>your strategy</em>.</div>
+      </div>
+
+      <div class="variations-grid">
+        <!-- Variation A: Progress Bars -->
+        <div class="variation-card recommended">
+          <div class="variation-header">
+            <span class="variation-title">Variation A — Progress Bars (2×3 grid)</span>
+            <span class="badge badge-rec">Recommended</span>
+          </div>
+          <!-- Sample data: Meren deck — ramp 11 (good), draw 9 (low), removal 8 (low), wipes 3 (good), lands 37 (good), counterspells 2 (low) -->
+          <div class="rh-grid">
+            <!-- Ramp: 11, target 10–12 → green, fills 11/12 = 92% -->
+            <div class="rh-row">
+              <div class="rh-meta">
+                <span class="rh-label">Ramp</span>
+                <span class="rh-count green">11 <span style="color:var(--color-text-subtle);font-size:0.65rem;">/ target 10–12</span></span>
+              </div>
+              <div class="rh-bar-track"><div class="rh-bar-fill green" style="width:92%;"></div></div>
+            </div>
+            <!-- Draw: 9, target 10–12 → amber, fills 9/12 = 75% -->
+            <div class="rh-row">
+              <div class="rh-meta">
+                <span class="rh-label">Card Draw</span>
+                <span class="rh-count amber">9 <span style="color:var(--color-text-subtle);font-size:0.65rem;">/ target 10–12</span></span>
+              </div>
+              <div class="rh-bar-track"><div class="rh-bar-fill amber" style="width:75%;"></div></div>
+            </div>
+            <!-- Removal: 8, target 9–11 → amber, fills 8/11 = 73% -->
+            <div class="rh-row">
+              <div class="rh-meta">
+                <span class="rh-label">Removal</span>
+                <span class="rh-count amber">8 <span style="color:var(--color-text-subtle);font-size:0.65rem;">/ target 9–11</span></span>
+              </div>
+              <div class="rh-bar-track"><div class="rh-bar-fill amber" style="width:73%;"></div></div>
+            </div>
+            <!-- Wipes: 3, target 2–4 → green, fills 3/4 = 75% (in range) -->
+            <div class="rh-row">
+              <div class="rh-meta">
+                <span class="rh-label">Board Wipes</span>
+                <span class="rh-count green">3 <span style="color:var(--color-text-subtle);font-size:0.65rem;">/ target 2–4</span></span>
+              </div>
+              <div class="rh-bar-track"><div class="rh-bar-fill green" style="width:75%;"></div></div>
+            </div>
+            <!-- Lands: 37, target 36–38 → green, fills 37/38 = 97% -->
+            <div class="rh-row">
+              <div class="rh-meta">
+                <span class="rh-label">Lands</span>
+                <span class="rh-count green">37 <span style="color:var(--color-text-subtle);font-size:0.65rem;">/ target 36–38</span></span>
+              </div>
+              <div class="rh-bar-track"><div class="rh-bar-fill green" style="width:97%;"></div></div>
+            </div>
+            <!-- Counterspells: 2, target 4–6 (midrange) → red, fills 2/6 = 33% -->
+            <div class="rh-row">
+              <div class="rh-meta">
+                <span class="rh-label">Counterspells</span>
+                <span class="rh-count red">2 <span style="color:var(--color-text-subtle);font-size:0.65rem;">/ target 4–6</span></span>
+              </div>
+              <div class="rh-bar-track"><div class="rh-bar-fill red" style="width:33%;"></div></div>
+            </div>
+          </div>
+          <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.85rem;line-height:1.5;">
+            Thin bars in a 2×3 grid. Green = in range, amber = below min, red = critically short (&lt; min − 2). Count and target range shown inline. Immediately scannable; works at any screen width.
+          </p>
+        </div>
+
+        <!-- Variation B: Score Badges -->
+        <div class="variation-card">
+          <div class="variation-header">
+            <span class="variation-title">Variation B — Score Badges (3×2 grid)</span>
+            <span class="badge badge-alt">Alternative</span>
+          </div>
+          <div class="rh-badges-grid">
+            <div class="rh-badge">
+              <div class="rh-badge-top">
+                <span class="rh-badge-label">Ramp</span>
+                <span class="rh-badge-dot green"></span>
+              </div>
+              <span class="rh-badge-value" style="color:var(--color-success);">11</span>
+              <span class="rh-badge-range">target 10–12</span>
+            </div>
+            <div class="rh-badge">
+              <div class="rh-badge-top">
+                <span class="rh-badge-label">Card Draw</span>
+                <span class="rh-badge-dot amber"></span>
+              </div>
+              <span class="rh-badge-value" style="color:var(--color-secondary);">9</span>
+              <span class="rh-badge-range">target 10–12</span>
+            </div>
+            <div class="rh-badge">
+              <div class="rh-badge-top">
+                <span class="rh-badge-label">Removal</span>
+                <span class="rh-badge-dot amber"></span>
+              </div>
+              <span class="rh-badge-value" style="color:var(--color-secondary);">8</span>
+              <span class="rh-badge-range">target 9–11</span>
+            </div>
+            <div class="rh-badge">
+              <div class="rh-badge-top">
+                <span class="rh-badge-label">Board Wipes</span>
+                <span class="rh-badge-dot green"></span>
+              </div>
+              <span class="rh-badge-value" style="color:var(--color-success);">3</span>
+              <span class="rh-badge-range">target 2–4</span>
+            </div>
+            <div class="rh-badge">
+              <div class="rh-badge-top">
+                <span class="rh-badge-label">Lands</span>
+                <span class="rh-badge-dot green"></span>
+              </div>
+              <span class="rh-badge-value" style="color:var(--color-success);">37</span>
+              <span class="rh-badge-range">target 36–38</span>
+            </div>
+            <div class="rh-badge">
+              <div class="rh-badge-top">
+                <span class="rh-badge-label">Counters</span>
+                <span class="rh-badge-dot red"></span>
+              </div>
+              <span class="rh-badge-value" style="color:var(--color-danger);">2</span>
+              <span class="rh-badge-range">target 4–6</span>
+            </div>
+          </div>
+          <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.85rem;line-height:1.5;">
+            Each resource as a numbered card. Larger numbers — easier to read at a glance. Dot color gives status without needing a bar. Slightly more vertical height; less scannable as a list.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .main -->
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    // ── Sample deck data (Meren of Clan Nel Toth, Power 6) ─────────────────
+    const DECK = {
+      strategy: 'midrange',
+      average_cmc: 3.1,
+      mana_curve: [
+        { cmc: '0', count: 2 },
+        { cmc: '1', count: 6 },
+        { cmc: '2', count: 14 },
+        { cmc: '3', count: 16 },
+        { cmc: '4', count: 11 },
+        { cmc: '5', count: 7 },
+        { cmc: '6', count: 4 },
+        { cmc: '7+', count: 2 },
+      ],
+      // Role composition
+      ramp_count: 11,
+      draw_count: 9,
+      removal_count: 8,
+      board_wipe_count: 3,
+      counterspell_count: 2,
+      tutor_count: 5,
+      total_non_land: 61, // 99 - 38 lands (derived)
+    };
+
+    // ── Color helpers (reads live CSS vars so theme switch works) ──────────
+    function cssvar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    // ── Chart 1A: Zone-colored bars ────────────────────────────────────────
+    function renderCurveA() {
+      const el = document.getElementById('curve-a');
+      d3.select(el).selectAll('*').remove();
+      const W = el.offsetWidth, H = 200;
+      const margin = { top: 20, right: 12, bottom: 28, left: 8 };
+      const w = W - margin.left - margin.right;
+      const h = H - margin.top - margin.bottom;
+
+      const svg = d3.select(el).append('svg').attr('width', W).attr('height', H)
+        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleBand().domain(DECK.mana_curve.map(d => d.cmc)).range([0, w]).padding(0.25);
+      const y = d3.scaleLinear().domain([0, d3.max(DECK.mana_curve, d => d.count) + 3]).range([h, 0]);
+
+      // Grid
+      svg.append('g').attr('class', 'grid')
+        .call(d3.axisLeft(y).ticks(4).tickSize(-w).tickFormat(''))
+        .select('.domain').remove();
+      svg.selectAll('.grid line')
+        .attr('stroke', cssvar('--color-border'))
+        .attr('stroke-opacity', 0.5);
+
+      // X axis
+      svg.append('g').attr('transform', `translate(0,${h})`)
+        .call(d3.axisBottom(x).tickSize(0))
+        .select('.domain').attr('stroke', cssvar('--color-border'));
+      svg.selectAll('.tick text').attr('fill', cssvar('--color-text-muted')).attr('font-size', 11)
+        .attr('font-family', cssvar('--font-body'));
+
+      // Zone color by CMC
+      function zoneColor(cmc) {
+        const n = parseInt(cmc);
+        if (n <= 2)  return cssvar('--color-primary');
+        if (n <= 4)  return cssvar('--color-secondary');
+        return cssvar('--color-danger');
+      }
+
+      // Avg CMC reference line
+      const avgX = x(String(Math.round(DECK.average_cmc)));
+      if (avgX !== undefined) {
+        svg.append('line')
+          .attr('x1', avgX + x.bandwidth() / 2).attr('x2', avgX + x.bandwidth() / 2)
+          .attr('y1', 0).attr('y2', h)
+          .attr('stroke', cssvar('--color-text-muted'))
+          .attr('stroke-dasharray', '4 3')
+          .attr('stroke-width', 1.5);
+        svg.append('text')
+          .attr('x', avgX + x.bandwidth() / 2 + 5).attr('y', 10)
+          .attr('fill', cssvar('--color-text-muted')).attr('font-size', 9)
+          .attr('font-family', cssvar('--font-body'))
+          .text(`avg ${DECK.average_cmc}`);
+      }
+
+      // Bars
+      const bars = svg.selectAll('.bar').data(DECK.mana_curve).enter().append('g');
+      bars.append('rect')
+        .attr('x', d => x(d.cmc)).attr('width', x.bandwidth())
+        .attr('y', d => y(d.count)).attr('height', d => h - y(d.count))
+        .attr('rx', 3).attr('fill', d => zoneColor(d.cmc));
+
+      // Count labels
+      bars.append('text')
+        .attr('x', d => x(d.cmc) + x.bandwidth() / 2).attr('y', d => y(d.count) - 5)
+        .attr('text-anchor', 'middle')
+        .attr('fill', cssvar('--color-text-muted')).attr('font-size', 10)
+        .attr('font-family', cssvar('--font-mono'))
+        .text(d => d.count);
+
+      // Legend
+      const legendData = [
+        { label: '0–2  Acceleration', color: cssvar('--color-primary') },
+        { label: '3–4  Core spells',  color: cssvar('--color-secondary') },
+        { label: '5+   Haymakers',    color: cssvar('--color-danger') },
+      ];
+      const lg = svg.append('g').attr('transform', `translate(${w - 140}, 0)`);
+      legendData.forEach((d, i) => {
+        lg.append('rect').attr('x', 0).attr('y', i * 14).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', d.color);
+        lg.append('text').attr('x', 12).attr('y', i * 14 + 8).attr('fill', cssvar('--color-text-muted'))
+          .attr('font-size', 9).attr('font-family', cssvar('--font-body')).text(d.label);
+      });
+    }
+
+    // ── Chart 1B: Single accent bars ──────────────────────────────────────
+    function renderCurveB() {
+      const el = document.getElementById('curve-b');
+      d3.select(el).selectAll('*').remove();
+      const W = el.offsetWidth, H = 200;
+      const margin = { top: 20, right: 12, bottom: 28, left: 8 };
+      const w = W - margin.left - margin.right;
+      const h = H - margin.top - margin.bottom;
+
+      const svg = d3.select(el).append('svg').attr('width', W).attr('height', H)
+        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleBand().domain(DECK.mana_curve.map(d => d.cmc)).range([0, w]).padding(0.25);
+      const y = d3.scaleLinear().domain([0, d3.max(DECK.mana_curve, d => d.count) + 3]).range([h, 0]);
+
+      // Grid
+      svg.append('g').attr('class', 'grid')
+        .call(d3.axisLeft(y).ticks(4).tickSize(-w).tickFormat(''))
+        .select('.domain').remove();
+      svg.selectAll('.grid line')
+        .attr('stroke', cssvar('--color-border'))
+        .attr('stroke-opacity', 0.5);
+
+      // X axis
+      svg.append('g').attr('transform', `translate(0,${h})`)
+        .call(d3.axisBottom(x).tickSize(0))
+        .select('.domain').attr('stroke', cssvar('--color-border'));
+      svg.selectAll('.tick text').attr('fill', cssvar('--color-text-muted')).attr('font-size', 11)
+        .attr('font-family', cssvar('--font-body'));
+
+      // Avg line
+      const avgX = x(String(Math.round(DECK.average_cmc)));
+      if (avgX !== undefined) {
+        svg.append('line')
+          .attr('x1', avgX + x.bandwidth() / 2).attr('x2', avgX + x.bandwidth() / 2)
+          .attr('y1', 0).attr('y2', h)
+          .attr('stroke', cssvar('--color-text-muted'))
+          .attr('stroke-dasharray', '4 3')
+          .attr('stroke-width', 1.5);
+        svg.append('text')
+          .attr('x', avgX + x.bandwidth() / 2 + 5).attr('y', 10)
+          .attr('fill', cssvar('--color-text-muted')).attr('font-size', 9)
+          .attr('font-family', cssvar('--font-body'))
+          .text(`avg ${DECK.average_cmc}`);
+      }
+
+      // Bars
+      const bars = svg.selectAll('.bar').data(DECK.mana_curve).enter().append('g');
+      bars.append('rect')
+        .attr('x', d => x(d.cmc)).attr('width', x.bandwidth())
+        .attr('y', d => y(d.count)).attr('height', d => h - y(d.count))
+        .attr('rx', 3).attr('fill', cssvar('--color-primary'));
+
+      // Count labels
+      bars.append('text')
+        .attr('x', d => x(d.cmc) + x.bandwidth() / 2).attr('y', d => y(d.count) - 5)
+        .attr('text-anchor', 'middle')
+        .attr('fill', cssvar('--color-text-muted')).attr('font-size', 10)
+        .attr('font-family', cssvar('--font-mono'))
+        .text(d => d.count);
+    }
+
+    // ── Chart 2A: Horizontal role bars ────────────────────────────────────
+    function renderRoleA() {
+      const el = document.getElementById('role-a');
+      d3.select(el).selectAll('*').remove();
+
+      // Derive threats
+      const controlled = DECK.ramp_count + DECK.draw_count + DECK.removal_count +
+                         DECK.board_wipe_count + DECK.counterspell_count + DECK.tutor_count;
+      const threats = Math.max(0, DECK.total_non_land - controlled);
+
+      const roles = [
+        { name: 'Threats / Other', value: threats,                    color: cssvar('--color-text-subtle') },
+        { name: 'Ramp',            value: DECK.ramp_count,            color: cssvar('--color-primary') },
+        { name: 'Card Draw',       value: DECK.draw_count,            color: cssvar('--color-success') },
+        { name: 'Removal',         value: DECK.removal_count,         color: cssvar('--color-danger') },
+        { name: 'Board Wipes',     value: DECK.board_wipe_count,      color: cssvar('--color-secondary') },
+        { name: 'Counterspells',   value: DECK.counterspell_count,    color: cssvar('--color-mtg-black') },
+        { name: 'Tutors',          value: DECK.tutor_count,           color: cssvar('--color-mtg-white') },
+      ].sort((a, b) => b.value - a.value);
+
+      const W = el.offsetWidth, H = 260;
+      const margin = { top: 8, right: 48, bottom: 8, left: 102 };
+      const w = W - margin.left - margin.right;
+      const h = H - margin.top - margin.bottom;
+
+      const svg = d3.select(el).append('svg').attr('width', W).attr('height', H)
+        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleLinear().domain([0, d3.max(roles, d => d.value)]).range([0, w]);
+      const y = d3.scaleBand().domain(roles.map(d => d.name)).range([0, h]).padding(0.28);
+
+      // Y axis labels
+      svg.append('g').call(d3.axisLeft(y).tickSize(0))
+        .select('.domain').remove();
+      svg.selectAll('.tick text')
+        .attr('fill', cssvar('--color-text-muted')).attr('font-size', 11)
+        .attr('font-family', cssvar('--font-body'))
+        .attr('dx', -4);
+
+      // Bars
+      const bars = svg.selectAll('.bar').data(roles).enter().append('g');
+      bars.append('rect')
+        .attr('y', d => y(d.name)).attr('height', y.bandwidth())
+        .attr('x', 0).attr('width', d => x(d.value))
+        .attr('rx', 3).attr('fill', d => d.color);
+
+      // Count labels at end of bar
+      bars.append('text')
+        .attr('x', d => x(d.value) + 6)
+        .attr('y', d => y(d.name) + y.bandwidth() / 2 + 4)
+        .attr('fill', cssvar('--color-text-muted')).attr('font-size', 11)
+        .attr('font-family', cssvar('--font-mono'))
+        .text(d => d.value);
+    }
+
+    // ── Chart 2B: Stacked single bar ──────────────────────────────────────
+    function renderRoleB() {
+      const el = document.getElementById('role-b');
+      d3.select(el).selectAll('*').remove();
+
+      const controlled = DECK.ramp_count + DECK.draw_count + DECK.removal_count +
+                         DECK.board_wipe_count + DECK.counterspell_count + DECK.tutor_count;
+      const threats = Math.max(0, DECK.total_non_land - controlled);
+      const total = DECK.total_non_land;
+
+      const segments = [
+        { name: 'Ramp',          value: DECK.ramp_count,         color: cssvar('--color-primary') },
+        { name: 'Draw',          value: DECK.draw_count,         color: cssvar('--color-success') },
+        { name: 'Removal',       value: DECK.removal_count,      color: cssvar('--color-danger') },
+        { name: 'Wipes',         value: DECK.board_wipe_count,   color: cssvar('--color-secondary') },
+        { name: 'Counters',      value: DECK.counterspell_count, color: cssvar('--color-mtg-black') },
+        { name: 'Tutors',        value: DECK.tutor_count,        color: cssvar('--color-mtg-white') },
+        { name: 'Threats/Other', value: threats,                 color: cssvar('--color-text-subtle') },
+      ];
+
+      const W = el.offsetWidth, H = 260;
+      const margin = { top: 16, right: 16, bottom: 16, left: 16 };
+      const w = W - margin.left - margin.right;
+      const barH = 32;
+
+      const svg = d3.select(el).append('svg').attr('width', W).attr('height', H)
+        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+      // Stacked bar
+      let offset = 0;
+      segments.forEach(seg => {
+        const segW = (seg.value / total) * w;
+        svg.append('rect')
+          .attr('x', offset).attr('y', 0)
+          .attr('width', segW).attr('height', barH)
+          .attr('fill', seg.color);
+        offset += segW;
+      });
+      // tiny gap separator — re-draw with slight inset
+      offset = 0;
+      segments.forEach(seg => {
+        const segW = (seg.value / total) * w;
+        if (seg.value > 0) {
+          svg.append('rect')
+            .attr('x', offset + 1).attr('y', 1)
+            .attr('width', Math.max(0, segW - 2)).attr('height', barH - 2)
+            .attr('fill', seg.color);
+        }
+        offset += segW;
+      });
+
+      // Legend below
+      const cols = 3;
+      const itemW = w / cols;
+      segments.forEach((seg, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const lgX = col * itemW;
+        const lgY = barH + 20 + row * 22;
+        const lg = svg.append('g').attr('transform', `translate(${lgX},${lgY})`);
+        lg.append('rect').attr('width', 8).attr('height', 8).attr('y', 2).attr('rx', 2).attr('fill', seg.color);
+        lg.append('text').attr('x', 13).attr('y', 10)
+          .attr('fill', cssvar('--color-text-muted')).attr('font-size', 10.5)
+          .attr('font-family', cssvar('--font-body'))
+          .text(`${seg.name} (${seg.value})`);
+      });
+    }
+
+    // ── Render all ─────────────────────────────────────────────────────────
+    function renderAll() {
+      renderCurveA();
+      renderCurveB();
+      renderRoleA();
+      renderRoleB();
+    }
+
+    // ── Theme toggle ───────────────────────────────────────────────────────
+    let darkMode = true;
+    function toggleTheme() {
+      darkMode = !darkMode;
+      document.documentElement.setAttribute('data-theme', darkMode ? '' : 'light');
+      document.getElementById('themeBtn').textContent = darkMode ? '☀ Light Mode' : '☾ Dark Mode';
+      // Small delay so CSS vars update before D3 reads them
+      requestAnimationFrame(() => { requestAnimationFrame(renderAll); });
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    window.addEventListener('load', () => {
+      if (typeof d3 === 'undefined') {
+        document.body.innerHTML += '<p style="color:red;padding:2rem;">D3 failed to load — check internet connection.</p>';
+        return;
+      }
+      renderAll();
+    });
+
+    // Re-render on resize (debounced)
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(renderAll, 120);
+    });
+  </script>
+</body>
+</html>
