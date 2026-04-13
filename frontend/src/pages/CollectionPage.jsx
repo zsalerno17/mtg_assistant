@@ -129,7 +129,7 @@ export default function CollectionPage() {
               </div>
               
               <p className="text-[var(--color-muted)] text-xs">
-                This takes 30–60 seconds for large collections
+                This may take up to a minute for large collections
               </p>
             </div>
           </div>
