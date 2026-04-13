@@ -290,7 +290,7 @@ function CommanderImage({ name }) {
         alt={name}
         onError={() => setError(true)}
         loading="lazy"
-        className="rounded-[6px] block object-cover"
+        className="rounded-sm block object-cover"
         style={{ width: 72, height: 100 }}
       />
     </div>

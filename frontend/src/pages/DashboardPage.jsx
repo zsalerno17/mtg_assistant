@@ -145,7 +145,7 @@ function DeckRowSkeleton() {
         <div className="flex gap-1">{[...Array(3)].map((_, i) => <div key={i} className="skeleton rounded-full w-4 h-4" />)}</div>
       </td>
       <td><div className="skeleton h-3 rounded w-16" /></td>
-      <td><div className="skeleton h-5 rounded-[7px] w-20" /></td>
+      <td><div className="skeleton h-5 rounded-lg w-20" /></td>
       <td><div className="skeleton h-4 rounded w-8" /></td>
       <td className="text-right"><div className="skeleton h-5 rounded w-14 ml-auto" /></td>
     </tr>
@@ -154,12 +154,12 @@ function DeckRowSkeleton() {
 
 function StatusBadge({ analyzed }) {
   return analyzed ? (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-emerald-500/[0.12] text-emerald-500 border border-emerald-500/25 whitespace-nowrap font-semibold">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-emerald-500/[0.12] text-emerald-500 border border-emerald-500/25 whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Analyzed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[7px] bg-[var(--color-surface-2)] text-[var(--color-muted)] border border-[var(--color-border)] whitespace-nowrap font-semibold">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-[var(--color-surface-2)] text-[var(--color-muted)] border border-[var(--color-border)] whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Pending
     </span>

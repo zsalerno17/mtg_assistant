@@ -741,7 +741,7 @@ export default function LeaguePage() {
                                 <button
                                   key={m.id}
                                   onClick={() => handleVote(game.id, category, m.id)}
-                                  className={`px-2.5 py-1 rounded-[7px] text-xs font-medium transition-all ${
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                                     myVote === m.id
                                       ? 'bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]'
                                       : 'bg-[var(--color-surface)]/60 text-[var(--color-muted)] border border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
