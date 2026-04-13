@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { getServiceClient, getUserClient } from "../_shared/supabase.ts";
 import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/auth.ts";
 import { extractDeckId, getDeck, getDeckWithMeta, parseMoxfieldDeck } from "../_shared/moxfield.ts";
@@ -40,24 +40,24 @@ function serializeDeck(deck: Deck): Record<string, unknown> {
   };
 }
 
-function jsonResponse(data: unknown, status = 200): Response {
+function jsonResponse(data: unknown, req: Request, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
-function errorResponse(status: number, detail: string): Response {
-  return jsonResponse({ detail }, status);
+function errorResponse(status: number, detail: string, req: Request): Response {
+  return jsonResponse({ detail }, req, status);
 }
 
 // ---------------------------------------------------------------------------
 // Route: POST /fetch
 // ---------------------------------------------------------------------------
 
-async function handleFetch(body: { url?: string }): Promise<Response> {
+async function handleFetch(body: { url?: string }, req: Request): Promise<Response> {
   const url = body.url;
-  if (!url) return errorResponse(400, "Missing 'url' field");
+  if (!url) return errorResponse(400, "Missing 'url' field", req);
 
   let deckId: string | null = null;
   try {
@@ -65,7 +65,7 @@ async function handleFetch(body: { url?: string }): Promise<Response> {
   } catch {
     // fall through
   }
-  if (!deckId) return errorResponse(400, "Invalid Moxfield URL or deck ID");
+  if (!deckId) return errorResponse(400, "Invalid Moxfield URL or deck ID", req);
 
   const sb = getServiceClient();
 
@@ -77,7 +77,7 @@ async function handleFetch(body: { url?: string }): Promise<Response> {
     .maybeSingle();
 
   if (cached) {
-    return jsonResponse({ deck_id: deckId, cached: true, data: cached.data_json });
+    return jsonResponse({ deck_id: deckId, cached: true, data: cached.data_json }, req);
   }
 
   // Fetch fresh from Moxfield
@@ -85,13 +85,13 @@ async function handleFetch(body: { url?: string }): Promise<Response> {
   try {
     deck = await getDeck(deckId);
   } catch (e) {
-    return errorResponse(502, `Moxfield fetch failed: ${String(e)}`);
+    return errorResponse(502, `Moxfield fetch failed: ${String(e)}`, req);
   }
 
   const deckData = serializeDeck(deck);
   await sb.from("decks").insert({ moxfield_id: deckId, data_json: deckData });
 
-  return jsonResponse({ deck_id: deckId, cached: false, data: deckData });
+  return jsonResponse({ deck_id: deckId, cached: false, data: deckData }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -101,14 +101,16 @@ async function handleFetch(body: { url?: string }): Promise<Response> {
 async function handleAnalyze(
   body: { moxfield_id?: string; force?: boolean },
   userId: string,
+  userClient: ReturnType<typeof getUserClient>,
+  req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
-  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id' field");
+  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id' field", req);
 
   const sb = getServiceClient();
   const force = body.force ?? false;
 
-  // Check deck exists in cache
+  // Check deck exists in cache (shared table — service client)
   const { data: cachedDeck } = await sb
     .from("decks")
     .select("data_json")
@@ -116,11 +118,11 @@ async function handleAnalyze(
     .maybeSingle();
 
   if (!cachedDeck) {
-    return errorResponse(404, "Deck not found. Fetch it first.");
+    return errorResponse(404, "Deck not found. Fetch it first.", req);
   }
 
-  // Check for existing analysis
-  const { data: existingRows } = await sb
+  // Check for existing analysis (user-scoped — user client)
+  const { data: existingRows } = await userClient
     .from("analyses")
     .select("id, result_json, deck_updated_at")
     .eq("user_id", userId)
@@ -137,17 +139,17 @@ async function handleAnalyze(
   } catch (e) {
     // If Moxfield is down but we have an existing analysis, return it
     if (existing) {
-      return jsonResponse({ analysis: existing.result_json, cached: true });
+      return jsonResponse({ analysis: existing.result_json, cached: true }, req);
     }
-    return errorResponse(502, `Could not load deck for analysis: ${String(e)}`);
+    return errorResponse(502, `Could not load deck for analysis: ${String(e)}`, req);
   }
 
   // Return cached analysis if deck content hasn't changed (unless force)
   if (!force && existing && existing.deck_updated_at === lastUpdatedAt) {
-    return jsonResponse({ analysis: existing.result_json, cached: true });
+    return jsonResponse({ analysis: existing.result_json, cached: true }, req);
   }
 
-  // Update deck cache with fresh data
+  // Update deck cache with fresh data (shared table — service client)
   try {
     await sb
       .from("decks")
@@ -173,12 +175,12 @@ async function handleAnalyze(
   };
 
   if (existing) {
-    await sb.from("analyses").update(row).eq("id", existing.id);
+    await userClient.from("analyses").update(row).eq("id", existing.id);
   } else {
-    await sb.from("analyses").insert(row);
+    await userClient.from("analyses").insert(row);
   }
 
-  return jsonResponse({ analysis: result, cached: false });
+  return jsonResponse({ analysis: result, cached: false }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -188,9 +190,11 @@ async function handleAnalyze(
 async function handleAddToLibrary(
   body: { url?: string },
   userId: string,
+  userClient: ReturnType<typeof getUserClient>,
+  req: Request,
 ): Promise<Response> {
   const url = body.url;
-  if (!url) return errorResponse(400, "Missing 'url' field");
+  if (!url) return errorResponse(400, "Missing 'url' field", req);
 
   let deckId: string | null = null;
   try {
@@ -198,11 +202,11 @@ async function handleAddToLibrary(
   } catch {
     // fall through
   }
-  if (!deckId) return errorResponse(400, "Invalid Moxfield URL or deck ID");
+  if (!deckId) return errorResponse(400, "Invalid Moxfield URL or deck ID", req);
 
   const sb = getServiceClient();
 
-  // Ensure deck data is in the global cache
+  // Ensure deck data is in the global cache (shared table — service client)
   const { data: cached } = await sb
     .from("decks")
     .select("data_json")
@@ -217,7 +221,7 @@ async function handleAddToLibrary(
     try {
       deck = await getDeck(deckId);
     } catch (e) {
-      return errorResponse(502, `Moxfield fetch failed: ${String(e)}`);
+      return errorResponse(502, `Moxfield fetch failed: ${String(e)}`, req);
     }
     deckData = serializeDeck(deck);
     await sb.from("decks").insert({ moxfield_id: deckId, data_json: deckData });
@@ -248,32 +252,37 @@ async function handleAddToLibrary(
     format: (deckData as Record<string, unknown>).format as string || "commander",
   };
 
-  await sb.from("user_decks").upsert(row, { onConflict: "user_id,moxfield_id" });
+  // user_decks is user-scoped — use user client
+  await userClient.from("user_decks").upsert(row, { onConflict: "user_id,moxfield_id" });
 
-  return jsonResponse({ moxfield_id: deckId, deck_name: deckName });
+  return jsonResponse({ moxfield_id: deckId, deck_name: deckName }, req);
 }
 
 // ---------------------------------------------------------------------------
 // Route: GET /library
 // ---------------------------------------------------------------------------
 
-async function handleGetLibrary(userId: string): Promise<Response> {
+async function handleGetLibrary(
+  userId: string,
+  userClient: ReturnType<typeof getUserClient>,
+  req: Request,
+): Promise<Response> {
   const sb = getServiceClient();
 
-  // Fetch user's library and analyses
+  // Fetch user's library and analyses (user-scoped — user client)
   const [decksRes, analysesRes] = await Promise.all([
-    sb.from("user_decks").select("*").eq("user_id", userId),
-    sb.from("analyses").select("*").eq("user_id", userId),
+    userClient.from("user_decks").select("*").eq("user_id", userId),
+    userClient.from("analyses").select("*").eq("user_id", userId),
   ]);
 
   // Check for errors in parallel queries
   if (decksRes.error) {
     console.error("[handleGetLibrary] Failed to fetch user_decks:", decksRes.error);
-    return errorResponse(500, "Failed to load deck library");
+    return errorResponse(500, "Failed to load deck library", req);
   }
   if (analysesRes.error) {
     console.error("[handleGetLibrary] Failed to fetch analyses:", analysesRes.error);
-    return errorResponse(500, "Failed to load deck analyses");
+    return errorResponse(500, "Failed to load deck analyses", req);
   }
 
   const userDecks = decksRes.data || [];
@@ -290,7 +299,7 @@ async function handleGetLibrary(userId: string): Promise<Response> {
 
   const userDeckIds = new Set(userDecks.map((d: Record<string, unknown>) => d.moxfield_id));
 
-  // Pre-fetch cached deck data for color identity on unanalyzed decks
+  // Pre-fetch cached deck data for color identity on unanalyzed decks (shared table — service client)
   const allDeckIds = Array.from(userDeckIds) as string[];
   const cachedDecksMap: Record<string, Record<string, unknown>> = {};
   if (allDeckIds.length > 0) {
@@ -356,7 +365,7 @@ async function handleGetLibrary(userId: string): Promise<Response> {
     if (userDeckIds.has(deckId)) continue;
     const rj = (analysis.result_json as Record<string, unknown>) || {};
 
-    // Try to get commander images from cached deck data
+    // Try to get commander images from cached deck data (shared table — service client)
     let commanderImageUri: string | null = null;
     let partnerImageUri: string | null = null;
     try {
@@ -397,7 +406,7 @@ async function handleGetLibrary(userId: string): Promise<Response> {
     ((b.added_at as string) || "").localeCompare((a.added_at as string) || ""),
   );
 
-  return jsonResponse({ decks: resultList });
+  return jsonResponse({ decks: resultList }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -409,34 +418,36 @@ serve(async (req: Request) => {
 
   try {
     const user = await requireAllowedUser(req);
+    const token = getTokenFromRequest(req);
+    const userClient = getUserClient(token);
     const url = new URL(req.url);
     const path = url.pathname.replace(/.*\/decks\/?/, "/");
 
     if (req.method === "POST" && (path === "/fetch" || path === "/" + "fetch")) {
       const body = await req.json();
-      return await handleFetch(body);
+      return await handleFetch(body, req);
     }
 
     if (req.method === "POST" && path.startsWith("/analyze")) {
       const body = await req.json();
-      return await handleAnalyze(body, user.userId);
+      return await handleAnalyze(body, user.userId, userClient, req);
     }
 
     if (req.method === "POST" && path.startsWith("/library")) {
       const body = await req.json();
-      return await handleAddToLibrary(body, user.userId);
+      return await handleAddToLibrary(body, user.userId, userClient, req);
     }
 
     if (req.method === "GET" && path.startsWith("/library")) {
-      return await handleGetLibrary(user.userId);
+      return await handleGetLibrary(user.userId, userClient, req);
     }
 
-    return errorResponse(404, "Not found");
+    return errorResponse(404, "Not found", req);
   } catch (e) {
     if (e instanceof AuthError) {
-      return errorResponse(e.status, e.message);
+      return errorResponse(e.status, e.message, req);
     }
     console.error("Unhandled error:", e);
-    return errorResponse(500, "Internal server error");
+    return errorResponse(500, "Internal server error", req);
   }
 });

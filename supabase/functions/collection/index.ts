@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { requireAllowedUser, AuthError } from "../_shared/auth.ts";
-import { getServiceClient } from "../_shared/supabase.ts";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/auth.ts";
+import { getUserClient } from "../_shared/supabase.ts";
 import { parseMoxfieldCsv, parseTextList } from "../_shared/collection_parser.ts";
 import { getCardByName } from "../_shared/scryfall.ts";
 
@@ -9,9 +9,12 @@ serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
+  const corsHeaders = getCorsHeaders(req);
+
   try {
     const user = await requireAllowedUser(req);
-    const sb = getServiceClient();
+    const token = getTokenFromRequest(req);
+    const sb = getUserClient(token);
     const url = new URL(req.url);
     const path = url.pathname.split("/").pop() || "";
 

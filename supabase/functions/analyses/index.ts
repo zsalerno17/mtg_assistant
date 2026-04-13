@@ -1,11 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { requireAllowedUser, AuthError } from "../_shared/auth.ts";
-import { getServiceClient } from "../_shared/supabase.ts";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/auth.ts";
+import { getUserClient } from "../_shared/supabase.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
+
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const user = await requireAllowedUser(req);
@@ -22,7 +24,8 @@ serve(async (req) => {
     const pageSize = 10;
     const offset = (page - 1) * pageSize;
 
-    const sb = getServiceClient();
+    const token = getTokenFromRequest(req);
+    const sb = getUserClient(token);
     const { data } = await sb
       .from("analyses")
       .select("id, deck_id, deck_name, moxfield_url, deck_updated_at, result_json, created_at")

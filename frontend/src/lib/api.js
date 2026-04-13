@@ -3,18 +3,9 @@ import { supabase } from './supabase'
 // ---------------------------------------------------------------------------
 // API base URL
 // ---------------------------------------------------------------------------
-// In production, VITE_SUPABASE_URL points to the Supabase project.
 // Edge Functions live at <SUPABASE_URL>/functions/v1/<function-name>.
-// For local dev with `supabase functions serve`, the URL is http://localhost:54321.
-// Fallback to legacy FastAPI URL if VITE_API_BASE_URL is set (migration period).
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const LEGACY_API_BASE = import.meta.env.VITE_API_BASE_URL
-
-// If VITE_USE_EDGE is explicitly 'false', force legacy FastAPI mode (local dev).
-// Otherwise, use Edge Functions when SUPABASE_URL is available.
-const USE_EDGE = import.meta.env.VITE_USE_EDGE !== 'false' && !!SUPABASE_URL
 const EDGE_BASE = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1` : ''
-const LEGACY_BASE = LEGACY_API_BASE || 'http://localhost:8000'
 
 // ---------------------------------------------------------------------------
 // Auth token cache — kept in sync via onAuthStateChange so that getAuthHeader
@@ -38,30 +29,40 @@ async function getAuthHeader() {
   return { Authorization: `Bearer ${session.access_token}` }
 }
 
+// Deduplicate concurrent refresh calls — Supabase refresh tokens are single-use,
+// so multiple simultaneous 401 retries must share one in-flight refresh promise.
+let _refreshPromise = null
+
 /** Force a token refresh and retry a fetch call once on 401. */
 async function refreshAuthHeader() {
-  const { data: { session }, error } = await supabase.auth.refreshSession()
-  if (error || !session?.access_token) {
-    // Refresh failed (expired, revoked, or rate-limited) — sign out so the
-    // user is redirected to login rather than seeing a cryptic API error.
-    await supabase.auth.signOut()
-    throw new Error('Your session has expired. Please sign in again.')
-  }
-  _cachedAccessToken = session.access_token
-  return { Authorization: `Bearer ${session.access_token}` }
+  if (_refreshPromise) return _refreshPromise
+  _refreshPromise = (async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession()
+      if (error || !session?.access_token) {
+        // Refresh failed (expired, revoked, or rate-limited) — sign out so the
+        // user is redirected to login rather than seeing a cryptic API error.
+        await supabase.auth.signOut()
+        throw new Error('Your session has expired. Please sign in again.')
+      }
+      _cachedAccessToken = session.access_token
+      return { Authorization: `Bearer ${session.access_token}` }
+    } finally {
+      _refreshPromise = null
+    }
+  })()
+  return _refreshPromise
 }
 
 /**
- * Unified fetch that routes to Edge Functions or legacy FastAPI based on config.
+ * Unified fetch targeting Edge Functions.
  * @param {string} fn - Edge Function name (e.g. 'decks', 'ai', 'leagues')
  * @param {string} path - Sub-path within the function (e.g. '/fetch', '/strategy')
  * @param {object} options - fetch options
  */
 async function edgeFetch(fn, path, options = {}) {
   const authHeader = await getAuthHeader()
-  const url = USE_EDGE
-    ? `${EDGE_BASE}/${fn}${path}`
-    : `${LEGACY_BASE}/api/${fn}${path}`
+  const url = `${EDGE_BASE}/${fn}${path}`
 
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 30000)
@@ -81,48 +82,6 @@ async function edgeFetch(fn, path, options = {}) {
     let res = await makeRequest(authHeader)
 
     // On 401, refresh the token and retry once
-    if (res.status === 401) {
-      const refreshedHeader = await refreshAuthHeader()
-      res = await makeRequest(refreshedHeader)
-    }
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }))
-      throw new Error(err.detail || `API error ${res.status}`)
-    }
-    return res.json()
-  } catch (e) {
-    if (e.name === 'AbortError') {
-      throw new Error('Request timed out. Please try again.')
-    }
-    throw e
-  } finally {
-    clearTimeout(timeoutId)
-  }
-}
-
-/** Legacy apiFetch for any non-edge paths (backwards compat during migration). */
-async function apiFetch(path, options = {}) {
-  const authHeader = await getAuthHeader()
-  const base = USE_EDGE ? EDGE_BASE : LEGACY_BASE
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
-
-  const makeRequest = (headers) =>
-    fetch(`${base}${path}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-        ...options.headers,
-      },
-    })
-
-  try {
-    let res = await makeRequest(authHeader)
-
     if (res.status === 401) {
       const refreshedHeader = await refreshAuthHeader()
       res = await makeRequest(refreshedHeader)
@@ -187,19 +146,38 @@ export const api = {
     const authHeader = await getAuthHeader()
     const formData = new FormData()
     formData.append('file', file)
-    const url = USE_EDGE
-      ? `${EDGE_BASE}/collection/upload`
-      : `${LEGACY_BASE}/api/collection/upload`
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: authHeader, // NO Content-Type — browser sets multipart boundary automatically
-      body: formData,
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }))
-      throw new Error(err.detail || `API error ${res.status}`)
+    const url = `${EDGE_BASE}/collection/upload`
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+
+    const makeRequest = (headers) =>
+      fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+        headers, // NO Content-Type — browser sets multipart boundary automatically
+        body: formData,
+      })
+
+    try {
+      let res = await makeRequest(authHeader)
+      if (res.status === 401) {
+        const refreshedHeader = await refreshAuthHeader()
+        res = await makeRequest(refreshedHeader)
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new Error(err.detail || `API error ${res.status}`)
+      }
+      return res.json()
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.')
+      }
+      throw e
+    } finally {
+      clearTimeout(timeoutId)
     }
-    return res.json()
   },
 
   /** Get the authenticated user's stored collection. */
