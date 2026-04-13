@@ -71,15 +71,15 @@ export default function TopNavbar() {
     <>
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/85 border-b border-[var(--color-border)]" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)' }}>
       <div className="max-w-[1920px] mx-auto px-4 md:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 min-h-[64px]">
+        <div className="flex items-center justify-between h-16 min-h-[64px] overflow-visible">
           {/* Logo */}
           <div className="flex items-center gap-8">
             <NavLink
               to="/"
-              className="flex items-center gap-2 hover:brightness-110 transition-all"
+              className="flex items-center gap-3 hover:brightness-110 transition-all"
             >
-              <img src="/logo.svg" alt="MTG Assistant" className="h-8 w-auto" />
-              <span className="font-brand text-[var(--color-primary)] text-[18px] tracking-wide hidden sm:inline">
+              <img src="/logo.svg" alt="MTG Assistant" className="h-[180px] w-auto shrink-0 translate-y-[42px] drop-shadow-[0_6px_20px_rgba(0,0,0,0.6)]" />
+              <span className="font-brand font-bold text-[var(--color-primary)] text-[20px] tracking-wide hidden sm:inline">
                 MTG Assistant
               </span>
             </NavLink>
