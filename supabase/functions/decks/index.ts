@@ -266,6 +266,16 @@ async function handleGetLibrary(userId: string): Promise<Response> {
     sb.from("analyses").select("*").eq("user_id", userId),
   ]);
 
+  // Check for errors in parallel queries
+  if (decksRes.error) {
+    console.error("[handleGetLibrary] Failed to fetch user_decks:", decksRes.error);
+    return errorResponse(500, "Failed to load deck library");
+  }
+  if (analysesRes.error) {
+    console.error("[handleGetLibrary] Failed to fetch analyses:", analysesRes.error);
+    return errorResponse(500, "Failed to load deck analyses");
+  }
+
   const userDecks = decksRes.data || [];
   const analyses = analysesRes.data || [];
 
@@ -292,8 +302,8 @@ async function handleGetLibrary(userId: string): Promise<Response> {
       for (const row of cachedRows || []) {
         cachedDecksMap[row.moxfield_id as string] = (row.data_json as Record<string, unknown>) || {};
       }
-    } catch {
-      // best-effort
+    } catch (e) {
+      console.warn("[handleGetLibrary] Failed to fetch cached deck data:", e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -362,8 +372,8 @@ async function handleGetLibrary(userId: string): Promise<Response> {
         if (cObj && typeof cObj === "object") commanderImageUri = (cObj.image_uri as string) || null;
         if (pObj && typeof pObj === "object") partnerImageUri = (pObj.image_uri as string) || null;
       }
-    } catch {
-      // Silently fail for legacy entries
+    } catch (e) {
+      console.warn(`[handleGetLibrary] Failed to fetch commander images for legacy deck ${deckId}:`, e instanceof Error ? e.message : String(e));
     }
 
     resultList.push({

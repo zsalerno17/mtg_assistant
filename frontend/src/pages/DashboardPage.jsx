@@ -450,16 +450,27 @@ export default function DashboardPage() {
   const { session } = useAuth()
   const [decks, setDecks] = useState([])
   const [decksLoading, setDecksLoading] = useState(true)
+  const [decksError, setDecksError] = useState(null)
   const [collectionSummary, setCollectionSummary] = useState(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
+  const [summaryError, setSummaryError] = useState(null)
   const [analyzingId, setAnalyzingId] = useState(null)
   const [analyzeError, setAnalyzeError] = useState(null)
   const [showImportModal, setShowImportModal] = useState(false)
 
   const loadDecks = () => {
+    setDecksError(null)
     api.getDeckLibrary()
-      .then(data => setDecks(data.decks || []))
-      .catch(() => setDecks([]))
+      .then(data => {
+        setDecks(data.decks || [])
+        setDecksError(null)
+      })
+      .catch(err => {
+        console.error('[DashboardPage] Failed to load decks:', err)
+        console.error('[DashboardPage] Error details:', err.message, err.stack)
+        setDecks([])
+        setDecksError(err.message || 'Failed to load decks. Please try again.')
+      })
       .finally(() => setDecksLoading(false))
   }
 
@@ -470,8 +481,15 @@ export default function DashboardPage() {
     loadDecks()
 
     api.getCollectionSummary()
-      .then(data => setCollectionSummary(data))
-      .catch(() => setCollectionSummary(null))
+      .then(data => {
+        setCollectionSummary(data)
+        setSummaryError(null)
+      })
+      .catch(err => {
+        console.error('[DashboardPage] Failed to load collection summary:', err)
+        setCollectionSummary(null)
+        setSummaryError(err.message)
+      })
       .finally(() => setSummaryLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.access_token])
@@ -566,6 +584,24 @@ export default function DashboardPage() {
 
         {analyzeError && (
           <p className="mb-4 text-[var(--color-danger)] text-sm">{analyzeError}</p>
+        )}
+
+        {decksError && (
+          <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-red-400 text-sm font-semibold mb-1">Failed to load decks</p>
+              <p className="text-red-300/80 text-xs">{decksError}</p>
+            </div>
+            <button
+              onClick={() => {
+                setDecksLoading(true)
+                loadDecks()
+              }}
+              className="text-red-400 text-xs font-medium hover:text-red-300 underline shrink-0"
+            >
+              Retry
+            </button>
+          </div>
         )}
 
         {decksLoading ? (

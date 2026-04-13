@@ -29,11 +29,16 @@ export async function requireAllowedUser(req: Request): Promise<AuthUser> {
   }
 
   const srv = getServiceClient();
-  const { data } = await srv
+  const { data, error: allowError } = await srv
     .from("allowed_users")
     .select("email")
     .eq("email", email)
-    .single();
+    .maybeSingle();
+
+  if (allowError) {
+    console.error("[requireAllowedUser] Database error checking allowed_users:", allowError);
+    throw new AuthError(500, "Auth validation failed");
+  }
 
   if (!data) {
     throw new AuthError(403, "Account not authorized. Contact the administrator.");

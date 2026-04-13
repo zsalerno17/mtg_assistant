@@ -18,22 +18,56 @@ export function extractDeckId(url: string): string | null {
   return null;
 }
 
-export async function getDeck(deckId: string): Promise<Deck> {
+export async function getDeck(deckId: string, timeoutMs = 10000): Promise<Deck> {
   const url = `${MOXFIELD_API_BASE}/decks/all/${encodeURIComponent(deckId)}`;
-  const res = await fetch(url, { headers: BROWSER_HEADERS });
-  if (!res.ok) throw new Error(`Moxfield API error: ${res.status}`);
-  const data = await res.json();
-  return parseMoxfieldDeck(data);
+  
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const res = await fetch(url, { 
+      headers: BROWSER_HEADERS,
+      signal: controller.signal 
+    });
+    
+    if (!res.ok) throw new Error(`Moxfield API error: ${res.status}`);
+    const data = await res.json();
+    return parseMoxfieldDeck(data);
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new Error(`Moxfield API timeout after ${timeoutMs}ms`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
-export async function getDeckWithMeta(deckId: string): Promise<[Deck, string]> {
+export async function getDeckWithMeta(deckId: string, timeoutMs = 10000): Promise<[Deck, string]> {
   const url = `${MOXFIELD_API_BASE}/decks/all/${encodeURIComponent(deckId)}`;
-  const res = await fetch(url, { headers: BROWSER_HEADERS });
-  if (!res.ok) throw new Error(`Moxfield API error: ${res.status}`);
-  const data = await res.json();
-  const deck = parseMoxfieldDeck(data);
-  const lastUpdatedAt = data.lastUpdatedAtUtc || data.updatedAt || "";
-  return [deck, lastUpdatedAt];
+  
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const res = await fetch(url, { 
+      headers: BROWSER_HEADERS,
+      signal: controller.signal 
+    });
+    
+    if (!res.ok) throw new Error(`Moxfield API error: ${res.status}`);
+    const data = await res.json();
+    const deck = parseMoxfieldDeck(data);
+    const lastUpdatedAt = data.lastUpdatedAtUtc || data.updatedAt || "";
+    return [deck, lastUpdatedAt];
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new Error(`Moxfield API timeout after ${timeoutMs}ms`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function parseMoxfieldDeck(data: Record<string, unknown>): Deck {

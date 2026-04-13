@@ -21,11 +21,19 @@ serve(async (req) => {
     const sb = getServiceClient();
 
     if (req.method === "GET") {
-      const { data } = await sb
+      const { data, error } = await sb
         .from("user_profiles")
         .select("username, avatar_url, updated_at")
         .eq("user_id", user.userId)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error("[users/GET] Profile query error:", error);
+        return new Response(
+          JSON.stringify({ detail: "Failed to load profile" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       return new Response(JSON.stringify(data || { username: null, avatar_url: null, updated_at: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

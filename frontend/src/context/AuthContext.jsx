@@ -7,16 +7,21 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined) // undefined = loading
   const [profile, setProfile] = useState(null)
+  const [profileError, setProfileError] = useState(null)
 
   const refreshProfile = useCallback(async () => {
     console.log('[AuthContext] Fetching profile...')
+    setProfileError(null)
     try {
       const p = await api.getProfile()
       console.log('[AuthContext] Profile loaded:', p)
       setProfile(p)
+      setProfileError(null)
     } catch (err) {
-      console.error('[AuthContext] Failed to load profile:', err.message)
+      console.error('[AuthContext] Failed to load profile:', err)
+      console.error('[AuthContext] Error details:', err.message, err.stack)
       setProfile(null)
+      setProfileError(err.message || 'Failed to load profile')
     }
   }, [])
 
@@ -55,7 +60,7 @@ export function AuthProvider({ children }) {
   const signOut = () => supabase.auth.signOut()
 
   return (
-    <AuthContext.Provider value={{ session, profile, refreshProfile, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ session, profile, profileError, refreshProfile, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   )
