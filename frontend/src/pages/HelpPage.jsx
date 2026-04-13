@@ -249,13 +249,13 @@ export default function HelpPage() {
           <div className="flex flex-wrap gap-3 justify-center">
             <a
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-semibold rounded-lg transition-all shadow-lg shadow-amber-500/25"
+              className="btn btn-primary"
             >
               Go to Dashboard
             </a>
             <a
               href="/collection"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] font-semibold rounded-lg transition-all"
+              className="btn btn-secondary"
             >
               Manage Collection
             </a>

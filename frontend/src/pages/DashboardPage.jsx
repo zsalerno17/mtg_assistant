@@ -372,16 +372,16 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
           {item.analyzed ? (
             <button
               onClick={() => navigate(`/deck/${item.moxfield_id}`)}
-              className="group relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-semibold bg-gradient-to-r from-amber-500/10 to-amber-400/10 text-amber-400 border border-amber-500/20 hover:border-amber-400/40 hover:from-amber-500/20 hover:to-amber-400/20 hover:shadow-[0_0_12px_rgba(251,191,36,0.15)] transition-all duration-200"
+              className="btn btn-secondary btn-sm"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 group-hover:scale-110 transition-transform"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
               View Deck
             </button>
           ) : (
             <button
               onClick={() => onAnalyze(item.moxfield_id)}
               disabled={!!analyzingId}
-              className="group relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-semibold bg-gradient-to-r from-emerald-500/10 to-emerald-400/10 text-emerald-400 border border-emerald-500/20 hover:border-emerald-400/40 hover:from-emerald-500/20 hover:to-emerald-400/20 hover:shadow-[0_0_12px_rgba(52,211,153,0.15)] disabled:opacity-40 disabled:hover:shadow-none transition-all duration-200"
+              className="btn btn-primary btn-sm"
             >
               {isAnalyzing ? (
                 <>
@@ -576,7 +576,7 @@ export default function DashboardPage() {
           <h2 className="text-[var(--color-text)] text-[18px] font-semibold font-heading tracking-[-0.01em]">Your Decks</h2>
           <button
             onClick={() => setShowImportModal(true)}
-            className="font-body text-sm bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-black px-5 py-2.5 rounded-lg font-semibold hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(251,191,36,0.3)] active:translate-y-0 transition-all"
+            className="btn btn-primary"
           >
             + Import Deck
           </button>
