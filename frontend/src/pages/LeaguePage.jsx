@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, Fragment } from 'react'
 import { motion } from 'framer-motion'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { CalendarDays, Image as ImageIcon, Flame, Layers, Target, TrendingUp } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { StandingsRowSkeleton, MemberCardSkeleton, GameCardSkeleton } from '../components/Skeletons'
 import { TrophyIcon, CrownIcon, SwordsIcon } from '../components/LeagueIcons'
 import PageTransition from '../components/PageTransition'
-import { isPresetUrl, urlToPresetId, isCreaturePreset, CREATURE_PRESET_MAP } from '../lib/avatarPresets'
-import { CreaturePresetIcon } from '../lib/creatureIcons'
+import { AvatarDisplay } from '../components/AvatarDisplay'
 
 export default function LeaguePage() {
   const { leagueId } = useParams()
@@ -58,6 +58,96 @@ export default function LeaguePage() {
   }
 
   const isCreator = league?.created_by === session?.user?.id
+
+  // Compute per-member season stats from game results (no additional API calls)
+  const seasonStats = useMemo(() => {
+    if (!games.length) return {}
+    const memberMap = {}
+    const sortedGames = [...games].sort((a, b) => new Date(a.played_at) - new Date(b.played_at))
+    sortedGames.forEach(game => {
+      ;(game.league_game_results || []).forEach(r => {
+        const list = memberMap[r.member_id] || (memberMap[r.member_id] = [])
+        list.push({ placement: r.placement, deck_id: r.deck_id, deck_name: r.user_decks?.deck_name })
+      })
+    })
+    const stats = {}
+    for (const [memberId, results] of Object.entries(memberMap)) {
+      const placements = results.map(r => r.placement).filter(Boolean)
+      const avgPlacement = placements.length ? placements.reduce((a, b) => a + b, 0) / placements.length : null
+      let maxStreak = 0, cur = 0, currentStreak = 0
+      for (const r of results) {
+        if (r.placement === 1) { cur++; maxStreak = Math.max(maxStreak, cur) }
+        else cur = 0
+      }
+      for (const r of [...results].reverse()) {
+        if (r.placement === 1) currentStreak++
+        else break
+      }
+      const deckMap = {}
+      results.forEach(r => {
+        if (!r.deck_id) return
+        const d = deckMap[r.deck_id] || (deckMap[r.deck_id] = { name: r.deck_name || 'Unknown Deck', wins: 0, games: 0 })
+        d.games++
+        if (r.placement === 1) d.wins++
+      })
+      const bestDeck = Object.values(deckMap).filter(d => d.games >= 2).sort((a, b) => (b.wins / b.games) - (a.wins / a.games))[0] || null
+      const uniqueCommanders = new Set(results.filter(r => r.deck_id).map(r => r.deck_id)).size
+      stats[memberId] = { avgPlacement, maxStreak, currentStreak, bestDeck, uniqueCommanders }
+    }
+    return stats
+  }, [games])
+
+  const seasonHighlights = useMemo(() => {
+    if (!games.length || !standings.length) return null
+    const enriched = standings.map(m => ({ name: m.superstar_name, member_id: m.member_id, ...(seasonStats[m.member_id] || {}) }))
+    const streakLeader = [...enriched].filter(m => (m.maxStreak || 0) > 0).sort((a, b) => b.maxStreak - a.maxStreak)[0]
+    const commanderLeader = [...enriched].filter(m => (m.uniqueCommanders || 0) > 0).sort((a, b) => b.uniqueCommanders - a.uniqueCommanders)[0]
+    const avgLeader = [...enriched].filter(m => m.avgPlacement != null).sort((a, b) => a.avgPlacement - b.avgPlacement)[0]
+    const deckLeader = [...enriched].filter(m => m.bestDeck).sort((a, b) => (b.bestDeck.wins / b.bestDeck.games) - (a.bestDeck.wins / a.bestDeck.games))[0]
+    if (!streakLeader && !commanderLeader && !avgLeader && !deckLeader) return null
+    return { streakLeader, commanderLeader, avgLeader, deckLeader }
+  }, [games, standings, seasonStats])
+
+  // Bonus award counts per member, derived from game results
+  const bonusAwardStandings = useMemo(() => {
+    if (!games.length || !standings.length) return null
+    const cfg = league?.scoring_config
+    // Determine which tracked awards are enabled
+    const TRACKED = [
+      { id: 'entrance_bonus', title: 'WWE Entrance of the Week' },
+      { id: 'first_blood',   title: 'First Blood' },
+      { id: 'spicy_play',    title: 'Spicy Play' },
+    ]
+    function isEnabled(awardId) {
+      if (!cfg) return true
+      if (Array.isArray(cfg.bonus_awards)) {
+        const found = cfg.bonus_awards.find(a => a.id === awardId)
+        return found ? found.enabled !== false : false
+      }
+      return cfg[awardId] !== false
+    }
+    const enabledAwards = TRACKED.filter(a => isEnabled(a.id))
+    if (!enabledAwards.length) return null
+
+    // Count per award per member_id
+    const counts = {}
+    enabledAwards.forEach(a => { counts[a.id] = {} })
+    for (const game of games) {
+      for (const r of (game.league_game_results || [])) {
+        if (counts.entrance_bonus && r.earned_entrance_bonus) {
+          counts.entrance_bonus[r.member_id] = (counts.entrance_bonus[r.member_id] || 0) + 1
+        }
+        if (counts.first_blood && r.earned_first_blood) {
+          counts.first_blood[r.member_id] = (counts.first_blood[r.member_id] || 0) + 1
+        }
+      }
+      if (counts.spicy_play && game.spicy_play_winner_id) {
+        const mid = String(game.spicy_play_winner_id)
+        counts.spicy_play[mid] = (counts.spicy_play[mid] || 0) + 1
+      }
+    }
+    return { enabledAwards, counts }
+  }, [games, standings, league])
 
   function getH2H(memberId1, memberId2) {
     let wins1 = 0, wins2 = 0
@@ -376,8 +466,9 @@ export default function LeaguePage() {
                 {league.name}
               </h1>
               <div className="flex items-center gap-4 text-sm text-[var(--color-muted)]">
-                <span>
-                  📅 {new Date(league.season_start).toLocaleDateString()} —{' '}
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
+                  {new Date(league.season_start).toLocaleDateString()} —{' '}
                   {new Date(league.season_end).toLocaleDateString()}
                 </span>
                 {getSeasonTimeRemaining() && (
@@ -392,7 +483,7 @@ export default function LeaguePage() {
                       : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                   }`}
                 >
-                  {league.status}
+                  {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
                 </span>
               </div>
             </div>
@@ -449,14 +540,16 @@ export default function LeaguePage() {
           )}
         </div>
 
-        {/* Current Champion Hero */}
-        {standings.length > 0 ? (
+        {/* Current Leader / Champion Hero */}
+        {games.length > 0 && standings.length > 0 ? (
           <div className="bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <TrophyIcon className="w-10 h-10 text-[var(--color-secondary)]" />
                 <div>
-                  <div className="text-xs font-brand font-medium text-[var(--color-secondary)] uppercase tracking-wider mb-1">Current Champion</div>
+                  <div className="text-xs font-brand font-medium text-[var(--color-secondary)] uppercase tracking-wider mb-1">
+                    {league.status === 'completed' ? 'Season Champion' : 'Current Leader'}
+                  </div>
                   <div className="text-3xl font-brand font-bold text-[var(--color-text)]">{standings[0].superstar_name}</div>
                   <div className="text-sm text-[var(--color-muted)] mt-1">
                     {standings[0].total_points} pts · {standings[0].wins} wins · {standings[0].games_played} games
@@ -469,7 +562,7 @@ export default function LeaguePage() {
           <div className="bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-xl p-6 mb-8 text-center">
             <CrownIcon className="w-8 h-8 text-[var(--color-secondary)] opacity-60 mx-auto mb-2" />
             <div className="text-lg font-brand font-bold text-[var(--color-text)]">The throne is empty.</div>
-            <div className="text-sm text-[var(--color-muted)]">Who will claim it first?</div>
+            <div className="text-sm text-[var(--color-muted)]">Log a game to stake your claim.</div>
           </div>
         )}
 
@@ -520,34 +613,20 @@ export default function LeaguePage() {
                 </button>
               </div>
             )}
-            <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl overflow-hidden">
+            <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl overflow-x-auto">
             <table className="w-full" aria-label="League standings">
               <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    Rank
-                  </th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    Superstar Name
-                  </th>
-                  <th className="text-center px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    Total Points
-                  </th>
-                  <th className="text-center px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    Wins
-                  </th>
-                  <th className="text-center px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    2nds
-                  </th>
-                  <th className="text-center px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    3rds
-                  </th>
-                  <th className="text-center px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    Entrance Bonuses
-                  </th>
-                  <th className="text-center px-6 py-4 text-sm font-medium text-[var(--color-muted)]">
-                    Games
-                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-muted)] w-10">#</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Superstar</th>
+                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Pts</th>
+                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">W</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">2nd</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">3rd</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Avg</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]" title="Unique commanders used this season">Cmds</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Bonuses</th>
+                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">GP</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-accent/20">
@@ -555,9 +634,9 @@ export default function LeaguePage() {
                   <tr key={member.member_id} className={`hover:bg-[var(--color-surface)]/40 transition-colors ${
                     idx === 0 ? 'bg-[var(--color-secondary-subtle)]' : ''
                   }`}>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <span
-                        className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm ${
                           idx === 0
                             ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                             : idx === 1
@@ -567,15 +646,15 @@ export default function LeaguePage() {
                             : 'bg-[var(--color-primary)]/10 text-[var(--color-muted)]'
                         }`}
                       >
-                      <span className="sr-only">{idx === 0 ? '1st place' : idx === 1 ? '2nd place' : idx === 2 ? '3rd place' : `${idx + 1}th place`}</span>
+                        <span className="sr-only">{idx === 0 ? '1st place' : idx === 1 ? '2nd place' : idx === 2 ? '3rd place' : `${idx + 1}th place`}</span>
                         {idx + 1}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`font-brand font-bold ${idx === 0 ? 'text-lg text-[var(--color-text)]' : idx < 3 ? 'text-base text-[var(--color-text)]' : 'text-[var(--color-text)]'}`}>
+                    <td className="px-4 py-3">
+                      <span className={`font-brand font-bold ${idx === 0 ? 'text-base text-[var(--color-text)]' : 'text-[var(--color-text)]'}`}>
                         {member.superstar_name}
                       </span>
-                      {idx === 0 && <span className="ml-2 text-xs text-[var(--color-secondary)] font-medium">Champion</span>}
+                      {idx === 0 && <span className="ml-2 text-xs text-[var(--color-secondary)] font-medium">Leader</span>}
                       {idx > 0 && standings[idx - 1].total_points === member.total_points && (() => {
                         const h2h = getH2H(member.member_id, standings[idx - 1].member_id)
                         if (!h2h) return null
@@ -586,20 +665,26 @@ export default function LeaguePage() {
                         )
                       })()}
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-xl font-bold text-[var(--color-primary)]">{member.total_points}</span>
+                    <td className="px-4 py-3 text-center">
+                      <span className="text-lg font-bold text-[var(--color-primary)]">{member.total_points}</span>
                     </td>
-                    <td className="px-6 py-4 text-center text-[var(--color-muted)]">{member.wins}</td>
-                    <td className="px-6 py-4 text-center text-[var(--color-muted)]">
+                    <td className="px-4 py-3 text-center text-[var(--color-muted)]">{member.wins}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)]">
                       {member.second_places || 0}
                     </td>
-                    <td className="px-6 py-4 text-center text-[var(--color-muted)]">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)]">
                       {member.third_places || 0}
                     </td>
-                    <td className="px-6 py-4 text-center text-[var(--color-muted)]">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)] text-sm">
+                      {seasonStats[member.member_id]?.avgPlacement?.toFixed(1) ?? '—'}
+                    </td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)] text-sm">
+                      {seasonStats[member.member_id]?.uniqueCommanders ?? '—'}
+                    </td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)]">
                       {member.entrance_bonuses}
                     </td>
-                    <td className="px-6 py-4 text-center text-[var(--color-muted)]">
+                    <td className="px-4 py-3 text-center text-[var(--color-muted)]">
                       {member.games_played}
                     </td>
                   </tr>
@@ -615,6 +700,113 @@ export default function LeaguePage() {
               </div>
             )}
             </div>
+
+            {/* Season Highlights */}
+            {seasonHighlights && (
+              <div className="mt-6">
+                <h3 className="text-xs font-brand font-bold text-[var(--color-muted)] uppercase tracking-wider mb-3">
+                  Season Highlights
+                </h3>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {seasonHighlights.streakLeader && (
+                    <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Flame className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                        <span className="text-xs font-medium text-[var(--color-muted)]">Win Streak</span>
+                      </div>
+                      <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
+                        {seasonHighlights.streakLeader.maxStreak}
+                        <span className="text-sm font-normal text-[var(--color-muted)] ml-1">in a row</span>
+                      </div>
+                      <div className="text-sm text-[var(--color-muted)] mt-1">{seasonHighlights.streakLeader.name}</div>
+                    </div>
+                  )}
+                  {seasonHighlights.commanderLeader && (
+                    <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Layers className="w-4 h-4 text-[var(--color-primary)]" aria-hidden="true" />
+                        <span className="text-xs font-medium text-[var(--color-muted)]">Most Diverse</span>
+                      </div>
+                      <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
+                        {seasonHighlights.commanderLeader.uniqueCommanders}
+                        <span className="text-sm font-normal text-[var(--color-muted)] ml-1">commanders</span>
+                      </div>
+                      <div className="text-sm text-[var(--color-muted)] mt-1">{seasonHighlights.commanderLeader.name}</div>
+                    </div>
+                  )}
+                  {seasonHighlights.deckLeader && (
+                    <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-4 h-4 text-[var(--color-secondary)]" aria-hidden="true" />
+                        <span className="text-xs font-medium text-[var(--color-muted)]">Best Winrate</span>
+                      </div>
+                      <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
+                        {Math.round(seasonHighlights.deckLeader.bestDeck.wins / seasonHighlights.deckLeader.bestDeck.games * 100)}%
+                      </div>
+                      <div className="text-sm text-[var(--color-muted)] mt-0.5">{seasonHighlights.deckLeader.name}</div>
+                      <div className="text-xs text-[var(--color-muted)]/60 mt-0.5 truncate">{seasonHighlights.deckLeader.bestDeck.name}</div>
+                    </div>
+                  )}
+                  {seasonHighlights.avgLeader && seasonHighlights.avgLeader.avgPlacement != null && (
+                    <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-green-400" aria-hidden="true" />
+                        <span className="text-xs font-medium text-[var(--color-muted)]">Best Avg. Finish</span>
+                      </div>
+                      <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
+                        {seasonHighlights.avgLeader.avgPlacement.toFixed(1)}
+                      </div>
+                      <div className="text-sm text-[var(--color-muted)] mt-1">{seasonHighlights.avgLeader.name}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Bonus Award Standings */}
+            {bonusAwardStandings && (
+              <div className="mt-6">
+                <h3 className="text-xs font-brand font-bold text-[var(--color-muted)] uppercase tracking-wider mb-3">
+                  Bonus Award Standings
+                </h3>
+                <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl overflow-x-auto">
+                  <table className="w-full min-w-[500px]" aria-label="Bonus award standings">
+                    <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
+                      <tr>
+                        <th className="text-left px-6 py-3 text-sm font-medium text-[var(--color-muted)]">
+                          Award
+                        </th>
+                        {standings.map(m => (
+                          <th key={m.member_id} className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)] whitespace-nowrap">
+                            {m.superstar_name}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-border)]">
+                      {bonusAwardStandings.enabledAwards.map(award => (
+                        <tr key={award.id} className="hover:bg-[var(--color-surface)]/40 transition-colors">
+                          <td className="px-6 py-3 text-sm text-[var(--color-text)] font-medium">
+                            {award.title}
+                          </td>
+                          {standings.map(m => {
+                            const count = bonusAwardStandings.counts[award.id]?.[m.member_id] || 0
+                            return (
+                              <td key={m.member_id} className="px-4 py-3 text-center text-sm">
+                                {count > 0
+                                  ? <span className="font-bold text-[var(--color-primary)]">{count}</span>
+                                  : <span className="text-[var(--color-muted)]">—</span>
+                                }
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -632,148 +824,162 @@ export default function LeaguePage() {
               </div>
             )}
 
-            {games.map((game, index) => (
-              <motion.div
-                key={game.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.35,
-                  delay: index * 0.06,
-                  ease: [0.34, 1.56, 0.64, 1],
-                }}
-                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-brand font-bold text-[var(--color-text)]">
-                      {getGameNarrative(game)}
-                    </h3>
-                    <div className="text-sm text-[var(--color-muted)]">
-                      {new Date(game.played_at).toLocaleDateString()} at{' '}
-                      {new Date(game.played_at).toLocaleTimeString()}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {game.screenshot_url && (
-                      <a
-                        href={game.screenshot_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-[var(--color-primary)] hover:underline"
-                      >
-                        📸 Screenshot
-                      </a>
-                    )}
-                    <Link
-                      to={`/leagues/${leagueId}/games/${game.id}/edit`}
-                      className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] rounded-lg px-2.5 py-1 hover:border-[var(--color-primary)] transition-colors"
-                    >
-                      Edit
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Results */}
-                <div className="space-y-2 mb-4">
-                  {game.league_game_results
-                    ?.sort((a, b) => a.placement - b.placement)
-                    .map((result) => (
-                      <div
-                        key={result.id}
-                        className="flex items-center justify-between px-4 py-3 bg-[var(--color-surface)]/40 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                              result.placement === 1
-                                ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
-                                : 'bg-[var(--color-primary)]/10 text-[var(--color-muted)]'
-                            }`}
+            {games.length > 0 && (
+              <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl overflow-hidden">
+                <table className="w-full" aria-label="Games history">
+                  <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)] w-10">#</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)] whitespace-nowrap">Date</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)]">Results</th>
+                      <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)]">Awards</th>
+                      <th className="px-4 py-3 w-24"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-border)]">
+                    {games.map((game, index) => {
+                      const sorted = (game.league_game_results || []).slice().sort((a, b) => a.placement - b.placement)
+                      const entranceWinner = sorted.find(r => r.earned_entrance_bonus)
+                      const firstBloodWinner = sorted.find(r => r.earned_first_blood)
+                      const spicyWinner = game.spicy_play_winner_id
+                        ? (sorted.find(r => String(r.member_id) === String(game.spicy_play_winner_id)) || null)
+                        : null
+                      const gameAwards = [
+                        entranceWinner && { label: 'Entrance', name: entranceWinner.league_members?.superstar_name, color: 'text-[var(--color-secondary)]' },
+                        firstBloodWinner && { label: 'First Blood', name: firstBloodWinner.league_members?.superstar_name, color: 'text-red-400' },
+                        spicyWinner && { label: 'Spicy Play', name: spicyWinner.league_members?.superstar_name, color: 'text-orange-400' },
+                        ].filter(Boolean)
+                      return (
+                        <Fragment key={game.id}>
+                          <motion.tr
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.25, delay: index * 0.04 }}
+                            className="hover:bg-[var(--color-surface)]/40 transition-colors align-top"
                           >
-                            {result.placement}
-                          </span>
-                          <span className="font-medium text-[var(--color-text)]">
-                            {result.league_members?.superstar_name}
-                          </span>
-                          {result.user_decks?.deck_name && (
-                            <span className="text-xs text-[var(--color-muted)]">
-                              ({result.user_decks.deck_name})
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm">
-                          {result.earned_win && <span className="text-[var(--color-success)]">Win</span>}
-                          {result.earned_entrance_bonus && (
-                            <span className="text-[var(--color-secondary)]">Entrance</span>
-                          )}
-                          {result.earned_first_blood && (
-                            <span className="text-red-400">First Blood</span>
-                          )}
-                          <span className="font-bold text-[var(--color-primary)]">{result.total_points} pts</span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-
-                {/* Spicy Play */}
-                {game.spicy_play_description && (
-                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg px-4 py-3">
-                    <div className="text-xs font-brand font-medium text-orange-400 uppercase tracking-wider mb-1">
-                      Spicy Play of the Week
-                    </div>
-                    <div className="text-sm text-[var(--color-text)]">{game.spicy_play_description}</div>
-                  </div>
-                )}
-
-                {game.notes && (
-                  <div className="mt-3 text-sm text-[var(--color-muted)] italic">{game.notes}</div>
-                )}
-
-                {/* Voting Section */}
-                <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-                  {!gameVotes[game.id] ? (
-                    <button
-                      onClick={() => { loadGameVotes(game.id); setVotingGameId(game.id) }}
-                      className="text-xs text-[var(--color-primary)] hover:underline"
-                    >
-                      Vote on awards
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
-                      {['entrance', 'spicy_play'].map(category => {
-                        const tally = getVoteTally(game.id, category)
-                        const myVote = gameVotes[game.id]?.myVotes?.[category]
-                        const members = league?.league_members || []
-                        return (
-                          <div key={category}>
-                            <div className="text-xs font-medium text-[var(--color-muted)] mb-1.5">
-                              {category === 'entrance' ? 'Best Entrance' : 'Spiciest Play'}
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {members.map(m => (
+                            <td className="px-4 py-3 text-sm font-medium text-[var(--color-muted)] whitespace-nowrap">
+                              {game.game_number}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-[var(--color-muted)] whitespace-nowrap">
+                              {new Date(game.played_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="space-y-1">
+                                {sorted.map(result => (
+                                  <div key={result.id} className="flex items-center gap-1.5 text-sm flex-wrap">
+                                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold flex-shrink-0 ${result.placement === 1 ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary)]/10 text-[var(--color-muted)]'}`}>
+                                      {result.placement}
+                                    </span>
+                                    <span className={`font-medium ${result.placement === 1 ? 'text-[var(--color-text)]' : 'text-[var(--color-muted)]'}`}>
+                                      {result.league_members?.superstar_name}
+                                    </span>
+                                    {result.user_decks?.deck_name && (
+                                      <span className="hidden sm:inline text-xs text-[var(--color-muted)]/60">({result.user_decks.deck_name})</span>
+                                    )}
+                                    <span className="text-xs font-bold text-[var(--color-primary)]">+{result.total_points}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {game.spicy_play_description && (
+                                <div className="md:hidden mt-2 pt-2 border-t border-[var(--color-border)]/50 text-xs">
+                                  <span className="font-medium text-orange-400">Spicy: </span>
+                                  <span className="text-[var(--color-muted)]">{game.spicy_play_description}</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="hidden md:table-cell px-4 py-3 align-top">
+                              {gameAwards.length > 0 ? (
+                                <div className="space-y-1">
+                                  {gameAwards.map(award => (
+                                    <div key={award.label} className="flex items-baseline gap-1.5 text-xs">
+                                      <span className={`font-medium whitespace-nowrap ${award.color}`}>{award.label}:</span>
+                                      <span className="text-[var(--color-muted)]">{award.name}</span>
+                                    </div>
+                                  ))}
+                                  {game.spicy_play_description && (
+                                    <div className="mt-1 pt-1 border-t border-[var(--color-border)]/40 text-xs text-[var(--color-muted)]/70 italic line-clamp-2">
+                                      {game.spicy_play_description}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-[var(--color-muted)]/40">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 align-top">
+                              <div className="flex items-center gap-2 justify-end">
+                                {game.screenshot_url && (
+                                  <a
+                                    href={game.screenshot_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[var(--color-primary)] hover:opacity-80 transition-opacity"
+                                    aria-label="View screenshot"
+                                  >
+                                    <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                                  </a>
+                                )}
                                 <button
-                                  key={m.id}
-                                  onClick={() => handleVote(game.id, category, m.id)}
-                                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                                    myVote === m.id
-                                      ? 'bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]'
-                                      : 'bg-[var(--color-surface)]/60 text-[var(--color-muted)] border border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
-                                  }`}
+                                  onClick={() => {
+                                    if (!gameVotes[game.id]) loadGameVotes(game.id)
+                                    setVotingGameId(prev => prev === game.id ? null : game.id)
+                                  }}
+                                  className={`text-xs transition-colors ${votingGameId === game.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)] hover:text-[var(--color-primary)]'}`}
                                 >
-                                  {m.superstar_name}
-                                  {tally[m.id] ? ` (${tally[m.id]})` : ''}
+                                  Vote
                                 </button>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                                <Link
+                                  to={`/leagues/${leagueId}/games/${game.id}/edit`}
+                                  className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] rounded-lg px-2 py-0.5 hover:border-[var(--color-primary)] transition-colors"
+                                >
+                                  Edit
+                                </Link>
+                              </div>
+                            </td>
+                          </motion.tr>
+                          {votingGameId === game.id && gameVotes[game.id] && (
+                            <tr className="bg-[var(--color-surface)]/20">
+                              <td colSpan={5} className="px-4 pb-4 pt-3">
+                                <div className="space-y-3">
+                                  {['entrance', 'spicy_play'].map(category => {
+                                    const tally = getVoteTally(game.id, category)
+                                    const myVote = gameVotes[game.id]?.myVotes?.[category]
+                                    const members = league?.league_members || []
+                                    return (
+                                      <div key={category}>
+                                        <div className="text-xs font-medium text-[var(--color-muted)] mb-1.5">
+                                          {category === 'entrance' ? 'Best Entrance' : 'Spiciest Play'}
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {members.map(m => (
+                                            <button
+                                              key={m.id}
+                                              onClick={() => handleVote(game.id, category, m.id)}
+                                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                                myVote === m.id
+                                                  ? 'bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]'
+                                                  : 'bg-[var(--color-surface)]/60 text-[var(--color-muted)] border border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
+                                              }`}
+                                            >
+                                              {m.superstar_name}
+                                              {tally[m.id] ? ` (${tally[m.id]})` : ''}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {hasMoreGames && (
               <div className="flex justify-center pt-4">
@@ -818,42 +1024,12 @@ export default function LeaguePage() {
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  {(() => {
-                    const rawAvatar = member.user_profiles?.avatar_url
-                    if (!rawAvatar) {
-                      return (
-                        <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/20 border-2 border-[var(--color-primary)] flex items-center justify-center">
-                          <SwordsIcon className="w-7 h-7 text-[var(--color-primary)]" />
-                        </div>
-                      )
-                    }
-                    if (isPresetUrl(rawAvatar)) {
-                      const presetId = urlToPresetId(rawAvatar)
-                      if (isCreaturePreset(presetId)) {
-                        const preset = CREATURE_PRESET_MAP[presetId]
-                        return (
-                          <div
-                            className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] flex items-center justify-center flex-shrink-0"
-                            style={{ background: preset.bg }}
-                          >
-                            <CreaturePresetIcon id={presetId} className="w-8 h-8" />
-                          </div>
-                        )
-                      }
-                      return (
-                        <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/20 border-2 border-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
-                          <i className={`ms ms-${presetId} ms-cost ms-shadow`} style={{ fontSize: '1.75rem' }} aria-hidden="true" />
-                        </div>
-                      )
-                    }
-                    return (
-                      <img
-                        src={rawAvatar}
-                        alt={member.superstar_name}
-                        className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] flex-shrink-0"
-                      />
-                    )
-                  })()}
+                  <AvatarDisplay
+                    avatarUrl={member.user_profiles?.avatar_url}
+                    fallbackLabel={member.superstar_name}
+                    size="xl"
+                    alt={member.superstar_name}
+                  />
                   <div className="flex-1">
                     <h3 className="text-2xl font-brand font-bold text-[var(--color-text)] mb-1">
                       {member.superstar_name}

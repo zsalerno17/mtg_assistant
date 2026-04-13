@@ -4,6 +4,18 @@ import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
 
+// Supports both old flat-key format and new bonus_awards array format
+function isAwardEnabled(league, awardId) {
+  const cfg = league?.scoring_config
+  if (!cfg) return true
+  if (Array.isArray(cfg.bonus_awards)) {
+    const found = cfg.bonus_awards.find(a => a.id === awardId)
+    return found ? found.enabled !== false : false
+  }
+  // Legacy flat keys
+  return cfg[awardId] !== false
+}
+
 export default function LogGamePage() {
   const { leagueId } = useParams()
   const navigate = useNavigate()
@@ -377,7 +389,7 @@ export default function LogGamePage() {
             </h2>
 
             <div className="space-y-4">
-              {(league?.scoring_config?.entrance_bonus !== false) && (
+              {isAwardEnabled(league, 'entrance_bonus') && (
               <div>
                 <label htmlFor="entrance-winner" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                   WWE Entrance of the Week (+1pt)
@@ -398,7 +410,7 @@ export default function LogGamePage() {
               </div>
               )}
 
-              {(league?.scoring_config?.first_blood !== false) && (
+              {isAwardEnabled(league, 'first_blood') && (
               <div>
                 <label htmlFor="first-blood-winner" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
                   First Blood — First to Deal Damage (+1pt)
@@ -419,7 +431,7 @@ export default function LogGamePage() {
               </div>
               )}
 
-              {(league?.scoring_config?.spicy_play !== false) && (
+              {isAwardEnabled(league, 'spicy_play') && (
               <>
               <div>
                 <label htmlFor="spicy-play" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">

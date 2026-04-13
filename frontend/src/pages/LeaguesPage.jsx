@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { CalendarDays, Users } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { LeagueCardSkeleton } from '../components/Skeletons'
 import { SwordsIcon, TrophyIcon } from '../components/LeagueIcons'
 import PageTransition from '../components/PageTransition'
+
+const PREMADE_AWARDS = [
+  { id: 'entrance_bonus', title: 'WWE Entrance of the Week', description: 'Best themed or dramatic entrance to the weekly pod', points: 1 },
+  { id: 'first_blood',   title: 'First Blood',               description: 'First to deal combat damage to another player', points: 1 },
+  { id: 'spicy_play',    title: 'Wildest Play / Spicy Play',  description: 'Most creative, devastating, or unhinged play of the game', points: 1 },
+  { id: 'card_of_match', title: 'Card of the Match',          description: 'Pod votes — most impactful or memorable card played', points: 1 },
+  { id: 'villain',       title: 'The Villain',                description: 'Most cutthroat/backstabbing moment — betrayal, infinite combo out of nowhere', points: 1 },
+  { id: 'jobber',        title: 'The Jobber',                 description: 'Eliminated early but nominated by pod for going out in style; consolation prize', points: 1 },
+  { id: 'kingslayer',    title: 'Kingslayer',                 description: 'Eliminated the current #1 player in the standings during that game', points: 1 },
+]
+
+const DEFAULT_BONUS_AWARDS = PREMADE_AWARDS.map((a, i) => ({ ...a, enabled: i < 3, isCustom: false }))
 
 export default function LeaguesPage() {
   const [leagues, setLeagues] = useState([])
@@ -21,11 +34,9 @@ export default function LeaguesPage() {
   const [description, setDescription] = useState('')
   const [seasonStart, setSeasonStart] = useState('')
   const [seasonEnd, setSeasonEnd] = useState('')
-  const [scoringConfig, setScoringConfig] = useState({
-    first_blood: true,
-    entrance_bonus: true,
-    spicy_play: true,
-  })
+  const [bonusAwards, setBonusAwards] = useState(DEFAULT_BONUS_AWARDS)
+  const [showAddBonus, setShowAddBonus] = useState(false)
+  const [newBonus, setNewBonus] = useState({ title: '', description: '', points: 1 })
 
   const { session } = useAuth()
 
@@ -53,20 +64,29 @@ export default function LeaguesPage() {
     setCreating(true)
     setError(null)
     try {
+      // Build scoring_config: include bonus_awards array + flat keys for backwards compat
+      const findEnabled = (id) => bonusAwards.find(a => a.id === id)?.enabled ?? false
       await api.createLeague({
         name,
         description,
         season_start: seasonStart,
         season_end: seasonEnd,
         status: 'active',
-        scoring_config: scoringConfig,
+        scoring_config: {
+          entrance_bonus: findEnabled('entrance_bonus'),
+          first_blood:    findEnabled('first_blood'),
+          spicy_play:     findEnabled('spicy_play'),
+          bonus_awards:   bonusAwards,
+        },
       })
       // Reset form
       setName('')
       setDescription('')
       setSeasonStart('')
       setSeasonEnd('')
-      setScoringConfig({ first_blood: true, entrance_bonus: true, spicy_play: true })
+      setBonusAwards(DEFAULT_BONUS_AWARDS)
+      setShowAddBonus(false)
+      setNewBonus({ title: '', description: '', points: 1 })
       setShowCreateForm(false)
       // Reload leagues
       await loadLeagues()
@@ -230,25 +250,121 @@ export default function LeaguesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-[var(--color-muted)] mb-2">
-                  Bonus Awards (per-game pts)
+                  Bonus Awards
                 </label>
-                <div className="space-y-2">
-                  {[
-                    { key: 'entrance_bonus', label: 'WWE Entrance of the Week', desc: '+1 pt' },
-                    { key: 'first_blood', label: 'First Blood — First to Deal Damage', desc: '+1 pt' },
-                    { key: 'spicy_play', label: 'Spicy Play of the Week', desc: 'narrative only' },
-                  ].map(({ key, label, desc }) => (
-                    <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+                  {/* Header */}
+                  <div className="grid items-center gap-3 px-4 py-2 bg-[var(--color-bg)]/60 border-b border-[var(--color-border)]" style={{gridTemplateColumns: '2rem 1fr 2fr 4rem'}}>
+                    <div />
+                    <div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">Title</div>
+                    <div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">Description</div>
+                    <div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide text-right">Pts</div>
+                  </div>
+
+                  {/* Award rows */}
+                  {bonusAwards.map((award, idx) => (
+                    <div
+                      key={award.id}
+                      className={`grid items-start gap-3 px-4 py-3 border-b border-[var(--color-border)] transition-opacity ${!award.enabled ? 'opacity-40' : ''}`}
+                      style={{gridTemplateColumns: '2rem 1fr 2fr 4rem'}}
+                    >
                       <input
                         type="checkbox"
-                        checked={scoringConfig[key]}
-                        onChange={(e) => setScoringConfig(prev => ({ ...prev, [key]: e.target.checked }))}
-                        className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                        checked={award.enabled}
+                        onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, enabled: e.target.checked } : a))}
+                        className="mt-0.5 w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
                       />
-                      <span className="text-sm text-[var(--color-text)]">{label}</span>
-                      <span className="text-xs text-[var(--color-muted)]">{desc}</span>
-                    </label>
+                      <div className="text-sm font-medium text-[var(--color-text)] leading-snug">{award.title}</div>
+                      <div className="text-xs text-[var(--color-muted)] leading-relaxed">{award.description}</div>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={award.points}
+                          onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, points: Math.max(0, Number(e.target.value)) } : a))}
+                          disabled={!award.enabled}
+                          className="w-12 bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-sm text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-40"
+                        />
+                        {award.isCustom && (
+                          <button
+                            type="button"
+                            onClick={() => setBonusAwards(prev => prev.filter((_, i) => i !== idx))}
+                            aria-label="Remove award"
+                            className="text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   ))}
+
+                  {/* Add Custom Bonus */}
+                  {!showAddBonus ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddBonus(true)}
+                      className="w-full px-4 py-2.5 text-sm text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 text-left font-medium transition-colors"
+                    >
+                      + Add Custom Bonus
+                    </button>
+                  ) : (
+                    <div className="px-4 py-3 bg-[var(--color-bg)]/40 space-y-3">
+                      <div className="grid gap-3" style={{gridTemplateColumns: '1fr 2fr 4rem'}}>
+                        <input
+                          type="text"
+                          value={newBonus.title}
+                          onChange={(e) => setNewBonus(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Title"
+                          className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                        />
+                        <input
+                          type="text"
+                          value={newBonus.description}
+                          onChange={(e) => setNewBonus(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Description"
+                          className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={newBonus.points}
+                          onChange={(e) => setNewBonus(prev => ({ ...prev, points: Math.max(0, Number(e.target.value)) }))}
+                          className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-2 py-2 text-sm text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!newBonus.title.trim()) return
+                            setBonusAwards(prev => [...prev, {
+                              id: `custom_${Date.now()}`,
+                              title: newBonus.title.trim(),
+                              description: newBonus.description.trim(),
+                              points: newBonus.points,
+                              enabled: true,
+                              isCustom: true,
+                            }])
+                            setNewBonus({ title: '', description: '', points: 1 })
+                            setShowAddBonus(false)
+                          }}
+                          className="px-3 py-1.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] text-sm rounded-lg font-medium transition-colors"
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowAddBonus(false); setNewBonus({ title: '', description: '', points: 1 }) }}
+                          className="px-3 py-1.5 text-[var(--color-muted)] hover:text-[var(--color-text)] text-sm transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -313,17 +429,21 @@ export default function LeaguesPage() {
                         : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                     }`}
                   >
-                    {league.status}
+                    {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
                   </span>
                 </div>
 
                 <div className="text-sm text-[var(--color-muted)] space-y-1.5">
-                  <div>
-                    📅 {new Date(league.season_start).toLocaleDateString()} —{' '}
+                  <div className="flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                    {new Date(league.season_start).toLocaleDateString()} —{' '}
                     {new Date(league.season_end).toLocaleDateString()}
                   </div>
                   {league.league_members && (
-                    <div>👥 {league.league_members.length} members</div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                      {league.league_members.length} members
+                    </div>
                   )}
                   {(() => {
                     // Calculate color identity from all league decks
