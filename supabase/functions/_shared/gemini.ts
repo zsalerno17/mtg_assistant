@@ -244,6 +244,14 @@ Return this exact JSON structure:
   if (raw) {
     const parsed = tryParseJson(raw);
     if (parsed && "game_plan" in parsed) {
+      // Validate key_cards against actual deck
+      const deckCardNames = new Set(deck.mainboard.map(c => c.name));
+      if (parsed.key_cards && Array.isArray(parsed.key_cards)) {
+        parsed.key_cards = parsed.key_cards.filter(
+          (kc: any) => kc.name && deckCardNames.has(kc.name)
+        );
+      }
+      
       return { content: parsed, ai_enhanced: true };
     }
   }

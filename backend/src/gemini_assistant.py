@@ -175,6 +175,15 @@ Return this exact JSON structure:
     if raw:
         parsed = _try_parse_json(raw)
         if parsed and "game_plan" in parsed:
+            # Validate key_cards against actual deck
+            deck_card_names = {c.name for c in deck.mainboard}
+            if "key_cards" in parsed:
+                valid_key_cards = [
+                    kc for kc in parsed.get("key_cards", [])
+                    if kc.get("name") in deck_card_names
+                ]
+                parsed["key_cards"] = valid_key_cards
+            
             return {"content": parsed, "ai_enhanced": True}
     return {"content": _fallback_strategy(deck, analysis), "ai_enhanced": False}
 
