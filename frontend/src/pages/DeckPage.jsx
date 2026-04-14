@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts'
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie, RadialBarChart, RadialBar, Legend } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
@@ -446,6 +446,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         {manaCurveData.length > 0 && (
           <div>
             <SectionLabel className="mb-3">Mana Curve</SectionLabel>
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">Distribution of spells by mana cost — color-coded by timing (acceleration, core spells, and haymakers).</p>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
               <div className="flex items-center" style={{ height: '220px' }}>
                 <ResponsiveContainer width="100%" height={180}>
@@ -501,17 +502,17 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         return (
           <div>
             <SectionLabel className="mb-3">Removal Suite</SectionLabel>
-            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
-              <div className="flex flex-col items-center">
-                {/* Donut Chart */}
-                <ResponsiveContainer width="100%" height={140}>
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">Breakdown of removal by quality — exile is permanent, destroy can be recursed, bounce is temporary.</p>
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 flex flex-col items-center">
+              {/* Donut Chart */}
+              <ResponsiveContainer width="100%" height={400}>
                   <PieChart>
                     <Pie
                       data={qualityData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={35}
-                      outerRadius={55}
+                      innerRadius={60}
+                      outerRadius={100}
                       dataKey="value"
                       isAnimationActive={false}
                       stroke="none"
@@ -524,9 +525,9 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                 </ResponsiveContainer>
                 
                 {/* Center text */}
-                <div className="text-center -mt-24 mb-16 pointer-events-none">
-                  <div className="text-2xl font-bold text-[var(--color-text)]">{quality.total}</div>
-                  <div className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Removal</div>
+                <div className="text-center -mt-40 mb-32 pointer-events-none">
+                  <div className="text-3xl font-bold text-[var(--color-text)]">{quality.total}</div>
+                  <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">Removal</div>
                 </div>
 
                 {/* Legend */}
@@ -566,7 +567,6 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                     </span>
                   )}
                 </div>
-              </div>
             </div>
           </div>
         )
@@ -616,48 +616,69 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         const hasData = categories.some(c => c.value > 0)
         if (!hasData) return null
         
-        // Find max for scaling
-        const maxVal = Math.max(...categories.map(c => Math.max(c.value, c.threshold)), 12)
+        // Transform for radial bars (reverse order so creatures are outermost)
+        const radialData = categories.map(cat => ({
+          name: cat.subject,
+          actualValue: cat.value,  // Use actualValue to avoid conflict with Recharts
+          fill: cat.color,
+          target: cat.threshold,
+          fillPercentage: Math.min((cat.value / cat.threshold) * 100, 100),
+          tooltip: cat.tooltip,
+          detail: cat.detail,
+        })).reverse()
         
         return (
           <div>
             <SectionLabel className="mb-3">Interaction Coverage</SectionLabel>
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">Your ability to answer different threat types — full circle is recommended, filled portion is current coverage.</p>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-5">
               <div className="flex flex-col lg:flex-row gap-6 items-start">
-                {/* Radar Chart - Larger */}
+                {/* Radial Bar Chart */}
                 <div className="w-full lg:w-2/3">
                   <ResponsiveContainer width="100%" height={400}>
-                    <RadarChart data={categories}>
-                      <PolarGrid stroke="var(--color-border)" strokeOpacity={0.5} />
-                      <PolarAngleAxis 
-                        dataKey="subject" 
-                        tick={{ fill: 'var(--color-text)', fontSize: 12, fontWeight: 600 }}
+                    <RadialBarChart 
+                      cx="50%" 
+                      cy="50%" 
+                      innerRadius="20%" 
+                      outerRadius="90%" 
+                      data={radialData}
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      <RadialBar
+                        minAngle={15}
+                        background={{ fill: 'var(--color-surface)' }}
+                        clockWise
+                        dataKey="fillPercentage"
+                        isAnimationActive={true}
+                        animationDuration={500}
+                        activeBar={false}
                       />
-                      <PolarRadiusAxis 
-                        angle={90} 
-                        domain={[0, maxVal]}
-                        tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
-                        axisLine={{ stroke: 'var(--color-border)', strokeOpacity: 0.5 }}
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.[0]) return null;
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-lg">
+                              <div className="font-semibold text-sm text-[var(--color-text)] mb-1">
+                                {data.name}
+                              </div>
+                              <div className="text-xs text-[var(--color-text-muted)] mb-1">
+                                {data.tooltip}
+                              </div>
+                              <div className="text-xs font-mono text-[var(--color-text)]">
+                                {data.actualValue}/{data.target} ({Math.round(data.fillPercentage)}%)
+                              </div>
+                              {data.detail && (
+                                <div className="text-[10px] text-[var(--color-text-muted)] mt-1">
+                                  {data.detail}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }}
                       />
-                      <Radar 
-                        name="Coverage" 
-                        dataKey="value" 
-                        stroke="var(--color-primary)" 
-                        fill="var(--color-primary)" 
-                        fillOpacity={0.3}
-                        strokeWidth={3}
-                      />
-                      {/* Threshold reference */}
-                      <Radar 
-                        name="Recommended" 
-                        dataKey="threshold" 
-                        stroke="var(--color-success)" 
-                        fill="none" 
-                        strokeWidth={2}
-                        strokeDasharray="5 5"
-                        strokeOpacity={0.6}
-                      />
-                    </RadarChart>
+                    </RadialBarChart>
                   </ResponsiveContainer>
                 </div>
 
@@ -675,6 +696,9 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                             <span className="text-xs font-semibold text-[var(--color-text)]">{cat.subject}</span>
                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] whitespace-nowrap">
                               {cat.value}/{cat.threshold}
+                              <span className="ml-1 text-[var(--color-success)]">
+                                ({Math.min(Math.round((cat.value / cat.threshold) * 100), 100)}%)
+                              </span>
                             </span>
                           </div>
                           {cat.detail && (
@@ -686,6 +710,13 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                           {cat.value > 0 && cat.value < cat.threshold && (
                             <div className="text-[10px] text-[var(--color-secondary)] font-medium mt-1">⚠️ Light coverage</div>
                           )}
+                        </div>
+                      </div>
+                      
+                      {/* Tooltip on hover */}
+                      <div className="absolute left-0 top-full mt-1 w-full min-w-[280px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+                        <div className="text-xs text-[var(--color-text-muted)]">
+                          {cat.tooltip}
                         </div>
                       </div>
                     </div>
@@ -1720,7 +1751,7 @@ export default function DeckPage() {
     <PageTransition>
       <div className="min-h-screen">
       
-      <div className="max-w-[1600px] mx-auto px-8 pt-6">
+      <div className="max-w-[1400px] mx-auto px-8 pt-6">
         {/* ── Hero Box ── Phase 38: Desktop (Direction A) + Mobile (Direction B) */}
         {deck && analysis && (
           <div 
@@ -1740,7 +1771,7 @@ export default function DeckPage() {
               {/* Text info */}
               <div className="flex-1 min-w-0">
                 {/* Deck Name */}
-                <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-[var(--color-primary)] text-4xl leading-tight font-bold mb-2">
+                <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-[var(--color-primary)] text-3xl leading-tight font-bold mb-2">
                   {deck.name || 'Unnamed Deck'}
                 </h1>
                 

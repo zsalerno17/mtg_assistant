@@ -452,14 +452,6 @@ export default function LeaguePage() {
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10 pb-32 md:pb-10">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-[var(--color-muted)] mb-3">
-            <Link to="/leagues" className="hover:text-[var(--color-text)]">
-              Leagues
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--color-text)]">{league.name}</span>
-          </div>
-
           {/* Title + Badge */}
           <div className="flex items-center gap-3 mb-3">
             <h1 className="text-3xl font-brand font-bold text-[var(--color-text)]">

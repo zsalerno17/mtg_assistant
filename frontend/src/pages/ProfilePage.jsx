@@ -109,7 +109,7 @@ export default function ProfilePage() {
   return (
     <PageTransition>
       <div className="min-h-screen">
-      <div className="max-w-lg mx-auto px-8 pt-10 pb-6">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-6 pb-8">
         {/* First-time welcome banner */}
         {isFirstTime && (
           <div className="mb-6 bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-xl px-5 py-4">
@@ -118,12 +118,11 @@ export default function ProfilePage() {
           </div>
         )}
         {/* Header */}
-        <div className="mb-8">
-          <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
+        <div className="mb-10">
+          <h1 className="font-brand text-3xl font-bold text-[var(--color-text)] mb-3">
             Profile
-          </h2>
-          <div className="h-px w-20 bg-[var(--color-primary-border)] mb-3" />
-          <p className="text-[var(--color-muted)] text-sm font-heading">
+          </h1>
+          <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
             Set a username and profile picture for use across the app.
           </p>
         </div>

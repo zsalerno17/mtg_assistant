@@ -572,10 +572,10 @@ export default function DashboardPage() {
           onImported={handleImported}
         />
       )}
-      <div className="max-w-[1200px] mx-auto">
+      <div className="max-w-[1400px] mx-auto">
         {/* Page title - "Deck Vault" */}
         <div className="flex items-baseline gap-4 mb-8">
-          <h1 className="font-brand text-[28px] text-[var(--color-text)] font-semibold tracking-[0.5px]">
+          <h1 className="font-brand text-3xl text-[var(--color-text)] font-semibold">
             Deck Vault
           </h1>
           {!decksLoading && (

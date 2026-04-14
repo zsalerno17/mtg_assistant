@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
+import CardTooltip from '../components/CardTooltip'
 import { CloudUpload } from 'lucide-react'
 
 export default function CollectionPage() {
@@ -78,9 +79,25 @@ export default function CollectionPage() {
     }
   }
 
-  const filteredCards = collection?.cards
-    ? collection.cards.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+  // Group cards by name and sum quantities
+  const groupedCards = collection?.cards
+    ? Object.values(
+        collection.cards.reduce((acc, card) => {
+          const key = card.name
+          if (acc[key]) {
+            acc[key].quantity += (card.quantity || 1)
+          } else {
+            acc[key] = { ...card, quantity: card.quantity || 1 }
+          }
+          return acc
+        }, {})
+      )
     : []
+
+  // Filter grouped cards by search
+  const filteredCards = groupedCards.filter(c => 
+    c.name.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <PageTransition>
@@ -158,7 +175,10 @@ export default function CollectionPage() {
             <div className="mt-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <h3 className="text-[var(--color-text)] font-medium">
-              {collection.cards.length} cards
+              {groupedCards.length} unique cards
+              <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
+                · {collection.cards.reduce((sum, c) => sum + (c.quantity || 1), 0)} total
+              </span>
               {collection.updated_at && (
                 <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
                   · updated {new Date(collection.updated_at).toLocaleDateString()}
@@ -175,19 +195,20 @@ export default function CollectionPage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
-            {filteredCards.map((card, i) => (
+            {filteredCards.map((card) => (
               <motion.div
-                key={i}
+                key={card.name}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: 0.35,
-                  delay: i * 0.06,
                   ease: [0.34, 1.56, 0.64, 1],
                 }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
               >
-                <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
+                <CardTooltip cardName={card.name}>
+                  <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
+                </CardTooltip>
                 <span className="text-[var(--color-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>
               </motion.div>
             ))}
