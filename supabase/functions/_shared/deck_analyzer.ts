@@ -131,10 +131,30 @@ export interface DeckAnalysis {
   counterspell_count: number;
   fast_mana_count: number;
   exile_removal_count: number;
+  interaction_timeline: InteractionTimeline;
+  removal_quality: RemovalQuality;
   themes: ThemeResult[];
   theme_names: string[];
   weaknesses: WeaknessResult[];
   verdict: string;
+}
+
+export interface InteractionTimeline {
+  acceleration: { total: number; instant: number; sorcery: number }; // 0-2 CMC
+  core: { total: number; instant: number; sorcery: number }; // 3-4 CMC
+  haymakers: { total: number; instant: number; sorcery: number }; // 5+ CMC
+  instant_speed_percentage: number;
+}
+
+export interface RemovalQuality {
+  exile: number;
+  destroy: number;
+  bounce: number;
+  tuck: number;
+  damage: number;
+  other: number;
+  total: number;
+  exile_percentage: number;
 }
 
 export interface ThemeResult {
@@ -208,6 +228,8 @@ export function analyzeDeck(deck: Deck): DeckAnalysis {
     counterspell_count: countCounterspells(allCards),
     fast_mana_count: countFastMana(allCards),
     exile_removal_count: countExileRemoval(allCards),
+    interaction_timeline: getInteractionTimeline(allCards),
+    removal_quality: getRemovalQualityBreakdown(allCards),
     themes,
     theme_names: themes.map((t) => t.name),
     weaknesses,
@@ -717,6 +739,161 @@ export function countExileRemoval(cards: Card[]): number {
     }
   }
   return count;
+}
+
+export function getInteractionTimeline(cards: Card[]): InteractionTimeline {
+  const acceleration = { total: 0, instant: 0, sorcery: 0 };
+  const core = { total: 0, instant: 0, sorcery: 0 };
+  const haymakers = { total: 0, instant: 0, sorcery: 0 };
+
+  const interactionPhrases = [
+    "destroy target",
+    "exile target",
+    "return target",
+    "counter target",
+    "deals damage to any target",
+    "deals damage to target creature",
+    "tap target",
+    "untap target",
+  ];
+
+  let totalInstant = 0;
+  let totalSorcery = 0;
+
+  for (const card of cards) {
+    if (isLand(card)) continue;
+    const oracle = card.oracle_text.toLowerCase();
+    const tl = card.type_line.toLowerCase();
+
+    // Check if it's interaction
+    if (!interactionPhrases.some((p) => oracle.includes(p))) continue;
+
+    const isInstant = tl.includes("instant") || oracle.includes("flash");
+    const isSorcery = tl.includes("sorcery");
+    
+    // Classify by CMC
+    const cmc = card.cmc;
+    if (cmc <= 2) {
+      acceleration.total += card.quantity;
+      if (isInstant) {
+        acceleration.instant += card.quantity;
+        totalInstant += card.quantity;
+      } else if (isSorcery) {
+        acceleration.sorcery += card.quantity;
+        totalSorcery += card.quantity;
+      }
+    } else if (cmc <= 4) {
+      core.total += card.quantity;
+      if (isInstant) {
+        core.instant += card.quantity;
+        totalInstant += card.quantity;
+      } else if (isSorcery) {
+        core.sorcery += card.quantity;
+        totalSorcery += card.quantity;
+      }
+    } else {
+      haymakers.total += card.quantity;
+      if (isInstant) {
+        haymakers.instant += card.quantity;
+        totalInstant += card.quantity;
+      } else if (isSorcery) {
+        haymakers.sorcery += card.quantity;
+        totalSorcery += card.quantity;
+      }
+    }
+  }
+
+  const total = totalInstant + totalSorcery;
+  const instant_speed_percentage = total > 0
+    ? Math.round((totalInstant / total) * 100)
+    : 0;
+
+  return {
+    acceleration,
+    core,
+    haymakers,
+    instant_speed_percentage,
+  };
+}
+
+export function getRemovalQualityBreakdown(cards: Card[]): RemovalQuality {
+  let exile = 0;
+  let destroy = 0;
+  let bounce = 0;
+  let tuck = 0;
+  let damage = 0;
+  let other = 0;
+
+  for (const card of cards) {
+    if (isLand(card)) continue;
+    const oracle = card.oracle_text.toLowerCase();
+
+    let counted = false;
+
+    // Exile (premium removal)
+    if (oracle.includes("exile target")) {
+      exile += card.quantity;
+      counted = true;
+    }
+    // Destroy
+    else if (oracle.includes("destroy target")) {
+      destroy += card.quantity;
+      counted = true;
+    }
+    // Bounce (return to hand)
+    else if (
+      oracle.includes("return target") &&
+      (oracle.includes("to its owner's hand") ||
+        oracle.includes("to their owner's hand"))
+    ) {
+      bounce += card.quantity;
+      counted = true;
+    }
+    // Tuck (shuffle into library)
+    else if (
+      oracle.includes("shuffle") &&
+      oracle.includes("into") &&
+      oracle.includes("library") &&
+      oracle.includes("target")
+    ) {
+      tuck += card.quantity;
+      counted = true;
+    }
+    // Damage-based removal
+    else if (
+      oracle.includes("deals damage to any target") ||
+      oracle.includes("deals damage to target creature") ||
+      oracle.includes("deals damage to target planeswalker")
+    ) {
+      damage += card.quantity;
+      counted = true;
+    }
+
+    // Catch other removal types (sacrifice effects, -X/-X, etc.)
+    if (
+      !counted &&
+      (oracle.includes("sacrifice") ||
+        oracle.includes("gets -") ||
+        oracle.includes("lose") ||
+        oracle.includes("can't"))
+    ) {
+      other += card.quantity;
+    }
+  }
+
+  const total = exile + destroy + bounce + tuck + damage + other;
+  const exile_percentage = total > 0 ? Math.round((exile / total) * 100) : 0;
+
+  return {
+    exile,
+    destroy,
+    bounce,
+    tuck,
+    damage,
+    other,
+    total,
+    exile_percentage,
+  };
 }
 
 // ─── Strategy Classification ─────────────────────────────────────────────────

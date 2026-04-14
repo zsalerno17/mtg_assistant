@@ -147,6 +147,14 @@ Root cause analysis identified 7 reasons previous redesigns failed (competing ph
 
 ---
 
+**Previous task:** DeckPage Chart Improvements (COMPLETE ✅, April 13, 2026)
+- Replaced redundant charts (Role Composition + Resource Health) with unique analysis:
+  - **Interaction Timeline** — shows interaction by CMC bracket (Acceleration/Core/Haymakers), instant vs sorcery split, matches mana curve color scheme
+  - **Removal Quality Breakdown** — categorizes removal by quality (exile/destroy/damage/bounce/tuck), shows exile % as quality metric
+- Both charts UNIQUE to mtg-assistant (EDHREC/Moxfield don't show interaction timing or removal quality breakdown)
+- Backend: Added `getInteractionTimeline()` and `getRemovalQualityBreakdown()` to `deck_analyzer.ts`
+- Frontend: Updated DeckPage.jsx to display new visualizations with existing design system colors
+
 **Previous task:** Phase 36 — Chart Redesign (COMPLETE ✅, April 13, 2026)
 
 **Session accomplishments:**

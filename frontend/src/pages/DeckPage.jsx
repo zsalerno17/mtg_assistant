@@ -247,23 +247,49 @@ function CommanderImage({ name, size = 'default' }) {
   if (!name || error) return null
   const imageUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image`
   
-  // Phase 38: Support different sizes for desktop hero (120×168px) vs mobile
-  const dimensions = size === 'large' 
-    ? { width: 120, height: 168 } 
-    : { width: 72, height: 100 }
+  // Phase 38: Support different sizes
+  // default: 72×100px (small inline)
+  // large: 120×168px (desktop hero)
+  // massive: 280×392px (mobile hero - Direction B)
+  const dimensions = size === 'massive'
+    ? { width: 280, height: 392 }
+    : size === 'large' 
+      ? { width: 120, height: 168 } 
+      : { width: 72, height: 100 }
   
+  // Mobile massive: click to Scryfall instead of hover tooltip
+  const handleClick = (e) => {
+    if (size === 'massive') {
+      e.preventDefault()
+      window.open(`https://scryfall.com/search?q=!"${encodeURIComponent(name)}"`, '_blank', 'noopener,noreferrer')
+    }
+  }
+  
+  const imageElement = (
+    <div 
+      className={`shrink-0 rounded-[7px] overflow-hidden shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ${size === 'massive' ? 'cursor-pointer' : ''}`}
+      onClick={handleClick}
+    >
+      <img
+        src={imageUrl}
+        alt={name}
+        onError={() => setError(true)}
+        loading="lazy"
+        className="rounded-[7px] block object-cover"
+        style={dimensions}
+      />
+    </div>
+  )
+  
+  // Massive size: no tooltip, just clickable
+  if (size === 'massive') {
+    return imageElement
+  }
+  
+  // Other sizes: wrap with tooltip
   return (
     <CardTooltip cardName={name}>
-      <div className="shrink-0 rounded-[7px] overflow-hidden shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
-        <img
-          src={imageUrl}
-          alt={name}
-          onError={() => setError(true)}
-          loading="lazy"
-          className="rounded-[7px] block object-cover"
-          style={dimensions}
-        />
-      </div>
+      {imageElement}
     </CardTooltip>
   )
 }
@@ -285,6 +311,60 @@ function OverviewTab({ deck, analysis, onTabChange }) {
     ])
   ]
 
+  // Weaknesses rendering function
+  const renderWeaknesses = () => {
+    if (!analysis.weaknesses?.length) return null
+    
+    return (
+      <div>
+        <SectionLabel className="mb-3 text-[var(--color-danger)]">
+          <span className="flex items-center gap-1.5">
+            <IconWarning className="w-3 h-3" />
+            Identified Weaknesses
+          </span>
+        </SectionLabel>
+        <div className="space-y-2">
+          {analysis.weaknesses.map((w, i) => {
+            const label = typeof w === 'string' ? w : w.label
+            const isStructured = typeof w === 'object' && w !== null
+            return isStructured ? (
+              <details key={i} className="group bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/35 rounded-xl hover:border-[var(--color-danger)]/60 transition-colors">
+                <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer list-none text-[var(--color-danger)] text-sm select-none">
+                  <IconWarning />
+                  <span className="flex-1">{label}</span>
+                  <span className="transition-transform group-open:rotate-180">
+                    <IconChevronDown className="w-3.5 h-3.5 shrink-0 text-[var(--color-muted)]" />
+                  </span>
+                </summary>
+                <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[var(--color-border)]">
+                  <p className="text-[var(--color-muted)] text-sm">{w.why}</p>
+                  <p className="text-[var(--color-text)] text-sm">
+                    <span className="text-[var(--color-muted)] font-medium">Look for: </span>{w.look_for}
+                  </p>
+                  {w.examples?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {w.examples.map((ex) => (
+                        <CardTooltip key={ex} cardName={ex}>
+                          <span className="bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] text-xs px-2 py-0.5 rounded cursor-help hover:border-[var(--color-secondary)]/40 transition-colors">
+                            {ex}
+                          </span>
+                        </CardTooltip>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </details>
+            ) : (
+              <div key={i} className="flex items-center gap-2 text-[var(--color-danger)] text-sm px-1">
+                <IconWarning /><span>{label}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
 
@@ -295,10 +375,28 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
       )}
 
-      {/* ── Key Stats ── */}
+      {/* ── Mobile: Weaknesses SECOND (Direction B) ── */}
+      <div className="md:hidden">
+        {renderWeaknesses()}
+      </div>
+
+      {/* ── Key Stats ── Mobile: horizontal scroll, Desktop: grid ── */}
       <div>
         <SectionLabel className="mb-3">Key Numbers</SectionLabel>
-        <div className="grid grid-cols-4 gap-3 sm:grid-cols-7">
+        {/* Mobile: Horizontal scroll */}
+        <div className="flex md:hidden gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+          <div className="flex gap-3 min-w-min">
+            <StatBadge label="Cards" value={analysis.total_cards} />
+            <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} />
+            <StatBadge label="Lands" value={cardTypes['Lands'] || 0} />
+            <StatBadge label="Ramp" value={analysis.ramp_count || 0} />
+            <StatBadge label="Draw" value={analysis.draw_count || 0} />
+            <StatBadge label="Removal" value={analysis.removal_count || 0} />
+            <StatBadge label="Wipes" value={analysis.board_wipe_count || 0} />
+          </div>
+        </div>
+        {/* Desktop: Grid */}
+        <div className="hidden md:grid grid-cols-4 gap-3 sm:grid-cols-7">
           <StatBadge label="Cards" value={analysis.total_cards} />
           <StatBadge label="Avg CMC" value={typeof analysis.average_cmc === 'number' ? analysis.average_cmc.toFixed(2) : '—'} />
           <StatBadge label="Lands" value={cardTypes['Lands'] || 0} />
@@ -309,55 +407,10 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
       </div>
 
-      {/* ── Weaknesses (moved up — key differentiator) ── */}
-      {analysis.weaknesses?.length > 0 && (
-        <div>
-          <SectionLabel className="mb-3 text-[var(--color-danger)]">
-            <span className="flex items-center gap-1.5">
-              <IconWarning className="w-3 h-3" />
-              Identified Weaknesses
-            </span>
-          </SectionLabel>
-          <div className="space-y-2">
-            {analysis.weaknesses.map((w, i) => {
-              const label = typeof w === 'string' ? w : w.label
-              const isStructured = typeof w === 'object' && w !== null
-              return isStructured ? (
-                <details key={i} className="group bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/35 rounded-xl hover:border-[var(--color-danger)]/60 transition-colors">
-                  <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer list-none text-[var(--color-danger)] text-sm select-none">
-                    <IconWarning />
-                    <span className="flex-1">{label}</span>
-                    <span className="transition-transform group-open:rotate-180">
-                      <IconChevronDown className="w-3.5 h-3.5 shrink-0 text-[var(--color-muted)]" />
-                    </span>
-                  </summary>
-                  <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[var(--color-border)]">
-                    <p className="text-[var(--color-muted)] text-sm">{w.why}</p>
-                    <p className="text-[var(--color-text)] text-sm">
-                      <span className="text-[var(--color-muted)] font-medium">Look for: </span>{w.look_for}
-                    </p>
-                    {w.examples?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {w.examples.map((ex) => (
-                          <CardTooltip key={ex} cardName={ex}>
-                            <span className="bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] text-xs px-2 py-0.5 rounded cursor-help hover:border-[var(--color-secondary)]/40 transition-colors">
-                              {ex}
-                            </span>
-                          </CardTooltip>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </details>
-              ) : (
-                <div key={i} className="flex items-center gap-2 text-[var(--color-danger)] text-sm px-1">
-                  <IconWarning /><span>{label}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {/* ── Desktop: Weaknesses (Direction A) ── */}
+      <div className="hidden md:block">
+        {renderWeaknesses()}
+      </div>
 
       {/* ── Themes ── */}
       {analysis.themes?.length > 0 && (
@@ -431,44 +484,64 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
         )}
 
-        {/* ── Role Composition ── */}
+        {/* ── Interaction Timeline ── */}
         {(() => {
-        const ramp = analysis.ramp_count || 0
-        const draw = analysis.draw_count || 0
-        const removal = analysis.removal_count || 0
-        const wipes = analysis.board_wipe_count || 0
-        const counters = analysis.counterspell_count || 0
-        const tutors = analysis.tutor_count || 0
-        const landCount = cardTypes['Lands'] || 0
-        const threats = Math.max(0, (analysis.total_cards || 99) - landCount - ramp - draw - removal - wipes - counters - tutors)
-        const roles = [
-          { name: 'Threats / Other', value: threats,  color: 'var(--color-text-subtle)' },
-          { name: 'Ramp',           value: ramp,      color: 'var(--color-primary)' },
-          { name: 'Card Draw',      value: draw,      color: 'var(--color-success)' },
-          { name: 'Removal',        value: removal,   color: 'var(--color-danger)' },
-          { name: 'Board Wipes',    value: wipes,     color: 'var(--color-secondary)' },
-          { name: 'Counterspells',  value: counters,  color: 'var(--color-mtg-black)' },
-          { name: 'Tutors',         value: tutors,    color: 'var(--color-mtg-white)' },
-        ].filter(r => r.value > 0).sort((a, b) => b.value - a.value)
-        if (roles.length === 0) return null
-        const maxVal = Math.max(...roles.map(r => r.value))
+        const timeline = analysis.interaction_timeline
+        console.log('Interaction Timeline data:', timeline)
+        if (!timeline) {
+          console.warn('No interaction_timeline data in analysis')
+          return null
+        }
+        
+        const phases = [
+          { name: 'Acceleration (0-2)', data: timeline.acceleration, color: 'var(--color-primary)' },
+          { name: 'Core Spells (3-4)', data: timeline.core, color: 'var(--color-secondary)' },
+          { name: 'Haymakers (5+)', data: timeline.haymakers, color: 'var(--color-danger)' },
+        ]
+        
+        const maxVal = Math.max(timeline.acceleration.total, timeline.core.total, timeline.haymakers.total, 1)
+        const hasInteraction = timeline.acceleration.total + timeline.core.total + timeline.haymakers.total > 0
+        
+        if (!hasInteraction) return null
+        
         return (
           <div>
-            <SectionLabel className="mb-3">Role Composition</SectionLabel>
+            <SectionLabel className="mb-3">Interaction Timeline</SectionLabel>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 flex items-center" style={{ minHeight: '268px' }}>
-              <div className="space-y-2.5 w-full">
-                {roles.map((role) => (
-                  <div key={role.name} className="flex items-center gap-3">
-                    <span className="text-[11px] text-[var(--color-text-muted)] w-[108px] shrink-0 text-right">{role.name}</span>
+              <div className="space-y-3 w-full">
+                {phases.map((phase) => (
+                  <div key={phase.name} className="flex flex-col gap-1.5">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] text-[var(--color-text-muted)] font-medium">{phase.name}</span>
+                      <span className="text-[10px] font-mono text-[var(--color-text-subtle)]">
+                        {phase.data.total} {phase.data.total === 1 ? 'card' : 'cards'}
+                      </span>
+                    </div>
                     <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 14 }}>
                       <div
                         className="h-full rounded-sm"
-                        style={{ width: `${Math.round((role.value / maxVal) * 100)}%`, background: role.color }}
+                        style={{ width: `${Math.round((phase.data.total / maxVal) * 100)}%`, background: phase.color }}
                       />
                     </div>
-                    <span className="text-[11px] font-mono text-[var(--color-text-muted)] w-6 shrink-0">{role.value}</span>
+                    {phase.data.total > 0 && (
+                      <div className="text-[10px] text-[var(--color-text-subtle)] flex gap-2">
+                        <span>{phase.data.instant} instant-speed</span>
+                        <span className="text-[var(--color-border)]">•</span>
+                        <span>{phase.data.sorcery} sorcery-speed</span>
+                      </div>
+                    )}
                   </div>
                 ))}
+                <div className="pt-2 border-t border-[var(--color-border)]">
+                  <span className="text-[10px] text-[var(--color-text-muted)]">
+                    {timeline.instant_speed_percentage}% instant-speed interaction
+                  </span>
+                  {timeline.acceleration.total < 4 && (
+                    <span className="block text-[10px] text-[var(--color-danger)] mt-1">
+                      ⚠️ Light early interaction — vulnerable to fast threats
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -476,56 +549,66 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         })()}
       </div>
 
-      {/* ── Resource Health ── */}
+      {/* ── Removal Quality ── */}
       {(() => {
-        const THRESHOLDS = {
-          aggro:    { ramp: [6,8],   draw: [8,10],  removal: [6,8],   lands: [33,35], wipes: [1,3], counters: [0,2] },
-          tokens:   { ramp: [8,10],  draw: [8,10],  removal: [7,9],   lands: [34,36], wipes: [2,4], counters: [1,3] },
-          combo:    { ramp: [12,16], draw: [14,18], removal: [8,10],  lands: [30,33], wipes: [2,4], counters: [4,8] },
-          midrange: { ramp: [10,12], draw: [10,12], removal: [9,11],  lands: [36,38], wipes: [2,4], counters: [3,6] },
-          control:  { ramp: [8,10],  draw: [14,18], removal: [12,15], lands: [36,38], wipes: [3,5], counters: [6,10] },
-          stax:     { ramp: [8,10],  draw: [10,12], removal: [10,12], lands: [34,36], wipes: [2,4], counters: [3,6] },
-          ramp:     { ramp: [14,18], draw: [10,12], removal: [8,10],  lands: [38,42], wipes: [2,4], counters: [1,3] },
+        const quality = analysis.removal_quality
+        console.log('Removal Quality data:', quality)
+        if (!quality || quality.total === 0) {
+          console.warn('No removal_quality data in analysis')
+          return null
         }
-        const strategy = analysis.strategy?.toLowerCase() || 'midrange'
-        const t = THRESHOLDS[strategy] || THRESHOLDS.midrange
-        const landCount = cardTypes['Lands'] || 0
-        const metrics = [
-          { label: 'Ramp',        actual: analysis.ramp_count || 0,         range: t.ramp },
-          { label: 'Card Draw',   actual: analysis.draw_count || 0,         range: t.draw },
-          { label: 'Removal',     actual: analysis.removal_count || 0,      range: t.removal },
-          { label: 'Board Wipes', actual: analysis.board_wipe_count || 0,   range: t.wipes },
-          { label: 'Lands',       actual: landCount,                        range: t.lands },
-          { label: 'Counterspells', actual: analysis.counterspell_count || 0, range: t.counters },
-        ]
-        const getStatus = (actual, [min, max]) => {
-          if (actual >= min) return 'green'
-          if (actual >= min - 2) return 'amber'
-          return 'red'
-        }
-        const statusColor = { green: 'var(--color-success)', amber: 'var(--color-secondary)', red: 'var(--color-danger)' }
+        
+        const qualityTypes = [
+          { label: 'Exile', value: quality.exile, color: 'var(--color-primary)', desc: 'Premium — bypasses recursion' },
+          { label: 'Destroy', value: quality.destroy, color: 'var(--color-secondary)', desc: 'Good — standard removal' },
+          { label: 'Damage', value: quality.damage, color: 'var(--color-danger)', desc: 'Flexible — scalable' },
+          { label: 'Bounce', value: quality.bounce, color: 'var(--color-text-subtle)', desc: 'Tempo — temporary answer' },
+          { label: 'Tuck', value: quality.tuck, color: 'var(--color-success)', desc: 'Niche — anti-commander' },
+          { label: 'Other', value: quality.other, color: 'var(--color-muted)', desc: 'Varies' },
+        ].filter(q => q.value > 0)
+        
+        const maxVal = Math.max(...qualityTypes.map(q => q.value), 1)
+        
         return (
           <div>
-            <SectionLabel className="mb-1">Resource Health</SectionLabel>
-            <p className="text-[10px] text-[var(--color-text-subtle)] mb-3 capitalize">{strategy} deck targets</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-              {metrics.map(({ label, actual, range }) => {
-                const status = getStatus(actual, range)
-                const pct = Math.min(100, Math.round((actual / range[1]) * 100))
-                return (
-                  <div key={label} className="flex flex-col gap-1">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[11px] font-medium text-[var(--color-text)]">{label}</span>
-                      <span className="text-[10px] font-mono" style={{ color: statusColor[status] }}>
-                        {actual} <span className="text-[var(--color-text-subtle)]">/ {range[0]}–{range[1]}</span>
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 rounded-full bg-[var(--color-surface-2)]">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: statusColor[status] }} />
+            <SectionLabel className="mb-1">Removal Quality</SectionLabel>
+            <p className="text-[10px] text-[var(--color-text-subtle)] mb-3">
+              {quality.total} total removal • {quality.exile_percentage}% exile-based
+            </p>
+            <div className="space-y-2.5">
+              {qualityTypes.map((type) => (
+                <div key={type.label} className="flex flex-col gap-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[11px] font-medium text-[var(--color-text)]">{type.label}</span>
+                    <span className="text-[10px] font-mono text-[var(--color-text-muted)]">
+                      {type.value} <span className="text-[var(--color-text-subtle)]">({Math.round((type.value / quality.total) * 100)}%)</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 10 }}>
+                      <div
+                        className="h-full rounded-sm"
+                        style={{ width: `${Math.round((type.value / maxVal) * 100)}%`, background: type.color }}
+                      />
                     </div>
                   </div>
-                )
-              })}
+                  <p className="text-[9px] text-[var(--color-text-subtle)]">{type.desc}</p>
+                </div>
+              ))}
+              {quality.exile_percentage >= 40 && (
+                <div className="pt-2 border-t border-[var(--color-border)]">
+                  <span className="text-[10px] text-[var(--color-success)]">
+                    ✓ Strong removal suite — resilient vs recursion
+                  </span>
+                </div>
+              )}
+              {quality.exile_percentage < 20 && quality.total >= 5 && (
+                <div className="pt-2 border-t border-[var(--color-border)]">
+                  <span className="text-[10px] text-[var(--color-danger)]">
+                    ⚠️ Low exile removal — vulnerable to graveyard strategies
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )
@@ -1555,48 +1638,43 @@ export default function DeckPage() {
       <div className="min-h-screen">
       
       <div className="max-w-[1600px] mx-auto px-8 pt-6">
-        {/* ── Hero Box ── Phase 38: Deck name + Commander */}
+        {/* ── Hero Box ── Phase 38: Desktop (Direction A) + Mobile (Direction B) */}
         {deck && analysis && (
           <div 
-            className="relative rounded-2xl px-6 py-6 border border-[var(--color-primary)] mb-6"
+            className="relative rounded-2xl border border-[var(--color-primary)] mb-6"
             style={{ 
               background: 'linear-gradient(135deg, rgba(45, 130, 183, 0.15) 0%, rgba(35, 41, 46, 0.8) 100%)' 
             }}
           >
-            <div className="flex items-center gap-6">
-              {/* Card image(s) - larger on desktop */}
-              <div className="hidden md:flex gap-3 shrink-0">
+            {/* Desktop: Horizontal Layout (Direction A) */}
+            <div className="hidden md:flex items-center gap-6 px-6 py-6">
+              {/* Card image(s) */}
+              <div className="flex gap-3 shrink-0">
                 <CommanderImage name={deck.commander?.name} size="large" />
                 {deck.partner?.name && <CommanderImage name={deck.partner.name} size="large" />}
               </div>
-              {/* Mobile: smaller art */}
-              <div className="flex md:hidden gap-2 shrink-0">
-                <CommanderImage name={deck.commander?.name} />
-                {deck.partner?.name && <CommanderImage name={deck.partner.name} />}
-              </div>
               
-              {/* Text info - flex-1 takes remaining space */}
+              {/* Text info */}
               <div className="flex-1 min-w-0">
-                {/* Deck Name - Large Cinzel */}
-                <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-[var(--color-primary)] text-3xl md:text-4xl leading-tight font-bold mb-2">
+                {/* Deck Name */}
+                <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-[var(--color-primary)] text-4xl leading-tight font-bold mb-2">
                   {deck.name || 'Unnamed Deck'}
                 </h1>
                 
-                {/* Commander Name - Medium font */}
-                <h2 className="text-[var(--color-text)] font-heading text-xl md:text-2xl leading-tight mb-3">
+                {/* Commander Name */}
+                <h2 className="text-[var(--color-text)] font-heading text-2xl leading-tight mb-3">
                   {deck.commander?.name || 'Unknown'}
                   {deck.partner?.name && (
-                    <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
-                  )}
-                  {deck.partner?.name && (
-                    <span className="text-[var(--color-text)]">{deck.partner.name}</span>
+                    <>
+                      <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
+                      <span className="text-[var(--color-text)]">{deck.partner.name}</span>
+                    </>
                   )}
                 </h2>
                 
                 {/* Metadata badges */}
                 <div className="flex items-center gap-3 flex-wrap">
                   {(() => {
-                    // Deduplicate colors for partner decks (both commanders may share colors)
                     const commanderColors = [
                       ...new Set([
                         ...(deck.commander?.color_identity || []),
@@ -1635,6 +1713,60 @@ export default function DeckPage() {
                         </span>
                         <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
                       </span>
+                    </span>
+                  )}
+                  <span className="text-[var(--color-muted)] text-sm capitalize">
+                    {deck.format}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: Vertical Centered Layout (Direction B) */}
+            <div className="flex md:hidden flex-col items-center text-center gap-6 px-4 py-8">
+              {/* Massive Commander Art */}
+              <div className="flex gap-3">
+                <CommanderImage name={deck.commander?.name} size="massive" />
+                {deck.partner?.name && <CommanderImage name={deck.partner.name} size="massive" />}
+              </div>
+              
+              {/* Text info */}
+              <div className="w-full">
+                {/* Deck Name - Large Cinzel */}
+                <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-[var(--color-primary)] text-3xl leading-tight mb-2 font-bold">
+                  {deck.name || 'Unnamed Deck'}
+                </h1>
+                
+                {/* Commander Name */}
+                <h2 className="text-[var(--color-text)] font-heading text-lg leading-tight mb-4">
+                  {deck.commander?.name || 'Unknown'}
+                  {deck.partner?.name && (
+                    <>
+                      <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
+                      <span className="text-[var(--color-text)]">{deck.partner.name}</span>
+                    </>
+                  )}
+                </h2>
+                
+                {/* Metadata badges */}
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {(() => {
+                    const commanderColors = [
+                      ...new Set([
+                        ...(deck.commander?.color_identity || []),
+                        ...(deck.partner?.color_identity || []),
+                      ])
+                    ]
+                    return commanderColors.length > 0 && <ColorPips colors={commanderColors} size="1.5rem" />
+                  })()}
+                  {analysis.strategy && (
+                    <span className="bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-secondary)]/20 font-semibold capitalize">
+                      {analysis.strategy}
+                    </span>
+                  )}
+                  {analysis.power_level != null && (
+                    <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold">
+                      Power {analysis.power_level}/10
                     </span>
                   )}
                   <span className="text-[var(--color-muted)] text-sm capitalize">
