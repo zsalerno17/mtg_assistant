@@ -85,7 +85,7 @@ export default function CollectionPage() {
   return (
     <PageTransition>
       <div className="min-h-screen">
-      <div className="max-w-[1600px] mx-auto px-8 pt-10 pb-6">
+      <div className="max-w-5xl mx-auto px-8 py-6">
       <div className="mb-8">
         <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
           My Collection
@@ -157,7 +157,7 @@ export default function CollectionPage() {
 
       {collection?.cards?.length > 0 && (
         <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <h3 className="text-[var(--color-text)] font-medium">
               {collection.cards.length} cards
               {collection.updated_at && (
@@ -171,7 +171,7 @@ export default function CollectionPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search cards…"
-              className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all w-48"
+              className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all w-full sm:w-64"
             />
           </div>
 

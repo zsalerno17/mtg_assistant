@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie } from 'recharts'
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
@@ -580,79 +580,116 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         
         const categories = [
           { 
-            label: 'Creature Answers', 
+            subject: 'Creatures', 
             value: coverage.creature_removal,
-            color: 'var(--color-primary)',
-            detail: coverage.creature_removal > 0 ? `${coverage.creature_removal_instant} instant-speed • ${coverage.board_wipes} board wipes` : null,
             threshold: 10,
+            color: 'var(--color-primary)',
             tooltip: 'Single-target removal and board wipes that answer creature threats',
+            detail: coverage.creature_removal > 0 ? `${coverage.creature_removal_instant} instant • ${coverage.board_wipes} wipes` : null,
           },
           { 
-            label: 'Artifact/Enchantment Removal', 
+            subject: 'Artifacts/Enchantments', 
             value: coverage.artifact_enchantment_removal,
-            color: 'var(--color-secondary)',
-            detail: null,
             threshold: 5,
+            color: 'var(--color-secondary)',
             tooltip: 'Answers problematic permanents like Rhystic Study, Smothering Tithe, etc.',
-          },
-          { 
-            label: 'Stack Interaction', 
-            value: coverage.counterspells,
-            color: 'var(--color-success)',
-            detail: coverage.counterspells > 0 ? 'Can stop combos' : null,
-            threshold: 3,
-            tooltip: 'Counterspells that can stop game-winning plays on the stack',
-          },
-          { 
-            label: 'Graveyard Hate', 
-            value: coverage.graveyard_hate,
-            color: 'var(--color-danger)',
             detail: null,
+          },
+          { 
+            subject: 'Stack', 
+            value: coverage.counterspells,
+            threshold: 3,
+            color: 'var(--color-success)',
+            tooltip: 'Counterspells that can stop game-winning plays on the stack',
+            detail: coverage.counterspells > 0 ? 'Combo defense' : null,
+          },
+          { 
+            subject: 'Graveyard', 
+            value: coverage.graveyard_hate,
             threshold: 1,
+            color: 'var(--color-danger)',
             tooltip: 'Cards that exile graveyards or prevent graveyard strategies (vs Meren, Muldrotha, reanimator)',
+            detail: null,
           },
         ]
         
-        const maxVal = Math.max(...categories.map(c => c.value), 1)
         const hasData = categories.some(c => c.value > 0)
         if (!hasData) return null
+        
+        // Find max for scaling
+        const maxVal = Math.max(...categories.map(c => Math.max(c.value, c.threshold)), 12)
         
         return (
           <div>
             <SectionLabel className="mb-3">Interaction Coverage</SectionLabel>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                {categories.map((cat) => (
-                  <div key={cat.label} className="flex flex-col gap-1.5 group relative">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-[11px] font-medium text-[var(--color-text)] cursor-help">{cat.label}</span>
-                      <span className="text-[11px] font-mono text-[var(--color-text-muted)]">
-                        {cat.value} {cat.value === 1 ? 'card' : 'cards'}
-                      </span>
-                    </div>
-                    {cat.tooltip && (
-                      <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-64 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
-                        <span className="block text-[var(--color-text)] text-[10px] leading-relaxed">{cat.tooltip}</span>
-                        <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
-                      </span>
-                    )}
-                    <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 14 }}>
-                      <div
-                        className="h-full rounded-sm"
-                        style={{ width: `${Math.round((cat.value / maxVal) * 100)}%`, background: cat.color }}
+              <div className="flex flex-col lg:flex-row gap-6 items-start">
+                {/* Radar Chart - Larger */}
+                <div className="w-full lg:w-2/3">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <RadarChart data={categories}>
+                      <PolarGrid stroke="var(--color-border)" strokeOpacity={0.5} />
+                      <PolarAngleAxis 
+                        dataKey="subject" 
+                        tick={{ fill: 'var(--color-text)', fontSize: 12, fontWeight: 600 }}
                       />
+                      <PolarRadiusAxis 
+                        angle={90} 
+                        domain={[0, maxVal]}
+                        tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
+                      />
+                      <Radar 
+                        name="Coverage" 
+                        dataKey="value" 
+                        stroke="var(--color-primary)" 
+                        fill="var(--color-primary)" 
+                        fillOpacity={0.3}
+                        strokeWidth={3}
+                      />
+                      {/* Threshold reference */}
+                      <Radar 
+                        name="Recommended" 
+                        dataKey="threshold" 
+                        stroke="var(--color-success)" 
+                        fill="none" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        strokeOpacity={0.6}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Compact Legend */}
+                <div className="w-full lg:w-1/3 space-y-2">
+                  {categories.map((cat) => (
+                    <div key={cat.subject} className="group relative">
+                      <div className="flex items-start gap-2 p-2 rounded-lg bg-[var(--color-surface)]/30 border border-[var(--color-border)]/30 hover:bg-[var(--color-surface)]/50 hover:border-[var(--color-border)]/50 transition-colors">
+                        <div 
+                          className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0"
+                          style={{ background: cat.color }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-xs font-semibold text-[var(--color-text)]">{cat.subject}</span>
+                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] whitespace-nowrap">
+                              {cat.value}/{cat.threshold}
+                            </span>
+                          </div>
+                          {cat.detail && (
+                            <div className="text-[9px] text-[var(--color-text-muted)] opacity-75 mt-0.5">↗ {cat.detail}</div>
+                          )}
+                          {cat.value === 0 && (
+                            <div className="text-[10px] text-[var(--color-danger)] font-medium mt-1">⚠️ Missing coverage</div>
+                          )}
+                          {cat.value > 0 && cat.value < cat.threshold && (
+                            <div className="text-[10px] text-[var(--color-secondary)] font-medium mt-1">⚠️ Light coverage</div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    {cat.detail && (
-                      <div className="text-[10px] text-[var(--color-text-muted)]">↗ {cat.detail}</div>
-                    )}
-                    {cat.value === 0 && (
-                      <div className="text-[10px] text-[var(--color-danger)]">⚠️ Missing coverage</div>
-                    )}
-                    {cat.value > 0 && cat.value < cat.threshold && (
-                      <div className="text-[10px] text-[var(--color-secondary)]">⚠️ Light coverage</div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -1658,6 +1695,13 @@ export default function DeckPage() {
       api.analyzeDeck(deckId),
     ])
       .then(([fetchResult, analyzeResult]) => {
+        console.log('📊 Analysis loaded:', {
+          has_mana_curve: !!analyzeResult.analysis?.mana_curve,
+          has_removal_quality: !!analyzeResult.analysis?.removal_quality,
+          has_interaction_coverage: !!analyzeResult.analysis?.interaction_coverage,
+          cached: analyzeResult.cached,
+          full_analysis: analyzeResult.analysis
+        })
         setDeck(fetchResult.data)
         setAnalysis(analyzeResult.analysis)
         setIsCached(analyzeResult.cached === true)

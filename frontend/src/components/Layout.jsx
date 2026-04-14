@@ -5,7 +5,7 @@ export default function Layout({ children }) {
   return (
     <div className="flex flex-col min-h-screen bg-[var(--color-bg)]">
       <TopNavbar />
-      <main className="flex-1 overflow-auto pb-20 md:pb-0 pt-[56px] md:pt-[76px]">
+      <main className="flex-1 overflow-auto pt-16">
         {children}
       </main>
     </div>

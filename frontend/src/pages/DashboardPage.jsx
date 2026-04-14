@@ -565,7 +565,7 @@ export default function DashboardPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen px-8 pt-10 pb-6">
+      <div className="min-h-screen px-8 py-6">
         {showImportModal && (
           <ImportModal
           onClose={() => setShowImportModal(false)}

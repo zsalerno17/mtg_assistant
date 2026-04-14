@@ -145,7 +145,13 @@ async function handleAnalyze(
   }
 
   // Return cached analysis if deck content hasn't changed (unless force)
-  if (!force && existing && existing.deck_updated_at === lastUpdatedAt) {
+  // BUT: also check that cached analysis has all required fields (in case we added new ones)
+  const hasRequiredFields = existing?.result_json &&
+    'mana_curve' in existing.result_json &&
+    'interaction_coverage' in existing.result_json &&
+    'removal_quality' in existing.result_json;
+  
+  if (!force && existing && existing.deck_updated_at === lastUpdatedAt && hasRequiredFields) {
     return jsonResponse({ analysis: existing.result_json, cached: true }, req);
   }
 

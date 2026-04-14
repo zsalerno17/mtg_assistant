@@ -1,8 +1,8 @@
 # Phase 38 — Full App Design Overhaul
 
 > **Created:** April 13, 2026  
-> **Status:** ✅ Phase 0, A, B, C, D COMPLETE | 🚧 Phase E Next  
-> **Last Updated:** April 13, 2026  
+> **Status:** ✅ Phase 0, A, B, C, D, E COMPLETE | 🚧 Phase F Next  
+> **Last Updated:** April 14, 2026  
 > **Owner:** Designer agent for Phase 0 + C + F. Engineering agent for A + B + D + E + G.
 
 ---
@@ -206,43 +206,49 @@ All page mockups created (Dashboard, DeckPage Desktop/Mobile, Collection, League
 ### Phase D — DashboardPage ✅ COMPLETE
 > **Depends on:** Phase A + approved DashboardPage mockup  
 > **Owner:** Engineering agent  
-> **Files:** `frontend/src/pages/DashboardPage.jsx`  
-> **Completed:** April 13, 2026
+> **Files:** `frontend/src/pages/DashboardPage.jsx`, `frontend/src/index.css`  
+> **Completed:** April 13-14, 2026
 
 **Completed tasks:**
-- ✅ **D1 — Commander names:** Commander names already displayed but font styling was inconsistent - added Cinzel font (`font-[var(--font-display)]`) to desktop table row to match mobile and spec requirements
-- ✅ **D2 — Container max-width:** Changed from `max-w-[1600px]` to `max-w-[900px]` per mockup specification
-- ✅ **D3 — Button audit:** Verified no gradient buttons present - all buttons already use design system classes (`.btn-primary`, `.btn-secondary`)
+- ✅ **D1 — Commander names:** Added Cinzel font (`font-[var(--font-display)]`) to deck names on desktop table and mobile cards for consistency
+- ✅ **D2 — Container max-width:** Changed from `max-w-[1600px]` to `max-w-[1200px]` (balances readability with table width needs)
+- ✅ **D3 — Button audit:** Verified no gradient buttons present - all buttons use design system classes
 - ✅ **D4 — Stat card CSS audit:** Verified no gradients in `stat-card` CSS classes - all use flat color variables
 
+**Additional refinements:**
+- Desktop table: Adjusted column widths (35/12/10/12/8/23%) and reduced padding (24px→16px) to prevent cutoff
+- Desktop table: Added `overflow-x-auto` for horizontal scroll on tablets/narrow screens
+- Mobile cards: Complete redesign - cards clickable when analyzed, proper buttons (not tiny text links), Moxfield left/actions right
+- Collection widget links: Changed from text links to proper `.btn-secondary` buttons
+- Mobile button styles: Analyze (`.btn-primary` blue) vs View (`.btn-secondary` gray) with icons
+
 **Notes:**
-- Commander art (60px thumbnails) already displaying correctly via `CommanderArtStack` component
-- Supports both single commanders and partner commanders with stacked layout
-- Mobile uses card grid, desktop uses table layout (both responsive and working)
+- Commander art (60px thumbnails) displaying correctly via `CommanderArtStack` component with partner support
+- Desktop uses responsive table with horizontal scroll fallback for narrow viewports
+- Mobile uses card grid that's fully clickable for analyzed decks
 
 ---
 
-### Phase E — CollectionPage 🚧 NEXT
+### Phase E — CollectionPage ✅ COMPLETE
 > **Depends on:** Phase A + approved mockup  
 > **Owner:** Engineering agent  
-> **Files:** `frontend/src/pages/CollectionPage.jsx`
+> **Files:** `frontend/src/pages/CollectionPage.jsx`  
+> **Completed:** April 14, 2026
 
-**Tasks:**
+**Completed tasks:**
+- ✅ **E1 — Layout structure:** Changed container from `max-w-[1600px]` to `max-w-5xl` (1024px) for better focused layout on large screens
+- ✅ **E2 — Card grid:** No fixed-height scroll box found - grid already uses proper full-page layout (likely fixed in prior work)
+- ✅ **E3 — Search input:** Made search input responsive - changed from fixed `w-48` to `w-full sm:w-64` with flex-col/flex-row parent for tablet breakpoint
+- ✅ **Bonus:** Header section now stacks vertically on mobile (flex-col sm:flex-row) for better small-screen layout
 
-**E1 — Layout structure:**
-- Add `max-w-*` container — currently stretches full width on 1400px+ screens, upload zone feels lost
-- Recommended: `max-w-5xl mx-auto`
-
-**E2 — Card grid:**
-- Replace `max-h-[480px] overflow-y-auto` fixed-height scroll box with proper full-page layout
-- A box-within-a-page scroll context is a developer shortcut, not a design decision
-
-**E3 — Search input:**
-- Fix search input alignment on tablet widths (currently breaks at md breakpoint)
+**Notes:**
+- Upload zone uses proper drag-and-drop with hover/active states
+- Card grid uses responsive columns (2→3→4→5 based on screen width)
+- Search filter works client-side on existing collection data
 
 ---
 
-### Phase F — League Pages
+### Phase F — League Pages 🚧 NEXT
 > **Depends on:** Phase A + Phase 0 league mockups  
 > **Owner:** Engineering agent  
 > **Files:** `frontend/src/pages/LeaguesPage.jsx`, `frontend/src/pages/LeaguePage.jsx`, `frontend/src/pages/LogGamePage.jsx`
