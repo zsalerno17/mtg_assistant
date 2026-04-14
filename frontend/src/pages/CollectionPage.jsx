@@ -84,26 +84,24 @@ export default function CollectionPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-8 py-6">
-      <div className="mb-8">
-        <h2 className="font-brand text-3xl sm:text-4xl text-[var(--color-primary)] tracking-wide mb-2">
-          My Collection
-        </h2>
-        <div className="h-px w-20 bg-[var(--color-primary-border)] mb-3" />
-        <p className="text-[var(--color-muted)] text-sm font-heading">
-          Export your collection from Moxfield and upload it here.
-        </p>
-        <p className="text-[var(--color-muted)] text-xs mt-2 opacity-75">
-          Re-uploading will replace your existing collection — no duplicates or deduping needed.
-        </p>
-      </div>
+      <div className="flex-1 overflow-y-auto pt-6 pb-8">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+          {/* Header */}
+          <div className="mb-10">
+            <h1 className="font-brand text-3xl font-bold text-[var(--color-text)] mb-3">
+              My Collection
+            </h1>
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              Upload your Moxfield collection export to enable personalized deck recommendations.
+            </p>
+          </div>
 
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
+          {/* Upload Section */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
           dragOver
             ? 'border-[var(--color-primary)] bg-[var(--color-surface)]/80 backdrop-blur-sm'
             : uploading
@@ -149,14 +147,15 @@ export default function CollectionPage() {
             </a>
           </>
         )}
-        <input id="csv-input" type="file" accept=".csv,.txt" className="hidden" onChange={handleFileInput} />
-      </div>
+            <input id="csv-input" type="file" accept=".csv,.txt" className="hidden" onChange={handleFileInput} />
+          </div>
 
-      {status && <p className="mt-4 text-[var(--color-success)] text-sm">{status}</p>}
-      {error && <p className="mt-4 text-[var(--color-danger)] text-sm">{error}</p>}
+          {status && <p className="mt-4 text-[var(--color-success)] text-sm">{status}</p>}
+              {error && <p className="mt-4 text-[var(--color-danger)] text-sm">{error}</p>}
 
-      {collection?.cards?.length > 0 && (
-        <div className="mt-8">
+          {/* Collection Display */}
+          {collection?.cards?.length > 0 && (
+            <div className="mt-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <h3 className="text-[var(--color-text)] font-medium">
               {collection.cards.length} cards
@@ -194,13 +193,13 @@ export default function CollectionPage() {
             ))}
           </div>
 
-          {search && filteredCards.length === 0 && (
-            <p className="text-[var(--color-muted)] text-sm mt-4">No cards match "{search}"</p>
+              {search && filteredCards.length === 0 && (
+                <p className="text-[var(--color-muted)] text-sm mt-4">No cards match "{search}"</p>
+              )}
+            </div>
           )}
         </div>
-      )}
       </div>
-    </div>
     </PageTransition>
   )
 }

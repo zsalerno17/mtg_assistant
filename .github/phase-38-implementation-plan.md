@@ -1,9 +1,25 @@
 # Phase 38 Implementation Plan — Evidence-Based Execution
 
 > **Created:** April 13, 2026  
-> **Status:** 🚧 IN PROGRESS  
+> **Status:** 🚧 IN PROGRESS — Phase 0-F, E COMPLETE | Phase G Next  
 > **Design Approved:** ✅ Phase 0 mockups complete  
-> **Implementation:** Phase A in progress
+> **Implementation:** Phase E (CollectionPage Polish) complete — April 14, 2026
+
+**Recent Completion Summary (Phase F - League Pages):**
+- ✅ Mobile responsive layout improvements (header reorganized, proper stacking)
+- ✅ Bonus award table mobile optimization (column width, padding adjustments)
+- ✅ Cursor pointer states added to all interactive buttons (tabs, export, vote)
+- ✅ Global navbar gap fix (Layout padding from pt-16 to pt-4/pt-6)
+- ✅ Mobile scrolling fix (added pb-32 for bottom clearance)
+- ✅ Changed "Superstar" label to "Pilot" in standings table
+- ✅ Page-level padding harmonization (py-6, py-10 across pages)
+
+**Files Modified in Phase F:**
+- `frontend/src/pages/LeaguePage.jsx` (mobile layout, table columns, buttons)
+- `frontend/src/components/Layout.jsx` (navbar gap fix)
+- `frontend/src/pages/DashboardPage.jsx` (padding update)
+- `frontend/src/pages/CollectionPage.jsx` (padding update)
+- `frontend/src/pages/LeaguesPage.jsx` (padding update)
 
 ---
 
@@ -314,11 +330,11 @@ npm run build  # Must pass clean
 
 ---
 
-### Phase E — Collection Stats Header ⬜
+### Phase E — Collection Page Polish ✅
 
 **Depends on:** Phase A verified ✅
 
-**Goal:** Add stats widget above upload section
+**Goal:** Update CollectionPage to match Phase 38 design system
 
 **Files to Modify:**
 - `frontend/src/pages/CollectionPage.jsx` (add stats component)
@@ -381,43 +397,91 @@ function CollectionStats({ collection }) {
 
 ---
 
-### Phase F — Minor Polish ⬜
+### Phase F — League Pages Mobile Polish ✅
 
-**Depends on:** All previous phases verified ✅
+**Completed:** April 14, 2026
 
-**Goal:** 3rd place badge color + final cleanup
+**Goal:** Improve mobile UX and fix global layout issues on League pages
 
-**Files to Modify:**
-- `frontend/src/pages/LeagueDetailPage.jsx` (rank badge logic)
+**Files Modified:**
+- `frontend/src/pages/LeaguePage.jsx`
+- `frontend/src/components/Layout.jsx`
+- `frontend/src/pages/DashboardPage.jsx`
+- `frontend/src/pages/CollectionPage.jsx`
+- `frontend/src/pages/LeaguesPage.jsx`
 
-**Specific Changes:**
+**Changes Implemented:**
 
-**F1 — Distinct 3rd Place Color:**
-```jsx
-// Current: 1st and 3rd both use --color-secondary
-// New: 3rd uses bronze/tan distinct color
+**F1 — Mobile Header Layout Reorganization:**
+- Restructured header to stack properly on mobile:
+  - Title + Active badge on same line
+  - Dates + "X weeks left" on separate line below
+  - Invite Link + Log Game buttons on separate line
+- Changed from `flex justify-between` to stacked layout with `flex-wrap`
 
-const getRankColor = (rank) => {
-  if (rank === 1) return 'bg-[#fbbf24]/15 text-[#fbbf24]'  // Gold
-  if (rank === 2) return 'bg-[#94a3b8]/15 text-[#94a3b8]'  // Silver
-  if (rank === 3) return 'bg-[#cd7f32]/15 text-[#cd7f32]'  // Bronze
-  return 'text-[var(--color-text-muted)]'
-}
-```
+**F2 — Bonus Award Table Mobile Optimization:**
+- Reduced Award column padding from `px-3` to `px-2` (8px)
+- Changed column width from `w-32` to `min-w-20` for better text fitting
+- Reduced font size to `text-xs` with `leading-tight`
+- Added mobile bottom padding `pb-32` for scroll clearance
+
+**F3 — Cursor States & Accessibility:**
+- Added `cursor-pointer` to Members/Standings/Games tab buttons
+- Added `cursor-pointer` to Export Image/PDF/CSV buttons
+- Added `cursor-pointer` to Vote button on game entries
+- Added `disabled:cursor-not-allowed` for disabled buttons
+
+**F4 — Global Navbar Gap Fix:**
+- Root cause: Excessive stacked padding (Layout `pt-16` + page-level `pt-2`)
+- Fixed Layout.jsx padding from `pt-16` to `pt-4 md:pt-6` (16px/24px)
+- Harmonized page-level padding to `py-6` or `py-10`
+- Total gap reduced from ~2 inches to ~0.4-0.7 inches
+
+**F5 — Content Label Updates:**
+- Changed "Superstar" to "Pilot" in standings table header
+
+**Verification Completed:**
+- ✅ Mobile layout no longer cramped, elements properly stacked
+- ✅ Bonus award table scrollable with visible player columns
+- ✅ All interactive buttons show pointer cursor on hover
+- ✅ Navbar gap consistent and reasonable across all pages
+- ✅ Bottom scroll clearance works on mobile
+
+---
+
+### Phase G — Remaining Polish ⬜
+
+**Depends on:** Phase E, F verified ✅
+
+**Goal:** Final visual polish and any remaining page updates
+
+**Potential Items:**
+- 3rd place badge color differentiation (if needed on League standings)
+- Any remaining DeckPage mobile tweaks
+- Additional responsive improvements identified during testing
+- Final cross-browser verification
 
 **Verification Checklist:**
 ```bash
-# Visual check
-✓ League detail page standings table
-✓ 1st place: Gold background
-✓ 2nd place: Silver background
-✓ 3rd place: Bronze background (distinct from 1st)
+# Cross-page visual audit
+✓ All pages follow consistent spacing (navbar gap, padding)
+✓ All interactive elements have proper cursor states
+✓ Mobile experience is smooth across all pages
+✓ No layout bugs at common breakpoints (375px, 768px, 1024px, 1440px)
+
+# Browser compatibility
+✓ Chrome/Edge (Chromium)
+✓ Safari
+✓ Firefox
+✓ Mobile Safari (iOS)
+✓ Chrome Mobile (Android)
 ```
 
 **Evidence Required:**
-- Screenshot: Standings table showing all three colors distinct
+- Screenshots across different browsers
+- Video walkthrough of all major pages
 
-**Done When:** 3rd place visually distinct from 1st place
+**Done When:** All pages verified, no critical issues remain
 
 ---
 

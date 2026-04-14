@@ -637,6 +637,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                         angle={90} 
                         domain={[0, maxVal]}
                         tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
+                        axisLine={{ stroke: 'var(--color-border)', strokeOpacity: 0.5 }}
                       />
                       <Radar 
                         name="Coverage" 
@@ -1695,13 +1696,6 @@ export default function DeckPage() {
       api.analyzeDeck(deckId),
     ])
       .then(([fetchResult, analyzeResult]) => {
-        console.log('📊 Analysis loaded:', {
-          has_mana_curve: !!analyzeResult.analysis?.mana_curve,
-          has_removal_quality: !!analyzeResult.analysis?.removal_quality,
-          has_interaction_coverage: !!analyzeResult.analysis?.interaction_coverage,
-          cached: analyzeResult.cached,
-          full_analysis: analyzeResult.analysis
-        })
         setDeck(fetchResult.data)
         setAnalysis(analyzeResult.analysis)
         setIsCached(analyzeResult.cached === true)
