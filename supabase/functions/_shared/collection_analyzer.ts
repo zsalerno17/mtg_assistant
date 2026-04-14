@@ -862,3 +862,205 @@ function identifyGaps(
 
   return gaps;
 }
+
+// ============================================================================
+// EFFICIENCY METRICS ANALYSIS
+// ============================================================================
+
+export interface DuplicateCard {
+  name: string;
+  owned: number;
+  in_use: number;
+  available: number;
+  trade_value: number; // Value of unused copies (price * available)
+  price_per_card: number;
+}
+
+export interface UnusedHighValueCard {
+  name: string;
+  quantity: number;
+  price_per_card: number;
+  total_value: number;
+  cmc?: number;
+  type_line?: string;
+  color_identity?: string[];
+  reason: string;
+}
+
+export interface EfficiencyMetrics {
+  total_cards: number;
+  unique_cards: number;
+  cards_in_use: number;
+  cards_unused: number;
+  utilization_rate: number; // 0-1
+  total_value: number;
+  value_in_use: number;
+  value_unused: number;
+  duplicates: DuplicateCard[];
+  high_value_unused: UnusedHighValueCard[];
+}
+
+/**
+ * Analyze collection efficiency - utilization, duplicates, high-value unused
+ * Requires price data in cards
+ */
+export function analyzeEfficiency(
+  cards: CollectionCard[],
+  usageMap?: Map<string, { total: number; decks: Array<{ deck_name: string; quantity: number }> }>
+): EfficiencyMetrics {
+  const startTime = performance.now();
+  console.log("[analyzeEfficiency] Starting analysis:");
+  console.log("  - Input cards:", cards.length);
+  console.log("  - Usage map provided:", usageMap ? "Yes (" + usageMap.size + " entries)" : "No");
+
+  let totalCards = 0;
+  let cardsInUse = 0;
+  let totalValue = 0;
+  let valueInUse = 0;
+  const duplicates: DuplicateCard[] = [];
+  const highValueUnused: UnusedHighValueCard[] = [];
+  let cardsWithPrices = 0;
+  let cardsWithUsage = 0;
+
+  // Track unique cards
+  const uniqueCards = new Set<string>();
+
+  for (const card of cards) {
+    const quantity = card.quantity || 1;
+    const usage = usageMap?.get(card.name);
+    const inUse = usage ? Math.min(usage.total, quantity) : 0;
+    const available = Math.max(0, quantity - inUse);
+
+    // Get price from Scryfall prices object
+    const priceStr = (card as any).prices?.usd || "0";
+    const price = parseFloat(priceStr) || 0;
+    
+    if (price > 0) cardsWithPrices++;
+    if (inUse > 0) cardsWithUsage++;
+
+    totalCards += quantity;
+    cardsInUse += inUse;
+    uniqueCards.add(card.name);
+    totalValue += price * quantity;
+    valueInUse += price * inUse;
+
+    // Track duplicates (owned 2+)
+    if (quantity >= 2) {
+      duplicates.push({
+        name: card.name,
+        owned: quantity,
+        in_use: inUse,
+        available,
+        trade_value: price * available,
+        price_per_card: price,
+      });
+    }
+
+    // Track high-value unused cards ($10+ per card AND have unused copies)
+    if (available > 0 && price >= 10) {
+      highValueUnused.push({
+        name: card.name,
+        quantity: available, // Only show unused copies
+        price_per_card: price,
+        total_value: price * available, // Value of unused copies only
+        cmc: card.cmc,
+        type_line: card.type_line,
+        color_identity: card.color_identity,
+        reason: determineWhyUnused(card, price),
+      });
+    }
+  }
+
+  // Deduplicate and aggregate duplicates by name
+  const duplicatesMap = new Map<string, DuplicateCard>();
+  for (const card of duplicates) {
+    const existing = duplicatesMap.get(card.name);
+    if (existing) {
+      // Aggregate quantities for duplicate entries
+      existing.owned += card.owned;
+      existing.in_use += card.in_use;
+      existing.available += card.available;
+      existing.trade_value += card.trade_value;
+    } else {
+      duplicatesMap.set(card.name, { ...card });
+    }
+  }
+  
+  // Convert back to array and sort by trade value (highest first)
+  const deduplicatedDuplicates = Array.from(duplicatesMap.values());
+  deduplicatedDuplicates.sort((a, b) => b.trade_value - a.trade_value);
+
+  // Deduplicate and aggregate high-value unused cards by name
+  const highValueUnusedMap = new Map<string, UnusedHighValueCard>();
+  for (const card of highValueUnused) {
+    const existing = highValueUnusedMap.get(card.name);
+    if (existing) {
+      // Aggregate quantities and values for duplicate entries
+      existing.quantity += card.quantity;
+      existing.total_value += card.total_value;
+    } else {
+      highValueUnusedMap.set(card.name, { ...card });
+    }
+  }
+  
+  // Convert back to array and sort by total value (highest first)
+  const deduplicatedHighValueUnused = Array.from(highValueUnusedMap.values());
+  deduplicatedHighValueUnused.sort((a, b) => b.total_value - a.total_value);
+
+  const elapsed = performance.now() - startTime;
+  console.log(`[analyzeEfficiency] Analysis complete in ${elapsed.toFixed(2)}ms`);
+  console.log("  - Total cards processed:", totalCards);
+  console.log("  - Unique cards:", uniqueCards.size);
+  console.log("  - Cards with prices:", cardsWithPrices);
+  console.log("  - Cards with usage:", cardsWithUsage);
+  console.log("  - Total value: $" + totalValue.toFixed(2));
+  console.log("  - Value in use: $" + valueInUse.toFixed(2));
+  console.log("  - Utilization rate:", (totalCards > 0 ? (cardsInUse / totalCards * 100).toFixed(1) : 0) + "%");
+  console.log("  - Duplicates found:", deduplicatedDuplicates.length);
+  console.log("  - High-value unused:", deduplicatedHighValueUnused.length);
+
+  return {
+    total_cards: totalCards,
+    unique_cards: uniqueCards.size,
+    cards_in_use: cardsInUse,
+    cards_unused: totalCards - cardsInUse,
+    utilization_rate: totalCards > 0 ? cardsInUse / totalCards : 0,
+    total_value: totalValue,
+    value_in_use: valueInUse,
+    value_unused: totalValue - valueInUse,
+    duplicates: deduplicatedDuplicates.slice(0, 20), // Top 20 duplicates
+    high_value_unused: deduplicatedHighValueUnused.slice(0, 20), // Top 20 high-value unused
+  };
+}
+
+/**
+ * Determine why a card might be unused
+ */
+function determineWhyUnused(card: CollectionCard, price: number): string {
+  const typeLine = card.type_line?.toLowerCase() || "";
+  const cmc = card.cmc || 0;
+
+  // Check for specific characteristics
+  if (typeLine.includes("land")) {
+    if (price > 20) return "High-value land - consider adding to decks";
+    return "Utility land - may fit specialized strategies";
+  }
+
+  if (cmc >= 7) {
+    return "High CMC - best for ramp-heavy decks";
+  }
+
+  if (typeLine.includes("creature") && cmc >= 5) {
+    return "Expensive creature - needs support or is a finisher";
+  }
+
+  if (price > 50) {
+    return "High-value staple - strong trade or deck addition";
+  }
+
+  if (price > 20) {
+    return "Mid-high value - potential deck upgrade or trade";
+  }
+
+  return "Expensive card not in decks - evaluate for inclusion";
+}

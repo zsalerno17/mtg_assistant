@@ -109,6 +109,25 @@ function parseCard(data: Record<string, unknown>): Card {
     oracleText = (cardFaces[0].oracle_text as string) || "";
   }
 
+  // Extract card_faces data (for DFCs/MDFCs)
+  const parsedCardFaces = cardFaces.length > 0
+    ? cardFaces.map(face => ({
+        name: (face.name as string) || "",
+        type_line: (face.type_line as string) || "",
+        oracle_text: (face.oracle_text as string) || "",
+      }))
+    : null;
+
+  // Extract prices data
+  const prices = data.prices
+    ? {
+        usd: (data.prices as Record<string, string | null>).usd || null,
+        usd_foil: (data.prices as Record<string, string | null>).usd_foil || null,
+        eur: (data.prices as Record<string, string | null>).eur || null,
+        tix: (data.prices as Record<string, string | null>).tix || null,
+      }
+    : null;
+
   return createCard({
     name: (data.name as string) || "",
     mana_cost: (data.mana_cost as string) || "",
@@ -122,5 +141,7 @@ function parseCard(data: Record<string, unknown>): Card {
     set_code: (data.set as string) || "",
     image_uri: imageUris.normal || "",
     scryfall_id: (data.id as string) || "",
+    prices,
+    card_faces: parsedCardFaces,
   });
 }

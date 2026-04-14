@@ -7,15 +7,18 @@ import PageTransition from '../components/PageTransition'
 import CardTooltip from '../components/CardTooltip'
 import CollectionDepth from '../components/CollectionDepth'
 import ArchetypeReadiness from '../components/ArchetypeReadiness'
-import { CloudUpload, LayoutGrid, List, Target } from 'lucide-react'
+import CollectionEfficiency from '../components/CollectionEfficiency'
+import { CloudUpload, LayoutGrid, List, Target, TrendingUp } from 'lucide-react'
 
 function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function CardListIcon() { return <List className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function ArchetypesIcon() { return <Target className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function EfficiencyIcon() { return <TrendingUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
   { label: 'Archetypes', icon: ArchetypesIcon },
+  { label: 'Efficiency', icon: EfficiencyIcon },
   { label: 'Card List', icon: CardListIcon },
 ]
 
@@ -27,7 +30,9 @@ export default function CollectionPage() {
   const [error, setError] = useState(null)
   const [collection, setCollection] = useState(null)
   const [analysis, setAnalysis] = useState(null)
+  const [efficiency, setEfficiency] = useState(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
+  const [loadingEfficiency, setLoadingEfficiency] = useState(false)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('Overview')
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
@@ -53,11 +58,20 @@ export default function CollectionPage() {
         // Load analysis if collection exists
         if (data?.cards?.length > 0) {
           loadAnalysis()
+          // Only load efficiency on initial page load, lazy load when tab is clicked
         }
       })
       .catch(() => {}) // silently ignore; user may not have uploaded yet
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
+
+  // Lazy load efficiency data when Efficiency tab is active
+  useEffect(() => {
+    if (activeTab === 'Efficiency' && !efficiency && !loadingEfficiency && collection?.cards?.length > 0) {
+      loadEfficiency()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, efficiency, collection])
 
   const loadAnalysis = async () => {
     setLoadingAnalysis(true)
@@ -70,6 +84,19 @@ export default function CollectionPage() {
       setError(`Analysis failed: ${err.message}`)
     } finally {
       setLoadingAnalysis(false)
+    }
+  }
+
+  const loadEfficiency = async () => {
+    setLoadingEfficiency(true)
+    try {
+      const result = await api.getCollectionEfficiency()
+      setEfficiency(result)
+    } catch (err) {
+      console.error('Failed to load collection efficiency:', err)
+      setError(`Efficiency analysis failed: ${err.message}`)
+    } finally {
+      setLoadingEfficiency(false)
     }
   }
 
@@ -109,6 +136,11 @@ export default function CollectionPage() {
       const updated = await api.getCollection()
       setCollection(updated)
       await loadAnalysis()
+      // Clear efficiency so it reloads if tab is active
+      setEfficiency(null)
+      if (activeTab === 'Efficiency') {
+        await loadEfficiency()
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -249,6 +281,19 @@ export default function CollectionPage() {
                       </div>
                     ) : (
                       <ArchetypeReadiness archetypes={analysis?.archetypes} />
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'Efficiency' && (
+                  <div>
+                    {loadingEfficiency ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing efficiency...</span>
+                      </div>
+                    ) : (
+                      <CollectionEfficiency efficiency={efficiency} loading={loadingEfficiency} />
                     )}
                   </div>
                 )}

@@ -186,6 +186,9 @@ export const api = {
   /** Get functional analysis of the user's collection (ramp, draw, removal, etc.). */
   getCollectionAnalysis: () => edgeFetch('collection', '/analyze', {}),
 
+  /** Get efficiency metrics for the user's collection (utilization, duplicates, high-value unused). */
+  getCollectionEfficiency: () => edgeFetch('collection', '/efficiency', {}),
+
   /** Get paginated analysis history for the current user. */
   getAnalysisHistory: (page = 1) => edgeFetch('analyses', `/history?page=${page}`, {}),
 

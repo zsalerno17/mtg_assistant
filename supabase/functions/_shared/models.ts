@@ -12,6 +12,17 @@ export interface Card {
   set_code: string;
   image_uri: string;
   scryfall_id: string;
+  prices?: {
+    usd?: string | null;
+    usd_foil?: string | null;
+    eur?: string | null;
+    tix?: string | null;
+  } | null;
+  card_faces?: Array<{
+    name?: string;
+    type_line?: string;
+    oracle_text?: string;
+  }> | null;
 }
 
 export function createCard(overrides: Partial<Card> = {}): Card {
@@ -29,6 +40,8 @@ export function createCard(overrides: Partial<Card> = {}): Card {
     set_code: "",
     image_uri: "",
     scryfall_id: "",
+    prices: null,
+    card_faces: null,
     ...overrides,
   };
 }

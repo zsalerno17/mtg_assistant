@@ -38,10 +38,12 @@ export async function requireAllowedUser(req: Request): Promise<AuthUser> {
   }
 
   const srv = getServiceClient();
+  // Normalize email to lowercase for case-insensitive comparison
+  const emailLower = (email || "").toLowerCase();
   const { data, error: allowError } = await srv
     .from("allowed_users")
     .select("email")
-    .eq("email", email)
+    .eq("email", emailLower)
     .maybeSingle();
 
   if (allowError) {
