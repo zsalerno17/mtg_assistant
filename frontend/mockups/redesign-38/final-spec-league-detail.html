@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Final Spec — League Detail Page</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ============================================
+       FINAL SPEC — LEAGUE DETAIL PAGE
+       Direction A — Information-Dense Layout
+       Phase 38 Hybrid Glass/Crisp System
+       
+       Color Palette (REFINED):
+       --bg:       #1a1f24 (darkened from #23292E)
+       --surface:  #23292E (darkened from #2d3439)
+       --border:   #2d3439 (darkened from #3a4248)
+       --text:     #E2E6E9
+       --accent-primary:   #2D82B7 (Blue)
+       --accent-secondary: #79161D (Red)
+       --accent-tan:       #DBAC84 (Tan)
+       
+       BUTTON HOVER: brightness(1.1) + translateY ONLY
+       No glow/shadow effects per user feedback
+       
+       KEY FEATURES:
+       - Prominent standings table (primary view)
+       - Tabs: Members | Standings | Games
+       - Preserve all existing data structure
+       - Information-dense horizontal layout
+       
+       ============================================ */
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    :root {
+      /* Foundation Colors (REFINED - darker backgrounds) */
+      --color-charcoal: #1a1f24;
+      --color-blue: #2D82B7;
+      --color-red: #79161D;
+      --color-tan: #DBAC84;
+      --color-off-white: #E2E6E9;
+      
+      /* Derived Tokens */
+      --bg: #1a1f24;
+      --surface: #23292E;
+      --border: #2d3439;
+      --text: #E2E6E9;
+      --text-muted: #94a3b8;
+      --accent-primary: #2D82B7;
+      --accent-secondary: #79161D;
+      --accent-warning: #f59e0b;
+      --accent-success: #10b981;
+      --accent-tan: #DBAC84;
+      
+      /* Typography */
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: 'Cinzel', serif;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 24px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* ══════════════════════════════════════════
+       BREADCRUMB
+       ══════════════════════════════════════════ */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    
+    .breadcrumb a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 150ms ease;
+    }
+    
+    .breadcrumb a:hover {
+      color: var(--text);
+    }
+    
+    .breadcrumb-separator {
+      color: var(--border);
+    }
+    
+    .breadcrumb-current {
+      color: var(--text);
+    }
+    
+    /* ══════════════════════════════════════════
+       HEADER
+       ══════════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    
+    .header-left h1 {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    
+    .meta-badge-icon {
+      font-size: 14px;
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    /* ══════════════════════════════════════════
+       BUTTONS
+       ══════════════════════════════════════════ */
+    .btn-primary {
+      background: var(--accent-primary);
+      color: var(--text);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      /* No glow/shadow on hover */
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+    
+    /* ══════════════════════════════════════════
+       LEADER CALLOUT (glass elevated)
+       ══════════════════════════════════════════ */
+    .leader-callout {
+      background: rgba(45, 130, 183, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--accent-primary);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .leader-icon {
+      font-size: 32px;
+    }
+    
+    .leader-content {
+      flex: 1;
+    }
+    
+    .leader-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .leader-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+    
+    .leader-stats {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    
+    .leader-stat-highlight {
+      color: var(--accent-primary);
+      font-weight: 700;
+    }
+    
+    /* ══════════════════════════════════════════
+       TABS
+       ══════════════════════════════════════════ */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 150ms ease;
+      font-family: var(--font-body);
+      position: relative;
+      bottom: -1px;
+    }
+    
+    .tab:hover {
+      color: var(--text);
+    }
+    
+    .tab.active {
+      color: var(--accent-primary);
+      border-bottom-color: var(--accent-primary);
+    }
+    
+    /* ══════════════════════════════════════════
+       STANDINGS TABLE (primary feature)
+       Crisp flat design for data display
+       ══════════════════════════════════════════ */
+    .standings-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .standings-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .standings-table th {
+      background: rgba(45, 130, 183, 0.08);
+      padding: 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .standings-table th.text-center {
+      text-align: center;
+    }
+    
+    .standings-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+    }
+    
+    .standings-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .standings-table td.text-center {
+      text-align: center;
+    }
+    
+    .standings-table tr:hover {
+      background: rgba(45, 130, 183, 0.04);
+    }
+    
+    /* Rank badge */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    
+    .rank-1 {
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+    }
+    
+    .rank-2 {
+      background: rgba(148, 163, 184, 0.15);
+      color: #94a3b8;
+    }
+    
+    .rank-3 {
+      background: rgba(219, 172, 132, 0.15);
+      color: var(--accent-tan);
+    }
+    
+    .rank-other {
+      background: transparent;
+      color: var(--text-muted);
+    }
+    
+    /* Player name cell */
+    .player-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .player-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    /* Stats - highlight important numbers */
+    .stat-highlight {
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--accent-primary);
+    }
+    
+    .stat-normal {
+      color: var(--text);
+      font-weight: 500;
+    }
+    
+    .stat-muted {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    
+    /* ══════════════════════════════════════════
+       GAMES HISTORY (alternate tab view)
+       ══════════════════════════════════════════ */
+    .games-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .game-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 150ms ease;
+    }
+    
+    .game-card:hover {
+      border-color: var(--accent-primary);
+    }
+    
+    .game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .game-number {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    
+    .game-date {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    
+    .game-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    
+    .game-result {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .placement-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      background: rgba(45, 130, 183, 0.15);
+      color: var(--accent-primary);
+    }
+    
+    .result-player {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .result-player-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .result-player-deck {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    .result-points {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+    
+    /* ══════════════════════════════════════════
+       RESPONSIVE
+       ══════════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .standings-table th:nth-child(5),
+      .standings-table th:nth-child(6),
+      .standings-table th:nth-child(7),
+      .standings-table td:nth-child(5),
+      .standings-table td:nth-child(6),
+      .standings-table td:nth-child(7) {
+        display: none;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 24px 16px;
+      }
+      
+      .header-left h1 {
+        font-size: 24px;
+      }
+      
+      .leader-callout {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px 20px;
+      }
+      
+      .tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .tab {
+        padding: 10px 16px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      
+      .standings-table th,
+      .standings-table td {
+        padding: 12px;
+        font-size: 13px;
+      }
+      
+      .stat-highlight {
+        font-size: 14px;
+      }
+    }
+    
+    /* ══════════════════════════════════════════
+       IMPLEMENTATION NOTES
+       
+       DATA STRUCTURE PRESERVED:
+       - Standings table columns: Rank, Player, Pts, W, 2nd, 3rd, Avg, Cmds, Games
+       - All existing metrics maintained
+       - League member "superstar names" displayed
+       - Game history with placements, decks, points
+       
+       SPACING TOKEN SYSTEM:
+       - Container padding: 40px (desktop), 24px (mobile)
+       - Section margin-bottom: 32px
+       - Card padding: 20px
+       - Table cell padding: 16px (desktop), 12px (mobile)
+       
+       BUTTON PATTERNS:
+       - .btn-primary: Blue background, white text
+       - .btn-secondary: Transparent bg, border, muted text
+       - Hover: brightness(1.1) + translateY(-1px) ONLY
+       - NO box-shadow glow effects
+       
+       RESPONSIVE BREAKPOINTS:
+       - Desktop: ≥1024px (all columns visible)
+       - Tablet: 768-1023px (hide Avg, Cmds columns)
+       - Mobile: <768px (show only Rank, Player, Pts, W, Games)
+       
+       GLASS vs CRISP:
+       - Glass: Leader callout (elevated hero surface)
+       - Crisp: Standings table, game cards (data display)
+       
+       TABS:
+       - Members: Player roster with entrance music, catchphrases
+       - Standings: Primary view (shown by default)
+       - Games: History with placements, awards, points
+       
+       CSS CUSTOM PROPERTIES:
+       All colors defined as CSS variables for easy
+       theme switching and future color scheme variants
+       
+       ══════════════════════════════════════════ */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb">
+      <a href="#">Leagues</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-current">Wednesday Night Commander</span>
+    </div>
+    
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <h1>Wednesday Night Commander</h1>
+        <div class="header-meta">
+          <div class="meta-badge">
+            <span class="meta-badge-icon">👥</span>
+            8 members
+          </div>
+          <div class="meta-badge">
+            <span class="meta-badge-icon">🎮</span>
+            23 games played
+          </div>
+          <div class="meta-badge">
+            <span class="meta-badge-icon">⏱️</span>
+            Active since Mar 1, 2026
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button class="btn-primary">Log Game</button>
+        <button class="btn-secondary">Settings</button>
+      </div>
+    </div>
+    
+    <!-- LEADER CALLOUT (glass elevated) -->
+    <div class="leader-callout">
+      <div class="leader-icon">🥇</div>
+      <div class="leader-content">
+        <div class="leader-label">Current League Leader</div>
+        <div class="leader-name">The Archmage Supreme</div>
+        <div class="leader-stats">
+          <span><span class="leader-stat-highlight">47 pts</span></span>
+          <span>·</span>
+          <span><span class="leader-stat-highlight">12 wins</span></span>
+          <span>·</span>
+          <span><span class="leader-stat-highlight">23 games</span> played</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab">Members</button>
+      <button class="tab active">Standings</button>
+      <button class="tab">Games</button>
+    </div>
+    
+    <!-- STANDINGS TABLE (primary view) -->
+    <div class="standings-wrapper">
+      <table class="standings-table">
+        <thead>
+          <tr>
+            <th style="width: 60px;" class="text-center">Rank</th>
+            <th>Player</th>
+            <th class="text-center" style="width: 80px;">Pts</th>
+            <th class="text-center" style="width: 60px;">W</th>
+            <th class="text-center" style="width: 60px;">2nd</th>
+            <th class="text-center" style="width: 60px;">3rd</th>
+            <th class="text-center" style="width: 80px;">Avg</th>
+            <th class="text-center" style="width: 80px;">Cmds</th>
+            <th class="text-center" style="width: 80px;">Games</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-1">1</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">The Archmage Supreme</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">47</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">12</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">3</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">1.83</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">23</span>
+            </td>
+          </tr>
+          
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-2">2</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">Goblin King</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">42</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">9</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">7</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">2.0</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">3</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">22</span>
+            </td>
+          </tr>
+          
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-3">3</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">Commander Keen</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">38</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">8</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">6</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">2.1</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">21</span>
+            </td>
+          </tr>
+          
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-other">4</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">The Spike</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">34</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">7</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">2.3</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">6</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">20</span>
+            </td>
+          </tr>
+          
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-other">5</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">Timmy the Destroyer</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">31</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">6</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">6</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">2.2</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">21</span>
+            </td>
+          </tr>
+          
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-other">6</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">The Penny Pincher</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">28</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">2.5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">7</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">19</span>
+            </td>
+          </tr>
+          
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-other">7</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">Johnny the Brewer</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">24</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">4</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">2.6</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">8</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">18</span>
+            </td>
+          </tr>
+          
+          <tr>
+            <td class="text-center">
+              <div class="rank-badge rank-other">8</div>
+            </td>
+            <td>
+              <div class="player-cell">
+                <div class="player-name">Vorthos the Lorekeeper</div>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="stat-highlight">19</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">3</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">2</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">3</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-normal">2.8</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">5</span>
+            </td>
+            <td class="text-center">
+              <span class="stat-muted">16</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- GAMES HISTORY (alternate view - hidden by default) -->
+    <!-- Uncomment to preview Games tab:
+    <div class="games-list">
+      <div class="game-card">
+        <div class="game-header">
+          <div class="game-number">Game #23</div>
+          <div class="game-date">April 12, 2026</div>
+        </div>
+        <div class="game-results">
+          <div class="game-result">
+            <div class="placement-badge">1st</div>
+            <div class="result-player">
+              <div class="result-player-name">The Archmage Supreme</div>
+              <div class="result-player-deck">Kess Storm</div>
+            </div>
+            <div class="result-points">+4</div>
+          </div>
+          <div class="game-result">
+            <div class="placement-badge">2nd</div>
+            <div class="result-player">
+              <div class="result-player-name">Goblin King</div>
+              <div class="result-player-deck">Krenko Tokens</div>
+            </div>
+            <div class="result-points">+2</div>
+          </div>
+          <div class="game-result">
+            <div class="placement-badge">3rd</div>
+            <div class="result-player">
+              <div class="result-player-name">Commander Keen</div>
+              <div class="result-player-deck">Atraxa Superfriends</div>
+            </div>
+            <div class="result-points">+1</div>
+          </div>
+          <div class="game-result">
+            <div class="placement-badge">4th</div>
+            <div class="result-player">
+              <div class="result-player-name">The Spike</div>
+              <div class="result-player-deck">Kinnan Combo</div>
+            </div>
+            <div class="result-points">+0</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="game-card">
+        <div class="game-header">
+          <div class="game-number">Game #22</div>
+          <div class="game-date">April 10, 2026</div>
+        </div>
+        <div class="game-results">
+          <div class="game-result">
+            <div class="placement-badge">1st</div>
+            <div class="result-player">
+              <div class="result-player-name">Goblin King</div>
+              <div class="result-player-deck">Krenko Tokens</div>
+            </div>
+            <div class="result-points">+4</div>
+          </div>
+          <div class="game-result">
+            <div class="placement-badge">2nd</div>
+            <div class="result-player">
+              <div class="result-player-name">The Archmage Supreme</div>
+              <div class="result-player-deck">Niv-Mizzet Parun</div>
+            </div>
+            <div class="result-points">+2</div>
+          </div>
+          <div class="game-result">
+            <div class="placement-badge">3rd</div>
+            <div class="result-player">
+              <div class="result-player-name">Timmy the Destroyer</div>
+              <div class="result-player-deck">Kaalia Angels</div>
+            </div>
+            <div class="result-points">+1</div>
+          </div>
+          <div class="game-result">
+            <div class="placement-badge">4th</div>
+            <div class="result-player">
+              <div class="result-player-name">Johnny the Brewer</div>
+              <div class="result-player-deck">Rube Goldberg Machine</div>
+            </div>
+            <div class="result-points">+0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    -->
+  </div>
+</body>
+</html>

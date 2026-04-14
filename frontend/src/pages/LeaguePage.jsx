@@ -449,71 +449,65 @@ export default function LeaguePage() {
 
   return (
     <PageTransition>
-      <div className="max-w-[1400px] mx-auto px-8 py-10">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-[var(--color-muted)] mb-3">
-            <Link to="/leagues" className="hover:text-[var(--color-text)]">
-              Leagues
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--color-text)]">{league.name}</span>
+          {/* Title + Badge */}
+          <div className="flex items-center gap-3 mb-3">
+            <h1 className="text-3xl font-brand font-bold text-[var(--color-text)]">
+              {league.name}
+            </h1>
+            <span
+              className={`px-2.5 py-1 rounded text-xs font-medium ${
+                league.status === 'active'
+                  ? 'bg-green-500/20 text-green-300'
+                  : league.status === 'completed'
+                  ? 'bg-gray-500/20 text-gray-300'
+                  : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
+              }`}
+            >
+              {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
+            </span>
           </div>
 
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-brand font-bold text-[var(--color-text)] mb-2">
-                {league.name}
-              </h1>
-              <div className="flex items-center gap-4 text-sm text-[var(--color-muted)]">
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
-                  {new Date(league.season_start).toLocaleDateString()} —{' '}
-                  {new Date(league.season_end).toLocaleDateString()}
-                </span>
-                {getSeasonTimeRemaining() && (
-                  <span className="text-[var(--color-primary)] font-medium">{getSeasonTimeRemaining()}</span>
-                )}
-                <span
-                  className={`px-2.5 py-1 rounded text-xs font-medium ${
-                    league.status === 'active'
-                      ? 'bg-green-500/20 text-green-300'
-                      : league.status === 'completed'
-                      ? 'bg-gray-500/20 text-gray-300'
-                      : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
-                  }`}
-                >
-                  {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
-                </span>
-              </div>
-            </div>
+          {/* Dates + Time Remaining */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--color-muted)] mb-4">
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
+              {new Date(league.season_start).toLocaleDateString()} —{' '}
+              {new Date(league.season_end).toLocaleDateString()}
+            </span>
+            {getSeasonTimeRemaining() && (
+              <span className="text-[var(--color-primary)] font-medium">{getSeasonTimeRemaining()}</span>
+            )}
+          </div>
 
-            <div className="flex items-center gap-3">
-              {isCreator && (
-                <button
-                  onClick={handleGenerateInvite}
-                  disabled={generatingInvite}
-                  className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
-                >
-                  {generatingInvite ? 'Generating...' : 'Invite Link'}
-                </button>
-              )}
-              {!isCreator && (
-                <button
-                  onClick={handleLeaveLeague}
-                  disabled={leaving}
-                  className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-danger-border)] text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
-                >
-                  {leaving ? 'Leaving...' : 'Leave League'}
-                </button>
-              )}
-              <Link
-                to={`/leagues/${leagueId}/log-game`}
-                className="btn-primary px-5 py-2.5 rounded-lg font-medium"
+          {/* Buttons */}
+          <div className="flex flex-wrap items-center gap-3">
+            {isCreator && (
+              <button
+                onClick={handleGenerateInvite}
+                disabled={generatingInvite}
+                className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
               >
-                + Log Game
-              </Link>
-            </div>
+                {generatingInvite ? 'Generating...' : 'Invite Link'}
+              </button>
+            )}
+            {!isCreator && (
+              <button
+                onClick={handleLeaveLeague}
+                disabled={leaving}
+                className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-danger-border)] text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+              >
+                {leaving ? 'Leaving...' : 'Leave League'}
+              </button>
+            )}
+            <Link
+              to={`/leagues/${leagueId}/log-game`}
+              className="btn-primary px-5 py-2.5 rounded-lg font-medium"
+            >
+              + Log Game
+            </Link>
           </div>
 
           {/* Invite Link Display */}
@@ -576,7 +570,7 @@ export default function LeaguePage() {
               aria-controls={`tabpanel-${tab}`}
               id={`tab-${tab}`}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 font-medium capitalize transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] rounded-t-lg ${
+              className={`px-6 py-3 font-medium capitalize transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] rounded-t-lg ${
                 activeTab === tab
                   ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
                   : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
@@ -595,19 +589,19 @@ export default function LeaguePage() {
                 <button
                   onClick={handleExportImage}
                   disabled={exportingImage}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {exportingImage ? 'Exporting...' : 'Export Image'}
                 </button>
                 <button
                   onClick={handlePrintPDF}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer"
                 >
                   Print / PDF
                 </button>
                 <button
                   onClick={handleExportCSV}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer"
                 >
                   Export CSV
                 </button>
@@ -618,7 +612,7 @@ export default function LeaguePage() {
               <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                 <tr>
                   <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-muted)] w-10">#</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Superstar</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Pilot</th>
                   <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Pts</th>
                   <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">W</th>
                   <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">2nd</th>
@@ -773,7 +767,7 @@ export default function LeaguePage() {
                   <table className="w-full min-w-[500px]" aria-label="Bonus award standings">
                     <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                       <tr>
-                        <th className="text-left px-6 py-3 text-sm font-medium text-[var(--color-muted)]">
+                        <th className="text-left px-2 py-3 text-sm font-medium text-[var(--color-muted)] min-w-20">
                           Award
                         </th>
                         {standings.map(m => (
@@ -786,7 +780,7 @@ export default function LeaguePage() {
                     <tbody className="divide-y divide-[var(--color-border)]">
                       {bonusAwardStandings.enabledAwards.map(award => (
                         <tr key={award.id} className="hover:bg-[var(--color-surface)]/40 transition-colors">
-                          <td className="px-6 py-3 text-sm text-[var(--color-text)] font-medium">
+                          <td className="px-2 py-3 text-xs text-[var(--color-text)] font-medium leading-tight">
                             {award.title}
                           </td>
                           {standings.map(m => {
@@ -924,7 +918,7 @@ export default function LeaguePage() {
                                     if (!gameVotes[game.id]) loadGameVotes(game.id)
                                     setVotingGameId(prev => prev === game.id ? null : game.id)
                                   }}
-                                  className={`text-xs transition-colors ${votingGameId === game.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)] hover:text-[var(--color-primary)]'}`}
+                                  className={`text-xs transition-colors cursor-pointer ${votingGameId === game.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)] hover:text-[var(--color-primary)]'}`}
                                 >
                                   Vote
                                 </button>

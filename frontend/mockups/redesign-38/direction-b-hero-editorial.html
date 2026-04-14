@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direction B: Hero Editorial — MTG Assistant Redesign</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-charcoal: #23292E;
+      --color-blue: #2D82B7;
+      --color-red: #79161D;
+      --color-tan: #DBAC84;
+      --color-off-white: #E2E6E9;
+      
+      --bg: #23292E;
+      --surface: #2d3439;
+      --border: #3a4248;
+      --text: #E2E6E9;
+      --text-muted: #9ba1a6;
+      --accent-primary: #2D82B7;
+      --accent-secondary: #DBAC84;
+      --accent-danger: #79161D;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .page-header {
+      text-align: center;
+      padding: 60px 20px 40px;
+      background: linear-gradient(to bottom, var(--surface), transparent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 48px;
+      margin-bottom: 8px;
+      color: var(--accent-primary);
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .mockup-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      background: rgba(45, 52, 57, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .navbar-brand {
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+
+    .navbar-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-link {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .nav-link:hover {
+      background: rgba(45, 130, 183, 0.1);
+    }
+
+    .nav-link.active {
+      background: rgba(45, 130, 183, 0.2);
+      color: var(--text);
+    }
+
+    /* DASHBOARD PAGE */
+    .dashboard-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 20px;
+    }
+
+    .dashboard-hero {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .dashboard-hero h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 56px;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+
+    .dashboard-hero p {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .import-section {
+      background: linear-gradient(135deg, rgba(45, 130, 183, 0.1), rgba(45, 52, 57, 0.5));
+      border: 1px solid var(--accent-primary);
+      border-radius: 20px;
+      padding: 48px 40px;
+      margin-bottom: 80px;
+      text-align: center;
+    }
+
+    .import-section h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .import-section p {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      font-size: 15px;
+    }
+
+    .import-form {
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+    }
+
+    .import-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    .import-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px rgba(45, 130, 183, 0.1);
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: var(--bg);
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(45, 130, 183, 0.3);
+    }
+
+    .decks-section h2 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .deck-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .deck-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+      border-color: var(--accent-primary);
+    }
+
+    .deck-card-content {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .commander-thumb {
+      width: 80px;
+      height: 112px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--border), var(--surface));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .deck-info h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .deck-meta {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .color-pips {
+      display: flex;
+      gap: 6px;
+    }
+
+    .pip {
+      font-size: 18px;
+    }
+
+    /* DECK PAGE - HERO EDITORIAL LAYOUT */
+    .deck-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    .deck-topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .back-btn {
+      color: var(--text-muted);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .back-btn:hover {
+      color: var(--text);
+    }
+
+    /* Commander Hero - MASSIVE, dominates viewport */
+    .commander-hero-editorial {
+      position: relative;
+      margin: 0 -20px 64px;
+      padding: 80px 20px;
+      background: linear-gradient(180deg, rgba(45, 130, 183, 0.2) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .commander-hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 32px;
+    }
+
+    .commander-art-large {
+      width: 280px;
+      height: 392px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #2D3B4E, #1A2332);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      border: 2px solid var(--accent-primary);
+    }
+
+    .commander-hero-content h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 56px;
+      line-height: 1.2;
+      color: var(--accent-primary);
+      margin-bottom: 16px;
+    }
+
+    .commander-hero-meta {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .commander-hero-meta .color-pips {
+      gap: 8px;
+    }
+
+    .commander-hero-meta .pip {
+      font-size: 24px;
+    }
+
+    .commander-themes {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    .commander-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .btn-hero {
+      background: var(--accent-primary);
+      color: var(--bg);
+      padding: 18px 48px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-hero:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(45, 130, 183, 0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid var(--accent-secondary);
+      color: var(--accent-secondary);
+      padding: 16px 40px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(219, 172, 132, 0.1);
+    }
+
+    /* Content sections flow vertically with generous spacing */
+    .content-section {
+      margin-bottom: 80px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .section-header h2 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .section-header p {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    /* Stats - Horizontal row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .stat-value {
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--accent-primary);
+    }
+
+    .stat-value.good {
+      color: #10b981;
+    }
+
+    .stat-value.warning {
+      color: #f59e0b;
+    }
+
+    .stat-value.bad {
+      color: var(--accent-danger);
+    }
+
+    /* Charts */
+    .chart-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .chart-container h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .chart-placeholder {
+      height: 280px;
+      background: linear-gradient(135deg, var(--bg), var(--border));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Weaknesses - Prominent callout */
+    .weaknesses-hero {
+      background: linear-gradient(135deg, rgba(121, 22, 29, 0.15), rgba(45, 52, 57, 0.5));
+      border: 2px solid var(--accent-danger);
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .weaknesses-hero h2 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      text-align: center;
+      color: var(--accent-danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .weakness-grid {
+      display: grid;
+      gap: 24px;
+    }
+
+    .weakness-item {
+      background: rgba(45, 52, 57, 0.5);
+      border: 1px solid rgba(121, 22, 29, 0.3);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .weakness-item h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .weakness-item p {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-hero h1 {
+        font-size: 40px;
+      }
+
+      .import-form {
+        flex-direction: column;
+      }
+
+      .commander-art-large {
+        width: 200px;
+        height: 280px;
+      }
+
+      .commander-hero-content h1 {
+        font-size: 40px;
+      }
+
+      .section-header h2 {
+        font-size: 28px;
+      }
+
+      .stat-value {
+        font-size: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Direction B: Hero Editorial</h1>
+    <p>Commander art dominates viewport. Generous whitespace, confident typography, vertical story flow. Stripe/Apple style.</p>
+  </div>
+
+  <div class="mockup-container">
+    <!-- NAVBAR -->
+    <div class="navbar">
+      <div class="navbar-brand">MTG Assistant</div>
+      <div class="navbar-nav">
+        <div class="nav-link">Dashboard</div>
+        <div class="nav-link">Collection</div>
+        <div class="nav-link">Leagues</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE PREVIEW -->
+    <div class="dashboard-container">
+      <div class="dashboard-hero">
+        <h1>Your MTG Command Center</h1>
+        <p>Deep analysis and strategic insights for Commander decks. Import from Moxfield or build your library.</p>
+      </div>
+
+      <div class="import-section">
+        <h2>Analyze a Deck</h2>
+        <p>Paste any public Moxfield deck URL to get instant strategy advice and weakness detection</p>
+        <div class="import-form">
+          <input type="text" class="import-input" placeholder="https://www.moxfield.com/decks/..." />
+          <button class="btn-primary">Analyze</button>
+        </div>
+      </div>
+
+      <div class="decks-section">
+        <h2>Your Deck Library</h2>
+
+        <div class="deck-card">
+          <div class="deck-card-content">
+            <div class="commander-thumb">Commander<br>Art</div>
+            <div class="deck-info">
+              <h3>Atraxa Control</h3>
+              <div class="deck-meta">
+                <span>Atraxa, Praetors' Voice</span>
+                <div class="color-pips">
+                  <i class="ms ms-w ms-cost pip"></i>
+                  <i class="ms ms-u ms-cost pip"></i>
+                  <i class="ms ms-b ms-cost pip"></i>
+                  <i class="ms ms-g ms-cost pip"></i>
+                </div>
+              </div>
+            </div>
+            <span style="color: var(--text-muted); font-size: 14px;">Mar 15</span>
+          </div>
+        </div>
+
+        <div class="deck-card">
+          <div class="deck-card-content">
+            <div class="commander-thumb">Commander<br>Art</div>
+            <div class="deck-info">
+              <h3>Gishath Dinosaurs</h3>
+              <div class="deck-meta">
+                <span>Gishath, Sun's Avatar</span>
+                <div class="color-pips">
+                  <i class="ms ms-r ms-cost pip"></i>
+                  <i class="ms ms-g ms-cost pip"></i>
+                  <i class="ms ms-w ms-cost pip"></i>
+                </div>
+              </div>
+            </div>
+            <span style="color: var(--text-muted); font-size: 14px;">Mar 10</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr style="border: none; border-top: 2px solid var(--border); margin: 60px 0;">
+
+    <!-- DECK PAGE PREVIEW -->
+    <div class="deck-container">
+      <div class="deck-topbar">
+        <div class="back-btn">← Dashboard</div>
+      </div>
+
+      <!-- Commander Hero - MASSIVE -->
+      <div class="commander-hero-editorial">
+        <div class="commander-hero-content">
+          <div class="commander-art-large">
+            Commander<br>Card Art<br>(360x504)
+          </div>
+          <div>
+            <h1>Atraxa, Praetors' Voice</h1>
+            <div class="commander-hero-meta">
+              <div class="color-pips">
+                <i class="ms ms-w ms-cost pip"></i>
+                <i class="ms ms-u ms-cost pip"></i>
+                <i class="ms ms-b ms-cost pip"></i>
+                <i class="ms ms-g ms-cost pip"></i>
+              </div>
+              <div class="commander-themes">Control • Counters • Proliferate</div>
+            </div>
+            <div class="commander-actions">
+              <button class="btn-hero">Run Analysis</button>
+              <button class="btn-secondary">View Strategy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Section -->
+      <div class="content-section">
+        <div class="section-header">
+          <h2>Deck Statistics</h2>
+          <p>Health indicators for key deck building metrics</p>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Lands</div>
+            <div class="stat-value good">37</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ramp</div>
+            <div class="stat-value warning">12</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Draw</div>
+            <div class="stat-value good">11</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Removal</div>
+            <div class="stat-value bad">6</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Wipes</div>
+            <div class="stat-value good">3</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg CMC</div>
+            <div class="stat-value good">3.2</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weaknesses - Prominent position, second section -->
+      <div class="content-section">
+        <div class="weaknesses-hero">
+          <h2>
+            <span>⚠</span>
+            Critical Weaknesses
+          </h2>
+          <div class="weakness-grid">
+            <div class="weakness-item">
+              <h4>Insufficient Removal</h4>
+              <p>Only 6 removal spells detected. Control decks typically need 8-10 targeted removal pieces to survive early threats and maintain board control through the mid-game.</p>
+            </div>
+            <div class="weakness-item">
+              <h4>Limited Board Wipes</h4>
+              <p>With only 3 board wipes, you may struggle against wide strategies like tokens or go-wide tribal. Consider adding 1-2 more mass removal effects to shore up this vulnerability.</p>
+            </div>
+            <div class="weakness-item">
+              <h4>CMC Slightly High</h4>
+              <p>Average CMC of 3.2 is manageable, but cutting 2-3 expensive spells in favor of cheaper interaction would improve your consistency and tempo in the early game.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mana Curve -->
+      <div class="content-section">
+        <div class="section-header">
+          <h2>Mana Curve</h2>
+          <p>Distribution of converted mana costs across your deck</p>
+        </div>
+        <div class="chart-container">
+          <div class="chart-placeholder">Mana Curve Chart</div>
+        </div>
+      </div>
+
+      <!-- Role Composition -->
+      <div class="content-section">
+        <div class="section-header">
+          <h2>Role Composition</h2>
+          <p>How your deck allocates resources across core Commander roles</p>
+        </div>
+        <div class="chart-container">
+          <div class="chart-placeholder">Role Bar Chart</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

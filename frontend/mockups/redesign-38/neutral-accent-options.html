@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neutral + Accent Options — Dark & Light</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      padding: 40px 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+
+    .header p {
+      color: #888;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .options-grid {
+      max-width: 1800px;
+      margin: 0 auto;
+      display: grid;
+      gap: 60px;
+    }
+
+    .option-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 32px;
+      background: #111;
+      border-radius: 20px;
+      border: 1px solid #222;
+    }
+
+    .option-title {
+      grid-column: 1 / -1;
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .option-desc {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .mode-card {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid transparent;
+    }
+
+    .mode-label {
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    .mode-preview {
+      padding: 32px;
+    }
+
+    .mini-navbar {
+      padding: 16px 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+    }
+
+    .mini-brand {
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .mini-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mini-link {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .mini-stat {
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .mini-stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      opacity: 0.7;
+    }
+
+    .mini-stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .mini-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .mini-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    /* OPTION 1: Neutral + Blue */
+    .opt1-dark { background: #0a0a0a; }
+    .opt1-dark .mode-label { background: #111; color: #666; border-bottom: 1px solid #1a1a1a; }
+    .opt1-dark .mini-navbar { background: rgba(20, 20, 20, 0.8); border: 1px solid #1a1a1a; }
+    .opt1-dark .mini-brand { color: #3b82f6; }
+    .opt1-dark .mini-link { color: #888; }
+    .opt1-dark .mini-link:hover { background: rgba(59, 130, 246, 0.1); }
+    .opt1-dark .mini-link.active { background: rgba(59, 130, 246, 0.15); color: #fff; }
+    .opt1-dark .mini-stat { background: #111; border: 1px solid #1a1a1a; }
+    .opt1-dark .mini-stat-label { color: #666; }
+    .opt1-dark .mini-stat-value { color: #fff; }
+    .opt1-dark .mini-stat-value.accent { color: #3b82f6; }
+    .opt1-dark .mini-btn.primary { background: #3b82f6; color: #fff; }
+    .opt1-dark .mini-btn.secondary { background: transparent; border: 1px solid #1a1a1a; color: #888; }
+
+    .opt1-light { background: #ffffff; }
+    .opt1-light .mode-label { background: #f8f9fa; color: #666; border-bottom: 1px solid #e5e7eb; }
+    .opt1-light .mini-navbar { background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e7eb; }
+    .opt1-light .mini-brand { color: #2563eb; }
+    .opt1-light .mini-link { color: #555; }
+    .opt1-light .mini-link:hover { background: rgba(37, 99, 235, 0.08); }
+    .opt1-light .mini-link.active { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
+    .opt1-light .mini-stat { background: #f8f9fa; border: 1px solid #e5e7eb; }
+    .opt1-light .mini-stat-label { color: #777; }
+    .opt1-light .mini-stat-value { color: #111; }
+    .opt1-light .mini-stat-value.accent { color: #2563eb; }
+    .opt1-light .mini-btn.primary { background: #2563eb; color: #fff; }
+    .opt1-light .mini-btn.secondary { background: transparent; border: 1px solid #d1d5db; color: #555; }
+
+    /* OPTION 2: Neutral + Gold (Current) */
+    .opt2-dark { background: #0a0a0a; }
+    .opt2-dark .mode-label { background: #111; color: #666; border-bottom: 1px solid #1a1a1a; }
+    .opt2-dark .mini-navbar { background: rgba(20, 20, 20, 0.8); border: 1px solid #1a1a1a; }
+    .opt2-dark .mini-brand { color: #f4ab00; }
+    .opt2-dark .mini-link { color: #888; }
+    .opt2-dark .mini-link:hover { background: rgba(244, 171, 0, 0.1); }
+    .opt2-dark .mini-link.active { background: rgba(244, 171, 0, 0.15); color: #fff; }
+    .opt2-dark .mini-stat { background: #111; border: 1px solid #1a1a1a; }
+    .opt2-dark .mini-stat-label { color: #666; }
+    .opt2-dark .mini-stat-value { color: #fff; }
+    .opt2-dark .mini-stat-value.accent { color: #f4ab00; }
+    .opt2-dark .mini-btn.primary { background: #f4ab00; color: #000; }
+    .opt2-dark .mini-btn.secondary { background: transparent; border: 1px solid #1a1a1a; color: #888; }
+
+    .opt2-light { background: #ffffff; }
+    .opt2-light .mode-label { background: #f8f9fa; color: #666; border-bottom: 1px solid #e5e7eb; }
+    .opt2-light .mini-navbar { background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e7eb; }
+    .opt2-light .mini-brand { color: #c38700; }
+    .opt2-light .mini-link { color: #555; }
+    .opt2-light .mini-link:hover { background: rgba(195, 135, 0, 0.08); }
+    .opt2-light .mini-link.active { background: rgba(195, 135, 0, 0.12); color: #c38700; }
+    .opt2-light .mini-stat { background: #f8f9fa; border: 1px solid #e5e7eb; }
+    .opt2-light .mini-stat-label { color: #777; }
+    .opt2-light .mini-stat-value { color: #111; }
+    .opt2-light .mini-stat-value.accent { color: #c38700; }
+    .opt2-light .mini-btn.primary { background: #c38700; color: #fff; }
+    .opt2-light .mini-btn.secondary { background: transparent; border: 1px solid #d1d5db; color: #555; }
+
+    /* OPTION 3: Neutral + Blue + Green */
+    .opt3-dark { background: #0a0a0a; }
+    .opt3-dark .mode-label { background: #111; color: #666; border-bottom: 1px solid #1a1a1a; }
+    .opt3-dark .mini-navbar { background: rgba(20, 20, 20, 0.8); border: 1px solid #1a1a1a; }
+    .opt3-dark .mini-brand { color: #3b82f6; }
+    .opt3-dark .mini-link { color: #888; }
+    .opt3-dark .mini-link:hover { background: rgba(59, 130, 246, 0.1); }
+    .opt3-dark .mini-link.active { background: rgba(59, 130, 246, 0.15); color: #fff; }
+    .opt3-dark .mini-stat { background: #111; border: 1px solid #1a1a1a; }
+    .opt3-dark .mini-stat-label { color: #666; }
+    .opt3-dark .mini-stat-value { color: #fff; }
+    .opt3-dark .mini-stat:nth-child(1) .mini-stat-value { color: #10b981; }
+    .opt3-dark .mini-stat:nth-child(2) .mini-stat-value { color: #10b981; }
+    .opt3-dark .mini-stat:nth-child(3) .mini-stat-value { color: #f59e0b; }
+    .opt3-dark .mini-btn.primary { background: #3b82f6; color: #fff; }
+    .opt3-dark .mini-btn.secondary { background: transparent; border: 1px solid #1a1a1a; color: #888; }
+
+    .opt3-light { background: #ffffff; }
+    .opt3-light .mode-label { background: #f8f9fa; color: #666; border-bottom: 1px solid #e5e7eb; }
+    .opt3-light .mini-navbar { background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e7eb; }
+    .opt3-light .mini-brand { color: #2563eb; }
+    .opt3-light .mini-link { color: #555; }
+    .opt3-light .mini-link:hover { background: rgba(37, 99, 235, 0.08); }
+    .opt3-light .mini-link.active { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
+    .opt3-light .mini-stat { background: #f8f9fa; border: 1px solid #e5e7eb; }
+    .opt3-light .mini-stat-label { color: #777; }
+    .opt3-light .mini-stat-value { color: #111; }
+    .opt3-light .mini-stat:nth-child(1) .mini-stat-value { color: #059669; }
+    .opt3-light .mini-stat:nth-child(2) .mini-stat-value { color: #059669; }
+    .opt3-light .mini-stat:nth-child(3) .mini-stat-value { color: #d97706; }
+    .opt3-light .mini-btn.primary { background: #2563eb; color: #fff; }
+    .opt3-light .mini-btn.secondary { background: transparent; border: 1px solid #d1d5db; color: #555; }
+
+    /* OPTION 4: Neutral + Blue + Gold */
+    .opt4-dark { background: #0a0a0a; }
+    .opt4-dark .mode-label { background: #111; color: #666; border-bottom: 1px solid #1a1a1a; }
+    .opt4-dark .mini-navbar { background: rgba(20, 20, 20, 0.8); border: 1px solid #1a1a1a; }
+    .opt4-dark .mini-brand { color: #3b82f6; }
+    .opt4-dark .mini-link { color: #888; }
+    .opt4-dark .mini-link:hover { background: rgba(59, 130, 246, 0.1); }
+    .opt4-dark .mini-link.active { background: rgba(59, 130, 246, 0.15); color: #fff; }
+    .opt4-dark .mini-stat { background: #111; border: 1px solid #1a1a1a; }
+    .opt4-dark .mini-stat-label { color: #666; }
+    .opt4-dark .mini-stat-value { color: #fff; }
+    .opt4-dark .mini-stat:nth-child(1) .mini-stat-value { color: #10b981; }
+    .opt4-dark .mini-stat:nth-child(2) .mini-stat-value { color: #10b981; }
+    .opt4-dark .mini-stat:nth-child(3) .mini-stat-value { color: #f59e0b; }
+    .opt4-dark .mini-btn.primary { background: #3b82f6; color: #fff; }
+    .opt4-dark .mini-btn.secondary { background: transparent; border: 1px solid rgba(244, 171, 0, 0.3); color: #f4ab00; }
+
+    .opt4-light { background: #ffffff; }
+    .opt4-light .mode-label { background: #f8f9fa; color: #666; border-bottom: 1px solid #e5e7eb; }
+    .opt4-light .mini-navbar { background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e7eb; }
+    .opt4-light .mini-brand { color: #2563eb; }
+    .opt4-light .mini-link { color: #555; }
+    .opt4-light .mini-link:hover { background: rgba(37, 99, 235, 0.08); }
+    .opt4-light .mini-link.active { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
+    .opt4-light .mini-stat { background: #f8f9fa; border: 1px solid #e5e7eb; }
+    .opt4-light .mini-stat-label { color: #777; }
+    .opt4-light .mini-stat-value { color: #111; }
+    .opt4-light .mini-stat:nth-child(1) .mini-stat-value { color: #059669; }
+    .opt4-light .mini-stat:nth-child(2) .mini-stat-value { color: #059669; }
+    .opt4-light .mini-stat:nth-child(3) .mini-stat-value { color: #d97706; }
+    .opt4-light .mini-btn.primary { background: #2563eb; color: #fff; }
+    .opt4-light .mini-btn.secondary { background: transparent; border: 1px solid #c38700; color: #c38700; }
+
+    /* OPTION 5: Neutral + Red */
+    .opt5-dark { background: #0a0a0a; }
+    .opt5-dark .mode-label { background: #111; color: #666; border-bottom: 1px solid #1a1a1a; }
+    .opt5-dark .mini-navbar { background: rgba(20, 20, 20, 0.8); border: 1px solid #1a1a1a; }
+    .opt5-dark .mini-brand { color: #ef4444; }
+    .opt5-dark .mini-link { color: #888; }
+    .opt5-dark .mini-link:hover { background: rgba(239, 68, 68, 0.1); }
+    .opt5-dark .mini-link.active { background: rgba(239, 68, 68, 0.15); color: #fff; }
+    .opt5-dark .mini-stat { background: #111; border: 1px solid #1a1a1a; }
+    .opt5-dark .mini-stat-label { color: #666; }
+    .opt5-dark .mini-stat-value { color: #fff; }
+    .opt5-dark .mini-stat-value.accent { color: #ef4444; }
+    .opt5-dark .mini-btn.primary { background: #ef4444; color: #fff; }
+    .opt5-dark .mini-btn.secondary { background: transparent; border: 1px solid #1a1a1a; color: #888; }
+
+    .opt5-light { background: #ffffff; }
+    .opt5-light .mode-label { background: #f8f9fa; color: #666; border-bottom: 1px solid #e5e7eb; }
+    .opt5-light .mini-navbar { background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e7eb; }
+    .opt5-light .mini-brand { color: #dc2626; }
+    .opt5-light .mini-link { color: #555; }
+    .opt5-light .mini-link:hover { background: rgba(220, 38, 38, 0.08); }
+    .opt5-light .mini-link.active { background: rgba(220, 38, 38, 0.12); color: #dc2626; }
+    .opt5-light .mini-stat { background: #f8f9fa; border: 1px solid #e5e7eb; }
+    .opt5-light .mini-stat-label { color: #777; }
+    .opt5-light .mini-stat-value { color: #111; }
+    .opt5-light .mini-stat-value.accent { color: #dc2626; }
+    .opt5-light .mini-btn.primary { background: #dc2626; color: #fff; }
+    .opt5-light .mini-btn.secondary { background: transparent; border: 1px solid #d1d5db; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Neutral + Accent Options</h1>
+    <p>Each option shows dark mode (left) and light mode (right) side by side.<br>
+    All use neutral gray foundation — only the accent color(s) change.</p>
+  </div>
+
+  <div class="options-grid">
+    <!-- OPTION 1: Blue Single -->
+    <div class="option-row">
+      <div class="option-title">Option 1: Neutral + Blue</div>
+      <div class="option-desc">Single accent — modern, professional, SaaS-standard. Most versatile and neutral choice.</div>
+      
+      <div class="mode-card opt1-dark">
+        <div class="mode-label">Dark Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value accent">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value accent">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value accent">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card opt1-light">
+        <div class="mode-label">Light Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value accent">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value accent">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value accent">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION 2: Gold Single (Current) -->
+    <div class="option-row">
+      <div class="option-title">Option 2: Neutral + Gold</div>
+      <div class="option-desc">Current app style — MTG-nostalgic premium feel. Gold evokes Magic's history and collectible nature.</div>
+      
+      <div class="mode-card opt2-dark">
+        <div class="mode-label">Dark Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value accent">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value accent">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value accent">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card opt2-light">
+        <div class="mode-label">Light Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value accent">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value accent">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value accent">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION 3: Blue + Green Dual -->
+    <div class="option-row">
+      <div class="option-title">Option 3: Neutral + Blue + Green</div>
+      <div class="option-desc">Dual accent — Blue for brand/primary actions, Green for health/success states. Clear semantic meaning.</div>
+      
+      <div class="mode-card opt3-dark">
+        <div class="mode-label">Dark Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card opt3-light">
+        <div class="mode-label">Light Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION 4: Blue + Gold Dual -->
+    <div class="option-row">
+      <div class="option-title">Option 4: Neutral + Blue + Gold</div>
+      <div class="option-desc">Dual accent — Blue for brand/primary actions, Gold for premium features/secondary actions. Combines modern + MTG-nostalgic.</div>
+      
+      <div class="mode-card opt4-dark">
+        <div class="mode-label">Dark Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card opt4-light">
+        <div class="mode-label">Light Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION 5: Red Single -->
+    <div class="option-row">
+      <div class="option-title">Option 5: Neutral + Red</div>
+      <div class="option-desc">Single accent — energetic, bold, aggressive. Red is the MTG color of passion and direct action.</div>
+      
+      <div class="mode-card opt5-dark">
+        <div class="mode-label">Dark Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value accent">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value accent">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value accent">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card opt5-light">
+        <div class="mode-label">Light Mode</div>
+        <div class="mode-preview">
+          <div class="mini-navbar">
+            <div class="mini-brand">MTG Assistant</div>
+            <div class="mini-links">
+              <div class="mini-link active">Dashboard</div>
+              <div class="mini-link">Collection</div>
+              <div class="mini-link">Leagues</div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-label">Ramp</div>
+              <div class="mini-stat-value accent">12</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Draw</div>
+              <div class="mini-stat-value accent">11</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-label">Removal</div>
+              <div class="mini-stat-value accent">6</div>
+            </div>
+          </div>
+          <div class="mini-buttons">
+            <button class="mini-btn primary">Analyze Deck</button>
+            <button class="mini-btn secondary">View Strategy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

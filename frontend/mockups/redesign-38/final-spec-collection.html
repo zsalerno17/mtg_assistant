@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Final Spec — Collection Page</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ============================================
+       FINAL SPEC — COLLECTION PAGE
+       Direction A — Information-Dense Layout
+       Phase 38 Hybrid Glass/Crisp System
+       
+       Color Palette (REFINED):
+       --bg:       #1a1f24 (darkened from #23292E)
+       --surface:  #23292E (darkened from #2d3439)
+       --border:   #2d3439 (darkened from #3a4248)
+       --text:     #E2E6E9
+       --accent-primary:   #2D82B7 (Blue)
+       --accent-secondary: #79161D (Red)
+       --accent-tan:       #DBAC84 (Tan)
+       
+       BUTTON HOVER: brightness(1.1) + translateY ONLY
+       No glow/shadow effects per user feedback
+       
+       ============================================ */
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    :root {
+      /* Foundation Colors (REFINED - darker backgrounds) */
+      --color-charcoal: #1a1f24;
+      --color-blue: #2D82B7;
+      --color-red: #79161D;
+      --color-tan: #DBAC84;
+      --color-off-white: #E2E6E9;
+      
+      /* Derived Tokens */
+      --bg: #1a1f24;
+      --surface: #23292E;
+      --border: #2d3439;
+      --text: #E2E6E9;
+      --text-muted: #94a3b8;
+      --accent-primary: #2D82B7;
+      --accent-secondary: #79161D;
+      --accent-success: #10b981;
+      --accent-tan: #DBAC84;
+      
+      /* Typography */
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: 'Cinzel', serif;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 24px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* ══════════════════════════════════════════
+       HEADER
+       ══════════════════════════════════════════ */
+    .header {
+      margin-bottom: 40px;
+    }
+    
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    
+    .header-subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    /* ══════════════════════════════════════════
+       STATS HEADER
+       Information-dense, horizontal layout
+       ══════════════════════════════════════════ */
+    .stats-header {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 150ms ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent-primary);
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    
+    .stat-value.accent-blue {
+      color: var(--accent-primary);
+    }
+    
+    .stat-value.accent-success {
+      color: var(--accent-success);
+    }
+    
+    .stat-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    
+    /* ══════════════════════════════════════════
+       UPLOAD SECTION
+       Glass morphism for elevated surface
+       ══════════════════════════════════════════ */
+    .upload-section {
+      background: rgba(45, 130, 183, 0.08);
+      backdrop-filter: blur(12px);
+      border: 2px dashed var(--accent-primary);
+      border-radius: 16px;
+      padding: 48px 32px;
+      margin-bottom: 40px;
+      text-align: center;
+      transition: all 200ms ease;
+    }
+    
+    .upload-section:hover {
+      background: rgba(45, 130, 183, 0.12);
+      border-color: var(--accent-primary);
+    }
+    
+    .upload-section.drag-over {
+      background: rgba(45, 130, 183, 0.15);
+      border-color: var(--accent-primary);
+      transform: scale(1.01);
+    }
+    
+    .upload-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 24px;
+    }
+    
+    .upload-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .upload-description {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    
+    /* ══════════════════════════════════════════
+       BUTTONS
+       Standardized button patterns with scalability
+       ══════════════════════════════════════════ */
+    .btn-primary {
+      background: var(--accent-primary);
+      color: var(--text);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      /* No glow/shadow on hover */
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: inline-block;
+      text-decoration: none;
+      margin-left: 12px;
+    }
+    
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+    
+    /* ══════════════════════════════════════════
+       SEARCH & FILTERS
+       ══════════════════════════════════════════ */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .toolbar-left {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .search-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      width: 280px;
+      transition: all 150ms ease;
+    }
+    
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(45, 130, 183, 0.12);
+    }
+    
+    /* ══════════════════════════════════════════
+       CARD GRID
+       Crisp flat cards for data display
+       ══════════════════════════════════════════ */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    
+    .card-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 150ms ease;
+    }
+    
+    .card-item:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-1px);
+    }
+    
+    .card-name {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .card-quantity {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      margin-left: 12px;
+      flex-shrink: 0;
+    }
+    
+    /* ══════════════════════════════════════════
+       EMPTY STATE
+       ══════════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--text-muted);
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+    
+    .empty-state-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .empty-state-description {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    
+    /* ══════════════════════════════════════════
+       RESPONSIVE
+       ══════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      body {
+        padding: 24px 16px;
+      }
+      
+      .header h1 {
+        font-size: 28px;
+      }
+      
+      .stats-header {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+      }
+      
+      .stat-value {
+        font-size: 24px;
+      }
+      
+      .upload-section {
+        padding: 32px 20px;
+      }
+      
+      .search-input {
+        width: 100%;
+      }
+      
+      .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 10px;
+      }
+    }
+    
+    /* ══════════════════════════════════════════
+       IMPLEMENTATION NOTES
+       
+       SPACING TOKEN SYSTEM:
+       - Container padding: 40px (desktop), 24px (mobile)
+       - Section margins: 32-40px vertical
+       - Card gaps: 12-16px
+       - Element padding: 16px-20px
+       
+       BUTTON PATTERNS:
+       - .btn-primary: Blue background, white text
+       - .btn-secondary: Transparent bg, border, muted text
+       - Hover: brightness(1.1) + translateY(-1px) ONLY
+       - NO box-shadow glow effects
+       
+       RESPONSIVE BREAKPOINTS:
+       - Desktop: ≥768px (4-6 cards per row)
+       - Mobile: <768px (2-3 cards per row)
+       
+       GLASS vs CRISP:
+       - Glass: Upload section (elevated, call-to-action)
+       - Crisp: Stats cards, card grid items (data display)
+       
+       CSS CUSTOM PROPERTIES:
+       All colors defined as CSS variables for easy
+       theme switching and future color scheme variants
+       
+       ══════════════════════════════════════════ */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      <h1>My Collection</h1>
+      <p class="header-subtitle">
+        Upload your Moxfield collection export to enable personalized deck recommendations
+      </p>
+    </div>
+    
+    <!-- STATS HEADER (shown when collection loaded) -->
+    <div class="stats-header">
+      <div class="stat-card">
+        <div class="stat-label">Total Cards</div>
+        <div class="stat-value">2,847</div>
+        <div class="stat-subtitle">across 1,423 unique</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Avg Card Value</div>
+        <div class="stat-value accent-blue">$3.45</div>
+        <div class="stat-subtitle">estimated TCGPlayer mid</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Collection Value</div>
+        <div class="stat-value accent-success">$9,822</div>
+        <div class="stat-subtitle">total estimated value</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Last Updated</div>
+        <div class="stat-value" style="font-size: 18px; color: var(--text-muted);">Apr 12, 2026</div>
+        <div class="stat-subtitle">from Moxfield export</div>
+      </div>
+    </div>
+    
+    <!-- UPLOAD SECTION (glass elevated) -->
+    <div class="upload-section">
+      <div class="upload-icon">📦</div>
+      <div class="upload-title">Drop your Moxfield collection CSV here</div>
+      <p class="upload-description">
+        Export from Moxfield → Drag & drop or click to browse
+      </p>
+      <button class="btn-primary">Choose File</button>
+      <button class="btn-secondary">View Instructions</button>
+    </div>
+    
+    <!-- TOOLBAR (search + count) -->
+    <div class="toolbar">
+      <div class="toolbar-left">1,423 unique cards</div>
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Search cards..."
+      />
+    </div>
+    
+    <!-- CARD GRID (crisp flat cards) -->
+    <div class="card-grid">
+      <div class="card-item">
+        <div class="card-name">Ancient Tomb</div>
+        <div class="card-quantity">×3</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Bloom Tender</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Cyclonic Rift</div>
+        <div class="card-quantity">×2</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Dockside Extortionist</div>
+        <div class="card-quantity">×4</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Esper Sentinel</div>
+        <div class="card-quantity">×2</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Fatal Push</div>
+        <div class="card-quantity">×5</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Grand Abolisher</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Heroic Intervention</div>
+        <div class="card-quantity">×3</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Izzet Charm</div>
+        <div class="card-quantity">×2</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Jeska's Will</div>
+        <div class="card-quantity">×2</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Kindred Discovery</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Lightning Bolt</div>
+        <div class="card-quantity">×8</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Mana Drain</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Nature's Lore</div>
+        <div class="card-quantity">×6</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Omnath, Locus of Creation</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Path to Exile</div>
+        <div class="card-quantity">×4</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Rhystic Study</div>
+        <div class="card-quantity">×2</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Sol Ring</div>
+        <div class="card-quantity">×12</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Swords to Plowshares</div>
+        <div class="card-quantity">×7</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Tatyova, Benthic Druid</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <!-- More cards... -->
+      <div class="card-item">
+        <div class="card-name">Uro, Titan of Nature's Wrath</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Vampiric Tutor</div>
+        <div class="card-quantity">×1</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Windfall</div>
+        <div class="card-quantity">×3</div>
+      </div>
+      
+      <div class="card-item">
+        <div class="card-name">Xenagos, God of Revels</div>
+        <div class="card-quantity">×1</div>
+      </div>
+    </div>
+    
+    <!-- EMPTY STATE (shown when no collection) -->
+    <!-- Uncomment to preview:
+    <div class="empty-state">
+      <div class="empty-state-icon">📦</div>
+      <div class="empty-state-title">No collection uploaded yet</div>
+      <p class="empty-state-description">
+        Upload your Moxfield collection CSV to see personalized deck recommendations
+      </p>
+    </div>
+    -->
+  </div>
+</body>
+</html>

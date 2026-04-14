@@ -145,7 +145,7 @@ export default function TopNavbar() {
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(o => !o)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] transition-all cursor-pointer"
                 title="Profile"
               >
                 <UserAvatar email={email} avatarUrl={profile?.avatar_url} size="md" />
@@ -161,21 +161,21 @@ export default function TopNavbar() {
               <div className={`absolute right-0 mt-2 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-2xl shadow-black/50 transition-all overflow-hidden ${menuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
                 <button
                   onClick={() => { navigate('/profile'); setMenuOpen(false) }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <User className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                   Profile
                 </button>
                 <button
                   onClick={() => { navigate('/help'); setMenuOpen(false) }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <CircleHelp className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                   Help & Resources
                 </button>
                 <button
                   onClick={() => { toggleTheme(); setMenuOpen(false) }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   {theme === 'dark' ? (
                     <>
@@ -192,7 +192,7 @@ export default function TopNavbar() {
                 <div className="border-t border-[var(--color-border)]" />
                 <button
                   onClick={() => { signOut(); setMenuOpen(false) }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                   Sign out
@@ -244,7 +244,7 @@ export default function TopNavbar() {
           </NavLink>
           <button
             onClick={() => navigate('/profile')}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-primary)] transition-all min-w-[72px]"
+            className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-primary)] transition-all min-w-[72px] cursor-pointer"
           >
             <UserAvatar email={email} avatarUrl={profile?.avatar_url} size="sm" />
             <span className="text-xs font-medium">Profile</span>

@@ -34,43 +34,38 @@
 body {
   margin: 0;
   min-height: 100vh;
-  /* Subtle texture + gradient accents (dark mode) */
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 15% 40%, rgba(76, 168, 224, 0.05) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 15%, rgba(216, 168, 72, 0.04) 0%, transparent 45%);
-  background-repeat: repeat, no-repeat, no-repeat;
-  background-attachment: fixed;
-  background-color: var(--color-bg);
-}
-
-[data-theme="light"] body {
-  /* Light mode: cleaner, less texture */
-  background-image:
-    radial-gradient(ellipse at 15% 40%, rgba(32, 128, 184, 0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 85% 15%, rgba(184, 132, 46, 0.02) 0%, transparent 40%);
+  /* Clean background — Phase 38: MTG flavor comes from content, not chrome */
+  background: var(--color-bg);
 }
 
 /* ─── Typography Defaults ───────────────────────────── */
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
+/* Phase 38: Cinzel is "earned" — only for logo, page H1, commander names
+   All other headings use Inter (--font-body) for modern scanning. This means Cinzel must be hard coded when we want to use it */
+
+h1 {
+  font-family: var(--font-body);
   font-weight: var(--weight-semibold);
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-tight);
   line-height: var(--leading-tight);
   color: var(--color-text);
 }
 
-h1 {
-  font-size: var(--text-3xl);
-  letter-spacing: var(--tracking-tight);
-}
-
 h2 {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
   font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
 }
 
 h3 {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
   font-size: var(--text-xl);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
 }
 
 p {
@@ -171,6 +166,19 @@ pre code {
   --font-heading: var(--font-heading);
   --font-body:    var(--font-body);
   --font-mono:    var(--font-mono);
+
+  /* Font Sizes */
+  --font-size-4xs: var(--text-4xs);
+  --font-size-3xs: var(--text-3xs);
+  --font-size-2xs: var(--text-2xs);
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-base: var(--text-base);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-xl);
+  --font-size-2xl: var(--text-2xl);
+  --font-size-3xl: var(--text-3xl);
+  --font-size-hero: var(--text-hero);
 }
 
 /* ─── Border-radius Convention ────────────────────────── */
@@ -199,7 +207,7 @@ pre code {
   background: var(--color-surface-2);
 }
 .deck-table th {
-  padding: 16px 24px;
+  padding: 16px 16px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -213,8 +221,10 @@ pre code {
   border-right: none !important;
 }
 .deck-table td {
-  padding: 18px 24px;
+  padding: 18px 16px;
   border-bottom: 1px solid var(--color-border) !important;
+  border-right: 1px solid transparent !important;
+  transition: border-color var(--duration-fast) var(--easing-default);
 }
 .deck-table tbody tr:last-child td {
   border-bottom: none !important;

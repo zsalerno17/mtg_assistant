@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Palette Options — Phase 38</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../node_modules/mana-font/css/mana.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #f5f5f5;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 42px;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .header p {
+      font-size: 16px;
+      color: #999;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .palette-grid {
+      display: grid;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .palette-card {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .palette-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .palette-name {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .palette-description {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+
+    .palette-body {
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    .color-swatches {
+      display: grid;
+      gap: 16px;
+    }
+
+    .swatch-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .swatch-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 600;
+      opacity: 0.6;
+      margin-bottom: 4px;
+    }
+
+    .swatch-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .swatch {
+      flex: 1;
+      height: 48px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: monospace;
+    }
+
+    .ui-preview {
+      display: grid;
+      gap: 16px;
+    }
+
+    .preview-card {
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .preview-title {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      opacity: 0.8;
+    }
+
+    .preview-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .preview-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      opacity: 0.6;
+    }
+
+    .preview-value {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .preview-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preview-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .preview-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preview-badge {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Palette 1: Midnight Slate (Dark monochrome + electric blue) */
+    .palette-1 .palette-header {
+      background: #0f1419;
+      color: #e3e8ef;
+    }
+    .palette-1 .palette-body {
+      background: #0f1419;
+      color: #e3e8ef;
+    }
+    .palette-1 .preview-card {
+      background: #1a1f26;
+      border: 1px solid #2d3748;
+      color: #e3e8ef;
+    }
+    .palette-1 .preview-value {
+      color: #60a5fa;
+    }
+    .palette-1 .preview-btn.primary {
+      background: #3b82f6;
+      color: #fff;
+    }
+    .palette-1 .preview-btn.secondary {
+      background: transparent;
+      border: 1px solid #3b82f6;
+      color: #3b82f6;
+    }
+    .palette-1 .preview-badge.good {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+    .palette-1 .preview-badge.warning {
+      background: rgba(251, 146, 60, 0.15);
+      color: #fb923c;
+    }
+
+    /* Palette 2: Jewel Spectrum (Rich purples, teals, magentas) */
+    .palette-2 .palette-header {
+      background: linear-gradient(135deg, #1e1b2e 0%, #2d2640 100%);
+      color: #f0e7ff;
+    }
+    .palette-2 .palette-body {
+      background: #1e1b2e;
+      color: #f0e7ff;
+    }
+    .palette-2 .preview-card {
+      background: linear-gradient(135deg, #2d2640 0%, #3d3154 100%);
+      border: 1px solid #4a3f6b;
+      color: #f0e7ff;
+    }
+    .palette-2 .preview-value {
+      background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .palette-2 .preview-btn.primary {
+      background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+      color: #fff;
+    }
+    .palette-2 .preview-btn.secondary {
+      background: transparent;
+      border: 1px solid #8b5cf6;
+      color: #a78bfa;
+    }
+    .palette-2 .preview-badge.good {
+      background: rgba(52, 211, 153, 0.15);
+      color: #34d399;
+    }
+    .palette-2 .preview-badge.warning {
+      background: rgba(251, 146, 60, 0.15);
+      color: #fbbf24;
+    }
+
+    /* Palette 3: Mana Chromatic (MTG five-color) */
+    .palette-3 .palette-header {
+      background: linear-gradient(135deg, #1a1625 0%, #2a1f35 100%);
+      color: #f5f0ff;
+    }
+    .palette-3 .palette-body {
+      background: #1a1625;
+      color: #f5f0ff;
+    }
+    .palette-3 .preview-card {
+      background: linear-gradient(135deg, #2a1f35 0%, #1f2937 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f5f0ff;
+    }
+    .palette-3 .preview-value {
+      background: linear-gradient(90deg, #f0e68c 0%, #4a90e2 25%, #9b59b6 50%, #e74c3c 75%, #27ae60 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .palette-3 .preview-btn.primary {
+      background: linear-gradient(135deg, #9b59b6 0%, #3498db 100%);
+      color: #fff;
+    }
+    .palette-3 .preview-btn.secondary {
+      background: transparent;
+      border: 1px solid #9b59b6;
+      color: #b484d6;
+    }
+    .palette-3 .preview-badge.good {
+      background: rgba(39, 174, 96, 0.15);
+      color: #27ae60;
+    }
+    .palette-3 .preview-badge.warning {
+      background: rgba(231, 76, 60, 0.15);
+      color: #e74c3c;
+    }
+
+    /* Palette 4: Ember Glow (Warm oranges/golds) */
+    .palette-4 .palette-header {
+      background: linear-gradient(135deg, #1a1412 0%, #2d1f1a 100%);
+      color: #fff8f0;
+    }
+    .palette-4 .palette-body {
+      background: #1a1412;
+      color: #fff8f0;
+    }
+    .palette-4 .preview-card {
+      background: linear-gradient(135deg, #2d1f1a 0%, #3d2820 100%);
+      border: 1px solid #4d342e;
+      color: #fff8f0;
+    }
+    .palette-4 .preview-value {
+      background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #dc2626 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .palette-4 .preview-btn.primary {
+      background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%);
+      color: #fff;
+    }
+    .palette-4 .preview-btn.secondary {
+      background: transparent;
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+    }
+    .palette-4 .preview-badge.good {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+    .palette-4 .preview-badge.warning {
+      background: rgba(251, 146, 60, 0.2);
+      color: #fb923c;
+    }
+
+    /* Palette 5: Deep Ocean (Teal/cyan focus) */
+    .palette-5 .palette-header {
+      background: linear-gradient(135deg, #0a1628 0%, #102844 100%);
+      color: #e0f2fe;
+    }
+    .palette-5 .palette-body {
+      background: #0a1628;
+      color: #e0f2fe;
+    }
+    .palette-5 .preview-card {
+      background: linear-gradient(135deg, #102844 0%, #1e3a5f 100%);
+      border: 1px solid #2e4a71;
+      color: #e0f2fe;
+    }
+    .palette-5 .preview-value {
+      color: #06b6d4;
+    }
+    .palette-5 .preview-btn.primary {
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      color: #fff;
+    }
+    .palette-5 .preview-btn.secondary {
+      background: transparent;
+      border: 1px solid #06b6d4;
+      color: #22d3ee;
+    }
+    .palette-5 .preview-badge.good {
+      background: rgba(52, 211, 153, 0.15);
+      color: #34d399;
+    }
+    .palette-5 .preview-badge.warning {
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+    }
+
+    /* Palette 6: Neon Noir (Dark with neon accents) */
+    .palette-6 .palette-header {
+      background: #080808;
+      color: #f0f0f0;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .palette-6 .palette-body {
+      background: #080808;
+      color: #f0f0f0;
+    }
+    .palette-6 .preview-card {
+      background: #0f0f0f;
+      border: 1px solid #1f1f1f;
+      color: #f0f0f0;
+    }
+    .palette-6 .preview-value {
+      color: #00ff88;
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    }
+    .palette-6 .preview-btn.primary {
+      background: #00ff88;
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+    .palette-6 .preview-btn.secondary {
+      background: transparent;
+      border: 1px solid #00ff88;
+      color: #00ff88;
+    }
+    .palette-6 .preview-badge.good {
+      background: rgba(0, 255, 136, 0.15);
+      color: #00ff88;
+    }
+    .palette-6 .preview-badge.warning {
+      background: rgba(255, 20, 147, 0.15);
+      color: #ff1493;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Color Palette Options</h1>
+      <p>Each palette applied to the same UI components. Compare the overall feel, energy, and how they make the data/content feel.</p>
+    </div>
+
+    <div class="palette-grid">
+      
+      <!-- Palette 1: Midnight Slate -->
+      <div class="palette-card palette-1">
+        <div class="palette-header">
+          <div class="palette-name">1. Midnight Slate</div>
+          <div class="palette-description">Dark monochrome + electric blue accent. Clean, professional, data-focused. (Linear/Vercel vibe)</div>
+        </div>
+        <div class="palette-body">
+          <div class="color-swatches">
+            <div class="swatch-group">
+              <div class="swatch-label">Background</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #0f1419; color: #fff;">#0f1419</div>
+                <div class="swatch" style="background: #1a1f26; color: #fff;">#1a1f26</div>
+                <div class="swatch" style="background: #2d3748; color: #fff;">#2d3748</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Accent / Primary</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #3b82f6; color: #fff;">#3b82f6</div>
+                <div class="swatch" style="background: #60a5fa; color: #000;">#60a5fa</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Semantic</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #22c55e; color: #000;">Green</div>
+                <div class="swatch" style="background: #fb923c; color: #000;">Orange</div>
+                <div class="swatch" style="background: #ef4444; color: #fff;">Red</div>
+              </div>
+            </div>
+          </div>
+          <div class="ui-preview">
+            <div class="preview-card">
+              <div class="preview-stat">
+                <div class="preview-label">Ramp Sources</div>
+                <div class="preview-value">12</div>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-title">Atraxa, Praetors' Voice</div>
+              <div class="preview-badges">
+                <div class="preview-badge good">Healthy Draw</div>
+                <div class="preview-badge warning">Low Removal</div>
+              </div>
+            </div>
+            <div class="preview-buttons">
+              <button class="preview-btn primary">Analyze Deck</button>
+              <button class="preview-btn secondary">View Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Palette 2: Jewel Spectrum -->
+      <div class="palette-card palette-2">
+        <div class="palette-header">
+          <div class="palette-name">2. Jewel Spectrum</div>
+          <div class="palette-description">Rich purples, teals, magentas. Sophisticated, premium, colorful. (Fireart style)</div>
+        </div>
+        <div class="palette-body">
+          <div class="color-swatches">
+            <div class="swatch-group">
+              <div class="swatch-label">Background</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #1e1b2e; color: #fff;">#1e1b2e</div>
+                <div class="swatch" style="background: #2d2640; color: #fff;">#2d2640</div>
+                <div class="swatch" style="background: #4a3f6b; color: #fff;">#4a3f6b</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Accent / Primary</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #8b5cf6; color: #fff;">#8b5cf6</div>
+                <div class="swatch" style="background: #a78bfa; color: #000;">#a78bfa</div>
+                <div class="swatch" style="background: #d946ef; color: #fff;">#d946ef</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Semantic</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #34d399; color: #000;">Green</div>
+                <div class="swatch" style="background: #fbbf24; color: #000;">Yellow</div>
+                <div class="swatch" style="background: #f472b6; color: #000;">Pink</div>
+              </div>
+            </div>
+          </div>
+          <div class="ui-preview">
+            <div class="preview-card">
+              <div class="preview-stat">
+                <div class="preview-label">Ramp Sources</div>
+                <div class="preview-value">12</div>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-title">Atraxa, Praetors' Voice</div>
+              <div class="preview-badges">
+                <div class="preview-badge good">Healthy Draw</div>
+                <div class="preview-badge warning">Low Removal</div>
+              </div>
+            </div>
+            <div class="preview-buttons">
+              <button class="preview-btn primary">Analyze Deck</button>
+              <button class="preview-btn secondary">View Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Palette 3: Mana Chromatic -->
+      <div class="palette-card palette-3">
+        <div class="palette-header">
+          <div class="palette-name">3. Mana Chromatic</div>
+          <div class="palette-description">MTG five-color inspired (W/U/B/R/G). Playful, obviously MTG-themed, color variety.</div>
+        </div>
+        <div class="palette-body">
+          <div class="color-swatches">
+            <div class="swatch-group">
+              <div class="swatch-label">Background</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #1a1625; color: #fff;">#1a1625</div>
+                <div class="swatch" style="background: #2a1f35; color: #fff;">#2a1f35</div>
+                <div class="swatch" style="background: #1f2937; color: #fff;">#1f2937</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Mana Colors</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #f0e68c; color: #000;">W</div>
+                <div class="swatch" style="background: #4a90e2; color: #fff;">U</div>
+                <div class="swatch" style="background: #9b59b6; color: #fff;">B</div>
+                <div class="swatch" style="background: #e74c3c; color: #fff;">R</div>
+                <div class="swatch" style="background: #27ae60; color: #fff;">G</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Semantic</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #27ae60; color: #fff;">Green</div>
+                <div class="swatch" style="background: #e74c3c; color: #fff;">Red</div>
+              </div>
+            </div>
+          </div>
+          <div class="ui-preview">
+            <div class="preview-card">
+              <div class="preview-stat">
+                <div class="preview-label">Ramp Sources</div>
+                <div class="preview-value">12</div>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-title">Atraxa, Praetors' Voice</div>
+              <div class="preview-badges">
+                <div class="preview-badge good">Healthy Draw</div>
+                <div class="preview-badge warning">Low Removal</div>
+              </div>
+            </div>
+            <div class="preview-buttons">
+              <button class="preview-btn primary">Analyze Deck</button>
+              <button class="preview-btn secondary">View Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Palette 4: Ember Glow -->
+      <div class="palette-card palette-4">
+        <div class="palette-header">
+          <div class="palette-name">4. Ember Glow</div>
+          <div class="palette-description">Warm gradient oranges/golds/reds. Energetic, modern, gradient-forward. (Electrys vibe)</div>
+        </div>
+        <div class="palette-body">
+          <div class="color-swatches">
+            <div class="swatch-group">
+              <div class="swatch-label">Background</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #1a1412; color: #fff;">#1a1412</div>
+                <div class="swatch" style="background: #2d1f1a; color: #fff;">#2d1f1a</div>
+                <div class="swatch" style="background: #4d342e; color: #fff;">#4d342e</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Accent / Primary</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #fbbf24; color: #000;">#fbbf24</div>
+                <div class="swatch" style="background: #f97316; color: #fff;">#f97316</div>
+                <div class="swatch" style="background: #dc2626; color: #fff;">#dc2626</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Semantic</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #22c55e; color: #000;">Green</div>
+                <div class="swatch" style="background: #fb923c; color: #000;">Orange</div>
+                <div class="swatch" style="background: #dc2626; color: #fff;">Red</div>
+              </div>
+            </div>
+          </div>
+          <div class="ui-preview">
+            <div class="preview-card">
+              <div class="preview-stat">
+                <div class="preview-label">Ramp Sources</div>
+                <div class="preview-value">12</div>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-title">Atraxa, Praetors' Voice</div>
+              <div class="preview-badges">
+                <div class="preview-badge good">Healthy Draw</div>
+                <div class="preview-badge warning">Low Removal</div>
+              </div>
+            </div>
+            <div class="preview-buttons">
+              <button class="preview-btn primary">Analyze Deck</button>
+              <button class="preview-btn secondary">View Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Palette 5: Deep Ocean -->
+      <div class="palette-card palette-5">
+        <div class="palette-header">
+          <div class="palette-name">5. Deep Ocean</div>
+          <div class="palette-description">Teal/cyan focus with navy depths. Cool, calming, modern tech feel.</div>
+        </div>
+        <div class="palette-body">
+          <div class="color-swatches">
+            <div class="swatch-group">
+              <div class="swatch-label">Background</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #0a1628; color: #fff;">#0a1628</div>
+                <div class="swatch" style="background: #102844; color: #fff;">#102844</div>
+                <div class="swatch" style="background: #2e4a71; color: #fff;">#2e4a71</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Accent / Primary</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #06b6d4; color: #000;">#06b6d4</div>
+                <div class="swatch" style="background: #22d3ee; color: #000;">#22d3ee</div>
+                <div class="swatch" style="background: #3b82f6; color: #fff;">#3b82f6</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Semantic</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #34d399; color: #000;">Green</div>
+                <div class="swatch" style="background: #fbbf24; color: #000;">Yellow</div>
+                <div class="swatch" style="background: #f87171; color: #fff;">Red</div>
+              </div>
+            </div>
+          </div>
+          <div class="ui-preview">
+            <div class="preview-card">
+              <div class="preview-stat">
+                <div class="preview-label">Ramp Sources</div>
+                <div class="preview-value">12</div>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-title">Atraxa, Praetors' Voice</div>
+              <div class="preview-badges">
+                <div class="preview-badge good">Healthy Draw</div>
+                <div class="preview-badge warning">Low Removal</div>
+              </div>
+            </div>
+            <div class="preview-buttons">
+              <button class="preview-btn primary">Analyze Deck</button>
+              <button class="preview-btn secondary">View Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Palette 6: Neon Noir -->
+      <div class="palette-card palette-6">
+        <div class="palette-header">
+          <div class="palette-name">6. Neon Noir</div>
+          <div class="palette-description">Pure black with neon green accents. Cyberpunk, dramatic, high contrast.</div>
+        </div>
+        <div class="palette-body">
+          <div class="color-swatches">
+            <div class="swatch-group">
+              <div class="swatch-label">Background</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #080808; color: #fff;">#080808</div>
+                <div class="swatch" style="background: #0f0f0f; color: #fff;">#0f0f0f</div>
+                <div class="swatch" style="background: #1f1f1f; color: #fff;">#1f1f1f</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Accent / Primary</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #00ff88; color: #000;">#00ff88</div>
+                <div class="swatch" style="background: #00ffff; color: #000;">#00ffff</div>
+              </div>
+            </div>
+            <div class="swatch-group">
+              <div class="swatch-label">Semantic</div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #00ff88; color: #000;">Green</div>
+                <div class="swatch" style="background: #ff1493; color: #fff;">Pink</div>
+                <div class="swatch" style="background: #ff0055; color: #fff;">Red</div>
+              </div>
+            </div>
+          </div>
+          <div class="ui-preview">
+            <div class="preview-card">
+              <div class="preview-stat">
+                <div class="preview-label">Ramp Sources</div>
+                <div class="preview-value">12</div>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-title">Atraxa, Praetors' Voice</div>
+              <div class="preview-badges">
+                <div class="preview-badge good">Healthy Draw</div>
+                <div class="preview-badge warning">Low Removal</div>
+              </div>
+            </div>
+            <div class="preview-buttons">
+              <button class="preview-btn primary">Analyze Deck</button>
+              <button class="preview-btn secondary">View Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

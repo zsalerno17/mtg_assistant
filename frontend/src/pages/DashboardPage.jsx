@@ -173,11 +173,21 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
   const isAnalyzing = analyzingId === item.moxfield_id
   const date = new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
+  const handleCardClick = () => {
+    if (item.analyzed) {
+      navigate(`/deck/${item.moxfield_id}`)
+    }
+  }
+
   return (
-    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 flex flex-col gap-3">
+    <div 
+      className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 flex flex-col gap-3 transition-all hover:border-[var(--color-primary)]/50"
+      onClick={item.analyzed ? handleCardClick : undefined}
+      style={item.analyzed ? { cursor: 'pointer' } : undefined}
+    >
       {/* Header: name + date */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-heading text-[var(--color-text)] text-sm leading-snug line-clamp-2 flex-1">
+        <h3 className="text-[var(--color-text)] text-sm leading-snug line-clamp-2 flex-1" style={{ fontFamily: 'var(--font-display)' }}>
           {item.deck_name}
         </h3>
         <span className="text-[var(--color-muted)] text-xs shrink-0 pt-0.5">{date}</span>
@@ -188,40 +198,63 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
 
       {/* Commander */}
       {item.commander && (
-        <p className="text-[var(--color-muted)] text-xs truncate">{item.commander}</p>
+        <p className="text-[var(--color-muted)] text-xs truncate font-[var(--font-display)]">{item.commander}</p>
       )}
 
       {/* Status */}
       <StatusBadge analyzed={item.analyzed} />
 
-      {/* Footer actions */}
+      {/* Footer actions - left: Moxfield, right: Analyze/View */}
       <div className="mt-auto pt-1 flex items-center justify-between">
-        {item.analyzed ? (
-          <button
-            onClick={() => navigate(`/deck/${item.moxfield_id}`)}
-            className="text-[var(--color-secondary)] text-xs hover:underline"
-          >
-            View Analysis →
-          </button>
-        ) : (
-          <button
-            onClick={() => onAnalyze(item.moxfield_id)}
-            disabled={!!analyzingId}
-            className="text-[var(--color-primary)] text-xs font-medium hover:underline disabled:opacity-40"
-          >
-            {isAnalyzing ? 'Analyzing…' : 'Analyze →'}
-          </button>
-        )}
+        {/* Left: Moxfield link */}
         {item.moxfield_url && (
           <a
             href={item.moxfield_url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[var(--color-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
+            onClick={(e) => e.stopPropagation()}
           >
             Moxfield ↗
           </a>
         )}
+        
+        {/* Right: Action button */}
+        <div className="ml-auto">
+          {item.analyzed ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`/deck/${item.moxfield_id}`)
+              }}
+              className="btn btn-secondary btn-sm"
+            >
+              <Eye className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+              View
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onAnalyze(item.moxfield_id)
+              }}
+              disabled={!!analyzingId}
+              className="btn btn-primary btn-sm"
+            >
+              {isAnalyzing ? (
+                <>
+                  <LoaderCircle className="w-3 h-3 animate-spin" strokeWidth={2} aria-hidden="true" />
+                  Analyzing…
+                </>
+              ) : (
+                <>
+                  <ClipboardCheck className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                  Analyze
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -329,11 +362,11 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
             commanderName={item.commander}
           />
           <div className="flex flex-col gap-1 min-w-0">
-            <span className="font-heading text-[var(--color-text)] text-[15px] font-semibold leading-snug truncate tracking-[-0.01em]">
+            <span className="text-[var(--color-text)] text-[15px] font-semibold leading-snug truncate tracking-[-0.01em]" style={{ fontFamily: 'var(--font-display)' }}>
               {item.deck_name}
             </span>
             {item.commander && (
-              <span className="text-[var(--color-muted)] text-xs truncate">
+              <span className="text-[var(--color-muted)] text-xs truncate font-[var(--font-display)]">
                 {item.commander}
               </span>
             )}
@@ -415,9 +448,9 @@ function CollectionSummaryWidget({ summary, loading }) {
         </div>
         <Link
           to="/collection"
-          className="shrink-0 ml-4 text-[var(--color-secondary)] text-sm hover:underline"
+          className="btn btn-secondary btn-sm shrink-0 ml-4"
         >
-          Upload CSV →
+          Upload CSV
         </Link>
       </div>
     )
@@ -438,9 +471,9 @@ function CollectionSummaryWidget({ summary, loading }) {
       </div>
       <Link
         to="/collection"
-        className="shrink-0 ml-4 text-[var(--color-secondary)] text-sm hover:underline"
+        className="btn btn-secondary btn-sm shrink-0 ml-4"
       >
-        Manage →
+        Manage
       </Link>
     </div>
   )
@@ -532,17 +565,17 @@ export default function DashboardPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen px-8 pt-10 pb-6">
+      <div className="min-h-screen px-8 py-6">
         {showImportModal && (
           <ImportModal
           onClose={() => setShowImportModal(false)}
           onImported={handleImported}
         />
       )}
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[1400px] mx-auto">
         {/* Page title - "Deck Vault" */}
         <div className="flex items-baseline gap-4 mb-8">
-          <h1 className="font-brand text-[28px] text-[var(--color-text)] font-semibold tracking-[0.5px]">
+          <h1 className="font-brand text-3xl text-[var(--color-text)] font-semibold">
             Deck Vault
           </h1>
           {!decksLoading && (
@@ -629,16 +662,16 @@ export default function DashboardPage() {
               {[...Array(3)].map((_, i) => <DeckCardSkeleton key={i} />)}
             </div>
             {/* Desktop: table skeleton */}
-            <div className="hidden md:block overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
               <table className="deck-table">
                 <thead>
                   <tr>
-                    <th style={{width: '45%'}}>Deck</th>
-                    <th>Colors</th>
-                    <th>Format</th>
-                    <th>Status</th>
-                    <th>Power</th>
-                    <th className="text-right">Actions</th>
+                    <th style={{width: '35%'}}>Deck</th>
+                    <th style={{width: '12%'}}>Colors</th>
+                    <th style={{width: '10%'}}>Format</th>
+                    <th style={{width: '12%'}}>Status</th>
+                    <th style={{width: '8%'}}>Power</th>
+                    <th className="text-right" style={{width: '23%'}}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -679,16 +712,16 @@ export default function DashboardPage() {
             </div>
 
             {/* Desktop: table */}
-            <div className="hidden md:block overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
               <table className="deck-table">
                 <thead>
                   <tr>
-                    <th style={{width: '45%'}}>Deck</th>
-                    <th>Colors</th>
-                    <th>Format</th>
-                    <th>Status</th>
-                    <th>Power</th>
-                    <th className="text-right">Actions</th>
+                    <th style={{width: '35%'}}>Deck</th>
+                    <th style={{width: '12%'}}>Colors</th>
+                    <th style={{width: '10%'}}>Format</th>
+                    <th style={{width: '12%'}}>Status</th>
+                    <th style={{width: '8%'}}>Power</th>
+                    <th className="text-right" style={{width: '23%'}}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
