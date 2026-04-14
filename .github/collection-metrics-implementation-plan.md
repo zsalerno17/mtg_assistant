@@ -2107,6 +2107,29 @@ Test your collection against these known cards:
 
 ## Future Enhancements
 
+### Next Major Feature: Deck Builder
+
+**Status:** Research complete, ready for implementation after collection metrics phases complete  
+**Documentation:** [Deck Builder Implementation Plan](./deck-builder-implementation-plan.md)
+
+Once collection metrics are complete (Phases 1-5), the next major feature will be a **Commander Deck Builder** that generates full 100-card decks from the user's collection. This feature directly builds on the collection analysis work:
+
+- **Builds on:** Archetype Readiness analysis (Phase 2)
+- **Uses:** Collection categorization (ramp, draw, removal from Phase 1)
+- **Requires:** Card usage tracking (from collection analysis)
+- **Differentiator:** Generate optimal decks from actual owned cards, not "ideal" EDHREC lists
+
+**Key Features:**
+- Rank user's legendary creatures by archetype fit (not popularity)
+- Generate complete 100-card decks from collection
+- Toggle between unused cards only vs. all cards (respect card usage)
+- Export to Moxfield format for testing
+- Store draft decks alongside imported decks
+
+See the [full implementation plan](./deck-builder-implementation-plan.md) for complete specifications, algorithm details, and MTG domain expertise.
+
+---
+
 ### Phase 6+: Power User Features
 
 1. **Deck Builder Assistant Filters**
