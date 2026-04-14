@@ -49,7 +49,7 @@ The UI wrapper steps back and lets the content breathe.
 | Decision | Choice |
 |---|---|
 | Visual system | **Hybrid** — Glass for hero/elevated (navbar, commander hero, modals). Crisp flat for data tables, list rows, utility UI. |
-| Typography | **Inter everywhere** EXCEPT: logo text, page H1 titles, commander names — those earn Cinzel. |
+| Typography | **Inter everywhere** EXCEPT: logo text, page H1 titles, commander names — those earn Cinzel. **IMPORTANT:** Global h1 defaults to Inter in `index.css`. To use Cinzel on specific h1 elements (deck name hero), use inline style: `style={{ fontFamily: 'var(--font-display)' }}` |
 | MTG flavor | Card art + mana pips ONLY. Remove arcane gradients from body background. |
 | Scope | Full app — every page |
 | DeckPage hero | Commander art + name + color pips = dominant element above the fold |

@@ -32,7 +32,26 @@ const THEME_DEFINITIONS = {
   Landfall: 'Triggers powerful effects whenever a land enters the battlefield.',
   Tribal: 'Synergies between creatures of the same type — lords, shared abilities, tribal payoffs.',
   Combo: 'Assembles specific card combinations to generate infinite loops or win the game immediately.',
+  Midrange: 'Ramps early, plays value creatures and engines mid-game, grinds out wins through card advantage. Flexible with threats and answers.',
+  Stax: 'Slows down or stops opponents through resource denial and taxing effects. Wins slowly while opponents cannot interact.',
+  Reanimator: 'Puts expensive creatures into the graveyard early, then cheats them onto the battlefield with reanimation spells.',
 }
+
+const STRATEGY_DEFINITIONS = {
+  combo: 'Assembles specific card combinations that win on the spot or create an overwhelming advantage. Relies on tutors, card draw, and protection.',
+  aggro: 'Wins through early pressure and combat damage. Prioritizes low-cost creatures and dealing damage quickly before opponents stabilize.',
+  control: 'Wins through attrition, removing threats and answering everything until opponents run out of resources. Heavy on counterspells and removal.',
+  midrange: 'Ramps early, plays value creatures and engines mid-game, grinds out wins through card advantage. Flexible strategy with mix of threats and answers.',
+  stax: 'Slows down or stops opponents through resource denial and taxing effects. Aims to break parity and win slowly while opponents cannot interact.',
+  voltron: 'Wins by making a single creature (usually the commander) extremely large and lethal with equipment or auras. Vulnerable to removal but can kill quickly.',
+  aristocrats: 'Sacrifice-based strategy that generates value from creatures dying. Uses sacrifice outlets, death triggers, and recursion.',
+  spellslinger: 'Built around casting lots of instants and sorceries, with creatures or enchantments that trigger on spell casts.',
+  tokens: 'Go-wide strategy creating many small creatures. Relies on token generators and anthem effects. Vulnerable to board wipes.',
+  reanimator: 'Puts expensive creatures into graveyard early, then cheats them onto battlefield with reanimation spells. Bypasses mana costs.',
+  tribal: 'Built around a specific creature type, using lords and tribal synergies. Strength varies by tribe and available support.',
+}
+
+const POWER_LEVEL_TOOLTIP = 'Power Level 1-10 scale measuring how quickly and consistently a deck can win. 1-3: precon/casual, 4-6: upgraded casual, 6-7: focused/tuned, 7-8: optimized, 9-10: cEDH (competitive).'
 
 // Simple markdown → HTML-like renderer for Gemini output
 function MarkdownBlock({ text }) {
@@ -223,24 +242,29 @@ function SectionLabel({ children, className = '' }) {
   )
 }
 
-function CommanderImage({ name }) {
+function CommanderImage({ name, size = 'default' }) {
   const [error, setError] = useState(false)
   if (!name || error) return null
-  const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image`
+  const imageUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image`
+  
+  // Phase 38: Support different sizes for desktop hero (120×168px) vs mobile
+  const dimensions = size === 'large' 
+    ? { width: 120, height: 168 } 
+    : { width: 72, height: 100 }
+  
   return (
-    <div
-      className="shrink-0 rounded-[7px] p-px shadow-lg shadow-amber-500/20"
-      style={{ background: 'linear-gradient(145deg, rgba(251,191,36,0.55) 0%, rgba(180,130,18,0.25) 50%, rgba(251,191,36,0.4) 100%)' }}
-    >
-      <img
-        src={url}
-        alt={name}
-        onError={() => setError(true)}
-        loading="lazy"
-        className="rounded-[6px] block object-cover"
-        style={{ width: 72, height: 100 }}
-      />
-    </div>
+    <CardTooltip cardName={name}>
+      <div className="shrink-0 rounded-[7px] overflow-hidden shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
+        <img
+          src={imageUrl}
+          alt={name}
+          onError={() => setError(true)}
+          loading="lazy"
+          className="rounded-[7px] block object-cover"
+          style={dimensions}
+        />
+      </div>
+    </CardTooltip>
   )
 }
 
@@ -253,51 +277,16 @@ function OverviewTab({ deck, analysis, onTabChange }) {
 
   const cardTypes = analysis.card_types || {}
   // Derive color identity from commanders if available
+  // Deduplicate colors for partner decks (both commanders may share colors)
   const commanderColors = [
-    ...(deck.commander?.color_identity || []),
-    ...(deck.partner?.color_identity || []),
+    ...new Set([
+      ...(deck.commander?.color_identity || []),
+      ...(deck.partner?.color_identity || []),
+    ])
   ]
 
   return (
     <div className="space-y-6">
-
-      {/* ── Commander Hero ── */}
-      <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-primary)]/20 rounded-xl px-6 py-5 hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
-        <SectionLabel>{deck.partner ? 'Commanders' : 'Commander'}</SectionLabel>
-        <div className="flex items-center gap-5 mt-1">
-          {/* Card image(s) */}
-          <div className="flex gap-2 shrink-0">
-            <CommanderImage name={deck.commander?.name} />
-            {deck.partner?.name && <CommanderImage name={deck.partner.name} />}
-          </div>
-          {/* Text info */}
-          <div>
-            <p className="text-[var(--color-primary)] font-brand text-2xl leading-snug">
-              {deck.commander?.name || 'Unknown'}
-              {deck.partner?.name && (
-                <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
-              )}
-              {deck.partner?.name && (
-                <span className="text-[var(--color-primary)]">{deck.partner.name}</span>
-              )}
-            </p>
-            <div className="flex items-center gap-3 mt-2 flex-wrap">
-              {commanderColors.length > 0 && <ColorPips colors={commanderColors} />}
-              {analysis.strategy && (
-                <span className="bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-secondary)]/20 font-semibold capitalize">
-                  {analysis.strategy}
-                </span>
-              )}
-              {analysis.power_level != null && (
-                <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold">
-                  Power {analysis.power_level}/10
-                </span>
-              )}
-              <span className="text-[var(--color-muted)] text-sm">{deck.format} · <span className="font-[var(--font-display)]">{deck.name}</span></span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ── Deck Verdict ── */}
       {analysis.verdict && (
@@ -385,10 +374,10 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                     {name}{count != null ? ` (${count})` : ''}
                   </span>
                   {def && (
-                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[#0f1d2e] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                    <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
                       <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-0.5">{name}</span>
-                      <span className="block text-[var(--color-muted)] text-xs leading-relaxed">{def}</span>
-                      <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[#0f1d2e]" />
+                      <span className="block text-[var(--color-text)] text-xs leading-relaxed">{def}</span>
+                      <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
                     </span>
                   )}
                 </span>
@@ -398,12 +387,15 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
       )}
 
-      {/* ── Mana Curve ── */}
-      {manaCurveData.length > 0 && (
-        <div>
-          <SectionLabel className="mb-3">Mana Curve</SectionLabel>
-          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
-            <ResponsiveContainer width="100%" height={180}>
+      {/* ── Charts Section: Mana Curve + Role Composition ── Phase 38: Two-column on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ── Mana Curve ── */}
+        {manaCurveData.length > 0 && (
+          <div>
+            <SectionLabel className="mb-3">Mana Curve</SectionLabel>
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
+              <div className="flex items-center" style={{ height: '220px' }}>
+                <ResponsiveContainer width="100%" height={180}>
               <BarChart data={manaCurveData} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="var(--color-border)" strokeOpacity={0.5} />
                 <XAxis dataKey="cmc" tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -415,15 +407,6 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                   formatter={(value) => [value, 'Cards']}
                   labelFormatter={(label) => `CMC ${label}`}
                 />
-                {typeof analysis.average_cmc === 'number' && (
-                  <ReferenceLine
-                    x={String(Math.round(analysis.average_cmc))}
-                    stroke="var(--color-text-muted)"
-                    strokeDasharray="4 3"
-                    strokeWidth={1.5}
-                    label={{ value: `avg ${analysis.average_cmc.toFixed(1)}`, fill: 'var(--color-text-muted)', fontSize: 9, position: 'insideTopRight' }}
-                  />
-                )}
                 <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={40} isAnimationActive={false}>
                   <LabelList dataKey="count" position="top" style={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }} />
                   {manaCurveData.map((d) => {
@@ -433,9 +416,10 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                   })}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+              </div>
             {/* Zone legend */}
-            <div className="flex gap-4 mt-2 justify-end">
+            <div className="flex gap-4 justify-end">
               {[['var(--color-primary)', '0–2 Acceleration'], ['var(--color-secondary)', '3–4 Core spells'], ['var(--color-danger)', '5+ Haymakers']].map(([color, label]) => (
                 <span key={label} className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
@@ -445,10 +429,10 @@ function OverviewTab({ deck, analysis, onTabChange }) {
             </div>
           </div>
         </div>
-      )}
+        )}
 
-      {/* ── Role Composition ── */}
-      {(() => {
+        {/* ── Role Composition ── */}
+        {(() => {
         const ramp = analysis.ramp_count || 0
         const draw = analysis.draw_count || 0
         const removal = analysis.removal_count || 0
@@ -471,23 +455,26 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         return (
           <div>
             <SectionLabel className="mb-3">Role Composition</SectionLabel>
-            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 space-y-2.5">
-              {roles.map((role) => (
-                <div key={role.name} className="flex items-center gap-3">
-                  <span className="text-[11px] text-[var(--color-text-muted)] w-[108px] shrink-0 text-right">{role.name}</span>
-                  <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 14 }}>
-                    <div
-                      className="h-full rounded-sm"
-                      style={{ width: `${Math.round((role.value / maxVal) * 100)}%`, background: role.color }}
-                    />
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 flex items-center" style={{ minHeight: '268px' }}>
+              <div className="space-y-2.5 w-full">
+                {roles.map((role) => (
+                  <div key={role.name} className="flex items-center gap-3">
+                    <span className="text-[11px] text-[var(--color-text-muted)] w-[108px] shrink-0 text-right">{role.name}</span>
+                    <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 14 }}>
+                      <div
+                        className="h-full rounded-sm"
+                        style={{ width: `${Math.round((role.value / maxVal) * 100)}%`, background: role.color }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-mono text-[var(--color-text-muted)] w-6 shrink-0">{role.value}</span>
                   </div>
-                  <span className="text-[11px] font-mono text-[var(--color-text-muted)] w-6 shrink-0">{role.value}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )
-      })()}
+        })()}
+      </div>
 
       {/* ── Resource Health ── */}
       {(() => {
@@ -550,14 +537,14 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         <div className="grid gap-3 sm:grid-cols-2">
           <button
             onClick={() => onTabChange?.('Strategy')}
-            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-secondary)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-secondary)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/5 transition-all duration-200"
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-secondary)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-secondary)]/50 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
           >
             <p className="text-[var(--color-secondary)] font-semibold text-sm">AI Strategy Guide →</p>
             <p className="text-[var(--color-muted)] text-xs mt-0.5">Game plan, win conditions, mulligan advice, matchup tips</p>
           </button>
           <button
             onClick={() => onTabChange?.('Upgrades')}
-            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/5 transition-all duration-200"
+            className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
           >
             <p className="text-[var(--color-success)] font-semibold text-sm">Upgrade with Your Collection →</p>
             <p className="text-[var(--color-muted)] text-xs mt-0.5">Cards you already own that would strengthen this deck</p>
@@ -728,7 +715,7 @@ function ImprovementsTab({ deckId }) {
     return (
       <button
         onClick={() => toggle(key)}
-        className="text-[var(--color-secondary)] text-xs hover:underline mt-1"
+        className="text-[var(--color-secondary)] text-xs hover:underline mt-1 cursor-pointer"
       >
         {expanded[key] ? 'Show less' : `Show all ${total}`}
       </button>
@@ -1199,7 +1186,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
                       key={idx}
                       type="button"
                       onClick={() => toggleSuggestion(suggestion)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-all ${
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-all cursor-pointer ${
                         isActive
                           ? 'bg-[var(--color-primary)]/20 border-[var(--color-primary)] text-[var(--color-primary)]'
                           : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
@@ -1227,7 +1214,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
             <button
               type="button"
               onClick={() => setShowCustomAdd(true)}
-              className="text-[var(--color-secondary)] text-sm hover:underline"
+              className="text-[var(--color-secondary)] text-sm hover:underline cursor-pointer"
             >
               + Add custom card(s)
             </button>
@@ -1248,14 +1235,14 @@ function ScenariosTab({ deckId, deck, analysis }) {
                   type="button"
                   onClick={addCustomCards}
                   disabled={!customAddInput.trim()}
-                  className="text-[var(--color-success)] text-sm font-semibold hover:underline disabled:opacity-50"
+                  className="text-[var(--color-success)] text-sm font-semibold hover:underline disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                 >
                   Add Cards
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowCustomAdd(false); setCustomAddInput('') }}
-                  className="text-[var(--color-muted)] text-sm hover:underline"
+                  className="text-[var(--color-muted)] text-sm hover:underline cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1274,7 +1261,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
                     <button
                       type="button"
                       onClick={() => removeCardFromList(cardName, 'add')}
-                      className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 text-xs font-bold"
+                      className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 text-xs font-bold cursor-pointer"
                     >
                       ×
                     </button>
@@ -1308,7 +1295,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
                   key={cardName}
                   type="button"
                   onClick={() => addRemoveCard(cardName)}
-                  className="w-full text-left px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg)] border-b border-[var(--color-border)] last:border-0"
+                  className="w-full text-left px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg)] border-b border-[var(--color-border)] last:border-0 cursor-pointer"
                 >
                   <CardTooltip cardName={cardName}>{cardName}</CardTooltip>
                 </button>
@@ -1331,7 +1318,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
                     <button
                       type="button"
                       onClick={() => removeCardFromList(cardName, 'remove')}
-                      className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 text-xs font-bold"
+                      className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 text-xs font-bold cursor-pointer"
                     >
                       ×
                     </button>
@@ -1347,7 +1334,7 @@ function ScenariosTab({ deckId, deck, analysis }) {
           <button
             type="submit"
             disabled={loading || (cardsToAdd.length === 0 && cardsToRemove.length === 0)}
-            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_rgba(251,191,36,0.35)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[var(--color-primary)] text-[var(--color-bg)] px-6 py-2 rounded-lg font-semibold tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_rgba(251,191,36,0.35)] active:scale-[0.98] transition-all shadow-md shadow-amber-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Analyzing…' : 'Run Simulation'}
           </button>
@@ -1566,37 +1553,106 @@ export default function DeckPage() {
   return (
     <PageTransition>
       <div className="min-h-screen">
-      {/* Top bar */}
-      <div className="border-b border-[var(--color-border)]">
-      <div className="max-w-[1600px] mx-auto px-8 py-3 flex items-center gap-4">
-        <Link to="/" className="flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors text-sm shrink-0">
-          <IconChevronLeft />
-          Dashboard
-        </Link>
-        <div className="min-w-0">
-          <h1 className="font-brand text-[var(--color-primary)] text-xl truncate leading-tight">
-            {deckName}
-          </h1>
-          {analysis?.colors?.length > 0 && (
-            <div className="flex items-center gap-2 mt-0.5">
-              <ColorPips colors={analysis.colors} size="0.9rem" />
-              {analysis.commander && (
-                <span className="text-[var(--color-muted)] text-xs truncate font-[var(--font-display)]">{analysis.commander}</span>
-              )}
+      
+      <div className="max-w-[1600px] mx-auto px-8 pt-6">
+        {/* ── Hero Box ── Phase 38: Deck name + Commander */}
+        {deck && analysis && (
+          <div 
+            className="relative rounded-2xl px-6 py-6 border border-[var(--color-primary)] mb-6"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(45, 130, 183, 0.15) 0%, rgba(35, 41, 46, 0.8) 100%)' 
+            }}
+          >
+            <div className="flex items-center gap-6">
+              {/* Card image(s) - larger on desktop */}
+              <div className="hidden md:flex gap-3 shrink-0">
+                <CommanderImage name={deck.commander?.name} size="large" />
+                {deck.partner?.name && <CommanderImage name={deck.partner.name} size="large" />}
+              </div>
+              {/* Mobile: smaller art */}
+              <div className="flex md:hidden gap-2 shrink-0">
+                <CommanderImage name={deck.commander?.name} />
+                {deck.partner?.name && <CommanderImage name={deck.partner.name} />}
+              </div>
+              
+              {/* Text info - flex-1 takes remaining space */}
+              <div className="flex-1 min-w-0">
+                {/* Deck Name - Large Cinzel */}
+                <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-[var(--color-primary)] text-3xl md:text-4xl leading-tight font-bold mb-2">
+                  {deck.name || 'Unnamed Deck'}
+                </h1>
+                
+                {/* Commander Name - Medium font */}
+                <h2 className="text-[var(--color-text)] font-heading text-xl md:text-2xl leading-tight mb-3">
+                  {deck.commander?.name || 'Unknown'}
+                  {deck.partner?.name && (
+                    <span className="text-[var(--color-muted)] font-normal"> &amp; </span>
+                  )}
+                  {deck.partner?.name && (
+                    <span className="text-[var(--color-text)]">{deck.partner.name}</span>
+                  )}
+                </h2>
+                
+                {/* Metadata badges */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {(() => {
+                    // Deduplicate colors for partner decks (both commanders may share colors)
+                    const commanderColors = [
+                      ...new Set([
+                        ...(deck.commander?.color_identity || []),
+                        ...(deck.partner?.color_identity || []),
+                      ])
+                    ]
+                    return commanderColors.length > 0 && <ColorPips colors={commanderColors} />
+                  })()}
+                  {analysis.strategy && (
+                    <span 
+                      className="bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-secondary)]/20 font-semibold capitalize cursor-help relative group"
+                      title={STRATEGY_DEFINITIONS[analysis.strategy.toLowerCase()] || ''}
+                    >
+                      {analysis.strategy}
+                      {STRATEGY_DEFINITIONS[analysis.strategy.toLowerCase()] && (
+                        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                          <span className="block text-[var(--color-secondary)] text-xs font-semibold mb-1 capitalize">{analysis.strategy}</span>
+                          <span className="block text-[var(--color-text)] text-xs leading-relaxed">
+                            {STRATEGY_DEFINITIONS[analysis.strategy.toLowerCase()]}
+                          </span>
+                          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
+                        </span>
+                      )}
+                    </span>
+                  )}
+                  {analysis.power_level != null && (
+                    <span 
+                      className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold cursor-help relative group"
+                      title={POWER_LEVEL_TOOLTIP}
+                    >
+                      Power {analysis.power_level}/10
+                      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                        <span className="block text-[var(--color-primary)] text-xs font-semibold mb-1">Power Level Scale</span>
+                        <span className="block text-[var(--color-text)] text-xs leading-relaxed">
+                          {POWER_LEVEL_TOOLTIP}
+                        </span>
+                        <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
+                      </span>
+                    </span>
+                  )}
+                  <span className="text-[var(--color-muted)] text-sm capitalize">
+                    {deck.format}
+                  </span>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-      </div>
-
-      <div className="max-w-[1600px] mx-auto px-8 pt-0">
+          </div>
+        )}
+        
         {/* Tab bar */}
-        <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] pt-2">
+        <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)]">
           {TAB_CONFIG.map(({ label, icon: TabIcon, mobileLabel }) => (
             <button
               key={label}
               onClick={() => setActiveTab(label)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-heading whitespace-nowrap border-b-2 transition-colors active:scale-[0.97] ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-heading whitespace-nowrap border-b-2 transition-colors active:scale-[0.97] cursor-pointer ${
                 activeTab === label
                   ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
                   : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
@@ -1623,7 +1679,7 @@ export default function DeckPage() {
               <button
                 onClick={handleReanalyze}
                 disabled={reanalyzing}
-                className="ml-auto text-xs font-medium px-3 py-1 rounded-md bg-[var(--color-primary)]/15 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/25 transition-colors disabled:opacity-50"
+                className="ml-auto btn btn-ghost text-xs"
               >
                 {reanalyzing ? 'Re-analyzing…' : 'Force Re-analyze'}
               </button>

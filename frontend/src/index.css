@@ -41,7 +41,7 @@ body {
 /* ─── Typography Defaults ───────────────────────────── */
 
 /* Phase 38: Cinzel is "earned" — only for logo, page H1, commander names
-   All other headings use Inter (--font-body) for modern scanning */
+   All other headings use Inter (--font-body) for modern scanning. This means Cinzel must be hard coded when we want to use it */
 
 h1 {
   font-family: var(--font-body);

@@ -85,7 +85,7 @@ export default function CardTooltip({ cardName, imageUrl: imageUrlProp, children
     // No card name and no fallback imageUrl means nothing to show
     if (!cardName && !imageUrlProp) return
 
-    // Track cursor position for tooltip placement
+    // Track cursor position for tooltip placement (fixed position, not following cursor)
     setCursorPos({ x: e.clientX, y: e.clientY })
 
     // Delay tooltip appearance by 150ms to avoid flicker on accidental hovers
@@ -98,8 +98,9 @@ export default function CardTooltip({ cardName, imageUrl: imageUrlProp, children
   }
 
   const handleMouseMove = (e) => {
-    // Update cursor position while hovering (for dynamic positioning)
-    if (showTooltip || hoverTimeoutRef.current) {
+    // Don't update position after tooltip is shown - let it stay in place
+    // Only track cursor before tooltip appears
+    if (!showTooltip && hoverTimeoutRef.current) {
       setCursorPos({ x: e.clientX, y: e.clientY })
     }
   }

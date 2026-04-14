@@ -48,6 +48,72 @@
 - All derived colors (subtle, border, glow) updated to match
 - Surface colors modernized to Phase 38 refined palette
 
+**Completed:** ✅ User verified colors look good  
+**Status:** Phase A COMPLETE
+
 ---
 
-*Awaiting verification before marking Phase A complete*
+## Phase B — DeckPage Desktop Layout
+
+**Started:** In progress (just now)  
+**Status:** 🚧 IN PROGRESS  
+**Depends on:** Phase A ✅  
+**Goal:** Restructure DeckPage to match final-spec-deckpage-desktop.html
+
+**Files to Modify:**
+- `frontend/src/pages/DeckPage.jsx` (OverviewTab component)
+
+**Planned Changes:**
+1. Commander hero: Horizontal layout (120×168px art + gradient background)
+2. Promote weaknesses to 2nd section (after stats grid)
+3. Charts: Two-column layout on desktop (≥1024px)
+
+**Work Log:**
+- [✅ Done] Updated CommanderImage component to support size prop
+  - `size="large"` → 120×168px (desktop hero)
+  - `size="default"` → 72×100px (mobile/compact)
+- [✅ Done] Restructured commander hero section:
+  - Added gradient background: `linear-gradient(135deg, rgba(45, 130, 183, 0.15) 0%, rgba(35, 41, 46, 0.8) 100%)`
+  - Changed to horizontal flexbox layout (art | text | actions)
+  - Responsive: Large art on md:+ breakpoint, small art on mobile
+  - Updated commander name to use `font-display` (Cinzel) as h1 element
+  - Changed border to solid primary color (--color-primary)
+- [✅ Done] Wrapped Mana Curve + Role Composition in two-column grid
+  - Desktop (≥1024px): `grid-cols-2` side-by-side
+  - Mobile/tablet: Single column stack
+- [✅ Done] **FIXES Applied:**
+  - Removed redundant deck name/commander/mana info from top bar
+  - Simplified top bar to just "Dashboard" back link
+  - Fixed commander name h1 to properly use Cinzel (font-display class)
+  - Fixed deck name in metadata to use font-display (Cinzel)
+  - Made Role Composition chart height match Mana Curve (minHeight: 180px)
+  - Charts now align properly with no awkward spacing
+- [✅ Verified] Weaknesses section already in correct position (2nd section after stats)
+- [Note] Mobile redesign (Direction B - massive hero) is **Phase C** (next phase)
+- [Next] Visual verification: Compare to final-spec-deckpage-desktop.html
+- [Next] Test responsive breakpoints (768px, 1024px)
+- [Next] Screenshot capture
+
+**Files Modified:**
+- `frontend/src/pages/DeckPage.jsx`
+  - CommanderImage function (added size prop support)
+  - Top bar section (simplified to just back link)
+  - Commander hero section (gradient bg, h1 Cinzel, horizontal layout)
+  - Text content (fixed font-display usage for deck name)
+  - Role Composition (added minHeight: 180px to match Mana Curve)
+  - Charts grid wrapper (two-column layout on desktop)
+
+**Changes Summary:**
+- Commander art now 120×168px on desktop (67% larger than before)
+- Hero has gradient background matching mockup spec
+- Horizontal layout maximizes space efficiency
+- Charts side-by-side on desktop with equal heights (no awkward spacing)
+- Top bar decluttered - hero section is now the clear focal point
+- Typography: Cinzel properly applied to commander name (h1) and deck name
+- Section ordering correct: Hero → Stats → Weaknesses → Themes → Charts → Resource Health
+
+**Build Status:** No errors detected
+
+---
+
+*Phase B desktop layout complete - awaiting user verification before marking final*
