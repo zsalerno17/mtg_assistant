@@ -168,6 +168,7 @@ pre code {
   --font-mono:    var(--font-mono);
 
   /* Font Sizes */
+  --font-size-4xs: var(--text-4xs);
   --font-size-3xs: var(--text-3xs);
   --font-size-2xs: var(--text-2xs);
   --font-size-xs: var(--text-xs);

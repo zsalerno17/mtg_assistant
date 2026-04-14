@@ -1,7 +1,7 @@
 # MTG Assistant — Project Plan
 
 > **Single source of truth.** All agents read and update this file.
-> Last updated: April 12, 2026
+> Last updated: April 14, 2026
 
 <!--
 ╔══════════════════════════════════════════════════════════════════╗
@@ -17,7 +17,8 @@
 ║  4. ONLY INCOMPLETE PHASES get expanded task lists/specs.        ║
 ║  5. NEVER duplicate info. One canonical location per fact:       ║
 ║     - Security audit → .github/security-audit.md                ║
-║     - Performance audit → .github/performance-audit-leagues.md  ║
+║     - Performance audit (leagues) → .github/performance-audit-leagues.md  ║
+║     - Performance audit (comprehensive) → .github/performance-audit-comprehensive.md  ║
 ║     - Design audit → .github/league-design-audit.md             ║
 ║     - Test plan → .github/test-plan.md                          ║
 ║     - League fixes → .github/league-fixes-summary.md            ║
