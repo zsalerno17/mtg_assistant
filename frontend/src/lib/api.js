@@ -183,6 +183,9 @@ export const api = {
   /** Get the authenticated user's stored collection. */
   getCollection: () => edgeFetch('collection', '/', {}),
 
+  /** Get functional analysis of the user's collection (ramp, draw, removal, etc.). */
+  getCollectionAnalysis: () => edgeFetch('collection', '/analyze', {}),
+
   /** Get paginated analysis history for the current user. */
   getAnalysisHistory: (page = 1) => edgeFetch('analyses', `/history?page=${page}`, {}),
 

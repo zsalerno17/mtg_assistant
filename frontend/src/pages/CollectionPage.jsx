@@ -5,7 +5,16 @@ import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
 import CardTooltip from '../components/CardTooltip'
-import { CloudUpload } from 'lucide-react'
+import CollectionDepth from '../components/CollectionDepth'
+import { CloudUpload, LayoutGrid, List } from 'lucide-react'
+
+function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function CardListIcon() { return <List className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+
+const TAB_CONFIG = [
+  { label: 'Overview', icon: OverviewIcon },
+  { label: 'Card List', icon: CardListIcon },
+]
 
 export default function CollectionPage() {
   const { session } = useAuth()
@@ -14,7 +23,10 @@ export default function CollectionPage() {
   const [status, setStatus] = useState(null)
   const [error, setError] = useState(null)
   const [collection, setCollection] = useState(null)
+  const [analysis, setAnalysis] = useState(null)
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState('Overview')
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
 
   const loadingMessages = [
@@ -33,10 +45,30 @@ export default function CollectionPage() {
   useEffect(() => {
     if (!session?.access_token) return
     api.getCollection()
-      .then(data => setCollection(data))
+      .then(data => {
+        setCollection(data)
+        // Load analysis if collection exists
+        if (data?.cards?.length > 0) {
+          loadAnalysis()
+        }
+      })
       .catch(() => {}) // silently ignore; user may not have uploaded yet
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
+
+  const loadAnalysis = async () => {
+    setLoadingAnalysis(true)
+    try {
+      const result = await api.getCollectionAnalysis()
+      setAnalysis(result)
+    } catch (err) {
+      console.error('Failed to load collection analysis:', err)
+      // Show error to user
+      setError(`Analysis failed: ${err.message}`)
+    } finally {
+      setLoadingAnalysis(false)
+    }
+  }
 
   useEffect(() => {
     if (!uploading) {
@@ -70,9 +102,10 @@ export default function CollectionPage() {
     try {
       const result = await api.uploadCollection(file)
       setStatus(`Imported ${result.cards_imported} cards`)
-      // Refresh collection display
+      // Refresh collection display and analysis
       const updated = await api.getCollection()
       setCollection(updated)
+      await loadAnalysis()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -169,57 +202,109 @@ export default function CollectionPage() {
           {status && <p className="mt-4 text-[var(--color-success)] text-sm">{status}</p>}
               {error && <p className="mt-4 text-[var(--color-danger)] text-sm">{error}</p>}
 
-          {/* Collection Display */}
+          {/* Tabs (only show if collection exists) */}
           {collection?.cards?.length > 0 && (
-            <div className="mt-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <h3 className="text-[var(--color-text)] font-medium">
-              {groupedCards.length} unique cards
-              <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
-                · {collection.cards.reduce((sum, c) => sum + (c.quantity || 1), 0)} total
-              </span>
-              {collection.updated_at && (
-                <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
-                  · updated {new Date(collection.updated_at).toLocaleDateString()}
-                </span>
-              )}
-            </h3>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search cards…"
-              className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all w-full sm:w-64"
-            />
-          </div>
+            <>
+              <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] mt-8">
+                {TAB_CONFIG.map(({ label, icon: TabIcon }) => (
+                  <button
+                    key={label}
+                    onClick={() => setActiveTab(label)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-heading whitespace-nowrap border-b-2 transition-colors active:scale-[0.97] cursor-pointer ${
+                      activeTab === label
+                        ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+                        : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                    }`}
+                  >
+                    <TabIcon />
+                    {label}
+                  </button>
+                ))}
+              </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
-            {filteredCards.map((card) => (
-              <motion.div
-                key={card.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.35,
-                  ease: [0.34, 1.56, 0.64, 1],
-                }}
-                className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
-              >
-                <CardTooltip cardName={card.name}>
-                  <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
-                </CardTooltip>
-                <span className="text-[var(--color-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>
-              </motion.div>
-            ))}
-          </div>
+              {/* Tab Content */}
+              <div key={activeTab} className="mt-6 tab-content">
+                {activeTab === 'Overview' && (
+                  <div>
+                    {loadingAnalysis ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing collection...</span>
+                      </div>
+                    ) : (
+                      <CollectionDepth analysis={analysis} />
+                    )}
+                  </div>
+                )}
 
-              {search && filteredCards.length === 0 && (
-                <p className="text-[var(--color-muted)] text-sm mt-4">No cards match "{search}"</p>
-              )}
-            </div>
+                {activeTab === 'Card List' && (
+                  <CardListTab 
+                    collection={collection} 
+                    groupedCards={groupedCards}
+                    filteredCards={filteredCards}
+                    search={search}
+                    setSearch={setSearch}
+                  />
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
     </PageTransition>
+  )
+}
+
+/**
+ * Card List Tab - Shows the full card grid with search
+ */
+function CardListTab({ collection, groupedCards, filteredCards, search, setSearch }) {
+  return (
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <h3 className="text-[var(--color-text)] font-medium">
+          {groupedCards.length} unique cards
+          <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
+            · {collection.cards.reduce((sum, c) => sum + (c.quantity || 1), 0)} total
+          </span>
+          {collection.updated_at && (
+            <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
+              · updated {new Date(collection.updated_at).toLocaleDateString()}
+            </span>
+          )}
+        </h3>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search cards…"
+          className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all w-full sm:w-64"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
+        {filteredCards.map((card) => (
+          <motion.div
+            key={card.name}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.35,
+              ease: [0.34, 1.56, 0.64, 1],
+            }}
+            className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-lg px-3 py-2 flex items-center justify-between hover:border-[var(--color-muted)]/60 transition-colors"
+          >
+            <CardTooltip cardName={card.name}>
+              <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
+            </CardTooltip>
+            <span className="text-[var(--color-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>
+          </motion.div>
+        ))}
+      </div>
+
+      {search && filteredCards.length === 0 && (
+        <p className="text-[var(--color-muted)] text-sm mt-4">No cards match "{search}"</p>
+      )}
+    </div>
   )
 }

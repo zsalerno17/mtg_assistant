@@ -28,6 +28,14 @@ export interface CardFace {
   oracle_text?: string;
 }
 
+export interface CardReference {
+  name: string;
+  quantity: number;
+  cmc?: number;
+  color_identity?: string[];
+  type_line?: string;
+}
+
 export interface RampBreakdown {
   total: number;
   lands: number;
@@ -35,6 +43,11 @@ export interface RampBreakdown {
   dorks: number;
   treasures: number; // MTG specialist fix
   other: number;
+  lands_cards: CardReference[];
+  rocks_cards: CardReference[];
+  dorks_cards: CardReference[];
+  treasures_cards: CardReference[];
+  other_cards: CardReference[];
 }
 
 export interface DrawBreakdown {
@@ -42,6 +55,9 @@ export interface DrawBreakdown {
   card_draw: number;
   looting: number; // MTG specialist fix - separate from draw
   selection: number; // MTG specialist fix - scry/surveil
+  card_draw_cards: CardReference[];
+  looting_cards: CardReference[];
+  selection_cards: CardReference[];
 }
 
 export interface RemovalBreakdown {
@@ -49,15 +65,37 @@ export interface RemovalBreakdown {
   targeted: number;
   board_wipes: number;
   edict: number; // MTG specialist fix
+  targeted_cards: CardReference[];
+  board_wipes_cards: CardReference[];
+  edict_cards: CardReference[];
 }
 
 export interface CollectionAnalysis {
   ramp: RampBreakdown;
   draw: DrawBreakdown;
   removal: RemovalBreakdown;
-  interaction: { total: number; counterspells: number };
-  tutors: { total: number };
+  interaction: { total: number; counterspells: number; counterspells_cards: CardReference[] };
+  tutors: { total: number; tutors_cards: CardReference[] };
   board_wipes: { total: number };
+}
+
+// Helper to deduplicate and aggregate card references by name
+function aggregateCardReferences(cards: CardReference[]): CardReference[] {
+  const cardMap = new Map<string, CardReference>();
+  
+  for (const card of cards) {
+    const existing = cardMap.get(card.name);
+    if (existing) {
+      // Card already exists - sum the quantities
+      existing.quantity += card.quantity;
+    } else {
+      // First occurrence - add to map
+      cardMap.set(card.name, { ...card });
+    }
+  }
+  
+  // Convert map back to array, sorted alphabetically by name
+  return Array.from(cardMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Helper to get oracle text from card faces (for DFCs/MDFCs/split cards)
@@ -285,9 +323,20 @@ function categorizeCard(card: CollectionCard): {
 export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
   const startTime = performance.now();
   
-  const ramp: RampBreakdown = { total: 0, lands: 0, rocks: 0, dorks: 0, treasures: 0, other: 0 };
-  const draw: DrawBreakdown = { total: 0, card_draw: 0, looting: 0, selection: 0 };
-  const removal: RemovalBreakdown = { total: 0, targeted: 0, board_wipes: 0, edict: 0 };
+  const ramp: RampBreakdown = { 
+    total: 0, lands: 0, rocks: 0, dorks: 0, treasures: 0, other: 0,
+    lands_cards: [], rocks_cards: [], dorks_cards: [], treasures_cards: [], other_cards: []
+  };
+  const draw: DrawBreakdown = { 
+    total: 0, card_draw: 0, looting: 0, selection: 0,
+    card_draw_cards: [], looting_cards: [], selection_cards: []
+  };
+  const removal: RemovalBreakdown = { 
+    total: 0, targeted: 0, board_wipes: 0, edict: 0,
+    targeted_cards: [], board_wipes_cards: [], edict_cards: []
+  };
+  const counterspells_cards: CardReference[] = [];
+  const tutors_cards: CardReference[] = [];
   let counterspells = 0;
   let tutors = 0;
   let boardWipes = 0;
@@ -295,6 +344,13 @@ export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
   for (const card of cards) {
     const categories = categorizeCard(card);
     const quantity = card.quantity || 1;
+    const cardRef: CardReference = {
+      name: card.name,
+      quantity: quantity,
+      cmc: card.cmc,
+      color_identity: card.color_identity,
+      type_line: card.type_line,
+    };
     
     // Weighted categorization for multi-function cards (70/30 split)
     if (categories.ramp) {
@@ -304,18 +360,23 @@ export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
       switch (categories.ramp.type) {
         case "lands":
           ramp.lands += quantity * weight;
+          ramp.lands_cards.push(cardRef);
           break;
         case "rocks":
           ramp.rocks += quantity * weight;
+          ramp.rocks_cards.push(cardRef);
           break;
         case "dorks":
           ramp.dorks += quantity * weight;
+          ramp.dorks_cards.push(cardRef);
           break;
         case "treasures":
           ramp.treasures += quantity * weight;
+          ramp.treasures_cards.push(cardRef);
           break;
         case "other":
           ramp.other += quantity * weight;
+          ramp.other_cards.push(cardRef);
           break;
       }
     }
@@ -327,12 +388,15 @@ export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
       switch (categories.draw.type) {
         case "card_draw":
           draw.card_draw += quantity * weight;
+          draw.card_draw_cards.push(cardRef);
           break;
         case "looting":
           draw.looting += quantity * weight;
+          draw.looting_cards.push(cardRef);
           break;
         case "selection":
           draw.selection += quantity * weight;
+          draw.selection_cards.push(cardRef);
           break;
       }
     }
@@ -344,31 +408,36 @@ export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
       switch (categories.removal.type) {
         case "targeted":
           removal.targeted += quantity * weight;
+          removal.targeted_cards.push(cardRef);
           break;
         case "board_wipes":
           removal.board_wipes += quantity * weight;
+          removal.board_wipes_cards.push(cardRef);
           boardWipes += quantity * weight;
           break;
         case "edict":
           removal.edict += quantity * weight;
+          removal.edict_cards.push(cardRef);
           break;
       }
     }
     
     if (categories.counterspell) {
       counterspells += quantity;
+      counterspells_cards.push(cardRef);
     }
     
     if (categories.tutor) {
       tutors += quantity;
+      tutors_cards.push(cardRef);
     }
   }
   
   const elapsed = performance.now() - startTime;
   console.log(`[collection_analyzer] Analyzed ${cards.length} cards in ${elapsed.toFixed(2)}ms`);
   
-  // Round values to 1 decimal place for cleaner display
-  const round = (n: number) => Math.round(n * 10) / 10;
+  // Round to whole numbers (can't have fractional cards in display)
+  const round = (n: number) => Math.round(n);
   
   return {
     ramp: {
@@ -378,25 +447,38 @@ export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
       dorks: round(ramp.dorks),
       treasures: round(ramp.treasures),
       other: round(ramp.other),
+      lands_cards: aggregateCardReferences(ramp.lands_cards),
+      rocks_cards: aggregateCardReferences(ramp.rocks_cards),
+      dorks_cards: aggregateCardReferences(ramp.dorks_cards),
+      treasures_cards: aggregateCardReferences(ramp.treasures_cards),
+      other_cards: aggregateCardReferences(ramp.other_cards),
     },
     draw: {
       total: round(draw.total),
       card_draw: round(draw.card_draw),
       looting: round(draw.looting),
       selection: round(draw.selection),
+      card_draw_cards: aggregateCardReferences(draw.card_draw_cards),
+      looting_cards: aggregateCardReferences(draw.looting_cards),
+      selection_cards: aggregateCardReferences(draw.selection_cards),
     },
     removal: {
       total: round(removal.total),
       targeted: round(removal.targeted),
       board_wipes: round(removal.board_wipes),
       edict: round(removal.edict),
+      targeted_cards: aggregateCardReferences(removal.targeted_cards),
+      board_wipes_cards: aggregateCardReferences(removal.board_wipes_cards),
+      edict_cards: aggregateCardReferences(removal.edict_cards),
     },
     interaction: {
       total: round(counterspells),
       counterspells: round(counterspells),
+      counterspells_cards: aggregateCardReferences(counterspells_cards),
     },
     tutors: {
       total: round(tutors),
+      tutors_cards: aggregateCardReferences(tutors_cards),
     },
     board_wipes: {
       total: round(boardWipes),
