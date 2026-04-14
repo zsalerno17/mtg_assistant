@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Size Test</title>
+  <style>
+    body { padding: 2rem; font-family: Inter, sans-serif; background: #1a1f24; color: #ecf2fa; }
+    .test-item { margin: 1rem 0; padding: 0.5rem; background: #23292E; border: 1px solid #2d3439; }
+  </style>
+</head>
+<body>
+  <h1>CSS Variable Text Size Test</h1>
+  <p>Testing that new --text-3xs and --text-2xs variables are defined:</p>
+  
+  <div class="test-item">
+    <div style="font-size: var(--text-3xs)">text-3xs (9px): The quick brown fox</div>
+  </div>
+  
+  <div class="test-item">
+    <div style="font-size: var(--text-2xs)">text-2xs (10px): The quick brown fox</div>
+  </div>
+  
+  <div class="test-item">
+    <div style="font-size: var(--text-xs)">text-xs (11px): The quick brown fox</div>
+  </div>
+  
+  <div class="test-item">
+    <div style="font-size: var(--text-sm)">text-sm (13px): The quick brown fox</div>
+  </div>
+  
+  <script>
+    // Test that CSS variables are accessible
+    const root = getComputedStyle(document.documentElement);
+    console.log('--text-3xs:', root.getPropertyValue('--text-3xs'));
+    console.log('--text-2xs:', root.getPropertyValue('--text-2xs'));
+    console.log('--text-xs:', root.getPropertyValue('--text-xs'));
+    console.log('--text-sm:', root.getPropertyValue('--text-sm'));
+  </script>
+</body>
+</html>

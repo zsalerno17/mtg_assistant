@@ -166,6 +166,18 @@ pre code {
   --font-heading: var(--font-heading);
   --font-body:    var(--font-body);
   --font-mono:    var(--font-mono);
+
+  /* Font Sizes */
+  --font-size-3xs: var(--text-3xs);
+  --font-size-2xs: var(--text-2xs);
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-base: var(--text-base);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-xl);
+  --font-size-2xl: var(--text-2xl);
+  --font-size-3xl: var(--text-3xl);
+  --font-size-hero: var(--text-hero);
 }
 
 /* ─── Border-radius Convention ────────────────────────── */
