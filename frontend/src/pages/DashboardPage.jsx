@@ -575,7 +575,7 @@ export default function DashboardPage() {
       <div className="max-w-[1400px] mx-auto">
         {/* Page title - "Deck Vault" */}
         <div className="flex items-baseline gap-4 mb-8">
-          <h1 className="font-brand text-3xl text-[var(--color-text)] font-semibold">
+          <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl text-[var(--color-text)] font-semibold">
             Deck Vault
           </h1>
           {!decksLoading && (

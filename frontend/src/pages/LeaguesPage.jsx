@@ -374,7 +374,7 @@ export default function LeaguesPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-brand font-bold text-[var(--color-text)] mb-2">
+            <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
               My Leagues
             </h1>
             <p className="text-[var(--color-muted)] text-sm">

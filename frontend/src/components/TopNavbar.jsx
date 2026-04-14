@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../lib/useTheme'
 import { isPresetUrl, urlToPresetId, isCreaturePreset, CREATURE_PRESET_MAP } from '../lib/avatarPresets'
 import { CreaturePresetIcon } from '../lib/creatureIcons'
-import { User, CircleHelp, Sun, Moon, LogOut, House, Trophy, Library } from 'lucide-react'
+import { User, CircleHelp, LogOut, House, Trophy, Library } from 'lucide-react'
 
 function UserAvatar({ email, avatarUrl, size = 'md' }) {
   const sizeClasses = {
@@ -64,7 +63,6 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
 /** Horizontal top navigation bar with logo, nav links, and user avatar. */
 export default function TopNavbar() {
   const { session, profile, signOut } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const email = session?.user?.email || ''
   const [menuOpen, setMenuOpen] = useState(false)
@@ -172,22 +170,6 @@ export default function TopNavbar() {
                 >
                   <CircleHelp className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                   Help & Resources
-                </button>
-                <button
-                  onClick={() => { toggleTheme(); setMenuOpen(false) }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  {theme === 'dark' ? (
-                    <>
-                      <Sun className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-                      Light Mode
-                    </>
-                  ) : (
-                    <>
-                      <Moon className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-                      Dark Mode
-                    </>
-                  )}
                 </button>
                 <div className="border-t border-[var(--color-border)]" />
                 <button

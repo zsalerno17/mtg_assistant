@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
@@ -105,7 +106,7 @@ export default function CollectionPage() {
         <div className="max-w-[1400px] mx-auto px-4 md:px-8">
           {/* Header */}
           <div className="mb-10">
-            <h1 className="font-brand text-3xl font-bold text-[var(--color-text)] mb-3">
+            <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-3">
               My Collection
             </h1>
             <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
@@ -153,15 +154,13 @@ export default function CollectionPage() {
             <CloudUpload className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50" strokeWidth={2} aria-hidden="true" />
             <p className="text-[var(--color-text)] font-medium mb-1">Drop your Moxfield CSV here</p>
             <p className="text-[var(--color-muted)] text-sm mb-2">or click to browse</p>
-            <a
-              href="https://www.moxfield.com"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/help#collection"
               onClick={(e) => e.stopPropagation()}
               className="text-[var(--color-secondary)] text-xs hover:underline"
             >
-              How to export from Moxfield ↗
-            </a>
+              How to export from Moxfield →
+            </Link>
           </>
         )}
             <input id="csv-input" type="file" accept=".csv,.txt" className="hidden" onChange={handleFileInput} />

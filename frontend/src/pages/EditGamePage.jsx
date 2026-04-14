@@ -172,7 +172,7 @@ export default function EditGamePage() {
     <PageTransition>
       <div className="max-w-[900px] mx-auto px-8 py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-brand font-bold text-[var(--color-text)] mb-2">
+          <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
             Edit Game #{gameNumber}
           </h1>
           <p className="text-[var(--color-muted)]">{league?.name}</p>

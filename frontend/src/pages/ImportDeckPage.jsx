@@ -40,7 +40,7 @@ export default function ImportDeckPage() {
           >
             ← Dashboard
           </Link>
-          <h1 className="font-brand text-3xl font-bold text-[var(--color-text)] mb-3">
+          <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-3">
             Import Deck
           </h1>
           <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">

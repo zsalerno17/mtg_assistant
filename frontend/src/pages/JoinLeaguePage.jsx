@@ -35,7 +35,7 @@ export default function JoinLeaguePage() {
       <div className="max-w-[600px] mx-auto px-8 py-10">
       <div className="text-center mb-8">
         <SwordsIcon className="w-14 h-14 text-[var(--color-primary)] mx-auto mb-4" />
-        <h1 className="text-3xl font-brand font-bold text-primary mb-2">
+        <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-primary mb-2">
           Join the Battle
         </h1>
         <p className="text-secondary">

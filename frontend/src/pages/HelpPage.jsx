@@ -4,6 +4,7 @@ import PageTransition from '../components/PageTransition'
 export default function HelpPage() {
   const sections = [
     {
+      id: "getting-started",
       title: "Getting Started",
       icon: (
         <CircleHelp className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
@@ -20,6 +21,7 @@ export default function HelpPage() {
       )
     },
     {
+      id: "collection",
       title: "Managing Your Collection",
       icon: (
         <Library className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
@@ -29,29 +31,42 @@ export default function HelpPage() {
           <p className="text-[var(--color-text)] leading-relaxed mb-3">
             Upload your collection as a CSV file to track which cards you own. This helps identify cards you already have when analyzing decks.
           </p>
-          <div className="bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg p-4 mb-3">
-            <p className="text-sm text-[var(--color-muted)] mb-2">CSV Format Required:</p>
-            <code className="text-xs text-[var(--color-secondary)] font-mono block bg-[var(--color-surface-2)] p-2 rounded">
-              Card Name,Set Code,Quantity,Foil
-            </code>
-          </div>
-          <p className="text-[var(--color-text)] leading-relaxed mb-3">
-            <strong className="text-[var(--color-secondary)]">Generate your collection CSV:</strong>
+          <p className="text-[var(--color-text)] leading-relaxed mb-4">
+            <strong className="text-[var(--color-secondary)]">Quick start workflow:</strong>
           </p>
-          <a
-            href="https://vredeza.github.io/bimf/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
-          >
-            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-            BIMF Collection Manager
-            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
-          </a>
+          <ol className="list-decimal list-inside space-y-2 text-[var(--color-text)] mb-4 ml-2">
+            <li>Use <strong>BIMF</strong> to enter your physical cards and generate a CSV</li>
+            <li>Import that CSV into <strong>Moxfield</strong> to build your digital collection</li>
+            <li>Export your full collection from Moxfield as a CSV</li>
+            <li>Upload the Moxfield export to MTG Assistant using the Collection page</li>
+          </ol>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="https://vredeza.github.io/bimf/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
+            >
+              <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+              BIMF Collection Manager
+              <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
+            </a>
+            <a
+              href="https://www.moxfield.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
+            >
+              <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+              Moxfield
+              <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
+            </a>
+          </div>
         </>
       )
     },
     {
+      id: "decks",
       title: "Adding & Analyzing Decks",
       icon: (
         <BookOpen className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
@@ -85,6 +100,7 @@ export default function HelpPage() {
       )
     },
     {
+      id: "ai-analysis",
       title: "AI Analysis Features",
       icon: (
         <WandSparkles className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
@@ -113,6 +129,7 @@ export default function HelpPage() {
       )
     },
     {
+      id: "leagues",
       title: "Tracking Leagues & Pods",
       icon: (
         <Users className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
@@ -141,6 +158,7 @@ export default function HelpPage() {
       )
     },
     {
+      id: "resources",
       title: "Card Information & Resources",
       icon: (
         <Search className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
@@ -174,7 +192,7 @@ export default function HelpPage() {
       <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-[var(--color-primary)] mb-4">
+          <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-4xl md:text-5xl font-bold text-[var(--color-primary)] mb-4">
             Help & Resources
           </h1>
           <p className="text-lg text-[var(--color-muted)] max-w-2xl mx-auto">
@@ -187,6 +205,7 @@ export default function HelpPage() {
           {sections.map((section, index) => (
             <div
               key={index}
+              id={section.id}
               className="backdrop-blur-sm bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(251,191,36,0.1)] transition-all"
             >
               <div className="flex items-start gap-4">

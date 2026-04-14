@@ -454,7 +454,7 @@ export default function LeaguePage() {
         <div className="mb-8">
           {/* Title + Badge */}
           <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-3xl font-brand font-bold text-[var(--color-text)]">
+            <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)]">
               {league.name}
             </h1>
             <span
