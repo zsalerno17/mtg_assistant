@@ -332,7 +332,9 @@ export default function CollectionDepth({ analysis }) {
                                     <th className="text-left text-xs text-[var(--color-muted)] font-medium pb-2">Card Name</th>
                                     <th className="text-left text-xs text-[var(--color-muted)] font-medium pb-2 w-16">CMC</th>
                                     <th className="text-left text-xs text-[var(--color-muted)] font-medium pb-2 w-24">Colors</th>
-                                    <th className="text-right text-xs text-[var(--color-muted)] font-medium pb-2 w-12">Qty</th>
+                                    <th className="text-right text-xs text-[var(--color-muted)] font-medium pb-2 w-16">Owned</th>
+                                    <th className="text-right text-xs text-[var(--color-muted)] font-medium pb-2 w-16">In Use</th>
+                                    <th className="text-right text-xs text-[var(--color-muted)] font-medium pb-2 w-16">Available</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -350,7 +352,59 @@ export default function CollectionDepth({ analysis }) {
                                       <td className="py-2">
                                         <ColorPips colors={card.color_identity} />
                                       </td>
-                                      <td className="py-2 text-xs text-[var(--color-muted)] text-right">×{card.quantity}</td>
+                                      <td className="py-2 text-xs text-[var(--color-text)] text-right font-medium">{card.quantity}</td>
+                                      <td className="py-2 text-xs text-right">
+                                        {card.in_use > 0 && card.used_in_decks ? (
+                                          <TooltipWrapper 
+                                            content={
+                                              <div>
+                                                <div className="font-semibold mb-1">Used in decks:</div>
+                                                {card.used_in_decks.map((deck, idx) => (
+                                                  <div key={idx} className="text-xs">
+                                                    • {deck.deck_name}: ×{deck.quantity}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            }
+                                          >
+                                            <span className="text-[var(--color-muted)] cursor-help border-b border-dotted border-[var(--color-muted)]">
+                                              {card.in_use}
+                                            </span>
+                                          </TooltipWrapper>
+                                        ) : (
+                                          <span className="text-[var(--color-muted)]">{card.in_use}</span>
+                                        )}
+                                      </td>
+                                      <td className="py-2 text-xs text-right">
+                                        {card.available < 0 ? (
+                                          <TooltipWrapper 
+                                            content={
+                                              <div>
+                                                <div className="font-semibold mb-1 text-rose-400">Short {Math.abs(card.available)} card{Math.abs(card.available) !== 1 ? 's' : ''}</div>
+                                                <div className="text-xs">You need {Math.abs(card.available)} more to cover all decks</div>
+                                                {card.used_in_decks && (
+                                                  <>
+                                                    <div className="text-xs mt-2 font-semibold">Used in:</div>
+                                                    {card.used_in_decks.map((deck, idx) => (
+                                                      <div key={idx} className="text-xs">
+                                                        • {deck.deck_name}: ×{deck.quantity}
+                                                      </div>
+                                                    ))}
+                                                  </>
+                                                )}
+                                              </div>
+                                            }
+                                          >
+                                            <span className="text-rose-400 cursor-help border-b border-dotted border-rose-400">
+                                              {card.available}
+                                            </span>
+                                          </TooltipWrapper>
+                                        ) : (
+                                          <span className={card.available === 0 ? 'text-amber-400' : 'text-emerald-400'}>
+                                            {card.available}
+                                          </span>
+                                        )}
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -392,20 +446,20 @@ function TooltipWrapper({ content, children }) {
   const handleMouseEnter = (e) => {
     const rect = e.currentTarget.getBoundingClientRect()
     const tooltipWidth = 250 // approximate max width
-    let left = rect.left + rect.width / 2
+    let left = rect.right + 8 // 8px to the right of the element
     
-    // Prevent going off left edge
-    if (left - tooltipWidth / 2 < 16) {
-      left = tooltipWidth / 2 + 16
+    // If tooltip would go off right edge, show it to the left instead
+    if (left + tooltipWidth > window.innerWidth - 16) {
+      left = rect.left - tooltipWidth - 8
     }
     
-    // Prevent going off right edge
-    if (left + tooltipWidth / 2 > window.innerWidth - 16) {
-      left = window.innerWidth - tooltipWidth / 2 - 16
+    // If still going off left edge, clamp to 16px from left
+    if (left < 16) {
+      left = 16
     }
     
     setPosition({
-      top: rect.bottom + 8, // 8px below the trigger
+      top: rect.top, // Align with top of trigger element
       left: left,
     })
     setShow(true)
@@ -425,7 +479,7 @@ function TooltipWrapper({ content, children }) {
             position: 'fixed',
             top: `${position.top}px`,
             left: `${position.left}px`,
-            transform: 'translateX(-50%)',
+            transform: 'translateY(-25%)', // Slight vertical adjustment
             zIndex: 9999,
             pointerEvents: 'none',
           }}

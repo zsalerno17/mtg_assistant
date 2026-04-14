@@ -31,6 +31,9 @@ export interface CardFace {
 export interface CardReference {
   name: string;
   quantity: number;
+  in_use: number;
+  available: number;
+  used_in_decks?: Array<{ deck_name: string; quantity: number }>;
   cmc?: number;
   color_identity?: string[];
   type_line?: string;
@@ -80,17 +83,41 @@ export interface CollectionAnalysis {
 }
 
 // Helper to deduplicate and aggregate card references by name
-function aggregateCardReferences(cards: CardReference[]): CardReference[] {
+// Now accepts usageMap to apply usage data AFTER aggregation (fixes duplicate counting bug)
+function aggregateCardReferences(
+  cards: CardReference[], 
+  usageMap?: Map<string, { total: number; decks: Array<{ deck_name: string; quantity: number }> }>
+): CardReference[] {
   const cardMap = new Map<string, CardReference>();
   
   for (const card of cards) {
     const existing = cardMap.get(card.name);
     if (existing) {
-      // Card already exists - sum the quantities
+      // Card already exists - only sum the quantities (not usage data, we'll apply that after)
       existing.quantity += card.quantity;
     } else {
-      // First occurrence - add to map
-      cardMap.set(card.name, { ...card });
+      // First occurrence - add to map (without usage data for now)
+      cardMap.set(card.name, { 
+        name: card.name,
+        quantity: card.quantity,
+        in_use: 0,
+        available: card.quantity,
+        cmc: card.cmc,
+        color_identity: card.color_identity,
+        type_line: card.type_line,
+      });
+    }
+  }
+  
+  // Now apply usage data to aggregated cards (only once per card name)
+  if (usageMap) {
+    for (const card of cardMap.values()) {
+      const usage = usageMap.get(card.name);
+      if (usage) {
+        card.in_use = usage.total;
+        card.available = Math.max(0, card.quantity - usage.total);
+        card.used_in_decks = usage.decks;
+      }
     }
   }
   
@@ -320,7 +347,10 @@ function categorizeCard(card: CollectionCard): {
  * Analyze entire collection
  * Target: <500ms for 2000 cards
  */
-export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
+export function analyzeCollection(
+  cards: CollectionCard[],
+  usageMap?: Map<string, { total: number; decks: Array<{ deck_name: string; quantity: number }> }>
+): CollectionAnalysis {
   const startTime = performance.now();
   
   const ramp: RampBreakdown = { 
@@ -344,9 +374,12 @@ export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
   for (const card of cards) {
     const categories = categorizeCard(card);
     const quantity = card.quantity || 1;
+    // Don't apply usage data here - will be applied after aggregation to avoid duplicate counting
     const cardRef: CardReference = {
       name: card.name,
       quantity: quantity,
+      in_use: 0,
+      available: quantity,
       cmc: card.cmc,
       color_identity: card.color_identity,
       type_line: card.type_line,
@@ -447,38 +480,38 @@ export function analyzeCollection(cards: CollectionCard[]): CollectionAnalysis {
       dorks: round(ramp.dorks),
       treasures: round(ramp.treasures),
       other: round(ramp.other),
-      lands_cards: aggregateCardReferences(ramp.lands_cards),
-      rocks_cards: aggregateCardReferences(ramp.rocks_cards),
-      dorks_cards: aggregateCardReferences(ramp.dorks_cards),
-      treasures_cards: aggregateCardReferences(ramp.treasures_cards),
-      other_cards: aggregateCardReferences(ramp.other_cards),
+      lands_cards: aggregateCardReferences(ramp.lands_cards, usageMap),
+      rocks_cards: aggregateCardReferences(ramp.rocks_cards, usageMap),
+      dorks_cards: aggregateCardReferences(ramp.dorks_cards, usageMap),
+      treasures_cards: aggregateCardReferences(ramp.treasures_cards, usageMap),
+      other_cards: aggregateCardReferences(ramp.other_cards, usageMap),
     },
     draw: {
       total: round(draw.total),
       card_draw: round(draw.card_draw),
       looting: round(draw.looting),
       selection: round(draw.selection),
-      card_draw_cards: aggregateCardReferences(draw.card_draw_cards),
-      looting_cards: aggregateCardReferences(draw.looting_cards),
-      selection_cards: aggregateCardReferences(draw.selection_cards),
+      card_draw_cards: aggregateCardReferences(draw.card_draw_cards, usageMap),
+      looting_cards: aggregateCardReferences(draw.looting_cards, usageMap),
+      selection_cards: aggregateCardReferences(draw.selection_cards, usageMap),
     },
     removal: {
       total: round(removal.total),
       targeted: round(removal.targeted),
       board_wipes: round(removal.board_wipes),
       edict: round(removal.edict),
-      targeted_cards: aggregateCardReferences(removal.targeted_cards),
-      board_wipes_cards: aggregateCardReferences(removal.board_wipes_cards),
-      edict_cards: aggregateCardReferences(removal.edict_cards),
+      targeted_cards: aggregateCardReferences(removal.targeted_cards, usageMap),
+      board_wipes_cards: aggregateCardReferences(removal.board_wipes_cards, usageMap),
+      edict_cards: aggregateCardReferences(removal.edict_cards, usageMap),
     },
     interaction: {
       total: round(counterspells),
       counterspells: round(counterspells),
-      counterspells_cards: aggregateCardReferences(counterspells_cards),
+      counterspells_cards: aggregateCardReferences(counterspells_cards, usageMap),
     },
     tutors: {
       total: round(tutors),
-      tutors_cards: aggregateCardReferences(tutors_cards),
+      tutors_cards: aggregateCardReferences(tutors_cards, usageMap),
     },
     board_wipes: {
       total: round(boardWipes),

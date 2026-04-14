@@ -128,8 +128,52 @@ serve(async (req) => {
         });
       }
 
+      // Query user's decks to calculate card usage
+      const { data: userDecks } = await sb
+        .from("user_decks")
+        .select("moxfield_id, deck_name")
+        .eq("user_id", user.userId);
+
+      // Build usage map: card name -> { total: number, decks: Array<{deck_name, quantity}> }
+      const usageMap = new Map<string, { total: number; decks: Array<{ deck_name: string; quantity: number }> }>();
+      if (userDecks && userDecks.length > 0) {
+        const moxfieldIds = userDecks.map(d => d.moxfield_id);
+        
+        // Fetch actual deck data from decks table
+        const { data: deckData } = await sb
+          .from("decks")
+          .select("moxfield_id, data_json")
+          .in("moxfield_id", moxfieldIds);
+        
+        if (deckData) {
+          for (const deck of deckData) {
+            const deckInfo = userDecks.find(ud => ud.moxfield_id === deck.moxfield_id);
+            const deckName = deckInfo?.deck_name || "Unnamed Deck";
+            const data = deck.data_json as { mainboard?: { name: string; quantity?: number }[] };
+            const mainboard = data.mainboard || [];
+            
+            for (const card of mainboard) {
+              const current = usageMap.get(card.name);
+              const cardQty = card.quantity || 1;
+              
+              if (current) {
+                current.total += cardQty;
+                current.decks.push({ deck_name: deckName, quantity: cardQty });
+              } else {
+                usageMap.set(card.name, {
+                  total: cardQty,
+                  decks: [{ deck_name: deckName, quantity: cardQty }]
+                });
+              }
+            }
+          }
+        }
+        
+        console.log(`[collection/analyze] Built usage map with ${usageMap.size} unique cards from ${deckData?.length || 0} decks`);
+      }
+
       const cards = data.cards_json as CollectionCard[];
-      const analysis = analyzeCollection(cards);
+      const analysis = analyzeCollection(cards, usageMap);
 
       return new Response(JSON.stringify(analysis), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
