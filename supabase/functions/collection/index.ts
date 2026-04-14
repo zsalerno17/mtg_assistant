@@ -4,6 +4,7 @@ import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/a
 import { getUserClient } from "../_shared/supabase.ts";
 import { parseMoxfieldCsv, parseTextList } from "../_shared/collection_parser.ts";
 import { getCardsByNames } from "../_shared/scryfall.ts";
+import { analyzeCollection, CollectionCard } from "../_shared/collection_analyzer.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -61,6 +62,8 @@ serve(async (req) => {
         type_line: c.type_line,
         oracle_text: c.oracle_text,
         color_identity: c.color_identity,
+        keywords: c.keywords || [],
+        card_faces: c.card_faces || null,
       }));
 
       await sb.from("collections").upsert(
@@ -98,6 +101,37 @@ serve(async (req) => {
       const cards = (data.cards_json || []) as { quantity?: number }[];
       const count = cards.reduce((sum, c) => sum + (c.quantity || 1), 0);
       return new Response(JSON.stringify({ count, last_updated: data.updated_at }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // GET /collection/analyze
+    if (req.method === "GET" && path === "analyze") {
+      const { data, error } = await sb
+        .from("collections")
+        .select("cards_json, updated_at")
+        .eq("user_id", user.userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[collection/analyze] Query error:", error);
+        return new Response(JSON.stringify({ detail: "Failed to load collection for analysis" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!data || !data.cards_json) {
+        return new Response(JSON.stringify({ detail: "No collection found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const cards = data.cards_json as CollectionCard[];
+      const analysis = analyzeCollection(cards);
+
+      return new Response(JSON.stringify(analysis), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
