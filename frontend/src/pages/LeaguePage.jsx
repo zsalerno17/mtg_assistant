@@ -449,7 +449,7 @@ export default function LeaguePage() {
 
   return (
     <PageTransition>
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10 pb-32 md:pb-10">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10">
         {/* Header */}
         <div className="mb-8">
           {/* Title + Badge */}

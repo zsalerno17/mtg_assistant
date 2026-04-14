@@ -446,7 +446,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         {manaCurveData.length > 0 && (
           <div>
             <SectionLabel className="mb-3">Mana Curve</SectionLabel>
-            <p className="text-[var(--color-text-muted)] mb-3" style={{ fontSize: '7px' }}>Distribution of spells by mana cost — color-coded by timing (acceleration, core spells, and haymakers).</p>
+            <p className="text-[8px] text-[var(--color-text-muted)] mb-3">Distribution of spells by mana cost — color-coded by timing (acceleration, core spells, and haymakers).</p>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
               <div className="flex items-center justify-center" style={{ height: '180px', marginBottom: '1rem' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -502,7 +502,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         return (
           <div>
             <SectionLabel className="mb-3">Removal Suite</SectionLabel>
-            <p className="text-[var(--color-text-muted)] mb-3" style={{ fontSize: '7px' }}>Breakdown of removal by quality — exile is permanent, destroy can be recursed, bounce is temporary.</p>
+            <p className="text-[8px] text-[var(--color-text-muted)] mb-3">Breakdown of removal by quality — exile is permanent, destroy can be recursed, bounce is temporary.</p>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
               <div className="flex flex-col items-center">
                 {/* Donut Chart */}
@@ -631,7 +631,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         return (
           <div>
             <SectionLabel className="mb-3">Interaction Coverage</SectionLabel>
-            <p className="text-[var(--color-text-muted)] mb-3" style={{ fontSize: '7px' }}>Your ability to answer different threat types — full circle is recommended, filled portion is current coverage.</p>
+            <p className="text-[8px] text-[var(--color-text-muted)] mb-3">Your ability to answer different threat types — full circle is recommended, filled portion is current coverage.</p>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-5">
               <div className="flex flex-col lg:flex-row gap-6 items-start">
                 {/* Radial Bar Chart */}
