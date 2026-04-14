@@ -6,13 +6,16 @@ import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
 import CardTooltip from '../components/CardTooltip'
 import CollectionDepth from '../components/CollectionDepth'
-import { CloudUpload, LayoutGrid, List } from 'lucide-react'
+import ArchetypeReadiness from '../components/ArchetypeReadiness'
+import { CloudUpload, LayoutGrid, List, Target } from 'lucide-react'
 
 function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function CardListIcon() { return <List className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function ArchetypesIcon() { return <Target className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
+  { label: 'Archetypes', icon: ArchetypesIcon },
   { label: 'Card List', icon: CardListIcon },
 ]
 
@@ -233,6 +236,19 @@ export default function CollectionPage() {
                       </div>
                     ) : (
                       <CollectionDepth analysis={analysis} />
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'Archetypes' && (
+                  <div>
+                    {loadingAnalysis ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing archetypes...</span>
+                      </div>
+                    ) : (
+                      <ArchetypeReadiness archetypes={analysis?.archetypes} />
                     )}
                   </div>
                 )}

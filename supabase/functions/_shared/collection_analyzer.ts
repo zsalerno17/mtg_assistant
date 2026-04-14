@@ -518,3 +518,347 @@ export function analyzeCollection(
     },
   };
 }
+
+// ============================================================================
+// ARCHETYPE READINESS ANALYSIS
+// ============================================================================
+
+export interface ArchetypeReadiness {
+  name: string;
+  status: 'strong' | 'partial' | 'weak';
+  progress: number; // 0-100%
+  strengths: string[];
+  gaps: string[];
+  metrics: Record<string, { owned: number; required: number; recommended: number }>;
+}
+
+interface ArchetypeThresholds {
+  name: string;
+  description: string;
+  min_counts: Record<string, number>;
+  recommended_counts: Record<string, number>;
+}
+
+// Define requirements for each Commander archetype
+const ARCHETYPE_THRESHOLDS: ArchetypeThresholds[] = [
+  {
+    name: 'Control',
+    description: 'Reactive strategy with counterspells, removal, and card advantage',
+    min_counts: {
+      counterspells: 8,
+      board_wipes: 4,
+      draw_sources: 12,
+      instant_removal: 6,
+    },
+    recommended_counts: {
+      counterspells: 15,
+      board_wipes: 7,
+      draw_sources: 20,
+      instant_removal: 10,
+    },
+  },
+  {
+    name: 'Combo',
+    description: 'Win through synergistic card combinations',
+    min_counts: {
+      tutors: 4,
+      ramp: 12,
+      protection: 5,
+      draw: 10,
+    },
+    recommended_counts: {
+      tutors: 8,
+      ramp: 18,
+      protection: 8,
+      draw: 15,
+    },
+  },
+  {
+    name: 'Tokens',
+    description: 'Create and buff creature tokens for wide board presence',
+    min_counts: {
+      token_generators: 8,
+      anthems: 4,
+      board_wipes: 3,
+      draw: 10,
+    },
+    recommended_counts: {
+      token_generators: 15,
+      anthems: 7,
+      board_wipes: 5,
+      draw: 15,
+    },
+  },
+  {
+    name: 'Reanimator',
+    description: 'Reanimate powerful creatures from graveyard',
+    min_counts: {
+      reanimation: 6,
+      discard_outlets: 8,
+      board_wipes: 4,
+      ramp: 10,
+    },
+    recommended_counts: {
+      reanimation: 10,
+      discard_outlets: 12,
+      board_wipes: 6,
+      ramp: 15,
+    },
+  },
+  {
+    name: 'Voltron',
+    description: 'Buff a single creature with equipment and auras',
+    min_counts: {
+      equipment: 5,
+      auras: 4,
+      protection: 6,
+      ramp: 8,
+    },
+    recommended_counts: {
+      equipment: 10,
+      auras: 7,
+      protection: 10,
+      ramp: 12,
+    },
+  },
+  {
+    name: 'Aristocrats',
+    description: 'Sacrifice creatures for value and drain effects',
+    min_counts: {
+      sacrifice_outlets: 5,
+      death_triggers: 6,
+      recursion: 4,
+      draw: 10,
+    },
+    recommended_counts: {
+      sacrifice_outlets: 8,
+      death_triggers: 10,
+      recursion: 7,
+      draw: 15,
+    },
+  },
+];
+
+/**
+ * Assess which Commander archetypes the collection can support
+ */
+export function analyzeArchetypes(
+  cards: CollectionCard[],
+  analysis: CollectionAnalysis
+): ArchetypeReadiness[] {
+  const startTime = performance.now();
+  const archetypes: ArchetypeReadiness[] = [];
+
+  // Count archetype-specific pieces
+  const special_counts = countSpecialArchetypePieces(cards);
+
+  for (const threshold of ARCHETYPE_THRESHOLDS) {
+    const metrics: Record<string, { owned: number; required: number; recommended: number }> = {};
+    
+    // Build metrics object for this archetype
+    for (const key of Object.keys(threshold.min_counts)) {
+      const owned = getCountForMetric(key, analysis, special_counts);
+      metrics[key] = {
+        owned,
+        required: threshold.min_counts[key],
+        recommended: threshold.recommended_counts[key],
+      };
+    }
+
+    // Calculate status and progress
+    const { status, progress } = calculateArchetypeStatus(metrics);
+    const strengths = identifyStrengths(metrics);
+    const gaps = identifyGaps(metrics);
+
+    archetypes.push({
+      name: threshold.name,
+      status,
+      progress,
+      strengths,
+      gaps,
+      metrics,
+    });
+  }
+
+  const elapsed = performance.now() - startTime;
+  console.log(`[collection_analyzer] Analyzed archetypes in ${elapsed.toFixed(2)}ms`);
+
+  // Sort: strong first, then partial, then weak
+  return archetypes.sort((a, b) => {
+    const statusOrder = { strong: 0, partial: 1, weak: 2 };
+    if (statusOrder[a.status] !== statusOrder[b.status]) {
+      return statusOrder[a.status] - statusOrder[b.status];
+    }
+    // Within same status, sort by progress
+    return b.progress - a.progress;
+  });
+}
+
+/**
+ * Count archetype-specific cards not covered by main analysis
+ */
+function countSpecialArchetypePieces(cards: CollectionCard[]): Record<string, number> {
+  const creatures = cards.filter(c => c.type_line?.includes('Creature'));
+  const instants = cards.filter(c => c.type_line?.includes('Instant'));
+  const sorceries = cards.filter(c => c.type_line?.includes('Sorcery'));
+  const enchantments = cards.filter(c => c.type_line?.includes('Enchantment'));
+  const artifacts = cards.filter(c => c.type_line?.includes('Artifact'));
+
+  return {
+    // Token generation
+    token_generators: cards.filter(c =>
+      /create.*token|populate|amass|incubate/i.test(getOracleText(c))
+    ).length,
+
+    // Anthem effects
+    anthems: cards.filter(c =>
+      /creatures you control get \+\d|creatures.*\+\d\/\+\d|lord/i.test(getOracleText(c))
+    ).length,
+
+    // Reanimation
+    reanimation: cards.filter(c =>
+      /return.*creature.*graveyard.*battlefield|reanimate|unearth|encore/i.test(getOracleText(c))
+    ).length,
+
+    // Discard outlets
+    discard_outlets: cards.filter(c =>
+      /discard.*card|loot|rummage|cycling/i.test(getOracleText(c))
+    ).length,
+
+    // Equipment
+    equipment: cards.filter(c =>
+      c.type_line?.includes('Equipment')
+    ).length,
+
+    // Auras
+    auras: enchantments.filter(c =>
+      c.type_line?.includes('Aura')
+    ).length,
+
+    // Protection spells
+    protection: cards.filter(c =>
+      /hexproof|shroud|indestructible|protection from|ward/i.test(getOracleText(c)) ||
+      c.keywords?.some(k => k.match(/hexproof|shroud|protection/i))
+    ).length,
+
+    // Instant-speed removal
+    instant_removal: instants.filter(c =>
+      /destroy|exile|return.*hand|counter target/i.test(c.oracle_text || '')
+    ).length,
+
+    // Sacrifice outlets
+    sacrifice_outlets: cards.filter(c =>
+      /sacrifice.*creature|sacrifice a creature/i.test(getOracleText(c))
+    ).length,
+
+    // Death triggers
+    death_triggers: cards.filter(c =>
+      /when.*dies|whenever.*creature.*dies|death trigger/i.test(getOracleText(c))
+    ).length,
+
+    // Recursion
+    recursion: cards.filter(c =>
+      /return.*graveyard.*hand|return.*graveyard.*battlefield/i.test(getOracleText(c))
+    ).length,
+  };
+}
+
+/**
+ * Map metric names to counts from analysis or special counts
+ */
+function getCountForMetric(
+  metric: string,
+  analysis: CollectionAnalysis,
+  special: Record<string, number>
+): number {
+  // Map common metrics to analysis fields
+  const mapping: Record<string, number> = {
+    counterspells: analysis.interaction.counterspells,
+    board_wipes: analysis.removal.board_wipes,
+    draw_sources: analysis.draw.total,
+    draw: analysis.draw.total,
+    tutors: analysis.tutors.total,
+    ramp: analysis.ramp.total,
+    instant_removal: special.instant_removal,
+    token_generators: special.token_generators,
+    anthems: special.anthems,
+    reanimation: special.reanimation,
+    discard_outlets: special.discard_outlets,
+    equipment: special.equipment,
+    auras: special.auras,
+    protection: special.protection,
+    sacrifice_outlets: special.sacrifice_outlets,
+    death_triggers: special.death_triggers,
+    recursion: special.recursion,
+  };
+
+  return mapping[metric] || 0;
+}
+
+/**
+ * Calculate archetype status and progress percentage
+ */
+function calculateArchetypeStatus(
+  metrics: Record<string, { owned: number; required: number; recommended: number }>
+): { status: 'strong' | 'partial' | 'weak'; progress: number } {
+  const entries = Object.values(metrics);
+  const total = entries.length;
+
+  // Count how many metrics meet thresholds
+  const meetsRecommended = entries.filter(m => m.owned >= m.recommended).length;
+  const meetsRequired = entries.filter(m => m.owned >= m.required).length;
+
+  // Calculate overall progress (0-100%)
+  const progress = Math.round(
+    entries.reduce((sum, m) => {
+      const pct = Math.min((m.owned / m.recommended) * 100, 100);
+      return sum + pct;
+    }, 0) / total
+  );
+
+  // Determine status
+  if (meetsRecommended === total) return { status: 'strong', progress };
+  if (meetsRequired >= total * 0.75) return { status: 'partial', progress };
+  return { status: 'weak', progress };
+}
+
+/**
+ * Identify strength areas for this archetype
+ */
+function identifyStrengths(
+  metrics: Record<string, { owned: number; required: number; recommended: number }>
+): string[] {
+  const strengths: string[] = [];
+
+  for (const [key, counts] of Object.entries(metrics)) {
+    if (counts.owned >= counts.recommended) {
+      const label = key.replace(/_/g, ' ');
+      strengths.push(`${counts.owned} ${label}`);
+    }
+  }
+
+  return strengths;
+}
+
+/**
+ * Identify gaps preventing archetype readiness
+ */
+function identifyGaps(
+  metrics: Record<string, { owned: number; required: number; recommended: number }>
+): string[] {
+  const gaps: string[] = [];
+
+  for (const [key, counts] of Object.entries(metrics)) {
+    if (counts.owned < counts.required) {
+      const needed = counts.required - counts.owned;
+      const label = key.replace(/_/g, ' ');
+      gaps.push(`Need ${needed} more ${label}`);
+    } else if (counts.owned < counts.recommended) {
+      const needed = counts.recommended - counts.owned;
+      const label = key.replace(/_/g, ' ');
+      gaps.push(`Add ${needed} more ${label} for optimal build`);
+    }
+  }
+
+  return gaps;
+}

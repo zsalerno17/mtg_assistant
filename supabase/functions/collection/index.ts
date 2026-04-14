@@ -4,7 +4,7 @@ import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/a
 import { getUserClient } from "../_shared/supabase.ts";
 import { parseMoxfieldCsv, parseTextList } from "../_shared/collection_parser.ts";
 import { getCardsByNames } from "../_shared/scryfall.ts";
-import { analyzeCollection, CollectionCard } from "../_shared/collection_analyzer.ts";
+import { analyzeCollection, analyzeArchetypes, CollectionCard } from "../_shared/collection_analyzer.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -174,8 +174,12 @@ serve(async (req) => {
 
       const cards = data.cards_json as CollectionCard[];
       const analysis = analyzeCollection(cards, usageMap);
+      const archetypes = analyzeArchetypes(cards, analysis);
 
-      return new Response(JSON.stringify(analysis), {
+      return new Response(JSON.stringify({ 
+        ...analysis,
+        archetypes 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
