@@ -188,7 +188,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
 
       {/* Commander */}
       {item.commander && (
-        <p className="text-[var(--color-muted)] text-xs truncate">{item.commander}</p>
+        <p className="text-[var(--color-muted)] text-xs truncate font-[var(--font-display)]">{item.commander}</p>
       )}
 
       {/* Status */}

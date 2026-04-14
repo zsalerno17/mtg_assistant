@@ -293,7 +293,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                   Power {analysis.power_level}/10
                 </span>
               )}
-              <span className="text-[var(--color-muted)] text-sm font-heading">{deck.format} · {deck.name}</span>
+              <span className="text-[var(--color-muted)] text-sm">{deck.format} · <span className="font-[var(--font-display)]">{deck.name}</span></span>
             </div>
           </div>
         </div>
@@ -1581,7 +1581,7 @@ export default function DeckPage() {
             <div className="flex items-center gap-2 mt-0.5">
               <ColorPips colors={analysis.colors} size="0.9rem" />
               {analysis.commander && (
-                <span className="text-[var(--color-muted)] text-xs truncate font-heading">{analysis.commander}</span>
+                <span className="text-[var(--color-muted)] text-xs truncate font-[var(--font-display)]">{analysis.commander}</span>
               )}
             </div>
           )}
