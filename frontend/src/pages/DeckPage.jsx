@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid } from 'recharts'
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
@@ -484,61 +484,85 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
         )}
 
-        {/* ── Interaction Timeline ── */}
+        {/* ── Removal Suite (Donut Chart) ── */}
         {(() => {
-        const timeline = analysis.interaction_timeline
-        console.log('Interaction Timeline data:', timeline)
-        if (!timeline) {
-          console.warn('No interaction_timeline data in analysis')
-          return null
-        }
+        const quality = analysis.removal_quality
+        if (!quality || quality.total === 0) return null
         
-        const phases = [
-          { name: 'Acceleration (0-2)', data: timeline.acceleration, color: 'var(--color-primary)' },
-          { name: 'Core Spells (3-4)', data: timeline.core, color: 'var(--color-secondary)' },
-          { name: 'Haymakers (5+)', data: timeline.haymakers, color: 'var(--color-danger)' },
-        ]
-        
-        const maxVal = Math.max(timeline.acceleration.total, timeline.core.total, timeline.haymakers.total, 1)
-        const hasInteraction = timeline.acceleration.total + timeline.core.total + timeline.haymakers.total > 0
-        
-        if (!hasInteraction) return null
+        const qualityData = [
+          { name: 'Exile', value: quality.exile, color: 'var(--color-primary)', desc: 'premium', tooltip: 'Bypasses indestructible, recursion, and death triggers' },
+          { name: 'Destroy', value: quality.destroy, color: 'var(--color-secondary)', desc: 'good', tooltip: 'Standard removal — stopped by indestructible' },
+          { name: 'Damage', value: quality.damage, color: 'var(--color-danger)', desc: 'flexible', tooltip: 'Scalable removal — can hit multiple targets or planeswalkers' },
+          { name: 'Bounce', value: quality.bounce, color: 'var(--color-text-subtle)', desc: 'tempo', tooltip: 'Returns to hand — temporary answer, good for ETB value' },
+          { name: 'Tuck', value: quality.tuck, color: 'var(--color-success)', desc: 'niche', tooltip: 'Shuffles into library — strong vs commanders' },
+          { name: 'Other', value: quality.other, color: 'var(--color-muted)', desc: 'varies', tooltip: 'Sacrifice effects, debuffs, and other removal types' },
+        ].filter(q => q.value > 0)
         
         return (
           <div>
-            <SectionLabel className="mb-3">Interaction Timeline</SectionLabel>
-            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 flex items-center" style={{ minHeight: '268px' }}>
-              <div className="space-y-3 w-full">
-                {phases.map((phase) => (
-                  <div key={phase.name} className="flex flex-col gap-1.5">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-[11px] text-[var(--color-text-muted)] font-medium">{phase.name}</span>
-                      <span className="text-[10px] font-mono text-[var(--color-text-subtle)]">
-                        {phase.data.total} {phase.data.total === 1 ? 'card' : 'cards'}
-                      </span>
-                    </div>
-                    <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 14 }}>
-                      <div
-                        className="h-full rounded-sm"
-                        style={{ width: `${Math.round((phase.data.total / maxVal) * 100)}%`, background: phase.color }}
-                      />
-                    </div>
-                    {phase.data.total > 0 && (
-                      <div className="text-[10px] text-[var(--color-text-subtle)] flex gap-2">
-                        <span>{phase.data.instant} instant-speed</span>
-                        <span className="text-[var(--color-border)]">•</span>
-                        <span>{phase.data.sorcery} sorcery-speed</span>
+            <SectionLabel className="mb-3">Removal Suite</SectionLabel>
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
+              <div className="flex flex-col items-center">
+                {/* Donut Chart */}
+                <ResponsiveContainer width="100%" height={140}>
+                  <PieChart>
+                    <Pie
+                      data={qualityData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={55}
+                      dataKey="value"
+                      isAnimationActive={false}
+                      stroke="none"
+                    >
+                      {qualityData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Center text */}
+                <div className="text-center -mt-24 mb-16 pointer-events-none">
+                  <div className="text-2xl font-bold text-[var(--color-text)]">{quality.total}</div>
+                  <div className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Removal</div>
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-1.5 w-full">
+                  {qualityData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-[11px] group relative">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: item.color }} />
+                        <span className="text-[var(--color-text)]">{item.value} {item.name}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
-                <div className="pt-2 border-t border-[var(--color-border)]">
-                  <span className="text-[10px] text-[var(--color-text-muted)]">
-                    {timeline.instant_speed_percentage}% instant-speed interaction
-                  </span>
-                  {timeline.acceleration.total < 4 && (
-                    <span className="block text-[10px] text-[var(--color-danger)] mt-1">
-                      ⚠️ Light early interaction — vulnerable to fast threats
+                      <span className="text-[var(--color-text-subtle)] cursor-help">({item.desc})</span>
+                      {item.tooltip && (
+                        <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-56 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                          <span className="block text-[var(--color-text)] text-[10px] leading-relaxed">{item.tooltip}</span>
+                          <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary */}
+                <div className="mt-3 pt-3 border-t border-[var(--color-border)] w-full text-center">
+                  {quality.exile_percentage >= 40 && (
+                    <span className="text-[11px] text-[var(--color-success)]">
+                      ✓ {quality.exile_percentage}% exile — strong vs recursion
+                    </span>
+                  )}
+                  {quality.exile_percentage < 20 && quality.total >= 5 && (
+                    <span className="text-[11px] text-[var(--color-danger)]">
+                      ⚠️ {quality.exile_percentage}% exile — weak vs recursion
+                    </span>
+                  )}
+                  {quality.exile_percentage >= 20 && quality.exile_percentage < 40 && (
+                    <span className="text-[11px] text-[var(--color-text-muted)]">
+                      {quality.exile_percentage}% exile-based removal
                     </span>
                   )}
                 </div>
@@ -549,66 +573,87 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         })()}
       </div>
 
-      {/* ── Removal Quality ── */}
+      {/* ── Interaction Coverage (Full Width) ── */}
       {(() => {
-        const quality = analysis.removal_quality
-        console.log('Removal Quality data:', quality)
-        if (!quality || quality.total === 0) {
-          console.warn('No removal_quality data in analysis')
-          return null
-        }
+        const coverage = analysis.interaction_coverage
+        if (!coverage) return null
         
-        const qualityTypes = [
-          { label: 'Exile', value: quality.exile, color: 'var(--color-primary)', desc: 'Premium — bypasses recursion' },
-          { label: 'Destroy', value: quality.destroy, color: 'var(--color-secondary)', desc: 'Good — standard removal' },
-          { label: 'Damage', value: quality.damage, color: 'var(--color-danger)', desc: 'Flexible — scalable' },
-          { label: 'Bounce', value: quality.bounce, color: 'var(--color-text-subtle)', desc: 'Tempo — temporary answer' },
-          { label: 'Tuck', value: quality.tuck, color: 'var(--color-success)', desc: 'Niche — anti-commander' },
-          { label: 'Other', value: quality.other, color: 'var(--color-muted)', desc: 'Varies' },
-        ].filter(q => q.value > 0)
+        const categories = [
+          { 
+            label: 'Creature Answers', 
+            value: coverage.creature_removal,
+            color: 'var(--color-primary)',
+            detail: coverage.creature_removal > 0 ? `${coverage.creature_removal_instant} instant-speed • ${coverage.board_wipes} board wipes` : null,
+            threshold: 10,
+            tooltip: 'Single-target removal and board wipes that answer creature threats',
+          },
+          { 
+            label: 'Artifact/Enchantment Removal', 
+            value: coverage.artifact_enchantment_removal,
+            color: 'var(--color-secondary)',
+            detail: null,
+            threshold: 5,
+            tooltip: 'Answers problematic permanents like Rhystic Study, Smothering Tithe, etc.',
+          },
+          { 
+            label: 'Stack Interaction', 
+            value: coverage.counterspells,
+            color: 'var(--color-success)',
+            detail: coverage.counterspells > 0 ? 'Can stop combos' : null,
+            threshold: 3,
+            tooltip: 'Counterspells that can stop game-winning plays on the stack',
+          },
+          { 
+            label: 'Graveyard Hate', 
+            value: coverage.graveyard_hate,
+            color: 'var(--color-danger)',
+            detail: null,
+            threshold: 1,
+            tooltip: 'Cards that exile graveyards or prevent graveyard strategies (vs Meren, Muldrotha, reanimator)',
+          },
+        ]
         
-        const maxVal = Math.max(...qualityTypes.map(q => q.value), 1)
+        const maxVal = Math.max(...categories.map(c => c.value), 1)
+        const hasData = categories.some(c => c.value > 0)
+        if (!hasData) return null
         
         return (
           <div>
-            <SectionLabel className="mb-1">Removal Quality</SectionLabel>
-            <p className="text-[10px] text-[var(--color-text-subtle)] mb-3">
-              {quality.total} total removal • {quality.exile_percentage}% exile-based
-            </p>
-            <div className="space-y-2.5">
-              {qualityTypes.map((type) => (
-                <div key={type.label} className="flex flex-col gap-1">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-[11px] font-medium text-[var(--color-text)]">{type.label}</span>
-                    <span className="text-[10px] font-mono text-[var(--color-text-muted)]">
-                      {type.value} <span className="text-[var(--color-text-subtle)]">({Math.round((type.value / quality.total) * 100)}%)</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 10 }}>
+            <SectionLabel className="mb-3">Interaction Coverage</SectionLabel>
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {categories.map((cat) => (
+                  <div key={cat.label} className="flex flex-col gap-1.5 group relative">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-medium text-[var(--color-text)] cursor-help">{cat.label}</span>
+                      <span className="text-[11px] font-mono text-[var(--color-text-muted)]">
+                        {cat.value} {cat.value === 1 ? 'card' : 'cards'}
+                      </span>
+                    </div>
+                    {cat.tooltip && (
+                      <span className="pointer-events-none absolute bottom-full left-0 mb-2 w-64 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                        <span className="block text-[var(--color-text)] text-[10px] leading-relaxed">{cat.tooltip}</span>
+                        <span className="absolute top-full left-4 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
+                      </span>
+                    )}
+                    <div className="flex-1 bg-[var(--color-surface-2)] rounded-sm overflow-hidden" style={{ height: 14 }}>
                       <div
                         className="h-full rounded-sm"
-                        style={{ width: `${Math.round((type.value / maxVal) * 100)}%`, background: type.color }}
+                        style={{ width: `${Math.round((cat.value / maxVal) * 100)}%`, background: cat.color }}
                       />
                     </div>
+                    {cat.detail && (
+                      <div className="text-[10px] text-[var(--color-text-muted)]">↗ {cat.detail}</div>
+                    )}
+                    {cat.value === 0 && (
+                      <div className="text-[10px] text-[var(--color-danger)]">⚠️ Missing coverage</div>
+                    )}
+                    {cat.value > 0 && cat.value < cat.threshold && (
+                      <div className="text-[10px] text-[var(--color-secondary)]">⚠️ Light coverage</div>
+                    )}
                   </div>
-                  <p className="text-[9px] text-[var(--color-text-subtle)]">{type.desc}</p>
-                </div>
-              ))}
-              {quality.exile_percentage >= 40 && (
-                <div className="pt-2 border-t border-[var(--color-border)]">
-                  <span className="text-[10px] text-[var(--color-success)]">
-                    ✓ Strong removal suite — resilient vs recursion
-                  </span>
-                </div>
-              )}
-              {quality.exile_percentage < 20 && quality.total >= 5 && (
-                <div className="pt-2 border-t border-[var(--color-border)]">
-                  <span className="text-[10px] text-[var(--color-danger)]">
-                    ⚠️ Low exile removal — vulnerable to graveyard strategies
-                  </span>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </div>
         )
