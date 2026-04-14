@@ -913,6 +913,29 @@ export function analyzeEfficiency(
   console.log("  - Input cards:", cards.length);
   console.log("  - Usage map provided:", usageMap ? "Yes (" + usageMap.size + " entries)" : "No");
 
+  // Analyze quantity distribution
+  const quantityDistribution = new Map<number, number>();
+  const cardsWithMultipleCopies: string[] = [];
+  let totalQuantity = 0;
+  
+  for (const card of cards) {
+    const qty = card.quantity || 1;
+    totalQuantity += qty;
+    quantityDistribution.set(qty, (quantityDistribution.get(qty) || 0) + 1);
+    if (qty >= 2) {
+      cardsWithMultipleCopies.push(`${card.name} (${qty})`);
+    }
+  }
+  
+  console.log("[analyzeEfficiency] Quantity distribution:");
+  const sortedQtys = Array.from(quantityDistribution.entries()).sort((a, b) => a[0] - b[0]);
+  sortedQtys.forEach(([qty, count]) => {
+    console.log(`  - ${count} cards with quantity ${qty}`);
+  });
+  console.log(`[analyzeEfficiency] Total cards (sum of quantities): ${totalQuantity}`);
+  console.log(`[analyzeEfficiency] Cards with 2+ copies: ${cardsWithMultipleCopies.length}`);
+  console.log(`[analyzeEfficiency] First 20 cards with multiples:`, cardsWithMultipleCopies.slice(0, 20));
+
   let totalCards = 0;
   let cardsInUse = 0;
   let totalValue = 0;
@@ -925,7 +948,9 @@ export function analyzeEfficiency(
   // Track unique cards
   const uniqueCards = new Set<string>();
 
+  let iterationCount = 0;
   for (const card of cards) {
+    iterationCount++;
     const quantity = card.quantity || 1;
     const usage = usageMap?.get(card.name);
     const inUse = usage ? Math.min(usage.total, quantity) : 0;
@@ -971,6 +996,10 @@ export function analyzeEfficiency(
     }
   }
 
+  console.log(`[analyzeEfficiency] Loop complete. Iterated through ${iterationCount} cards`);
+  console.log(`[analyzeEfficiency] Found ${duplicates.length} duplicate entries (before deduplication)`);
+  console.log(`[analyzeEfficiency] First 20 duplicate entries:`, duplicates.slice(0, 20).map(d => ({ name: d.name, owned: d.owned })));
+
   // Deduplicate and aggregate duplicates by name
   const duplicatesMap = new Map<string, DuplicateCard>();
   for (const card of duplicates) {
@@ -985,6 +1014,10 @@ export function analyzeEfficiency(
       duplicatesMap.set(card.name, { ...card });
     }
   }
+  
+  console.log(`[analyzeEfficiency] Total duplicate entries before deduplication: ${duplicates.length}`);
+  console.log(`[analyzeEfficiency] Unique duplicates after deduplication: ${duplicatesMap.size}`);
+  console.log(`[analyzeEfficiency] First 10 after dedup:`, Array.from(duplicatesMap.values()).slice(0, 10).map(d => ({ name: d.name, owned: d.owned })));
   
   // Convert back to array and sort by trade value (highest first)
   const deduplicatedDuplicates = Array.from(duplicatesMap.values());
@@ -1028,7 +1061,7 @@ export function analyzeEfficiency(
     total_value: totalValue,
     value_in_use: valueInUse,
     value_unused: totalValue - valueInUse,
-    duplicates: deduplicatedDuplicates.slice(0, 20), // Top 20 duplicates
+    duplicates: deduplicatedDuplicates, // All duplicates, not sliced
     high_value_unused: deduplicatedHighValueUnused.slice(0, 20), // Top 20 high-value unused
   };
 }

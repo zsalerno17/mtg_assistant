@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, TrendingUp, Package, DollarSign, AlertCircle, Info, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import CardTooltip from './CardTooltip'
@@ -14,6 +14,25 @@ export default function CollectionEfficiency({ efficiency, loading }) {
   const [duplicatesSort, setDuplicatesSort] = useState({ key: 'trade_value', direction: 'desc' })
   const [unusedFilter, setUnusedFilter] = useState('')
   const [duplicatesFilter, setDuplicatesFilter] = useState('')
+
+  // Debug: Log duplicates data to check for basic lands
+  useEffect(() => {
+    if (efficiency?.duplicates) {
+      console.log('[CollectionEfficiency] Total duplicates:', efficiency.duplicates.length)
+      
+      if (efficiency._diagnostics) {
+        console.log('[CollectionEfficiency] Diagnostics:', efficiency._diagnostics)
+      }
+      
+      const basicLands = efficiency.duplicates.filter(c => 
+        ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'].includes(c.name)
+      )
+      console.log('[CollectionEfficiency] Basic lands in duplicates:', basicLands)
+      if (basicLands.length === 0) {
+        console.log('[CollectionEfficiency] First 10 duplicates:', efficiency.duplicates.slice(0, 10).map(c => ({ name: c.name, owned: c.owned, trade_value: c.trade_value })))
+      }
+    }
+  }, [efficiency?.duplicates, efficiency?._diagnostics])
 
   // Sorting function
   const sortData = (data, sortConfig) => {

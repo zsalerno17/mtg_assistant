@@ -46,6 +46,9 @@ serve(async (req) => {
       const cardNames = collection.cards.map((c) => c.name);
       const scryfallMap = await getCardsByNames(cardNames);
 
+      console.log(`[collection/upload] Scryfall returned ${scryfallMap.size} cards out of ${cardNames.length} requested`);
+      console.log(`[collection/upload] Missing from Scryfall: ${cardNames.length - scryfallMap.size} cards`);
+
       const enriched = collection.cards.map((card) => {
         const scryfallCard = scryfallMap.get(card.name.toLowerCase());
         if (scryfallCard) {
@@ -86,11 +89,11 @@ serve(async (req) => {
 
       console.log(`[collection/upload] Consolidated to ${consolidatedCards.length} unique cards`);
       
-      // Log a sample to verify quantities
-      const sampleCard = consolidatedCards.find(c => c.name.toLowerCase().includes('smoldering'));
-      if (sampleCard) {
-        console.log(`[collection/upload] Sample - ${sampleCard.name}: quantity ${sampleCard.quantity}`);
-      }
+      // Analyze what cards are missing Scryfall data
+      const cardsWithoutTypeLines = consolidatedCards.filter(c => !c.type_line).length;
+      const cardsWithoutPrices = consolidatedCards.filter(c => !(c as any).prices).length;
+      console.log(`[collection/upload] Cards missing type_line: ${cardsWithoutTypeLines}`);
+      console.log(`[collection/upload] Cards missing prices: ${cardsWithoutPrices}`);
 
       await sb.from("collections").upsert(
         { 
@@ -103,7 +106,12 @@ serve(async (req) => {
 
       console.log(`[collection/upload] Imported ${consolidatedCards.length} unique cards (${cardsData.length} total entries) for user ${user.userId}`);
 
-      return new Response(JSON.stringify({ cards_imported: cardsData.length }), {
+      return new Response(JSON.stringify({ 
+        cards_imported: cardsData.length,
+        unique_cards: consolidatedCards.length,
+        missing_scryfall_data: cardsWithoutTypeLines,
+        missing_prices: cardsWithoutPrices
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -314,6 +322,28 @@ serve(async (req) => {
 
       const cards = data.cards_json as CollectionCard[];
       
+      console.log(`[collection/efficiency] Raw cards from DB: ${cards.length}`);
+      
+      // Analyze quantity distribution BEFORE consolidation
+      const rawQuantityDist = new Map<number, number>();
+      const rawCardNames = new Map<string, number>();
+      for (const card of cards) {
+        const qty = card.quantity || 1;
+        rawQuantityDist.set(qty, (rawQuantityDist.get(qty) || 0) + 1);
+        rawCardNames.set(card.name, (rawCardNames.get(card.name) || 0) + 1);
+      }
+      console.log("[collection/efficiency] Raw quantity distribution:");
+      Array.from(rawQuantityDist.entries()).sort((a, b) => a[0] - b[0]).forEach(([qty, count]) => {
+        console.log(`  - ${count} DB entries with quantity ${qty}`);
+      });
+      
+      // Check for duplicate card names in DB
+      const duplicateNames = Array.from(rawCardNames.entries()).filter(([_, count]) => count > 1);
+      console.log(`[collection/efficiency] Cards with multiple DB entries: ${duplicateNames.length}`);
+      if (duplicateNames.length > 0) {
+        console.log("[collection/efficiency] First 10 duplicate names:", duplicateNames.slice(0, 10));
+      }
+      
       // Consolidate any duplicate card entries (in case of legacy data)
       const cardMap = new Map<string, CollectionCard>();
       for (const card of cards) {
@@ -329,7 +359,15 @@ serve(async (req) => {
       console.log("[collection/efficiency] Calling analyzeEfficiency with:");
       console.log("  - Cards:", consolidatedCards.length, `(${cards.length} before consolidation)`);
       console.log("  - Usage map size:", usageMap.size);
-      console.log("  - Sample card:", consolidatedCards[0] ? { name: consolidatedCards[0].name, prices: (consolidatedCards[0] as any).prices } : "no cards");
+      
+      // Sample some cards to verify data structure
+      const sampleCards = consolidatedCards.slice(0, 5).map(c => ({ 
+        name: c.name, 
+        quantity: c.quantity,
+        has_type_line: !!c.type_line,
+        has_prices: !!(c as any).prices
+      }));
+      console.log("[collection/efficiency] Sample cards:", sampleCards);
       
       const efficiency = analyzeEfficiency(consolidatedCards, usageMap);
       
@@ -339,7 +377,22 @@ serve(async (req) => {
       console.log("  - Total value:", efficiency.total_value);
       console.log("  - Utilization rate:", efficiency.utilization_rate);
 
-      return new Response(JSON.stringify(efficiency), {
+      // Add diagnostic data to response
+      const diagnostics = {
+        db_card_count: cards.length,
+        consolidated_card_count: consolidatedCards.length,
+        cards_with_duplicates: consolidatedCards.filter(c => (c.quantity || 1) >= 2).length,
+        sample_duplicates: consolidatedCards
+          .filter(c => (c.quantity || 1) >= 2)
+          .slice(0, 10)
+          .map(c => ({ name: c.name, quantity: c.quantity })),
+        duplicate_entries_returned: efficiency.duplicates.length
+      };
+
+      return new Response(JSON.stringify({ 
+        ...efficiency,
+        _diagnostics: diagnostics
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
