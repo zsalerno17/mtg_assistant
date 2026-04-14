@@ -1,25 +1,28 @@
 # Phase 38 Implementation Plan — Evidence-Based Execution
 
 > **Created:** April 13, 2026  
-> **Status:** 🚧 IN PROGRESS — Phase 0-F, E COMPLETE | Phase G Next  
+> **Status:** ✅ IMPLEMENTATION COMPLETE — All Phases (0-G) Done | Final Verification Pending  
 > **Design Approved:** ✅ Phase 0 mockups complete  
-> **Implementation:** Phase E (CollectionPage Polish) complete — April 14, 2026
+> **Implementation:** Phase G (Final Polish) complete — April 14, 2026
 
-**Recent Completion Summary (Phase F - League Pages):**
-- ✅ Mobile responsive layout improvements (header reorganized, proper stacking)
-- ✅ Bonus award table mobile optimization (column width, padding adjustments)
-- ✅ Cursor pointer states added to all interactive buttons (tabs, export, vote)
-- ✅ Global navbar gap fix (Layout padding from pt-16 to pt-4/pt-6)
-- ✅ Mobile scrolling fix (added pb-32 for bottom clearance)
-- ✅ Changed "Superstar" label to "Pilot" in standings table
-- ✅ Page-level padding harmonization (py-6, py-10 across pages)
+**Recent Completion Summary (Phase G - Final Polish):**
+- ✅ Cross-page consistency audit completed
+- ✅ All pages using consistent font-brand for h1 elements (text-3xl)
+- ✅ DeckPage hero box correctly uses Cinzel for deck name
+- ✅ All main pages using max-w-[1400px] containers
+- ✅ Consistent pt-6 pb-8 padding pattern across pages
+- ✅ Removed old decorative underlines (ProfilePage, ImportDeckPage)
+- ✅ CollectionPage: Added CardTooltip hover/click, duplicate card grouping
+- ✅ LeaguePage: Removed breadcrumb navigation
+- ✅ All interactive elements have cursor-pointer states
 
-**Files Modified in Phase F:**
-- `frontend/src/pages/LeaguePage.jsx` (mobile layout, table columns, buttons)
-- `frontend/src/components/Layout.jsx` (navbar gap fix)
-- `frontend/src/pages/DashboardPage.jsx` (padding update)
-- `frontend/src/pages/CollectionPage.jsx` (padding update)
-- `frontend/src/pages/LeaguesPage.jsx` (padding update)
+**Files Modified in Phase G:**
+- `frontend/src/pages/CollectionPage.jsx` (CardTooltip, duplicate grouping, layout consistency)
+- `frontend/src/pages/DeckPage.jsx` (container width, Cinzel in hero box)
+- `frontend/src/pages/DashboardPage.jsx` (container width, heading size)
+- `frontend/src/pages/ProfilePage.jsx` (h2→h1, layout, remove underline)
+- `frontend/src/pages/ImportDeckPage.jsx` (font consistency, remove underline)
+- `frontend/src/pages/LeaguePage.jsx` (remove breadcrumb navigation)
 
 ---
 
@@ -449,17 +452,22 @@ function CollectionStats({ collection }) {
 
 ---
 
-### Phase G — Remaining Polish ⬜
+### Phase G — Remaining Polish ✅
 
 **Depends on:** Phase E, F verified ✅
 
 **Goal:** Final visual polish and any remaining page updates
 
-**Potential Items:**
-- 3rd place badge color differentiation (if needed on League standings)
-- Any remaining DeckPage mobile tweaks
-- Additional responsive improvements identified during testing
-- Final cross-browser verification
+**Completed Items:**
+- ✅ Cross-page visual consistency audit
+- ✅ Fixed heading fonts and sizes across all pages
+- ✅ Standardized container widths (max-w-[1400px])
+- ✅ Consistent spacing patterns (pt-6 pb-8)
+- ✅ Removed old design decorations (underlines, gradients)
+- ✅ CollectionPage card interactions and grouping
+- ✅ LeaguePage navigation cleanup
+- ✅ All interactive elements have proper cursor states
+- ✅ Mobile experience smooth across all pages
 
 **Verification Checklist:**
 ```bash

@@ -446,10 +446,10 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         {manaCurveData.length > 0 && (
           <div>
             <SectionLabel className="mb-3">Mana Curve</SectionLabel>
-            <p className="text-xs text-[var(--color-text-muted)] mb-3">Distribution of spells by mana cost — color-coded by timing (acceleration, core spells, and haymakers).</p>
+            <p className="text-[10px] text-[var(--color-text-muted)] mb-3">Distribution of spells by mana cost — color-coded by timing (acceleration, core spells, and haymakers).</p>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
-              <div className="flex items-center" style={{ height: '220px' }}>
-                <ResponsiveContainer width="100%" height={180}>
+              <div className="flex items-center justify-center" style={{ height: '180px', marginBottom: '1rem' }}>
+                <ResponsiveContainer width="100%" height="100%">
               <BarChart data={manaCurveData} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="var(--color-border)" strokeOpacity={0.5} />
                 <XAxis dataKey="cmc" tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -502,17 +502,18 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         return (
           <div>
             <SectionLabel className="mb-3">Removal Suite</SectionLabel>
-            <p className="text-xs text-[var(--color-text-muted)] mb-3">Breakdown of removal by quality — exile is permanent, destroy can be recursed, bounce is temporary.</p>
-            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 flex flex-col items-center">
-              {/* Donut Chart */}
-              <ResponsiveContainer width="100%" height={400}>
+            <p className="text-[10px] text-[var(--color-text-muted)] mb-3">Breakdown of removal by quality — exile is permanent, destroy can be recursed, bounce is temporary.</p>
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4" style={{ minHeight: '268px' }}>
+              <div className="flex flex-col items-center">
+                {/* Donut Chart */}
+                <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
                     <Pie
                       data={qualityData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius={40}
+                      outerRadius={65}
                       dataKey="value"
                       isAnimationActive={false}
                       stroke="none"
@@ -525,9 +526,9 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                 </ResponsiveContainer>
                 
                 {/* Center text */}
-                <div className="text-center -mt-40 mb-32 pointer-events-none">
-                  <div className="text-3xl font-bold text-[var(--color-text)]">{quality.total}</div>
-                  <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">Removal</div>
+                <div className="text-center -mt-28 mb-14 pointer-events-none">
+                  <div className="text-2xl font-bold text-[var(--color-text)]">{quality.total}</div>
+                  <div className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Removal</div>
                 </div>
 
                 {/* Legend */}
@@ -567,6 +568,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                     </span>
                   )}
                 </div>
+              </div>
             </div>
           </div>
         )
@@ -630,7 +632,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         return (
           <div>
             <SectionLabel className="mb-3">Interaction Coverage</SectionLabel>
-            <p className="text-xs text-[var(--color-text-muted)] mb-3">Your ability to answer different threat types — full circle is recommended, filled portion is current coverage.</p>
+            <p className="text-[10px] text-[var(--color-text-muted)] mb-3">Your ability to answer different threat types — full circle is recommended, filled portion is current coverage.</p>
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-5">
               <div className="flex flex-col lg:flex-row gap-6 items-start">
                 {/* Radial Bar Chart */}
@@ -654,7 +656,8 @@ function OverviewTab({ deck, analysis, onTabChange }) {
                         animationDuration={500}
                         activeBar={false}
                       />
-                      <Tooltip 
+                      <Tooltip
+                        cursor={false}
                         content={({ active, payload }) => {
                           if (!active || !payload?.[0]) return null;
                           const data = payload[0].payload;
