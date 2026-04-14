@@ -1,8 +1,8 @@
 /*
  * Design System Tokens — MTG Assistant
  * 
- * Color System: Arcane Spectrum (Option C)
- *   MTG 5-color palette with high contrast, rich immersive feel
+ * Color System: Phase 38 Refined (Neutral + Accent)
+ *   Modern neutral gray foundation with muted blue/tan accents
  * 
  * Typography: Cinzel + Inter (Option D)
  *   Cinzel for headings/brand (MTG gravitas)
@@ -15,34 +15,34 @@
  */
 
 /* ══════════════════════════════════════════════════════
-   COLOR PALETTE — Arcane Spectrum
+   COLOR PALETTE — Phase 38 Refined
    Dark mode by default, light mode via [data-theme="light"]
 ══════════════════════════════════════════════════════ */
 
 :root {
   /* ─── Background & Surfaces ─────────────────────────── */
-  --color-bg: #070813;
-  --color-surface: #0d1020;
-  --color-surface-2: #14182d;
-  --color-surface-hover: #1a1e38;
+  --color-bg: #1a1f24;
+  --color-surface: #23292E;
+  --color-surface-2: #2d3439;
+  --color-surface-hover: #343a40;
   
   /* ─── Borders ───────────────────────────────────────── */
-  --color-border: #1e2540;
-  --color-border-light: #2a3458;
-  --color-border-focus: rgba(76,168,224,0.50);
+  --color-border: #2d3439;
+  --color-border-light: #3a4248;
+  --color-border-focus: rgba(45,130,183,0.50);
   
   /* ─── Primary (Blue) ────────────────────────────────── */
-  --color-primary: #4ca8e0;
-  --color-primary-hover: #60b8ec;
-  --color-primary-subtle: rgba(76,168,224,0.12);
-  --color-primary-border: rgba(76,168,224,0.30);
-  --color-primary-glow: rgba(76,168,224,0.35);
+  --color-primary: #2D82B7;
+  --color-primary-hover: #3a92c7;
+  --color-primary-subtle: rgba(45,130,183,0.12);
+  --color-primary-border: rgba(45,130,183,0.30);
+  --color-primary-glow: rgba(45,130,183,0.35);
   
-  /* ─── Secondary (Gold) ──────────────────────────────── */
-  --color-secondary: #d8a848;
-  --color-secondary-hover: #e4b85e;
-  --color-secondary-subtle: rgba(216,168,72,0.12);
-  --color-secondary-border: rgba(216,168,72,0.30);
+  /* ─── Secondary (Tan) ───────────────────────────────── */
+  --color-secondary: #DBAC84;
+  --color-secondary-hover: #e5bc94;
+  --color-secondary-subtle: rgba(219,172,132,0.12);
+  --color-secondary-border: rgba(219,172,132,0.30);
   
   /* ─── Semantic Colors ───────────────────────────────── */
   --color-success: #5ec070;
@@ -53,17 +53,17 @@
   --color-danger-subtle: rgba(232,88,104,0.12);
   --color-danger-border: rgba(232,88,104,0.30);
   
-  --color-warning: #d8a848;
-  --color-warning-subtle: rgba(216,168,72,0.12);
-  --color-warning-border: rgba(216,168,72,0.30);
+  --color-warning: #DBAC84;
+  --color-warning-subtle: rgba(219,172,132,0.12);
+  --color-warning-border: rgba(219,172,132,0.30);
   
-  --color-info: #4ca8e0;
-  --color-info-subtle: rgba(76,168,224,0.12);
-  --color-info-border: rgba(76,168,224,0.30);
+  --color-info: #2D82B7;
+  --color-info-subtle: rgba(45,130,183,0.12);
+  --color-info-border: rgba(45,130,183,0.30);
   
   /* ─── MTG Color Identity ────────────────────────────── */
   --color-mtg-white: #f4f0e0;
-  --color-mtg-blue: #4ca8e0;
+  --color-mtg-blue: #2D82B7;
   --color-mtg-black: #9875d8;
   --color-mtg-red: #e85868;
   --color-mtg-green: #5ec070;
@@ -75,13 +75,13 @@
   --color-text-on-primary: #001028;
   
   /* ─── Interactive ───────────────────────────────────── */
-  --color-link: #4ca8e0;
-  --color-link-hover: #60b8ec;
+  --color-link: #2D82B7;
+  --color-link-hover: #3a92c7;
   
   /* ─── Special ───────────────────────────────────────── */
-  --color-highlight-bg: rgba(216,168,72,0.08);
-  --color-skeleton: #14182d;
-  --color-skeleton-highlight: #1e2540;
+  --color-highlight-bg: rgba(219,172,132,0.08);
+  --color-skeleton: #2d3439;
+  --color-skeleton-highlight: #3a4248;
 }
 
 /* Light mode color overrides */
@@ -123,7 +123,7 @@
   --color-info-border: rgba(32,128,184,0.30);
   
   --color-mtg-white: #4a4035;
-  --color-mtg-blue: #2080b8;
+  --color-mtg-blue: #2D82B7;
   --color-mtg-black: #6838a8;
   --color-mtg-red: #c8303c;
   --color-mtg-green: #2e9050;
