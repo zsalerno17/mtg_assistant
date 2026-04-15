@@ -1,14 +1,16 @@
 /**
  * Collection Analyzer - Performance-optimized categorization for Commander collections
- * 
+ *
  * Tiered Approach:
  * 1. Type-line filtering (~10ms) - eliminate non-relevant cards
  * 2. Keywords array (~20ms) - fast string matching
  * 3. Smart regex (~150ms) - targeted oracle text patterns
  * 4. Memoization - cache results for identical cards
- * 
+ *
  * Target: <500ms for 2000-card collections
  */
+
+import { UsageMap } from "./deck_usage.ts";
 
 // Type definitions
 export interface CollectionCard {
@@ -1066,11 +1068,22 @@ function determineWhyUnused(card: CollectionCard, price: number): string {
 // COLOR IDENTITY ANALYSIS (Phase 3)
 // ============================================================================
 
+export interface ColorIdentityCard {
+  name: string;
+  quantity: number;   // copies owned
+  in_use: number;     // copies currently in decks
+  available: number;  // quantity - in_use
+}
+
 export interface ColorPairStrength {
   colors: string; // e.g., "WU", "UBR"
-  card_count: number;
-  staple_count: number; // cards meeting quality thresholds
-  commander_suggestions: string[];
+  card_count: number;       // cards with exactly this color identity (used for matrix)
+  staple_count: number;     // staples with exact color identity match
+  deck_staples: number;     // staples legally playable in a deck of this color identity (subset + colorless)
+  deck_card_count: number;  // total non-land cards legally playable in a deck of this color identity
+  staple_cards: ColorIdentityCard[];    // full staple objects with owned/in_use/available
+  commander_cards: ColorIdentityCard[]; // legendary creatures with exact color identity match
+  commander_suggestions: string[];      // card names derived from commander_cards (backwards compat)
 }
 
 export interface ColorIdentityAnalysis {
@@ -1085,10 +1098,21 @@ export interface ColorIdentityAnalysis {
   weak_pairs: ColorPairStrength[]; // multi-color combos with <10 staples
 }
 
+function toColorIdentityCard(card: CollectionCard, usageMap?: UsageMap): ColorIdentityCard {
+  const usage = usageMap?.get(card.name.toLowerCase());
+  const in_use = usage?.total ?? 0;
+  return {
+    name: card.name,
+    quantity: card.quantity ?? 1,
+    in_use,
+    available: Math.max(0, (card.quantity ?? 1) - in_use),
+  };
+}
+
 /**
  * Analyze which color combinations are well-supported by the collection
  */
-export function analyzeColorIdentity(cards: CollectionCard[]): ColorIdentityAnalysis {
+export function analyzeColorIdentity(cards: CollectionCard[], usageMap?: UsageMap): ColorIdentityAnalysis {
   const startTime = performance.now();
   
   // Group cards by color identity (exclude lands and colorless)
@@ -1154,24 +1178,57 @@ export function analyzeColorIdentity(cards: CollectionCard[]): ColorIdentityAnal
       colors: colorKey,
       card_count: count,
       staple_count: staples,
-      commander_suggestions: getCommanderSuggestions(colorKey, cards),
+      deck_staples: 0,        // computed below
+      deck_card_count: 0,     // computed below
+      staple_cards: [],       // computed below
+      commander_cards: [],    // computed below
+      commander_suggestions: [], // computed below from commander_cards
     });
   }
-  
-  // Sort pairs by staple count
-  pairs.sort((a, b) => b.staple_count - a.staple_count);
-  
+
+  // Compute deck_staples, deck_card_count, staple_cards, and commander_cards using subset logic:
+  // counts all non-land cards whose color identity is a subset of the pair's colors,
+  // including colorless cards (legal in every Commander deck).
+  // Known limitations: board wipe regex misses -X/-X sweepers; tutor regex has minor edge cases.
+  for (const pair of pairs) {
+    const pairSet = new Set(pair.colors.split(''));
+    const playable = cards.filter(card => {
+      const typeLine = (card.type_line || '').toLowerCase();
+      if (typeLine.includes('land')) return false;
+      const ci = card.color_identity || [];
+      return ci.length === 0 || ci.every(c => pairSet.has(c));
+    });
+    pair.deck_card_count = playable.length;
+
+    const staples = playable.filter(c => isStapleCard(c));
+    pair.deck_staples = staples.length;
+    pair.staple_cards = staples.map(c => toColorIdentityCard(c, usageMap));
+
+    // Commanders: legendary creatures whose exact color identity matches this pair
+    const commanders = cards.filter(card => {
+      const tl = (card.type_line || '').toLowerCase();
+      if (!tl.includes('legendary') || !tl.includes('creature')) return false;
+      const ci = (card.color_identity || []).slice().sort().join('');
+      return ci === pair.colors;
+    });
+    pair.commander_cards = commanders.map(c => toColorIdentityCard(c, usageMap));
+    pair.commander_suggestions = pair.commander_cards.map(c => c.name);
+  }
+
+  // Sort pairs by deck_staples (most playable first)
+  pairs.sort((a, b) => b.deck_staples - a.deck_staples);
+
   // Categorize by color count
   const mono_colors = pairs.filter(p => p.colors.length === 1);
   const two_color = pairs.filter(p => p.colors.length === 2);
   const three_color = pairs.filter(p => p.colors.length === 3);
   const four_color = pairs.filter(p => p.colors.length === 4);
   const five_color = pairs.filter(p => p.colors.length === 5);
-  
-  // Categorize as strong/weak (exclude mono-colors from these lists)
+
+  // Categorize as strong/weak (exclude mono-colors from these lists), using deck_staples
   const multi_color = pairs.filter(p => p.colors.length >= 2);
-  const strong_pairs = multi_color.filter(p => p.staple_count >= 20);
-  const weak_pairs = multi_color.filter(p => p.staple_count < 10);
+  const strong_pairs = multi_color.filter(p => p.deck_staples >= 30);
+  const weak_pairs = multi_color.filter(p => p.deck_staples < 15);
   
   const elapsed = performance.now() - startTime;
   console.log(`[collection_analyzer] Analyzed color identity in ${elapsed.toFixed(2)}ms`);

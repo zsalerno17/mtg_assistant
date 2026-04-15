@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isPresetUrl, urlToPresetId, isCreaturePreset, CREATURE_PRESET_MAP } from '../lib/avatarPresets'
 import { CreaturePresetIcon } from '../lib/creatureIcons'
-import { User, CircleHelp, LogOut, House, Trophy, Library } from 'lucide-react'
+import { User, CircleHelp, LogOut, House, Trophy, Library, Swords } from 'lucide-react'
 
 function UserAvatar({ email, avatarUrl, size = 'md' }) {
   const sizeClasses = {
@@ -64,7 +64,9 @@ function UserAvatar({ email, avatarUrl, size = 'md' }) {
 export default function TopNavbar() {
   const { session, profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const email = session?.user?.email || ''
+  const isBattlefieldActive = location.pathname.startsWith('/battlefield') || location.pathname.startsWith('/leagues') || location.pathname.startsWith('/games')
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -123,16 +125,16 @@ export default function TopNavbar() {
                 Collection
               </NavLink>
               <NavLink
-                to="/leagues"
-                className={({ isActive }) =>
+                to="/battlefield"
+                className={() =>
                   `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
-                    isActive
+                    isBattlefieldActive
                       ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
                       : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
-                Leagues
+                The Battlefield
               </NavLink>
             </div>
           </div>
@@ -203,15 +205,15 @@ export default function TopNavbar() {
             <span className="text-xs font-medium">Home</span>
           </NavLink>
           <NavLink
-            to="/leagues"
-            className={({ isActive }) =>
+            to="/battlefield"
+            className={() =>
               `flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all min-w-[72px] ${
-                isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'
+                isBattlefieldActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'
               }`
             }
           >
-            <Trophy className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
-            <span className="text-xs font-medium">Leagues</span>
+            <Swords className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
+            <span className="text-xs font-medium">Battlefield</span>
           </NavLink>
           <NavLink
             to="/collection"

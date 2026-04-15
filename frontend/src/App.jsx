@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -18,6 +18,9 @@ import JoinLeaguePage from './pages/JoinLeaguePage'
 import HelpPage from './pages/HelpPage'
 import IconShowcasePage from './pages/IconShowcasePage'
 import NotFoundPage from './pages/NotFoundPage'
+import GamesPage from './pages/GamesPage'
+import LogPersonalGamePage from './pages/LogPersonalGamePage'
+import BattlefieldPage from './pages/BattlefieldPage'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -32,11 +35,14 @@ function AnimatedRoutes() {
         <Route path="/help" element={<HelpPage />} />
         {import.meta.env.DEV && <Route path="/icons-dev" element={<IconShowcasePage />} />}
         <Route path="/decks/import" element={<ImportDeckPage />} />
-        <Route path="/leagues" element={<LeaguesPage />} />
+        <Route path="/battlefield" element={<BattlefieldPage />} />
+        <Route path="/leagues" element={<Navigate to="/battlefield" replace />} />
         <Route path="/leagues/:leagueId" element={<LeaguePage />} />
         <Route path="/leagues/:leagueId/log-game" element={<LogGamePage />} />
         <Route path="/leagues/:leagueId/games/:gameId/edit" element={<EditGamePage />} />
         <Route path="/leagues/join/:inviteToken" element={<JoinLeaguePage />} />
+        <Route path="/games" element={<Navigate to="/battlefield" replace />} />
+        <Route path="/games/log" element={<LogPersonalGamePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AnimatePresence>

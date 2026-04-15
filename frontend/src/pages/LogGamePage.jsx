@@ -193,7 +193,7 @@ export default function LogGamePage() {
       <div className="max-w-[900px] mx-auto px-8 py-10">
         <div className="mb-8">
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
-            Log Game Session
+            Log Campaign Skirmish
           </h1>
           <p className="text-[var(--color-muted)]">{league?.name}</p>
         </div>
@@ -217,12 +217,12 @@ export default function LogGamePage() {
           {/* Game Metadata */}
           <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
             <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">
-              Game Details
+              Skirmish Details
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="game-number" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
-                  Game Number
+                  Skirmish Number
                 </label>
                 <input
                   id="game-number"
@@ -482,7 +482,7 @@ export default function LogGamePage() {
               disabled={saving}
               className="btn-primary px-8 py-3 rounded-lg font-medium disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Log Game'}
+              {saving ? 'Saving...' : 'Log Skirmish'}
             </button>
           </div>
         </form>

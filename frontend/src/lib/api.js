@@ -296,4 +296,23 @@ export const api = {
   /** Archive all completed leagues (season ended). */
   archiveCompletedLeagues: () =>
     edgeFetch('leagues', '/bulk/archive', { method: 'POST' }),
+
+  // ---------------------------------------------------------------------------
+  // Personal game log (standalone — no league required)
+  // ---------------------------------------------------------------------------
+
+  /** Log a personal game (skirmish). */
+  logPersonalGame: ({ played_at, pod_size, placement, deck_id = null, notes = null }) =>
+    edgeFetch('games', '', {
+      method: 'POST',
+      body: JSON.stringify({ played_at, pod_size, placement, deck_id, notes }),
+    }),
+
+  /** Get personal game history (paginated). */
+  getPersonalGames: (page = 1) =>
+    edgeFetch('games', `?page=${page}`, {}),
+
+  /** Delete a personal game entry. */
+  deletePersonalGame: (game_id) =>
+    edgeFetch('games', `/${game_id}`, { method: 'DELETE' }),
 }

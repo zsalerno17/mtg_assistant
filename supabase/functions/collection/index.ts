@@ -5,6 +5,7 @@ import { getUserClient } from "../_shared/supabase.ts";
 import { parseMoxfieldCsv, parseTextList } from "../_shared/collection_parser.ts";
 import { getCardsByNames } from "../_shared/scryfall.ts";
 import { analyzeCollection, analyzeArchetypes, analyzeEfficiency, analyzeColorIdentity, CollectionCard } from "../_shared/collection_analyzer.ts";
+import { buildCardUsageMap } from "../_shared/deck_usage.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -165,49 +166,7 @@ serve(async (req) => {
         });
       }
 
-      // Query user's decks to calculate card usage
-      const { data: userDecks } = await sb
-        .from("user_decks")
-        .select("moxfield_id, deck_name")
-        .eq("user_id", user.userId);
-
-      // Build usage map: card name -> { total: number, decks: Array<{deck_name, quantity}> }
-      const usageMap = new Map<string, { total: number; decks: Array<{ deck_name: string; quantity: number }> }>();
-      if (userDecks && userDecks.length > 0) {
-        const moxfieldIds = userDecks.map(d => d.moxfield_id);
-        
-        // Fetch actual deck data from decks table
-        const { data: deckData } = await sb
-          .from("decks")
-          .select("moxfield_id, data_json")
-          .in("moxfield_id", moxfieldIds);
-        
-        if (deckData) {
-          for (const deck of deckData) {
-            const deckInfo = userDecks.find(ud => ud.moxfield_id === deck.moxfield_id);
-            const deckName = deckInfo?.deck_name || "Unnamed Deck";
-            const data = deck.data_json as { mainboard?: { name: string; quantity?: number }[] };
-            const mainboard = data.mainboard || [];
-            
-            for (const card of mainboard) {
-              const current = usageMap.get(card.name);
-              const cardQty = card.quantity || 1;
-              
-              if (current) {
-                current.total += cardQty;
-                current.decks.push({ deck_name: deckName, quantity: cardQty });
-              } else {
-                usageMap.set(card.name, {
-                  total: cardQty,
-                  decks: [{ deck_name: deckName, quantity: cardQty }]
-                });
-              }
-            }
-          }
-        }
-        
-        console.log(`[collection/analyze] Built usage map with ${usageMap.size} unique cards from ${deckData?.length || 0} decks`);
-      }
+      const usageMap = await buildCardUsageMap(sb, user.userId, "[collection/analyze]");
 
       const cards = data.cards_json as CollectionCard[];
       
@@ -225,7 +184,7 @@ serve(async (req) => {
       
       const analysis = analyzeCollection(consolidatedCards, usageMap);
       const archetypes = analyzeArchetypes(consolidatedCards, analysis);
-      const colorIdentity = analyzeColorIdentity(consolidatedCards);
+      const colorIdentity = analyzeColorIdentity(consolidatedCards, usageMap);
 
       return new Response(JSON.stringify({ 
         ...analysis,
@@ -264,48 +223,7 @@ serve(async (req) => {
       
       console.log("[collection/efficiency] Collection loaded. Cards count:", (data.cards_json as any[]).length);
 
-      // Query user's decks to calculate card usage (same as analyze endpoint)
-      const { data: userDecks } = await sb
-        .from("user_decks")
-        .select("moxfield_id, deck_name")
-        .eq("user_id", user.userId);
-
-      // Build usage map
-      const usageMap = new Map<string, { total: number; decks: Array<{ deck_name: string; quantity: number }> }>();
-      if (userDecks && userDecks.length > 0) {
-        const moxfieldIds = userDecks.map(d => d.moxfield_id);
-        
-        const { data: deckData } = await sb
-          .from("decks")
-          .select("moxfield_id, data_json")
-          .in("moxfield_id", moxfieldIds);
-        
-        if (deckData) {
-          for (const deck of deckData) {
-            const deckInfo = userDecks.find(ud => ud.moxfield_id === deck.moxfield_id);
-            const deckName = deckInfo?.deck_name || "Unnamed Deck";
-            const data = deck.data_json as { mainboard?: { name: string; quantity?: number }[] };
-            const mainboard = data.mainboard || [];
-            
-            for (const card of mainboard) {
-              const current = usageMap.get(card.name);
-              const cardQty = card.quantity || 1;
-              
-              if (current) {
-                current.total += cardQty;
-                current.decks.push({ deck_name: deckName, quantity: cardQty });
-              } else {
-                usageMap.set(card.name, {
-                  total: cardQty,
-                  decks: [{ deck_name: deckName, quantity: cardQty }]
-                });
-              }
-            }
-          }
-        }
-        
-        console.log(`[collection/efficiency] Built usage map with ${usageMap.size} unique cards from ${deckData?.length || 0} decks`);
-      }
+      const usageMap = await buildCardUsageMap(sb, user.userId, "[collection/efficiency]");
 
       const cards = data.cards_json as CollectionCard[];
       
