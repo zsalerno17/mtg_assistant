@@ -909,32 +909,6 @@ export function analyzeEfficiency(
   usageMap?: Map<string, { total: number; decks: Array<{ deck_name: string; quantity: number }> }>
 ): EfficiencyMetrics {
   const startTime = performance.now();
-  console.log("[analyzeEfficiency] Starting analysis:");
-  console.log("  - Input cards:", cards.length);
-  console.log("  - Usage map provided:", usageMap ? "Yes (" + usageMap.size + " entries)" : "No");
-
-  // Analyze quantity distribution
-  const quantityDistribution = new Map<number, number>();
-  const cardsWithMultipleCopies: string[] = [];
-  let totalQuantity = 0;
-  
-  for (const card of cards) {
-    const qty = card.quantity || 1;
-    totalQuantity += qty;
-    quantityDistribution.set(qty, (quantityDistribution.get(qty) || 0) + 1);
-    if (qty >= 2) {
-      cardsWithMultipleCopies.push(`${card.name} (${qty})`);
-    }
-  }
-  
-  console.log("[analyzeEfficiency] Quantity distribution:");
-  const sortedQtys = Array.from(quantityDistribution.entries()).sort((a, b) => a[0] - b[0]);
-  sortedQtys.forEach(([qty, count]) => {
-    console.log(`  - ${count} cards with quantity ${qty}`);
-  });
-  console.log(`[analyzeEfficiency] Total cards (sum of quantities): ${totalQuantity}`);
-  console.log(`[analyzeEfficiency] Cards with 2+ copies: ${cardsWithMultipleCopies.length}`);
-  console.log(`[analyzeEfficiency] First 20 cards with multiples:`, cardsWithMultipleCopies.slice(0, 20));
 
   let totalCards = 0;
   let cardsInUse = 0;
@@ -948,9 +922,7 @@ export function analyzeEfficiency(
   // Track unique cards
   const uniqueCards = new Set<string>();
 
-  let iterationCount = 0;
   for (const card of cards) {
-    iterationCount++;
     const quantity = card.quantity || 1;
     const usage = usageMap?.get(card.name);
     const inUse = usage ? Math.min(usage.total, quantity) : 0;
@@ -996,10 +968,6 @@ export function analyzeEfficiency(
     }
   }
 
-  console.log(`[analyzeEfficiency] Loop complete. Iterated through ${iterationCount} cards`);
-  console.log(`[analyzeEfficiency] Found ${duplicates.length} duplicate entries (before deduplication)`);
-  console.log(`[analyzeEfficiency] First 20 duplicate entries:`, duplicates.slice(0, 20).map(d => ({ name: d.name, owned: d.owned })));
-
   // Deduplicate and aggregate duplicates by name
   const duplicatesMap = new Map<string, DuplicateCard>();
   for (const card of duplicates) {
@@ -1014,10 +982,6 @@ export function analyzeEfficiency(
       duplicatesMap.set(card.name, { ...card });
     }
   }
-  
-  console.log(`[analyzeEfficiency] Total duplicate entries before deduplication: ${duplicates.length}`);
-  console.log(`[analyzeEfficiency] Unique duplicates after deduplication: ${duplicatesMap.size}`);
-  console.log(`[analyzeEfficiency] First 10 after dedup:`, Array.from(duplicatesMap.values()).slice(0, 10).map(d => ({ name: d.name, owned: d.owned })));
   
   // Convert back to array and sort by trade value (highest first)
   const deduplicatedDuplicates = Array.from(duplicatesMap.values());
@@ -1096,4 +1060,292 @@ function determineWhyUnused(card: CollectionCard, price: number): string {
   }
 
   return "Expensive card not in decks - evaluate for inclusion";
+}
+
+// ============================================================================
+// COLOR IDENTITY ANALYSIS (Phase 3)
+// ============================================================================
+
+export interface ColorPairStrength {
+  colors: string; // e.g., "WU", "UBR"
+  card_count: number;
+  staple_count: number; // cards meeting quality thresholds
+  commander_suggestions: string[];
+}
+
+export interface ColorIdentityAnalysis {
+  pairs: ColorPairStrength[];
+  matrix: number[][]; // 5x5 matrix for W/U/B/R/G
+  mono_colors: ColorPairStrength[]; // 1-color combinations
+  two_color: ColorPairStrength[]; // 2-color guilds
+  three_color: ColorPairStrength[]; // 3-color shards/wedges
+  four_color: ColorPairStrength[]; // 4-color combinations
+  five_color: ColorPairStrength[]; // 5-color combinations
+  strong_pairs: ColorPairStrength[]; // multi-color combos with 20+ staples
+  weak_pairs: ColorPairStrength[]; // multi-color combos with <10 staples
+}
+
+/**
+ * Analyze which color combinations are well-supported by the collection
+ */
+export function analyzeColorIdentity(cards: CollectionCard[]): ColorIdentityAnalysis {
+  const startTime = performance.now();
+  
+  // Group cards by color identity (exclude lands and colorless)
+  const colorGroups = new Map<string, CollectionCard[]>();
+  
+  for (const card of cards) {
+    // Skip lands
+    if (card.type_line?.toLowerCase().includes('land')) continue;
+    
+    const colorIdentity = card.color_identity || [];
+    if (colorIdentity.length === 0) continue; // skip colorless
+    
+    const colorKey = colorIdentity.sort().join('');
+    if (!colorGroups.has(colorKey)) {
+      colorGroups.set(colorKey, []);
+    }
+    colorGroups.get(colorKey)!.push(card);
+  }
+  
+  // Build 5x5 matrix for visualization
+  const colors = ['W', 'U', 'B', 'R', 'G'];
+  const matrix: number[][] = Array(5).fill(0).map(() => Array(5).fill(0));
+  
+  // Count cards for each color pair (total count, not staple count)
+  const pairCounts = new Map<string, number>();
+  const pairStaples = new Map<string, number>();
+
+  for (const [colorKey, colorCards] of colorGroups.entries()) {
+    const stapleCount = colorCards.filter(c => isStapleCard(c)).length;
+
+    // For all color combos, use total card count for card_count
+    if (colorKey.length === 1) {
+      // Monocolor - fill diagonal
+      const idx = colors.indexOf(colorKey);
+      if (idx >= 0) {
+        matrix[idx][idx] = colorCards.length;
+        pairCounts.set(colorKey, colorCards.length);
+        pairStaples.set(colorKey, stapleCount);
+      }
+    } else if (colorKey.length === 2) {
+      // Two-color pair
+      const [c1, c2] = colorKey.split('');
+      const i1 = colors.indexOf(c1);
+      const i2 = colors.indexOf(c2);
+      if (i1 >= 0 && i2 >= 0) {
+        matrix[i1][i2] = colorCards.length;
+        matrix[i2][i1] = colorCards.length; // symmetric
+        pairCounts.set(colorKey, colorCards.length);
+        pairStaples.set(colorKey, stapleCount);
+      }
+    } else {
+      // 3+ colors - track but don't show in matrix
+      pairCounts.set(colorKey, colorCards.length);
+      pairStaples.set(colorKey, stapleCount);
+    }
+  }
+
+  // Build color pair strength objects
+  const pairs: ColorPairStrength[] = [];
+  for (const [colorKey, count] of pairCounts.entries()) {
+    const staples = pairStaples.get(colorKey) || 0;
+    pairs.push({
+      colors: colorKey,
+      card_count: count,
+      staple_count: staples,
+      commander_suggestions: getCommanderSuggestions(colorKey, count),
+    });
+  }
+  
+  // Sort pairs by staple count
+  pairs.sort((a, b) => b.staple_count - a.staple_count);
+  
+  // Categorize by color count
+  const mono_colors = pairs.filter(p => p.colors.length === 1);
+  const two_color = pairs.filter(p => p.colors.length === 2);
+  const three_color = pairs.filter(p => p.colors.length === 3);
+  const four_color = pairs.filter(p => p.colors.length === 4);
+  const five_color = pairs.filter(p => p.colors.length === 5);
+  
+  // Categorize as strong/weak (exclude mono-colors from these lists)
+  const multi_color = pairs.filter(p => p.colors.length >= 2);
+  const strong_pairs = multi_color.filter(p => p.staple_count >= 20);
+  const weak_pairs = multi_color.filter(p => p.staple_count < 10);
+  
+  const elapsed = performance.now() - startTime;
+  console.log(`[collection_analyzer] Analyzed color identity in ${elapsed.toFixed(2)}ms`);
+  console.log(`[collection_analyzer] Total cards analyzed: ${cards.length}`);
+  console.log(`[collection_analyzer] Color groups found: ${colorGroups.size}`);
+  console.log(`[collection_analyzer] Found ${pairs.length} color identities: ${mono_colors.length} mono, ${two_color.length} dual, ${three_color.length} tri`);
+  console.log(`[collection_analyzer] Strong multi-color combinations: ${strong_pairs.length}`);
+  
+  // Debug: Log top 5 pairs by staple count
+  const topPairs = pairs.slice(0, 5);
+  console.log('[collection_analyzer] Top 5 color combinations by staples:');
+  topPairs.forEach(p => {
+    console.log(`  ${p.colors}: ${p.staple_count} staples out of ${p.card_count} total cards`);
+  });
+  
+  return {
+    pairs,
+    matrix,
+    mono_colors,
+    two_color,
+    three_color,
+    four_color,
+    five_color,
+    strong_pairs,
+    weak_pairs,
+  };
+}
+
+/**
+ * Determine if a card is a "staple" (quality card worth building around)
+ * 
+ * Criteria: Efficient, functional cards that enable core deck strategy.
+ * Focus on cards that are broadly playable in Commander, not niche synergy pieces.
+ */
+function isStapleCard(card: CollectionCard): boolean {
+  const cmc = card.cmc || 0;
+  const oracle = getOracleText(card).toLowerCase();
+  const typeLine = (card.type_line || "").toLowerCase();
+  
+  // === RAMP (core mana acceleration) ===
+  // Fast mana rocks (CMC 0-2 artifacts)
+  if (cmc <= 2 && typeLine.includes('artifact') && /add {|produce.*mana/i.test(oracle)) {
+    return true;
+  }
+  
+  // Land ramp (efficient tutoring for lands)
+  if (cmc <= 4 && /search your library for.*land/i.test(oracle) && !typeLine.includes('land')) {
+    return true;
+  }
+  
+  // Mana dorks (CMC 1-2 creatures that tap for mana)
+  if (cmc <= 2 && typeLine.includes('creature') && /{t}:.*add {/i.test(oracle)) {
+    return true;
+  }
+  
+  // === CARD DRAW (repeatable or high-value) ===
+  // Draw spells (CMC <= 4 that draw 2+ cards)
+  if (cmc <= 4 && /draw (two|three|\d+) cards?/i.test(oracle)) {
+    return true;
+  }
+  
+  // Repeatable draw engines (triggers that draw, not just "whenever" alone)
+  // FIXED: Require both trigger AND draw in same pattern
+  if (/(whenever|at the beginning).*draw|draw.*card.*(whenever|at the beginning)/i.test(oracle)) {
+    return true;
+  }
+  
+  // === REMOVAL (efficient answers) ===
+  // Efficient targeted removal (CMC <= 4, exile or destroy)
+  if (cmc <= 4 && /(exile|destroy) target (artifact|creature|enchantment|planeswalker|permanent)/i.test(oracle)) {
+    return true;
+  }
+  
+  // Flexible removal (hits multiple permanent types)
+  if (cmc <= 4 && /exile target.*or|destroy target.*(artifact|creature|enchantment).*or/i.test(oracle)) {
+    return true;
+  }
+  
+  // Counterspells (CMC <= 3)
+  if (cmc <= 3 && /counter target (spell|ability)/i.test(oracle)) {
+    return true;
+  }
+  
+  // Board wipes (reset effects)
+  if (/destroy all|exile all (creatures?|artifacts?|enchantments?|nonland permanents?)|each player sacrifices?/i.test(oracle)) {
+    return true;
+  }
+  
+  // === TUTORS (card selection/consistency) ===
+  // Non-land tutors (search library for specific cards)
+  if (/search your library for.*card/i.test(oracle) && !/land/.test(oracle)) {
+    return true;
+  }
+  
+  // === VALUE ENGINES ===
+  // Efficient planeswalkers (CMC <= 5)
+  if (cmc <= 5 && typeLine.includes('planeswalker')) {
+    return true;
+  }
+  
+  // Recursion engines (CMC <= 4, return cards from graveyard)
+  if (cmc <= 4 && /return.*card.*from.*graveyard|return target.*card from your graveyard/i.test(oracle)) {
+    return true;
+  }
+  
+  // Token generators (repeatable)
+  if (/(whenever|at the beginning).*create.*token|create.*token.*(whenever|at the beginning)/i.test(oracle) && cmc <= 5) {
+    return true;
+  }
+  
+  // === PROTECTION (only efficient/valuable protection) ===
+  // Protection spells (CMC <= 3, not just keyword abilities on creatures)
+  if (cmc <= 3 && !typeLine.includes('creature') && /(hexproof|indestructible|protection from)/i.test(oracle)) {
+    return true;
+  }
+  
+  // Flicker/blink effects (CMC <= 4, repeatable value)
+  if (cmc <= 4 && /exile.*return.*to the battlefield|flicker|blink/i.test(oracle)) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Get commander suggestions for a color identity
+ * Returns popular/iconic commanders for each color combination
+ */
+function getCommanderSuggestions(colorIdentity: string, cardCount: number): string[] {
+  // Only suggest if there are enough cards to build a deck (10+ cards in those colors)
+  if (cardCount < 10) return [];
+  
+  const suggestions: Record<string, string[]> = {
+    // Monocolor
+    'W': ['Heliod, Sun-Crowned', 'Elesh Norn, Grand Cenobite', 'Mangara, the Diplomat'],
+    'U': ['Talrand, Sky Summoner', 'Urza, Lord High Artificer', 'Minn, Wily Illusionist'],
+    'B': ['Yawgmoth, Thran Physician', 'K\'rrik, Son of Yawgmoth', 'Ayara, First of Locthwain'],
+    'R': ['Purphoros, God of the Forge', 'Neheb, the Eternal', 'Torbran, Thane of Red Fell'],
+    'G': ['Titania, Protector of Argoth', 'Yeva, Nature\'s Herald', 'Omnath, Locus of Mana'],
+    
+    // Two-color (guilds) - alphabetically sorted
+    'UW': ['Grand Arbiter Augustin IV', 'Brago, King Eternal', 'Kykar, Wind\'s Fury'],
+    'BW': ['Teysa Karlov', 'Athreos, God of Passage', 'Elas il-Kor, Sadistic Pilgrim'],
+    'RW': ['Winota, Joiner of Forces', 'Feather, the Redeemed', 'Aurelia, the Warleader'],
+    'GW': ['Sythis, Harvest\'s Hand', 'Sigarda, Host of Herons', 'Karametra, God of Harvests'],
+    'BU': ['Yuriko, the Tiger\'s Shadow', 'Araumi of the Dead Tide', 'The Scarab God'],
+    'RU': ['Niv-Mizzet, Parun', 'Mizzix of the Izmagnus', 'Veyran, Voice of Duality'],
+    'GU': ['Kinnan, Bonder Prodigy', 'Aesi, Tyrant of Gyre Strait', 'Ezuri, Claw of Progress'],
+    'BR': ['Olivia, Crimson Bride', 'Prosper, Tome-Bound', 'Chainer, Nightmare Adept'],
+    'BG': ['Meren of Clan Nel Toth', 'The Gitrog Monster', 'Jarad, Golgari Lich Lord'],
+    'GR': ['Xenagos, God of Revels', 'Omnath, Locus of Rage', 'Wulfgar of Icewind Dale'],
+    
+    // Three-color (shards & wedges) - alphabetically sorted
+    'BUW': ['Oloro, Ageless Ascetic', 'Alela, Artful Provocateur', 'Sen Triplets'],
+    'RUW': ['Narset, Enlightened Master', 'Kykar, Wind\'s Fury', 'Shu Yun, the Silent Tempest'],
+    'GUW': ['Derevi, Empyrial Tactician', 'Chulane, Teller of Tales', 'Arcades, the Strategist'],
+    'BGW': ['Ghave, Guru of Spores', 'Anafenza, the Foremost', 'Nethroi, Apex of Death'],
+    'BRW': ['Alesha, Who Smiles at Death', 'Edgar Markov', 'Queen Marchesa'],
+    'GRW': ['Marath, Will of the Wild', 'Atla Palani, Nest Tender', 'Jetmir, Nexus of Revels'],
+    'BGU': ['Muldrotha, the Gravetide', 'Yarok, the Desecrated', 'Damia, Sage of Stone'],
+    'BRU': ['Nekusar, the Mindrazer', 'Nicol Bolas, the Ravager', 'Admiral Beckett Brass'],
+    'GRU': ['Animar, Soul of Elements', 'Maelstrom Wanderer', 'Kalamax, the Stormsire'],
+    'BGR': ['Korvold, Fae-Cursed King', 'Prossh, Skyraider of Kher', 'Lord Windgrace'],
+    
+    // Four-color - alphabetically sorted
+    'BRUW': ['Breya, Etherium Shaper', 'Kynaios and Tiro of Meletis'],
+    'BGUW': ['Atraxa, Praetors\' Voice', 'Thrasios & Tymna'],
+    'GRUW': ['Omnath, Locus of Creation', 'Kynaios and Tiro of Meletis'],
+    'BGRW': ['Saskia the Unyielding', 'Tana & Tymna'],
+    'BGRU': ['Yidris, Maelstrom Wielder', 'Thrasios & Vial Smasher'],
+    
+    // Five-color
+    'BGRUW': ['Golos, Tireless Pilgrim', 'Kenrith, the Returned King', 'Jodah, the Unifier'],
+  };
+  
+  return suggestions[colorIdentity] || [];
 }

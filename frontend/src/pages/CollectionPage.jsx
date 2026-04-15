@@ -7,17 +7,20 @@ import PageTransition from '../components/PageTransition'
 import CardTooltip from '../components/CardTooltip'
 import CollectionDepth from '../components/CollectionDepth'
 import ArchetypeReadiness from '../components/ArchetypeReadiness'
+import ColorIdentityMatrix from '../components/ColorIdentityMatrix'
 import CollectionEfficiency from '../components/CollectionEfficiency'
-import { CloudUpload, LayoutGrid, List, Target, TrendingUp } from 'lucide-react'
+import { CloudUpload, LayoutGrid, List, Target, TrendingUp, Palette } from 'lucide-react'
 
 function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function CardListIcon() { return <List className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function ArchetypesIcon() { return <Target className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
+function ColorsIcon() { return <Palette className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function EfficiencyIcon() { return <TrendingUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
   { label: 'Archetypes', icon: ArchetypesIcon },
+  { label: 'Colors', icon: ColorsIcon },
   { label: 'Efficiency', icon: EfficiencyIcon },
   { label: 'Card List', icon: CardListIcon },
 ]
@@ -281,6 +284,19 @@ export default function CollectionPage() {
                       </div>
                     ) : (
                       <ArchetypeReadiness archetypes={analysis?.archetypes} />
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'Colors' && (
+                  <div>
+                    {loadingAnalysis ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing color identity...</span>
+                      </div>
+                    ) : (
+                      <ColorIdentityMatrix colorData={analysis?.color_identity} />
                     )}
                   </div>
                 )}
