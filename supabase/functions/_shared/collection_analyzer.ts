@@ -1154,7 +1154,7 @@ export function analyzeColorIdentity(cards: CollectionCard[]): ColorIdentityAnal
       colors: colorKey,
       card_count: count,
       staple_count: staples,
-      commander_suggestions: getCommanderSuggestions(colorKey, count),
+      commander_suggestions: getCommanderSuggestions(colorKey, cards),
     });
   }
   
@@ -1297,55 +1297,16 @@ function isStapleCard(card: CollectionCard): boolean {
 }
 
 /**
- * Get commander suggestions for a color identity
- * Returns popular/iconic commanders for each color combination
+ * Get commander suggestions for a color identity from the user's collection.
+ * Finds Legendary Creatures in the collection whose color identity exactly matches.
  */
-function getCommanderSuggestions(colorIdentity: string, cardCount: number): string[] {
-  // Only suggest if there are enough cards to build a deck (10+ cards in those colors)
-  if (cardCount < 10) return [];
-  
-  const suggestions: Record<string, string[]> = {
-    // Monocolor
-    'W': ['Heliod, Sun-Crowned', 'Elesh Norn, Grand Cenobite', 'Mangara, the Diplomat'],
-    'U': ['Talrand, Sky Summoner', 'Urza, Lord High Artificer', 'Minn, Wily Illusionist'],
-    'B': ['Yawgmoth, Thran Physician', 'K\'rrik, Son of Yawgmoth', 'Ayara, First of Locthwain'],
-    'R': ['Purphoros, God of the Forge', 'Neheb, the Eternal', 'Torbran, Thane of Red Fell'],
-    'G': ['Titania, Protector of Argoth', 'Yeva, Nature\'s Herald', 'Omnath, Locus of Mana'],
-    
-    // Two-color (guilds) - alphabetically sorted
-    'UW': ['Grand Arbiter Augustin IV', 'Brago, King Eternal', 'Kykar, Wind\'s Fury'],
-    'BW': ['Teysa Karlov', 'Athreos, God of Passage', 'Elas il-Kor, Sadistic Pilgrim'],
-    'RW': ['Winota, Joiner of Forces', 'Feather, the Redeemed', 'Aurelia, the Warleader'],
-    'GW': ['Sythis, Harvest\'s Hand', 'Sigarda, Host of Herons', 'Karametra, God of Harvests'],
-    'BU': ['Yuriko, the Tiger\'s Shadow', 'Araumi of the Dead Tide', 'The Scarab God'],
-    'RU': ['Niv-Mizzet, Parun', 'Mizzix of the Izmagnus', 'Veyran, Voice of Duality'],
-    'GU': ['Kinnan, Bonder Prodigy', 'Aesi, Tyrant of Gyre Strait', 'Ezuri, Claw of Progress'],
-    'BR': ['Olivia, Crimson Bride', 'Prosper, Tome-Bound', 'Chainer, Nightmare Adept'],
-    'BG': ['Meren of Clan Nel Toth', 'The Gitrog Monster', 'Jarad, Golgari Lich Lord'],
-    'GR': ['Xenagos, God of Revels', 'Omnath, Locus of Rage', 'Wulfgar of Icewind Dale'],
-    
-    // Three-color (shards & wedges) - alphabetically sorted
-    'BUW': ['Oloro, Ageless Ascetic', 'Alela, Artful Provocateur', 'Sen Triplets'],
-    'RUW': ['Narset, Enlightened Master', 'Kykar, Wind\'s Fury', 'Shu Yun, the Silent Tempest'],
-    'GUW': ['Derevi, Empyrial Tactician', 'Chulane, Teller of Tales', 'Arcades, the Strategist'],
-    'BGW': ['Ghave, Guru of Spores', 'Anafenza, the Foremost', 'Nethroi, Apex of Death'],
-    'BRW': ['Alesha, Who Smiles at Death', 'Edgar Markov', 'Queen Marchesa'],
-    'GRW': ['Marath, Will of the Wild', 'Atla Palani, Nest Tender', 'Jetmir, Nexus of Revels'],
-    'BGU': ['Muldrotha, the Gravetide', 'Yarok, the Desecrated', 'Damia, Sage of Stone'],
-    'BRU': ['Nekusar, the Mindrazer', 'Nicol Bolas, the Ravager', 'Admiral Beckett Brass'],
-    'GRU': ['Animar, Soul of Elements', 'Maelstrom Wanderer', 'Kalamax, the Stormsire'],
-    'BGR': ['Korvold, Fae-Cursed King', 'Prossh, Skyraider of Kher', 'Lord Windgrace'],
-    
-    // Four-color - alphabetically sorted
-    'BRUW': ['Breya, Etherium Shaper', 'Kynaios and Tiro of Meletis'],
-    'BGUW': ['Atraxa, Praetors\' Voice', 'Thrasios & Tymna'],
-    'GRUW': ['Omnath, Locus of Creation', 'Kynaios and Tiro of Meletis'],
-    'BGRW': ['Saskia the Unyielding', 'Tana & Tymna'],
-    'BGRU': ['Yidris, Maelstrom Wielder', 'Thrasios & Vial Smasher'],
-    
-    // Five-color
-    'BGRUW': ['Golos, Tireless Pilgrim', 'Kenrith, the Returned King', 'Jodah, the Unifier'],
-  };
-  
-  return suggestions[colorIdentity] || [];
+function getCommanderSuggestions(colorIdentity: string, cards: CollectionCard[]): string[] {
+  return cards
+    .filter(card => {
+      const typeLine = (card.type_line || '').toLowerCase();
+      const isLegendaryCreature = typeLine.includes('legendary') && typeLine.includes('creature');
+      const cardColorIdentity = (card.color_identity || []).slice().sort().join('');
+      return isLegendaryCreature && cardColorIdentity === colorIdentity;
+    })
+    .map(card => card.name);
 }

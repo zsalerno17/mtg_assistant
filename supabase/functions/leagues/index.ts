@@ -848,7 +848,7 @@ async function getStandings(
     .select("id, superstar_name")
     .eq("league_id", leagueId);
   if (membersError) throw new HttpError(400, membersError.message);
-  if (!members?.length) return jsonResponse({ standings: [] });
+  if (!members?.length) return jsonResponse({ standings: [] }, req);
 
   // 2. Get all game IDs that belong to this league
   const { data: games, error: gamesError } = await sb
@@ -887,7 +887,7 @@ async function getStandings(
   }
 
   // 4. Aggregate results (only if games exist)
-  const gameIds = (games || []).map((g) => (g as Record<string, unknown>).id as string);
+  const gameIds = (games || []).map((g: Record<string, unknown>) => g.id as string);
   if (gameIds.length > 0) {
     const { data: results, error: resultsError } = await sb
       .from("league_game_results")
@@ -1062,7 +1062,7 @@ serve(async (req: Request) => {
       segments[0] === "join"
     ) {
       const body = await req.json();
-      return await joinViaInvite(segments[1], body, user.userId, sb);
+      return await joinViaInvite(segments[1], body, user.userId, sb, req);
     }
 
     // POST /bulk/archive — must come before /:id routes
@@ -1072,18 +1072,18 @@ serve(async (req: Request) => {
       segments[0] === "bulk" &&
       segments[1] === "archive"
     ) {
-      return await archiveCompletedLeagues(user.userId, sb);
+      return await archiveCompletedLeagues(user.userId, sb, req);
     }
 
     // POST / — create league
     if (method === "POST" && segments.length === 0) {
       const body = await req.json();
-      return await createLeague(body, user.userId, sb);
+      return await createLeague(body, user.userId, sb, req);
     }
 
     // GET / — list leagues
     if (method === "GET" && segments.length === 0) {
-      return await listLeagues(user.userId, sb);
+      return await listLeagues(user.userId, sb, req);
     }
 
     // Need a league_id for everything else
@@ -1092,18 +1092,18 @@ serve(async (req: Request) => {
 
     // GET /:id
     if (method === "GET" && segments.length === 1) {
-      return await getLeague(leagueId, user.userId, sb);
+      return await getLeague(leagueId, user.userId, sb, req);
     }
 
     // PATCH /:id
     if (method === "PATCH" && segments.length === 1) {
       const body = await req.json();
-      return await updateLeague(leagueId, body, user.userId, sb);
+      return await updateLeague(leagueId, body, user.userId, sb, req);
     }
 
     // DELETE /:id
     if (method === "DELETE" && segments.length === 1) {
-      return await deleteLeague(leagueId, user.userId, sb);
+      return await deleteLeague(leagueId, user.userId, sb, req);
     }
 
     // /:id/members routes
@@ -1111,12 +1111,12 @@ serve(async (req: Request) => {
       // POST /:id/members — join
       if (method === "POST" && segments.length === 2) {
         const body = await req.json();
-        return await joinLeague(leagueId, body, user.userId, sb);
+        return await joinLeague(leagueId, body, user.userId, sb, req);
       }
 
       // GET /:id/members
       if (method === "GET" && segments.length === 2) {
-        return await listMembers(leagueId, user.userId, sb);
+        return await listMembers(leagueId, user.userId, sb, req);
       }
 
       // DELETE /:id/members/me — leave
@@ -1125,7 +1125,7 @@ serve(async (req: Request) => {
         segments.length === 3 &&
         segments[2] === "me"
       ) {
-        return await leaveLeague(leagueId, user.userId, sb);
+        return await leaveLeague(leagueId, user.userId, sb, req);
       }
 
       // PATCH /:id/members/:mid — update member
@@ -1137,6 +1137,7 @@ serve(async (req: Request) => {
           body,
           user.userId,
           sb,
+          req,
         );
       }
     }
@@ -1147,19 +1148,19 @@ serve(async (req: Request) => {
       if (segments.length === 4 && segments[3] === "votes") {
         if (method === "POST") {
           const body = await req.json();
-          return await castVote(leagueId, segments[2], body, user.userId, sb);
+          return await castVote(leagueId, segments[2], body, user.userId, sb, req);
         }
         if (method === "GET") {
-          return await getVotes(leagueId, segments[2], user.userId, sb);
+          return await getVotes(leagueId, segments[2], user.userId, sb, req);
         }
       }
 
       if (method === "POST" && segments.length === 2) {
         const body = await req.json();
-        return await logGame(leagueId, body, user.userId, sb);
+        return await logGame(leagueId, body, user.userId, sb, req);
       }
       if (method === "GET" && segments.length === 2) {
-        return await listGames(leagueId, url, user.userId, sb);
+        return await listGames(leagueId, url, user.userId, sb, req);
       }
       // /:id/games/:gid — single game GET or edit PUT
       if (segments.length === 3) {
@@ -1179,7 +1180,7 @@ serve(async (req: Request) => {
       segments.length === 2 &&
       segments[1] === "standings"
     ) {
-      return await getStandings(leagueId, user.userId, sb);
+      return await getStandings(leagueId, user.userId, sb, req);
     }
 
     // /:id/invite
@@ -1188,7 +1189,7 @@ serve(async (req: Request) => {
       segments.length === 2 &&
       segments[1] === "invite"
     ) {
-      return await generateInvite(leagueId, user.userId, sb);
+      return await generateInvite(leagueId, user.userId, sb, req);
     }
 
     return errorResponse(404, "Not found", req);
