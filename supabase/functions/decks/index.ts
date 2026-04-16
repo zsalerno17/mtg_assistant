@@ -2,13 +2,55 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { getServiceClient, getUserClient } from "../_shared/supabase.ts";
 import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/auth.ts";
-import { extractDeckId, getDeck, getDeckWithMeta, parseMoxfieldDeck } from "../_shared/moxfield.ts";
+import {
+  extractDeckId as extractMoxfieldDeckId,
+  getDeck as getMoxfieldDeck,
+  getDeckWithMeta as getMoxfieldDeckWithMeta,
+} from "../_shared/moxfield.ts";
+import {
+  extractDeckId as extractArchidektDeckId,
+  getDeck as getArchidektDeck,
+  getDeckWithMeta as getArchidektDeckWithMeta,
+} from "../_shared/archidekt.ts";
 import { analyzeDeck } from "../_shared/deck_analyzer.ts";
 import type { Card, Deck } from "../_shared/models.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+type DeckSource = "moxfield" | "archidekt";
+
+function detectSource(url: string): DeckSource {
+  return url.includes("archidekt.com") ? "archidekt" : "moxfield";
+}
+
+function extractDeckId(url: string, source: DeckSource): string | null {
+  return source === "archidekt"
+    ? extractArchidektDeckId(url)
+    : extractMoxfieldDeckId(url);
+}
+
+async function fetchDeckFromSource(deckId: string, source: DeckSource): Promise<Deck> {
+  return source === "archidekt"
+    ? getArchidektDeck(deckId)
+    : getMoxfieldDeck(deckId);
+}
+
+async function fetchDeckWithMetaFromSource(
+  deckId: string,
+  source: DeckSource,
+): Promise<[Deck, string]> {
+  return source === "archidekt"
+    ? getArchidektDeckWithMeta(deckId)
+    : getMoxfieldDeckWithMeta(deckId);
+}
+
+function buildDeckUrl(deckId: string, source: DeckSource): string {
+  return source === "archidekt"
+    ? `https://archidekt.com/decks/${deckId}`
+    : `https://www.moxfield.com/decks/${deckId}`;
+}
 
 function serializeCard(c: Card): Record<string, unknown> {
   return {
@@ -59,13 +101,14 @@ async function handleFetch(body: { url?: string }, req: Request): Promise<Respon
   const url = body.url;
   if (!url) return errorResponse(400, "Missing 'url' field", req);
 
+  const source = detectSource(url);
   let deckId: string | null = null;
   try {
-    deckId = extractDeckId(url);
+    deckId = extractDeckId(url, source);
   } catch {
     // fall through
   }
-  if (!deckId) return errorResponse(400, "Invalid Moxfield URL or deck ID", req);
+  if (!deckId) return errorResponse(400, "Invalid deck URL or ID", req);
 
   const sb = getServiceClient();
 
@@ -74,22 +117,23 @@ async function handleFetch(body: { url?: string }, req: Request): Promise<Respon
     .from("decks")
     .select("*")
     .eq("moxfield_id", deckId)
+    .eq("source", source)
     .maybeSingle();
 
   if (cached) {
     return jsonResponse({ deck_id: deckId, cached: true, data: cached.data_json }, req);
   }
 
-  // Fetch fresh from Moxfield
+  // Fetch fresh from source platform
   let deck: Deck;
   try {
-    deck = await getDeck(deckId);
+    deck = await fetchDeckFromSource(deckId, source);
   } catch (e) {
-    return errorResponse(502, `Moxfield fetch failed: ${String(e)}`, req);
+    return errorResponse(502, `Deck fetch failed: ${String(e)}`, req);
   }
 
   const deckData = serializeDeck(deck);
-  await sb.from("decks").insert({ moxfield_id: deckId, data_json: deckData });
+  await sb.from("decks").insert({ moxfield_id: deckId, source, data_json: deckData });
 
   return jsonResponse({ deck_id: deckId, cached: false, data: deckData }, req);
 }
@@ -99,7 +143,7 @@ async function handleFetch(body: { url?: string }, req: Request): Promise<Respon
 // ---------------------------------------------------------------------------
 
 async function handleAnalyze(
-  body: { moxfield_id?: string; force?: boolean },
+  body: { moxfield_id?: string; source?: string; force?: boolean },
   userId: string,
   userClient: ReturnType<typeof getUserClient>,
   req: Request,
@@ -107,6 +151,7 @@ async function handleAnalyze(
   const moxfieldId = body.moxfield_id;
   if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id' field", req);
 
+  const source: DeckSource = body.source === "archidekt" ? "archidekt" : "moxfield";
   const sb = getServiceClient();
   const force = body.force ?? false;
 
@@ -115,6 +160,7 @@ async function handleAnalyze(
     .from("decks")
     .select("data_json")
     .eq("moxfield_id", moxfieldId)
+    .eq("source", source)
     .maybeSingle();
 
   if (!cachedDeck) {
@@ -126,18 +172,19 @@ async function handleAnalyze(
     .from("analyses")
     .select("id, result_json, deck_updated_at")
     .eq("user_id", userId)
-    .eq("deck_id", moxfieldId);
+    .eq("deck_id", moxfieldId)
+    .eq("source", source);
 
   const existing = existingRows?.[0] ?? null;
 
-  // Re-fetch from Moxfield for fresh deck data and lastUpdatedAtUtc
+  // Re-fetch from source platform for fresh data and updated timestamp
   let deck: Deck;
   let lastUpdatedAt: string | null = null;
 
   try {
-    [deck, lastUpdatedAt] = await getDeckWithMeta(moxfieldId);
+    [deck, lastUpdatedAt] = await fetchDeckWithMetaFromSource(moxfieldId, source);
   } catch (e) {
-    // If Moxfield is down but we have an existing analysis, return it
+    // If source is down but we have an existing analysis, return it
     if (existing) {
       return jsonResponse({ analysis: existing.result_json, cached: true }, req);
     }
@@ -145,19 +192,17 @@ async function handleAnalyze(
   }
 
   // Return cached analysis if deck content hasn't changed (unless force)
-  // BUT: also check that cached analysis has all required fields (in case we added new ones)
   const hasRequiredFields = existing?.result_json &&
-    'mana_curve' in existing.result_json &&
-    'interaction_coverage' in existing.result_json &&
-    'removal_quality' in existing.result_json;
-  
+    "mana_curve" in existing.result_json &&
+    "interaction_coverage" in existing.result_json &&
+    "removal_quality" in existing.result_json;
+
   if (!force && existing && existing.deck_updated_at === lastUpdatedAt && hasRequiredFields) {
     return jsonResponse({ analysis: existing.result_json, cached: true }, req);
   }
 
   // Update deck cache with fresh data. Preserve any existing image URIs if the
-  // new Moxfield fetch returned empty ones — Moxfield intermittently omits
-  // image_uris, and we must never regress a previously-good cached URL to null.
+  // new fetch returned empty ones.
   try {
     const serialized = serializeDeck(deck);
     const cachedData = cachedDeck.data_json as Record<string, unknown>;
@@ -174,7 +219,8 @@ async function handleAnalyze(
     await sb
       .from("decks")
       .update({ data_json: serialized })
-      .eq("moxfield_id", moxfieldId);
+      .eq("moxfield_id", moxfieldId)
+      .eq("source", source);
   } catch (e) {
     console.warn(`Failed to update deck cache for ${moxfieldId}:`, e);
   }
@@ -182,15 +228,16 @@ async function handleAnalyze(
   // Run fresh analysis
   const result = analyzeDeck(deck);
 
-  const moxfieldUrl = `https://www.moxfield.com/decks/${moxfieldId}`;
+  const deckUrl = buildDeckUrl(moxfieldId, source);
   const deckName = deck.name || cachedDeck.data_json?.name || moxfieldId;
 
   const row = {
     user_id: userId,
     deck_id: moxfieldId,
+    source,
     result_json: result,
     deck_name: deckName,
-    moxfield_url: moxfieldUrl,
+    moxfield_url: deckUrl,
     deck_updated_at: lastUpdatedAt,
   };
 
@@ -216,13 +263,14 @@ async function handleAddToLibrary(
   const url = body.url;
   if (!url) return errorResponse(400, "Missing 'url' field", req);
 
+  const source = detectSource(url);
   let deckId: string | null = null;
   try {
-    deckId = extractDeckId(url);
+    deckId = extractDeckId(url, source);
   } catch {
     // fall through
   }
-  if (!deckId) return errorResponse(400, "Invalid Moxfield URL or deck ID", req);
+  if (!deckId) return errorResponse(400, "Invalid deck URL or ID", req);
 
   const sb = getServiceClient();
 
@@ -231,6 +279,7 @@ async function handleAddToLibrary(
     .from("decks")
     .select("data_json")
     .eq("moxfield_id", deckId)
+    .eq("source", source)
     .maybeSingle();
 
   let deckData: Record<string, unknown>;
@@ -239,15 +288,15 @@ async function handleAddToLibrary(
   } else {
     let deck: Deck;
     try {
-      deck = await getDeck(deckId);
+      deck = await fetchDeckFromSource(deckId, source);
     } catch (e) {
-      return errorResponse(502, `Moxfield fetch failed: ${String(e)}`, req);
+      return errorResponse(502, `Deck fetch failed: ${String(e)}`, req);
     }
     deckData = serializeDeck(deck);
-    await sb.from("decks").insert({ moxfield_id: deckId, data_json: deckData });
+    await sb.from("decks").insert({ moxfield_id: deckId, source, data_json: deckData });
   }
 
-  const moxfieldUrl = `https://www.moxfield.com/decks/${deckId}`;
+  const deckUrl = buildDeckUrl(deckId, source);
   const deckName = (deckData as Record<string, unknown>).name as string || deckId;
 
   // Extract commander/partner images
@@ -262,15 +311,14 @@ async function handleAddToLibrary(
     partnerImageUri = (partnerObj.image_uri as string) || null;
   }
 
-  // Never overwrite a previously-good image URI with null. If the cache returned
-  // empty images (e.g. corrupted from an earlier bad Moxfield response), preserve
-  // whatever is already stored in user_decks for this row.
+  // Never overwrite a previously-good image URI with null.
   if (!commanderImageUri || !partnerImageUri) {
     const { data: existingRow } = await sb
       .from("user_decks")
       .select("commander_image_uri, partner_image_uri")
       .eq("user_id", userId)
       .eq("moxfield_id", deckId)
+      .eq("source", source)
       .maybeSingle();
     if (!commanderImageUri && existingRow?.commander_image_uri) {
       commanderImageUri = existingRow.commander_image_uri;
@@ -283,17 +331,18 @@ async function handleAddToLibrary(
   const row = {
     user_id: userId,
     moxfield_id: deckId,
+    source,
     deck_name: deckName,
-    moxfield_url: moxfieldUrl,
+    moxfield_url: deckUrl,
     commander_image_uri: commanderImageUri,
     partner_image_uri: partnerImageUri,
     format: (deckData as Record<string, unknown>).format as string || "commander",
   };
 
   // user_decks is user-scoped — use user client
-  await userClient.from("user_decks").upsert(row, { onConflict: "user_id,moxfield_id" });
+  await userClient.from("user_decks").upsert(row, { onConflict: "user_id,moxfield_id,source" });
 
-  return jsonResponse({ moxfield_id: deckId, deck_name: deckName }, req);
+  return jsonResponse({ moxfield_id: deckId, deck_name: deckName, source }, req);
 }
 
 // ---------------------------------------------------------------------------
@@ -313,7 +362,6 @@ async function handleGetLibrary(
     userClient.from("analyses").select("*").eq("user_id", userId),
   ]);
 
-  // Check for errors in parallel queries
   if (decksRes.error) {
     console.error("[handleGetLibrary] Failed to fetch user_decks:", decksRes.error);
     return errorResponse(500, "Failed to load deck library", req);
@@ -326,29 +374,55 @@ async function handleGetLibrary(
   const userDecks = decksRes.data || [];
   const analyses = analysesRes.data || [];
 
-  // Index analyses by deck_id, keeping most recent per deck
+  // Index analyses by (source, deck_id), keeping most recent per deck
   const analysesByDeck: Record<string, Record<string, unknown>> = {};
   for (const a of analyses) {
-    const did = a.deck_id as string;
-    if (!analysesByDeck[did] || (a.created_at as string) > (analysesByDeck[did].created_at as string)) {
-      analysesByDeck[did] = a;
+    const source = (a.source as string) || "moxfield";
+    const key = `${source}:${a.deck_id as string}`;
+    if (!analysesByDeck[key] || (a.created_at as string) > (analysesByDeck[key].created_at as string)) {
+      analysesByDeck[key] = a;
     }
   }
 
-  const userDeckIds = new Set(userDecks.map((d: Record<string, unknown>) => d.moxfield_id));
+  // Pre-fetch cached deck data for color identity on unanalyzed decks
+  const deckLookupKeys = userDecks.map((d: Record<string, unknown>) => ({
+    id: d.moxfield_id as string,
+    source: (d.source as string) || "moxfield",
+  }));
 
-  // Pre-fetch cached deck data for color identity on unanalyzed decks (shared table — service client)
-  const allDeckIds = Array.from(userDeckIds) as string[];
   const cachedDecksMap: Record<string, Record<string, unknown>> = {};
-  if (allDeckIds.length > 0) {
+  if (deckLookupKeys.length > 0) {
     try {
-      const { data: cachedRows } = await sb
-        .from("decks")
-        .select("moxfield_id, data_json")
-        .in("moxfield_id", allDeckIds);
-      for (const row of cachedRows || []) {
-        cachedDecksMap[row.moxfield_id as string] = (row.data_json as Record<string, unknown>) || {};
+      // Group by source for efficient queries
+      const moxfieldIds = deckLookupKeys.filter(k => k.source === "moxfield").map(k => k.id);
+      const archidektIds = deckLookupKeys.filter(k => k.source === "archidekt").map(k => k.id);
+
+      const queries: Promise<void>[] = [];
+
+      if (moxfieldIds.length > 0) {
+        queries.push(
+          sb.from("decks").select("moxfield_id, source, data_json")
+            .in("moxfield_id", moxfieldIds).eq("source", "moxfield")
+            .then(({ data: rows }) => {
+              for (const row of rows || []) {
+                cachedDecksMap[`moxfield:${row.moxfield_id}`] = (row.data_json as Record<string, unknown>) || {};
+              }
+            })
+        );
       }
+      if (archidektIds.length > 0) {
+        queries.push(
+          sb.from("decks").select("moxfield_id, source, data_json")
+            .in("moxfield_id", archidektIds).eq("source", "archidekt")
+            .then(({ data: rows }) => {
+              for (const row of rows || []) {
+                cachedDecksMap[`archidekt:${row.moxfield_id}`] = (row.data_json as Record<string, unknown>) || {};
+              }
+            })
+        );
+      }
+
+      await Promise.all(queries);
     } catch (e) {
       console.warn("[handleGetLibrary] Failed to fetch cached deck data:", e instanceof Error ? e.message : String(e));
     }
@@ -359,16 +433,18 @@ async function handleGetLibrary(
   // Library decks with optional analysis overlay
   for (const deck of userDecks) {
     const mid = deck.moxfield_id as string;
-    const analysis = analysesByDeck[mid];
+    const source = (deck.source as string) || "moxfield";
+    const key = `${source}:${mid}`;
+    const analysis = analysesByDeck[key];
     const rj = (analysis?.result_json as Record<string, unknown>) || {};
 
     // Get colors: prefer analysis, fall back to cached deck commander color_identity
     let colors = rj.colors || rj.color_identity;
     if (!colors) {
-      const dj = cachedDecksMap[mid] || {};
+      const dj = cachedDecksMap[key] || {};
       const ci = new Set<string>();
-      for (const key of ["commander", "partner"]) {
-        const obj = dj[key] as Record<string, unknown> | null;
+      for (const k of ["commander", "partner"]) {
+        const obj = dj[k] as Record<string, unknown> | null;
         if (obj && typeof obj === "object") {
           for (const c of (obj.color_identity as string[]) || []) {
             ci.add(c);
@@ -381,9 +457,7 @@ async function handleGetLibrary(
       }
     }
 
-    // Commander name: prefer analysis result (already computed), fall back to
-    // cached deck data so unanalyzed decks still get a name for the hover tooltip.
-    const cachedDeckDataForName = cachedDecksMap[mid] || {};
+    const cachedDeckDataForName = cachedDecksMap[key] || {};
     const commanderName = (rj.commander as string | null) ||
       ((cachedDeckDataForName.commander as Record<string, unknown> | null)?.name as string) ||
       null;
@@ -391,6 +465,7 @@ async function handleGetLibrary(
     resultList.push({
       id: deck.id,
       moxfield_id: mid,
+      source,
       deck_name: deck.deck_name,
       moxfield_url: deck.moxfield_url,
       added_at: deck.added_at,
@@ -407,11 +482,17 @@ async function handleGetLibrary(
   }
 
   // Backwards-compat: include analyses that have no user_decks entry
-  for (const [deckId, analysis] of Object.entries(analysesByDeck)) {
-    if (userDeckIds.has(deckId)) continue;
-    const rj = (analysis.result_json as Record<string, unknown>) || {};
+  const userDeckKeys = new Set(
+    userDecks.map((d: Record<string, unknown>) =>
+      `${(d.source as string) || "moxfield"}:${d.moxfield_id as string}`
+    )
+  );
 
-    // Try to get commander images from cached deck data (shared table — service client)
+  for (const [key, analysis] of Object.entries(analysesByDeck)) {
+    if (userDeckKeys.has(key)) continue;
+    const rj = (analysis.result_json as Record<string, unknown>) || {};
+    const [analysisSource, deckId] = key.split(":") as [string, string];
+
     let commanderImageUri: string | null = null;
     let partnerImageUri: string | null = null;
     try {
@@ -419,6 +500,7 @@ async function handleGetLibrary(
         .from("decks")
         .select("data_json")
         .eq("moxfield_id", deckId)
+        .eq("source", analysisSource)
         .maybeSingle();
       if (cachedDeck) {
         const dd = cachedDeck.data_json as Record<string, unknown>;
@@ -433,6 +515,7 @@ async function handleGetLibrary(
 
     resultList.push({
       moxfield_id: deckId,
+      source: analysisSource,
       deck_name: analysis.deck_name || deckId,
       moxfield_url: analysis.moxfield_url,
       added_at: analysis.created_at,

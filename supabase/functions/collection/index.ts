@@ -62,13 +62,14 @@ serve(async (req) => {
       const cardsData = enriched.map((c) => ({
         name: c.name,
         quantity: c.quantity,
+        foil: (c as any).foil || false,
         cmc: c.cmc,
         type_line: c.type_line,
         oracle_text: c.oracle_text,
         color_identity: c.color_identity,
         keywords: c.keywords || [],
         card_faces: c.card_faces || null,
-        prices: c.prices || null, // Add price data for efficiency metrics
+        prices: c.prices || null,
       }));
 
       console.log(`[collection/upload] Parsed ${cardsData.length} card entries from CSV`);

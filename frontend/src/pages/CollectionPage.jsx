@@ -181,7 +181,7 @@ export default function CollectionPage() {
               My Collection
             </h1>
             <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-              Upload your Moxfield collection export to enable personalized deck recommendations.
+              Upload your Moxfield or Archidekt collection export to enable personalized deck recommendations.
             </p>
           </div>
 
@@ -223,14 +223,14 @@ export default function CollectionPage() {
         ) : (
           <> 
             <CloudUpload className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50" strokeWidth={2} aria-hidden="true" />
-            <p className="text-[var(--color-text)] font-medium mb-1">Drop your Moxfield CSV here</p>
-            <p className="text-[var(--color-muted)] text-sm mb-2">or click to browse</p>
+            <p className="text-[var(--color-text)] font-medium mb-1">Drop your collection CSV here</p>
+            <p className="text-[var(--color-muted)] text-sm mb-2">Moxfield or Archidekt · or click to browse</p>
             <Link
               to="/help#collection"
               onClick={(e) => e.stopPropagation()}
               className="text-[var(--color-secondary)] text-xs hover:underline"
             >
-              How to export from Moxfield →
+              How to export from Moxfield or Archidekt →
             </Link>
           </>
         )}

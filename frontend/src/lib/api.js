@@ -108,8 +108,8 @@ export const api = {
     edgeFetch('decks', '/fetch', { method: 'POST', body: JSON.stringify({ url }) }),
 
   /** Run deck analysis and save to analysis history. */
-  analyzeDeck: (moxfield_id, { force = false } = {}) =>
-    edgeFetch('decks', '/analyze', { method: 'POST', body: JSON.stringify({ moxfield_id, force }) }),
+  analyzeDeck: (moxfield_id, { force = false, source = 'moxfield' } = {}) =>
+    edgeFetch('decks', '/analyze', { method: 'POST', body: JSON.stringify({ moxfield_id, force, source }) }),
 
   /** Get Gemini strategy advice for a deck. */
   getStrategy: (moxfield_id) =>
@@ -315,4 +315,8 @@ export const api = {
   /** Delete a personal game entry. */
   deletePersonalGame: (game_id) =>
     edgeFetch('games', `/${game_id}`, { method: 'DELETE' }),
+
+  /** Get league games the user participated in (for Skirmishes tab). */
+  getLeagueGames: () =>
+    edgeFetch('games', '/league-history', {}),
 }

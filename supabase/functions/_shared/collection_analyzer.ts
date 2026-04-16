@@ -926,12 +926,16 @@ export function analyzeEfficiency(
 
   for (const card of cards) {
     const quantity = card.quantity || 1;
-    const usage = usageMap?.get(card.name);
+    const usage = usageMap?.get(card.name.toLowerCase());
     const inUse = usage ? Math.min(usage.total, quantity) : 0;
     const available = Math.max(0, quantity - inUse);
 
-    // Get price from Scryfall prices object
-    const priceStr = (card as any).prices?.usd || "0";
+    // Get price from Scryfall prices object; prefer foil price for foil cards
+    const isFoil = !!(card as any).foil;
+    const prices = (card as any).prices;
+    const priceStr = isFoil
+      ? (prices?.usd_foil || prices?.usd || "0")
+      : (prices?.usd || prices?.usd_foil || "0");
     const price = parseFloat(priceStr) || 0;
     
     if (price > 0) cardsWithPrices++;

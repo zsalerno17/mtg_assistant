@@ -152,6 +152,77 @@ async function listPersonalGames(
   }, req);
 }
 
+// GET /league-history — league games for the current user
+async function listLeagueGames(
+  userId: string,
+  sb: ReturnType<typeof getUserClient>,
+  req: Request,
+): Promise<Response> {
+  // Find all league_game_results where the member belongs to the current user,
+  // joined with league_games and leagues for context.
+  const { data, error } = await sb
+    .from("league_game_results")
+    .select(`
+      id,
+      placement,
+      deck_id,
+      notes,
+      user_decks(deck_name, commander_image_uri),
+      league_games!inner(
+        id,
+        played_at,
+        league_id,
+        leagues!inner(name)
+      ),
+      league_members!inner(user_id)
+    `)
+    .eq("league_members.user_id", userId)
+    .order("league_games(played_at)", { ascending: false });
+
+  if (error) throw new HttpError(400, error.message);
+
+  // Reshape into the same display shape as personal games, adding league context.
+  // pod_size is derived from how many results share the same game_id.
+  const gameCounts: Record<string, number> = {};
+  for (const row of data || []) {
+    const gameId = (row.league_games as Record<string, unknown>)?.id as string;
+    gameCounts[gameId] = (gameCounts[gameId] || 0) + 1;
+  }
+
+  // We need a second pass to get pod sizes for all games the user participated in.
+  // Simpler: fetch pod sizes in bulk.
+  const gameIds = [...new Set((data || []).map((r) => (r.league_games as Record<string, unknown>)?.id as string))];
+  let podSizeMap: Record<string, number> = {};
+  if (gameIds.length > 0) {
+    const { data: counts } = await sb
+      .from("league_game_results")
+      .select("game_id")
+      .in("game_id", gameIds);
+    for (const row of counts || []) {
+      podSizeMap[row.game_id] = (podSizeMap[row.game_id] || 0) + 1;
+    }
+  }
+
+  const games = (data || []).map((row) => {
+    const lg = row.league_games as Record<string, unknown>;
+    const league = lg?.leagues as Record<string, unknown>;
+    const gameId = lg?.id as string;
+    return {
+      id: row.id,
+      played_at: lg?.played_at,
+      pod_size: podSizeMap[gameId] || 1,
+      placement: row.placement,
+      deck_id: row.deck_id,
+      user_decks: row.user_decks,
+      notes: row.notes,
+      league_name: league?.name as string,
+      is_league_game: true,
+    };
+  });
+
+  return jsonResponse({ games }, req);
+}
+
 // GET /:id — single personal game
 async function getPersonalGame(
   gameId: string,
@@ -226,6 +297,11 @@ serve(async (req: Request) => {
     if (method === "POST" && segments.length === 0) {
       const body = await req.json();
       return await logPersonalGame(body, user.userId, sb, req);
+    }
+
+    // GET /league-history
+    if (method === "GET" && segments.length === 1 && segments[0] === "league-history") {
+      return await listLeagueGames(user.userId, sb, req);
     }
 
     // GET /:id

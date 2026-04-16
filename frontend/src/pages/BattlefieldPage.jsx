@@ -177,6 +177,14 @@ function SkirmishCard({ game, deckMap, onDelete }) {
             <span className="text-sm text-[var(--color-muted)]">{time}</span>
             <span className="text-[var(--color-muted)]/50">·</span>
             <span className="text-sm text-[var(--color-muted)]">{game.pod_size}-player pod</span>
+            {game.league_name && (
+              <>
+                <span className="text-[var(--color-muted)]/50">·</span>
+                <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)] border border-[var(--color-secondary-border)]">
+                  {game.league_name}
+                </span>
+              </>
+            )}
           </div>
           {deck ? (
             <div className="flex items-center gap-2 mt-1.5">
@@ -198,17 +206,19 @@ function SkirmishCard({ game, deckMap, onDelete }) {
           <span className={`px-2.5 py-1 rounded text-xs font-bold ${isWin ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-[var(--color-surface-2)] text-[var(--color-muted)]'}`}>
             {ordinal(game.placement)}
           </span>
-          {confirmDelete ? (
-            <div className="flex items-center gap-2">
-              <button onClick={handleDelete} disabled={deleting} className="text-xs text-[var(--color-danger)] font-medium hover:underline disabled:opacity-50">
-                {deleting ? 'Deleting…' : 'Confirm'}
+          {!game.is_league_game && (
+            confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <button onClick={handleDelete} disabled={deleting} className="text-xs text-[var(--color-danger)] font-medium hover:underline disabled:opacity-50">
+                  {deleting ? 'Deleting…' : 'Confirm'}
+                </button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]">Cancel</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors p-1 rounded" aria-label="Delete skirmish">
+                <Trash2 className="w-4 h-4" strokeWidth={1.5} />
               </button>
-              <button onClick={() => setConfirmDelete(false)} className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]">Cancel</button>
-            </div>
-          ) : (
-            <button onClick={() => setConfirmDelete(true)} className="text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors p-1 rounded" aria-label="Delete skirmish">
-              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-            </button>
+            )
           )}
         </div>
       </div>
@@ -324,11 +334,17 @@ export default function BattlefieldPage() {
     setGamesLoading(true)
     setGamesError(null)
     try {
-      const [gamesData, decksData] = await Promise.all([
+      const [gamesData, leagueGamesData, decksData] = await Promise.all([
         api.getPersonalGames(1),
+        api.getLeagueGames(),
         api.getDeckLibrary(),
       ])
-      setGames(gamesData.games || [])
+      const personal = gamesData.games || []
+      const league = leagueGamesData.games || []
+      const merged = [...personal, ...league].sort(
+        (a, b) => new Date(b.played_at) - new Date(a.played_at)
+      )
+      setGames(merged)
       setHasMoreGames(gamesData.has_more || false)
       setGamesPage(1)
       setGamesLoaded(true)
@@ -347,7 +363,13 @@ export default function BattlefieldPage() {
     try {
       const nextPage = gamesPage + 1
       const data = await api.getPersonalGames(nextPage)
-      setGames((prev) => [...prev, ...(data.games || [])])
+      // Append only personal games on load-more; league games are already fully loaded
+      setGames((prev) => {
+        const newPersonal = data.games || []
+        return [...prev, ...newPersonal].sort(
+          (a, b) => new Date(b.played_at) - new Date(a.played_at)
+        )
+      })
       setHasMoreGames(data.has_more || false)
       setGamesPage(nextPage)
     } catch (err) {

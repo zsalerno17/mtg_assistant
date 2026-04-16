@@ -5,8 +5,11 @@ export function parseMoxfieldCsv(content: string): Collection {
   if (lines.length === 0) return { cards: [] };
 
   const header = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
-  const countIdx = header.findIndex((h) => h === "Count");
+  // Moxfield uses "Count"; Archidekt uses "Quantity"
+  const countIdx = header.findIndex((h) => h === "Count" || h === "Quantity");
   const nameIdx = header.findIndex((h) => h === "Name");
+  // Moxfield CSV has a "Foil" column with value "foil" for foil cards
+  const foilIdx = header.findIndex((h) => h === "Foil");
 
   if (nameIdx === -1) return { cards: [] };
 
@@ -22,7 +25,9 @@ export function parseMoxfieldCsv(content: string): Collection {
     if (!name) continue;
 
     const count = parseInt(countStr, 10) || 1;
-    cards.push(createCard({ name, quantity: count }));
+    const foilStr = foilIdx >= 0 ? (fields[foilIdx] || "").trim().toLowerCase() : "";
+    const isFoil = foilStr === "foil" || foilStr === "true" || foilStr === "1";
+    cards.push(createCard({ name, quantity: count, foil: isFoil }));
   }
 
   return { cards };

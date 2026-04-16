@@ -55,7 +55,7 @@ function ImportModal({ onClose, onImported }) {
           </button>
         </div>
         <p className="text-[var(--color-muted)] text-xs mb-4">
-          Paste a public Moxfield deck URL. No analysis runs yet — analyze from the dashboard when you're ready.
+          Paste a public deck URL from Moxfield or Archidekt. No analysis runs yet — analyze from the dashboard when you're ready.
         </p>
         <form onSubmit={handleSubmit}>
           <input
@@ -63,7 +63,7 @@ function ImportModal({ onClose, onImported }) {
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://www.moxfield.com/decks/..."
+            placeholder="moxfield.com/decks/... or archidekt.com/decks/..."
             disabled={loading}
             className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)] transition-all disabled:opacity-50 mb-3"
           />
@@ -204,9 +204,9 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
       {/* Status */}
       <StatusBadge analyzed={item.analyzed} />
 
-      {/* Footer actions - left: Moxfield, right: Analyze/View */}
+      {/* Footer actions - left: source platform link, right: Analyze/View */}
       <div className="mt-auto pt-1 flex items-center justify-between">
-        {/* Left: Moxfield link */}
+        {/* Left: source platform link */}
         {item.moxfield_url && (
           <a
             href={item.moxfield_url}
@@ -215,7 +215,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
             className="text-[var(--color-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
-            Moxfield ↗
+            {item.source === 'archidekt' ? 'Archidekt' : 'Moxfield'} ↗
           </a>
         )}
         
@@ -236,7 +236,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                onAnalyze(item.moxfield_id)
+                onAnalyze(item.moxfield_id, item.source || 'moxfield')
               }}
               disabled={!!analyzingId}
               className="btn btn-primary btn-sm"
@@ -413,7 +413,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
             </button>
           ) : (
             <button
-              onClick={() => onAnalyze(item.moxfield_id)}
+              onClick={() => onAnalyze(item.moxfield_id, item.source || 'moxfield')}
               disabled={!!analyzingId}
               className="btn btn-primary btn-sm"
             >
@@ -444,7 +444,7 @@ function CollectionSummaryWidget({ summary, loading }) {
       <div className="mt-8 flex items-center justify-between bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-5 py-4">
         <div>
           <p className="text-[var(--color-text)] text-sm font-medium">No collection uploaded yet</p>
-          <p className="text-[var(--color-muted)] text-xs mt-0.5">Upload your Moxfield CSV to enable collection-based upgrade suggestions.</p>
+          <p className="text-[var(--color-muted)] text-xs mt-0.5">Upload your Moxfield or Archidekt collection CSV to enable collection-based upgrade suggestions.</p>
         </div>
         <Link
           to="/collection"
@@ -551,12 +551,12 @@ export default function DashboardPage() {
     loadDecks()
   }
 
-  const handleAnalyze = async (moxfieldId) => {
+  const handleAnalyze = async (moxfieldId, source = 'moxfield') => {
     setAnalyzingId(moxfieldId)
     setAnalyzeError(null)
     try {
-      const result = await api.analyzeDeck(moxfieldId)
-      navigate(`/deck/${moxfieldId}`, { state: { analysis: result.analysis } })
+      const result = await api.analyzeDeck(moxfieldId, { source })
+      navigate(`/deck/${moxfieldId}`, { state: { analysis: result.analysis, source } })
     } catch (err) {
       setAnalyzeError(err.message)
       setAnalyzingId(null)

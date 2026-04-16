@@ -2,7 +2,26 @@
 
 > **Commander-focused collection analysis and insights**
 > Created: April 14, 2026
-> Updated: April 14, 2026 — Performance optimization + MTG specialist validation
+> Updated: April 15, 2026 — All four active phases complete; Phase 5 (Staples Coverage) pending
+
+## Current Status Summary
+
+| Phase | Feature | Status |
+|-------|---------|--------|
+| Phase 1 | Collection Depth by Function | ✅ Complete |
+| Phase 2 | Archetype Readiness Matrix | ✅ Complete |
+| Phase 3 | Color Identity Building Blocks | ✅ Complete |
+| Phase 4 | Collection Efficiency Metrics | ✅ Complete |
+| Phase 5 | Commander Staples Coverage | ⏳ Not started (Priority: LOW) |
+
+### What's left
+
+**Phase 5 — Commander Staples Coverage** is the only remaining work from this plan. It requires:
+- A new `commander_staples` Supabase table populated from EDHREC top card lists, segmented by tier (budget / mid / high-end / cEDH)
+- A `/collection/staples` backend endpoint that cross-references owned cards against the curated list
+- A frontend component showing coverage % per tier and a prioritized acquisition roadmap
+
+Everything else (depth analysis, archetypes, color identity, efficiency) is shipped and deployed.
 
 ## Overview
 
@@ -1121,6 +1140,13 @@ function ArchetypeCard({ archetype }) {
 
 ### Phase 3: Color Identity Building Blocks ✅ COMPLETE
 
+**Additional improvements shipped April 15, 2026** (see `.github/color-identity-phase3-plan.md` for full detail):
+- Extracted shared `buildCardUsageMap()` into `_shared/deck_usage.ts` — eliminates duplicate code across `/analyze` and `/efficiency` endpoints
+- Added `ColorIdentityCard` type and `staple_cards` / `commander_cards` arrays to each `ColorPairStrength` — each card includes owned, in_use, and available counts
+- `analyzeColorIdentity()` now accepts a `usageMap` parameter to populate card-level usage data
+- Frontend: `CardUsageTable` component — Commanders and Staples each rendered as a table with Owned / In Use / Available columns (matching Efficiency tab format), paginated to 15 rows with a "+N more" expand button
+- Scryfall image hover on all card names (CardTooltip); card names are plain text, not links
+
 **Goal:** Show which color combinations are well-supported for deck construction.
 
 **UI Section:** Heatmap or matrix visualization
@@ -1333,7 +1359,7 @@ export default function ColorIdentityMatrix({ colorData }) {
 
 ---
 
-### Phase 4: Collection Efficiency Metrics 🚧 IN PROGRESS
+### Phase 4: Collection Efficiency Metrics ✅ COMPLETE
 
 **Goal:** Understand collection utilization and opportunity cost.
 
@@ -1542,7 +1568,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
 
 ---
 
-### Phase 5: Commander Staples Coverage (Priority: LOW)
+### Phase 5: Commander Staples Coverage ⏳ NOT STARTED (Priority: LOW)
 
 **Goal:** Compare collection against established staple lists to guide acquisitions.
 

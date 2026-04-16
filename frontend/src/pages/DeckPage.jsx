@@ -1721,12 +1721,18 @@ export default function DeckPage() {
   const [isCached, setIsCached] = useState(false)
   const [reanalyzing, setReanalyzing] = useState(false)
 
+  // Source platform ('moxfield' or 'archidekt') passed through navigate state
+  const source = location.state?.source || 'moxfield'
+  const platformFetchUrl = source === 'archidekt'
+    ? `https://archidekt.com/decks/${deckId}`
+    : `https://www.moxfield.com/decks/${deckId}`
+
   useEffect(() => {
     if (deck && analysis) return // already have data from navigate state
     // Load deck data by fetching + analyzing (both will use cache)
     Promise.all([
-      api.fetchDeck(deckId),
-      api.analyzeDeck(deckId),
+      api.fetchDeck(platformFetchUrl),
+      api.analyzeDeck(deckId, { source }),
     ])
       .then(([fetchResult, analyzeResult]) => {
         setDeck(fetchResult.data)
@@ -1738,14 +1744,14 @@ export default function DeckPage() {
 
   const handleReanalyze = useCallback(() => {
     setReanalyzing(true)
-    api.analyzeDeck(deckId, { force: true })
+    api.analyzeDeck(deckId, { force: true, source })
       .then((result) => {
         setAnalysis(result.analysis)
         setIsCached(false)
       })
       .catch((err) => setLoadError(err.message))
       .finally(() => setReanalyzing(false))
-  }, [deckId])
+  }, [deckId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const deckName = deck?.name || deckId
 

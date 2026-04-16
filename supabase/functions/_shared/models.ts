@@ -18,6 +18,7 @@ export interface Card {
     eur?: string | null;
     tix?: string | null;
   } | null;
+  foil?: boolean;
   card_faces?: Array<{
     name?: string;
     type_line?: string;

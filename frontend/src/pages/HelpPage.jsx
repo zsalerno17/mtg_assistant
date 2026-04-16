@@ -29,16 +29,24 @@ export default function HelpPage() {
       content: (
         <>
           <p className="text-[var(--color-text)] leading-relaxed mb-3">
-            Upload your collection as a CSV file to track which cards you own. This helps identify cards you already have when analyzing decks.
+            Upload your collection as a CSV file to track which cards you own. This helps identify cards you already have when analyzing decks. Both Moxfield and Archidekt exports are supported.
           </p>
-          <p className="text-[var(--color-text)] leading-relaxed mb-4">
-            <strong className="text-[var(--color-secondary)]">Quick start workflow:</strong>
+          <p className="text-[var(--color-text)] leading-relaxed mb-2">
+            <strong className="text-[var(--color-secondary)]">Export from Moxfield:</strong>
           </p>
           <ol className="list-decimal list-inside space-y-2 text-[var(--color-text)] mb-4 ml-2">
             <li>Use <strong>BIMF</strong> to enter your physical cards and generate a CSV</li>
             <li>Import that CSV into <strong>Moxfield</strong> to build your digital collection</li>
-            <li>Export your full collection from Moxfield as a CSV</li>
-            <li>Upload the Moxfield export to MTG Assistant using the Collection page</li>
+            <li>Go to your Moxfield collection → Export → CSV</li>
+            <li>Upload the file on the Collection page</li>
+          </ol>
+          <p className="text-[var(--color-text)] leading-relaxed mb-2">
+            <strong className="text-[var(--color-secondary)]">Export from Archidekt:</strong>
+          </p>
+          <ol className="list-decimal list-inside space-y-2 text-[var(--color-text)] mb-4 ml-2">
+            <li>Go to your Archidekt collection</li>
+            <li>Click the export icon and choose CSV</li>
+            <li>Upload the file on the Collection page</li>
           </ol>
           <div className="flex flex-wrap gap-3">
             <a
@@ -61,6 +69,16 @@ export default function HelpPage() {
               Moxfield
               <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
             </a>
+            <a
+              href="https://archidekt.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
+            >
+              <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+              Archidekt
+              <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
+            </a>
           </div>
         </>
       )
@@ -74,7 +92,7 @@ export default function HelpPage() {
       content: (
         <>
           <p className="text-[var(--color-text)] leading-relaxed mb-3">
-            Import Commander decks from Moxfield by pasting a deck URL. The app will analyze:
+            Import Commander decks from Moxfield or Archidekt by pasting a deck URL. The app will analyze:
           </p>
           <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] mb-3">
             <li>Ramp package (mana acceleration)</li>
@@ -84,18 +102,30 @@ export default function HelpPage() {
             <li>Mana curve and color distribution</li>
           </ul>
           <p className="text-[var(--color-text)] leading-relaxed mb-3">
-            <strong className="text-[var(--color-secondary)]">Build decks on Moxfield:</strong>
+            <strong className="text-[var(--color-secondary)]">Build decks on:</strong>
           </p>
-          <a
-            href="https://www.moxfield.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
-          >
-            <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-            Moxfield Deck Builder
-            <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="https://www.moxfield.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
+            >
+              <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+              Moxfield
+              <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
+            </a>
+            <a
+              href="https://archidekt.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-subtle)] hover:bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-lg text-[var(--color-secondary)] text-sm font-medium transition-all group"
+            >
+              <ExternalLink className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+              Archidekt
+              <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
+            </a>
+          </div>
         </>
       )
     },

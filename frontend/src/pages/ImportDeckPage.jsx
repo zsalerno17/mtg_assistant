@@ -44,7 +44,7 @@ export default function ImportDeckPage() {
             Import Deck
           </h1>
           <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-            Paste a public Moxfield deck URL to add it to your library. No analysis runs yet — you can analyze from the dashboard whenever you're ready.
+            Paste a public deck URL from Moxfield or Archidekt to add it to your library. No analysis runs yet — you can analyze from the dashboard whenever you're ready.
           </p>
         </div>
 
@@ -54,14 +54,14 @@ export default function ImportDeckPage() {
           className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-lg shadow-black/40"
         >
           <label className="block text-[var(--color-muted)] text-sm mb-2">
-            Moxfield Deck URL
+            Deck URL
           </label>
           <div className="flex gap-3">
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.moxfield.com/decks/..."
+              placeholder="moxfield.com/decks/... or archidekt.com/decks/..."
               disabled={loading}
               className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all disabled:opacity-50"
             />
