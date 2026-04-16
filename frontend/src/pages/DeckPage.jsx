@@ -5,6 +5,12 @@ import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
+import TagTooltip from '../components/TagTooltip'
+import EmptyState from '../components/EmptyState'
+import CardRecommendation from '../components/CardRecommendation'
+import { useDataFetch } from '../hooks/useDataFetch'
+import { useExpandable } from '../hooks/useExpandable'
+import { CATEGORY_COLORS, CATEGORY_TOOLTIPS, PRICE_TIER_COLORS, PRICE_TIER_TOOLTIPS } from '../constants/improvementMaps'
 import { LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft, Wand2, Axe, Skull } from 'lucide-react'
 
 function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
@@ -770,19 +776,6 @@ function AiSourceBadge({ aiEnhanced }) {
   )
 }
 
-// Small pill badge with a CSS tooltip on hover.
-function TagTooltip({ children, tip, className }) {
-  return (
-    <span className="relative group/tag inline-flex">
-      <span className={className}>{children}</span>
-      {tip && (
-        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] leading-snug bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md text-[var(--color-text)] whitespace-nowrap opacity-0 group-hover/tag:opacity-100 transition-opacity duration-150 z-50 shadow-lg">
-          {tip}
-        </span>
-      )}
-    </span>
-  )
-}
 
 // Parses text and wraps any deck card names with CardTooltip.
 // Sorted by name length (desc) so multi-word names match before substrings.
@@ -872,20 +865,9 @@ function GamePhasesAccordion({ phases, mainboardCards }) {
 }
 
 function StrategyTab({ deckId, mainboardCards = new Set() }) {
-  const [data, setData] = useState(null)
-  const [aiEnhanced, setAiEnhanced] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    api.getStrategy(deckId)
-      .then((res) => {
-        setData(res.strategy)
-        setAiEnhanced(res.ai_enhanced ?? false)
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [deckId])
+  const { data: raw, loading, error } = useDataFetch(() => api.getStrategy(deckId), [deckId])
+  const data = raw?.strategy
+  const aiEnhanced = raw?.ai_enhanced ?? false
 
   if (loading) return <LoadingSpinner />
   if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
@@ -980,65 +962,17 @@ function StrategyTab({ deckId, mainboardCards = new Set() }) {
 }
 
 function ImprovementsTab({ deckId }) {
-  const [data, setData] = useState(null)
-  const [aiEnhanced, setAiEnhanced] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [expanded, setExpanded] = useState({})
-
-  const toggle = (key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))
-  const MAX_VISIBLE = 5
-
-  useEffect(() => {
-    api.getImprovements(deckId)
-      .then((res) => {
-        setData(res.improvements)
-        setAiEnhanced(res.ai_enhanced ?? false)
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [deckId])
+  const { data: raw, loading, error } = useDataFetch(() => api.getImprovements(deckId), [deckId])
+  const data = raw?.improvements
+  const aiEnhanced = raw?.ai_enhanced ?? false
+  const { expanded, toggle, visible } = useExpandable(5)
 
   if (loading) return <LoadingSpinner />
   if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
   if (!data) return null
 
-  const categoryColors = {
-    ramp:       'bg-green-400/10 text-green-400',
-    draw:       'bg-sky-400/10 text-sky-400',
-    removal:    'bg-red-400/10 text-red-400',
-    wipes:      'bg-orange-400/10 text-orange-400',
-    lands:      'bg-amber-400/10 text-amber-400',
-    synergy:    'bg-purple-400/10 text-purple-400',
-    upgrade:    'bg-sky-400/10 text-sky-400',
-    collection: 'bg-emerald-400/10 text-emerald-400',
-  }
-
-  const categoryTooltips = {
-    ramp:       'Improves mana acceleration',
-    draw:       'Improves card draw',
-    removal:    'Improves threat removal',
-    wipes:      'Adds board wipe coverage',
-    lands:      'Improves mana base',
-    synergy:    'Increases synergy with your strategy',
-    upgrade:    'General power level upgrade',
-    collection: 'Card from your collection',
-  }
-
-  const priceTierColors = {
-    budget:  'bg-green-400/10 text-green-400',
-    mid:     'bg-sky-400/10 text-sky-400',
-    premium: 'bg-amber-400/10 text-amber-400',
-  }
-
-  const priceTierTooltips = {
-    budget:  'Budget — typically under $5',
-    mid:     'Mid-range — typically $5–$20',
-    premium: 'Premium — typically over $20',
-  }
-
   const renderShowMore = (key, total) => {
-    if (total <= MAX_VISIBLE) return null
+    if (total <= 5) return null
     return (
       <button
         onClick={() => toggle(key)}
@@ -1062,22 +996,15 @@ function ImprovementsTab({ deckId }) {
           </h3>
           <p className="text-[var(--color-muted)] text-xs mb-3">Cards to add that address critical gaps in your deck.</p>
           <div className="space-y-2">
-            {(expanded['fixes'] ? data.urgent_fixes : data.urgent_fixes.slice(0, MAX_VISIBLE)).map((fix, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-danger)]/30 rounded-xl px-4 py-3 flex items-start gap-3 hover:border-[var(--color-danger)]/50 hover:-translate-y-0.5 transition-all duration-150">
-                <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
-                <div className="flex-1">
-                  <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={fix.card}>{fix.card}</CardTooltip></span>
-                  {fix.category && (
-                    <TagTooltip
-                      tip={categoryTooltips[fix.category] || fix.category}
-                      className={`ml-2 text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${categoryColors[fix.category] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
-                    >
-                      {fix.category}
-                    </TagTooltip>
-                  )}
-                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{fix.reason}</p>
-                </div>
-              </div>
+            {visible('fixes', data.urgent_fixes).map((fix, i) => (
+              <CardRecommendation
+                key={i}
+                card={fix.card}
+                category={fix.category}
+                priceTier={fix.price_tier}
+                reason={fix.reason}
+                variant="danger"
+              />
             ))}
           </div>
           {renderShowMore('fixes', data.urgent_fixes.length)}
@@ -1090,7 +1017,7 @@ function ImprovementsTab({ deckId }) {
           <SectionLabel className="mb-1">Recommended Swaps</SectionLabel>
           <p className="text-[var(--color-muted)] text-xs mb-3">Paired cut → add recommendations to improve your deck.</p>
           <div className="space-y-2">
-            {(expanded['swaps'] ? data.swaps : data.swaps.slice(0, MAX_VISIBLE)).map((swap, i) => (
+            {visible('swaps', data.swaps).map((swap, i) => (
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 {/* Row 1: cut → add */}
                 <div className="flex items-center gap-2 min-w-0">
@@ -1107,16 +1034,16 @@ function ImprovementsTab({ deckId }) {
                   )}
                   {swap.category && (
                     <TagTooltip
-                      tip={categoryTooltips[swap.category] || swap.category}
-                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${categoryColors[swap.category] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                      tip={CATEGORY_TOOLTIPS[swap.category] || swap.category}
+                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${CATEGORY_COLORS[swap.category] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
                     >
                       {swap.category}
                     </TagTooltip>
                   )}
                   {swap.price_tier && (
                     <TagTooltip
-                      tip={priceTierTooltips[swap.price_tier] || swap.price_tier}
-                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${priceTierColors[swap.price_tier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                      tip={PRICE_TIER_TOOLTIPS[swap.price_tier] || swap.price_tier}
+                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${PRICE_TIER_COLORS[swap.price_tier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
                     >
                       {swap.price_tier}
                     </TagTooltip>
@@ -1142,25 +1069,15 @@ function ImprovementsTab({ deckId }) {
               <div className="mb-4">
                 <p className="font-heading text-[var(--color-success)] text-2xs font-semibold uppercase tracking-widest mb-1.5">In Your Collection</p>
                 <div className="space-y-2">
-                  {(expanded['additions_owned'] ? ownedCards : ownedCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
-                      <span className="text-[var(--color-success)] text-sm font-bold">+</span>
-                      <div className="flex-1">
-                        <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          <span className="text-[9px] text-[var(--color-success)]">✓ owned</span>
-                          {add.price_tier && (
-                            <TagTooltip
-                              tip={priceTierTooltips[add.price_tier] || add.price_tier}
-                              className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${priceTierColors[add.price_tier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
-                            >
-                              {add.price_tier}
-                            </TagTooltip>
-                          )}
-                        </div>
-                        <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
-                      </div>
-                    </div>
+                  {visible('additions_owned', ownedCards).map((add, i) => (
+                    <CardRecommendation
+                      key={i}
+                      card={add.card}
+                      owned
+                      priceTier={add.price_tier}
+                      reason={add.reason}
+                      variant="success"
+                    />
                   ))}
                 </div>
                 {renderShowMore('additions_owned', ownedCards.length)}
@@ -1171,24 +1088,13 @@ function ImprovementsTab({ deckId }) {
               <div>
                 <p className="font-heading text-[var(--color-muted)] text-2xs font-semibold uppercase tracking-widest mb-1.5">Worth Acquiring</p>
                 <div className="space-y-2">
-                  {(expanded['additions_buy'] ? buyCards : buyCards.slice(0, MAX_VISIBLE)).map((add, i) => (
-                    <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
-                      <span className="text-[var(--color-success)] text-sm font-bold">+</span>
-                      <div className="flex-1">
-                        <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          {add.price_tier && (
-                            <TagTooltip
-                              tip={priceTierTooltips[add.price_tier] || add.price_tier}
-                              className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${priceTierColors[add.price_tier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
-                            >
-                              {add.price_tier}
-                            </TagTooltip>
-                          )}
-                        </div>
-                        <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
-                      </div>
-                    </div>
+                  {visible('additions_buy', buyCards).map((add, i) => (
+                    <CardRecommendation
+                      key={i}
+                      card={add.card}
+                      priceTier={add.price_tier}
+                      reason={add.reason}
+                    />
                   ))}
                 </div>
                 {renderShowMore('additions_buy', buyCards.length)}
@@ -1200,11 +1106,12 @@ function ImprovementsTab({ deckId }) {
 
       {/* Empty state */}
       {!data.urgent_fixes?.length && !data.swaps?.length && !data.additions?.length && (
-        <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
-          <IconCheck className="w-8 h-8 text-[var(--color-success)]" />
-          <p className="text-[var(--color-text)] font-semibold text-sm">Deck looks solid!</p>
-          <p className="text-[var(--color-muted)] text-xs text-center">No urgent improvements identified.</p>
-        </div>
+        <EmptyState
+          icon={IconCheck}
+          iconClassName="text-[var(--color-success)]"
+          title="Deck looks solid!"
+          description="No urgent improvements identified."
+        />
       )}
     </div>
   )
@@ -1248,27 +1155,22 @@ function CollectionUpgradesTab({ deckId }) {
 
   if (!hasCollection) {
     return (
-      <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
-        <UpgradeIcon />
-        <p className="text-[var(--color-text)] font-semibold text-sm">No collection uploaded</p>
-        <p className="text-[var(--color-muted)] text-xs text-center">
-          Upload your Moxfield collection CSV on the{' '}
-          <Link to="/collection" className="text-[var(--color-secondary)] hover:underline">Collection page</Link>{' '}
-          to see upgrade suggestions from cards you already own.
-        </p>
-      </div>
+      <EmptyState
+        iconNode={<UpgradeIcon />}
+        title="No collection uploaded"
+        description={<>Upload your Moxfield collection CSV on the{' '}<Link to="/collection" className="text-[var(--color-secondary)] hover:underline">Collection page</Link>{' '}to see upgrade suggestions from cards you already own.</>}
+      />
     )
   }
 
   if (!upgrades?.raw?.length) {
     return (
-      <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
-        <IconCheck className="w-8 h-8 text-[var(--color-success)]" />
-        <p className="text-[var(--color-text)] font-semibold text-sm">No upgrades found</p>
-        <p className="text-[var(--color-muted)] text-xs text-center">
-          Your collection doesn't have obvious upgrades for this deck based on its current weaknesses and themes.
-        </p>
-      </div>
+      <EmptyState
+        icon={IconCheck}
+        iconClassName="text-[var(--color-success)]"
+        title="No upgrades found"
+        description="Your collection doesn't have obvious upgrades for this deck based on its current weaknesses and themes."
+      />
     )
   }
 
