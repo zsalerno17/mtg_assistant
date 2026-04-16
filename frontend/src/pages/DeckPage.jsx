@@ -8,6 +8,7 @@ import PageTransition from '../components/PageTransition'
 import TagTooltip from '../components/TagTooltip'
 import EmptyState from '../components/EmptyState'
 import CardRecommendation from '../components/CardRecommendation'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { useDataFetch } from '../hooks/useDataFetch'
 import { useExpandable } from '../hooks/useExpandable'
 import { CATEGORY_COLORS, CATEGORY_TOOLTIPS, PRICE_TIER_COLORS, PRICE_TIER_TOOLTIPS } from '../constants/improvementMaps'
@@ -84,14 +85,6 @@ function MarkdownBlock({ text }) {
   return <div className="space-y-0.5">{elements}</div>
 }
 
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center gap-3 py-12 justify-center">
-      <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-      <span className="text-[var(--color-muted)] text-sm">Consulting Gemini…</span>
-    </div>
-  )
-}
 
 function IconWarning({ className = 'w-4 h-4 shrink-0' }) {
   return <AlertTriangle className={className} strokeWidth={2} aria-hidden="true" />

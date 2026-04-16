@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
 import CardTooltip from '../components/CardTooltip'
+import LoadingSpinner from '../components/LoadingSpinner'
 import CollectionDepth from '../components/CollectionDepth'
 import ArchetypeReadiness from '../components/ArchetypeReadiness'
 import ColorIdentityMatrix from '../components/ColorIdentityMatrix'
@@ -263,55 +264,27 @@ export default function CollectionPage() {
               {/* Tab Content */}
               <div key={activeTab} className="mt-6 tab-content">
                 {activeTab === 'Overview' && (
-                  <div>
-                    {loadingAnalysis ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing collection...</span>
-                      </div>
-                    ) : (
-                      <CollectionDepth analysis={analysis} />
-                    )}
-                  </div>
+                  loadingAnalysis
+                    ? <LoadingSpinner label="Analyzing collection..." />
+                    : <CollectionDepth analysis={analysis} />
                 )}
 
                 {activeTab === 'Archetypes' && (
-                  <div>
-                    {loadingAnalysis ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing archetypes...</span>
-                      </div>
-                    ) : (
-                      <ArchetypeReadiness archetypes={analysis?.archetypes} />
-                    )}
-                  </div>
+                  loadingAnalysis
+                    ? <LoadingSpinner label="Analyzing archetypes..." />
+                    : <ArchetypeReadiness archetypes={analysis?.archetypes} />
                 )}
 
                 {activeTab === 'Colors' && (
-                  <div>
-                    {loadingAnalysis ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing color identity...</span>
-                      </div>
-                    ) : (
-                      <ColorIdentityMatrix colorData={analysis?.color_identity} />
-                    )}
-                  </div>
+                  loadingAnalysis
+                    ? <LoadingSpinner label="Analyzing color identity..." />
+                    : <ColorIdentityMatrix colorData={analysis?.color_identity} />
                 )}
 
                 {activeTab === 'Efficiency' && (
-                  <div>
-                    {loadingEfficiency ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-                        <span className="ml-3 text-[var(--color-muted)] text-sm">Analyzing efficiency...</span>
-                      </div>
-                    ) : (
-                      <CollectionEfficiency efficiency={efficiency} loading={loadingEfficiency} />
-                    )}
-                  </div>
+                  loadingEfficiency
+                    ? <LoadingSpinner label="Analyzing efficiency..." />
+                    : <CollectionEfficiency efficiency={efficiency} loading={loadingEfficiency} />
                 )}
 
                 {activeTab === 'Card List' && (
