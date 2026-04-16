@@ -770,6 +770,20 @@ function AiSourceBadge({ aiEnhanced }) {
   )
 }
 
+// Small pill badge with a CSS tooltip on hover.
+function TagTooltip({ children, tip, className }) {
+  return (
+    <span className="relative group/tag inline-flex">
+      <span className={className}>{children}</span>
+      {tip && (
+        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] leading-snug bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md text-[var(--color-text)] whitespace-nowrap opacity-0 group-hover/tag:opacity-100 transition-opacity duration-150 z-50 shadow-lg">
+          {tip}
+        </span>
+      )}
+    </span>
+  )
+}
+
 // Parses text and wraps any deck card names with CardTooltip.
 // Sorted by name length (desc) so multi-word names match before substrings.
 function renderWithCardTooltips(text, cardNameSet) {
@@ -990,13 +1004,37 @@ function ImprovementsTab({ deckId }) {
   if (!data) return null
 
   const categoryColors = {
-    ramp: 'text-green-400',
-    draw: 'text-sky-400',
-    removal: 'text-red-400',
-    wipes: 'text-orange-400',
-    lands: 'text-amber-400',
-    synergy: 'text-purple-400',
-    upgrade: 'text-sky-400',
+    ramp:       'bg-green-400/10 text-green-400',
+    draw:       'bg-sky-400/10 text-sky-400',
+    removal:    'bg-red-400/10 text-red-400',
+    wipes:      'bg-orange-400/10 text-orange-400',
+    lands:      'bg-amber-400/10 text-amber-400',
+    synergy:    'bg-purple-400/10 text-purple-400',
+    upgrade:    'bg-sky-400/10 text-sky-400',
+    collection: 'bg-emerald-400/10 text-emerald-400',
+  }
+
+  const categoryTooltips = {
+    ramp:       'Improves mana acceleration',
+    draw:       'Improves card draw',
+    removal:    'Improves threat removal',
+    wipes:      'Adds board wipe coverage',
+    lands:      'Improves mana base',
+    synergy:    'Increases synergy with your strategy',
+    upgrade:    'General power level upgrade',
+    collection: 'Card from your collection',
+  }
+
+  const priceTierColors = {
+    budget:  'bg-green-400/10 text-green-400',
+    mid:     'bg-sky-400/10 text-sky-400',
+    premium: 'bg-amber-400/10 text-amber-400',
+  }
+
+  const priceTierTooltips = {
+    budget:  'Budget — typically under $5',
+    mid:     'Mid-range — typically $5–$20',
+    premium: 'Premium — typically over $20',
   }
 
   const renderShowMore = (key, total) => {
@@ -1029,9 +1067,14 @@ function ImprovementsTab({ deckId }) {
                 <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
                 <div className="flex-1">
                   <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={fix.card}>{fix.card}</CardTooltip></span>
-                  <span className={`ml-2 text-xs font-medium uppercase ${categoryColors[fix.category] || 'text-[var(--color-muted)]'}`}>
-                    {fix.category}
-                  </span>
+                  {fix.category && (
+                    <TagTooltip
+                      tip={categoryTooltips[fix.category] || fix.category}
+                      className={`ml-2 text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${categoryColors[fix.category] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                    >
+                      {fix.category}
+                    </TagTooltip>
+                  )}
                   <p className="text-[var(--color-muted)] text-xs mt-0.5">{fix.reason}</p>
                 </div>
               </div>
@@ -1049,24 +1092,34 @@ function ImprovementsTab({ deckId }) {
           <div className="space-y-2">
             {(expanded['swaps'] ? data.swaps : data.swaps.slice(0, MAX_VISIBLE)).map((swap, i) => (
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={swap.cut}>{swap.cut}</CardTooltip></span>
-                  <span className="text-[var(--color-muted)] text-xs">→</span>
-                  <span className="text-[var(--color-success)] font-semibold text-sm">+ <CardTooltip cardName={swap.add}>{swap.add}</CardTooltip></span>
+                {/* Row 1: cut → add */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[var(--color-danger)] font-semibold text-sm shrink-0">−</span>
+                  <span className="text-[var(--color-danger)] font-semibold text-sm truncate"><CardTooltip cardName={swap.cut}>{swap.cut}</CardTooltip></span>
+                  <span className="text-[var(--color-muted)] text-xs shrink-0">→</span>
+                  <span className="text-[var(--color-success)] font-semibold text-sm shrink-0">+</span>
+                  <span className="text-[var(--color-success)] font-semibold text-sm truncate"><CardTooltip cardName={swap.add}>{swap.add}</CardTooltip></span>
+                </div>
+                {/* Row 2: meta tags — subordinate, small pills */}
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                   {swap.owned && (
-                    <span className="text-[var(--color-success)] text-xs">✓ owned</span>
+                    <span className="text-[9px] text-[var(--color-success)]">✓ owned</span>
                   )}
                   {swap.category && (
-                    <span className={`text-2xs font-medium uppercase ${categoryColors[swap.category] || 'text-[var(--color-muted)]'}`}>
+                    <TagTooltip
+                      tip={categoryTooltips[swap.category] || swap.category}
+                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${categoryColors[swap.category] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                    >
                       {swap.category}
-                    </span>
+                    </TagTooltip>
                   )}
-                  {!swap.owned && swap.price_tier && (
-                    <span className={`text-2xs font-medium uppercase px-1.5 py-0.5 rounded ${
-                      swap.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : swap.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
-                    }`}>
+                  {swap.price_tier && (
+                    <TagTooltip
+                      tip={priceTierTooltips[swap.price_tier] || swap.price_tier}
+                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${priceTierColors[swap.price_tier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                    >
                       {swap.price_tier}
-                    </span>
+                    </TagTooltip>
                   )}
                 </div>
                 <p className="text-[var(--color-muted)] text-xs mt-1">{swap.reason}</p>
@@ -1094,7 +1147,17 @@ function ImprovementsTab({ deckId }) {
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
                         <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
-                        <span className="ml-2 text-[var(--color-success)] text-xs">✓ owned</span>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <span className="text-[9px] text-[var(--color-success)]">✓ owned</span>
+                          {add.price_tier && (
+                            <TagTooltip
+                              tip={priceTierTooltips[add.price_tier] || add.price_tier}
+                              className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${priceTierColors[add.price_tier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                            >
+                              {add.price_tier}
+                            </TagTooltip>
+                          )}
+                        </div>
                         <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>
                       </div>
                     </div>
@@ -1112,14 +1175,15 @@ function ImprovementsTab({ deckId }) {
                     <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150">
                       <span className="text-[var(--color-success)] text-sm font-bold">+</span>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
+                        <span className="text-[var(--color-text)] font-semibold text-sm"><CardTooltip cardName={add.card}>{add.card}</CardTooltip></span>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                           {add.price_tier && (
-                            <span className={`text-2xs font-medium uppercase px-1.5 py-0.5 rounded ${
-                              add.price_tier === 'budget' ? 'bg-green-400/10 text-green-400' : add.price_tier === 'premium' ? 'bg-amber-400/10 text-amber-400' : 'bg-sky-400/10 text-sky-400'
-                            }`}>
+                            <TagTooltip
+                              tip={priceTierTooltips[add.price_tier] || add.price_tier}
+                              className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${priceTierColors[add.price_tier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                            >
                               {add.price_tier}
-                            </span>
+                            </TagTooltip>
                           )}
                         </div>
                         <p className="text-[var(--color-muted)] text-xs mt-0.5">{add.reason}</p>

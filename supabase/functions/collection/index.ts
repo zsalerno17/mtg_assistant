@@ -78,7 +78,8 @@ serve(async (req) => {
         prices: c.prices || null,
       }));
 
-      console.log(`[collection/upload] Parsed ${cardsData.length} card entries from CSV`);
+      const unpricedCount = enriched.filter((c) => !(c as any).prices).length;
+      console.log(`[collection/upload] Parsed ${cardsData.length} card entries from CSV. Unpriced: ${unpricedCount}`);
 
       // Consolidate duplicate card entries by name (sum quantities)
       const consolidatedMap = new Map<string, typeof cardsData[0]>();
@@ -101,9 +102,10 @@ serve(async (req) => {
         { onConflict: "user_id" }
       );
 
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         cards_imported: cardsData.length,
-        unique_cards: consolidatedCards.length
+        unique_cards: consolidatedCards.length,
+        unpriced_cards: unpricedCount,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

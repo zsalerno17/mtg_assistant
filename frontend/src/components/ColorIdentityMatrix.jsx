@@ -288,7 +288,7 @@ function CardUsageTable({ title, cards, emptyMessage }) {
   return (
     <div>
       <div className="text-xs text-[var(--color-muted)] mb-1.5">{title}:</div>
-      <table className="w-full text-xs">
+      <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
             <th className="text-left py-1 text-[var(--color-muted)] font-medium">Card</th>

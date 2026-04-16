@@ -191,6 +191,9 @@ export default function CollectionEfficiency({ efficiency, loading }) {
             <div className="text-xs text-[var(--color-text-muted)] mt-1">
               ${valueInUse.toFixed(0)} in decks
             </div>
+            <div className="text-xs text-[var(--color-text-muted)] mt-1 opacity-60">
+              TCGPlayer market via Scryfall
+            </div>
             <div className="mt-3 h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[var(--color-primary)] transition-all"
