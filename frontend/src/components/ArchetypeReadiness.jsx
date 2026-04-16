@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Info } from 'lucide-react';
+import { TooltipWrapper, ProgressBar } from './shared';
 
 // Archetype descriptions and tooltips
 const ARCHETYPE_INFO = {
@@ -273,15 +274,7 @@ function ArchetypeCard({ archetype, info, isExpanded, onToggle }) {
                           >
                             {counts.owned}/{counts.recommended}
                           </span>
-                          <div className="w-20 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all"
-                              style={{
-                                width: `${percentage}%`,
-                                backgroundColor: barColor,
-                              }}
-                            />
-                          </div>
+                          <ProgressBar value={percentage} max={100} color={barColor} height="h-1.5" className="w-20" />
                         </div>
                       </div>
                     );
@@ -296,60 +289,3 @@ function ArchetypeCard({ archetype, info, isExpanded, onToggle }) {
   );
 }
 
-/**
- * Simple tooltip wrapper component with fixed positioning to avoid clipping
- */
-function TooltipWrapper({ content, children }) {
-  const [show, setShow] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-
-  const handleMouseEnter = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const tooltipWidth = 250; // approximate max width
-    let left = rect.right + 8; // 8px to the right of the element
-    
-    // If tooltip would go off right edge, show it to the left instead
-    if (left + tooltipWidth > window.innerWidth - 16) {
-      left = rect.left - tooltipWidth - 8;
-    }
-    
-    // If still going off left edge, clamp to 16px from left
-    if (left < 16) {
-      left = 16;
-    }
-    
-    setPosition({
-      top: rect.top, // Align with top of trigger element
-      left: left,
-    });
-    setShow(true);
-  };
-
-  return (
-    <>
-      <span
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setShow(false)}
-      >
-        {children}
-      </span>
-      {show && (
-        <div
-          style={{
-            position: 'fixed',
-            top: `${position.top}px`,
-            left: `${position.left}px`,
-            transform: 'translateY(-25%)', // Slight vertical adjustment
-            zIndex: 9999,
-            pointerEvents: 'none',
-          }}
-          className="px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl text-xs text-[var(--color-text)]"
-        >
-          <div className="max-w-xs whitespace-normal">
-            {content}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}

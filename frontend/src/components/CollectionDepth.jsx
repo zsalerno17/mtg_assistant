@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ChevronRight, Info } from 'lucide-react'
 import CardTooltip from './CardTooltip'
-
-const MANA_SYMBOL_IDS = new Set(['W', 'U', 'B', 'R', 'G', 'C'])
+import { ColorPips, TooltipWrapper, ProgressBar } from './shared'
 
 /**
  * CollectionDepth Component - Display functional breakdown of collection
@@ -35,30 +34,6 @@ export default function CollectionDepth({ analysis }) {
       }
       return next
     })
-  }
-
-  // Helper component to render color identity mana symbols
-  const ColorPips = ({ colors }) => {
-    if (!colors || colors.length === 0) {
-      return <span className="text-xs text-[var(--color-muted)]">—</span>
-    }
-
-    return (
-      <div className="flex gap-1 items-center">
-        {colors.map((c, idx) => {
-          const id = c.toUpperCase()
-          if (!MANA_SYMBOL_IDS.has(id)) return null
-          return (
-            <i
-              key={idx}
-              className={`ms ms-${id.toLowerCase()} ms-cost ms-shadow`}
-              style={{ fontSize: '0.9rem' }}
-              aria-label={id}
-            />
-          )
-        })}
-      </div>
-    )
   }
 
   if (!analysis) {
@@ -302,15 +277,7 @@ export default function CollectionDepth({ analysis }) {
                                 >
                                   {item.value}
                                 </span>
-                                <div className="w-20 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all"
-                                    style={{
-                                      width: `${Math.min((item.value / section.total) * 100, 100)}%`,
-                                      backgroundColor: item.accentColor,
-                                    }}
-                                  />
-                                </div>
+                                <ProgressBar value={item.value} max={section.total} color={item.accentColor} height="h-1.5" className="w-20" />
                               </>
                             )}
                           </div>
@@ -436,69 +403,3 @@ export default function CollectionDepth({ analysis }) {
   )
 }
 
-/**
- * Simple tooltip wrapper component with fixed positioning to avoid clipping
- */
-function TooltipWrapper({ content, children }) {
-  const [show, setShow] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0 })
-
-  const handleMouseEnter = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const tooltipWidth = 250 // approximate max width
-    let left = rect.right + 8 // 8px to the right of the element
-    
-    // If tooltip would go off right edge, show it to the left instead
-    if (left + tooltipWidth > window.innerWidth - 16) {
-      left = rect.left - tooltipWidth - 8
-    }
-    
-    // If still going off left edge, clamp to 16px from left
-    if (left < 16) {
-      left = 16
-    }
-    
-    setPosition({
-      top: rect.top, // Align with top of trigger element
-      left: left,
-    })
-    setShow(true)
-  }
-
-  return (
-    <>
-      <span
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setShow(false)}
-      >
-        {children}
-      </span>
-      {show && (
-        <div
-          style={{
-            position: 'fixed',
-            top: `${position.top}px`,
-            left: `${position.left}px`,
-            transform: 'translateY(-25%)', // Slight vertical adjustment
-            zIndex: 9999,
-            pointerEvents: 'none',
-          }}
-          className="px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl text-xs text-[var(--color-text)]"
-        >
-          <div className="max-w-xs whitespace-normal">
-            {content}
-          </div>
-          <div style={{ 
-            position: 'absolute',
-            bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            marginBottom: '-1px'
-          }}>
-            <div className="border-4 border-transparent border-b-[var(--color-border)]" />
-          </div>
-        </div>
-      )}
-    </>
-  )
-}

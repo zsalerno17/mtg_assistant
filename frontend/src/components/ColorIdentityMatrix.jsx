@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import CardTooltip from './CardTooltip';
+import { ColorPips } from './shared';
 
 const COLOR_CONFIG = {
   W: { name: 'White' },
@@ -230,7 +231,7 @@ function ColorPairCard({ pair }) {
         className="w-full px-3 py-2 flex items-center justify-between hover:bg-[var(--color-bg)]/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <ColorPips colors={pair.colors} />
+          <ColorPips colors={pair.colors.split('')} size="lg" />
           {description ? (
             <span
               className="text-sm font-medium text-[var(--color-text)] cursor-help border-b border-dotted border-[var(--color-muted)]"
@@ -333,17 +334,6 @@ function CardUsageTable({ title, cards, emptyMessage }) {
           Show less
         </button>
       )}
-    </div>
-  );
-}
-
-function ColorPips({ colors, size = 'md' }) {
-  const fontSize = size === 'sm' ? '0.875rem' : '1.25rem';
-  return (
-    <div className="flex gap-0.5">
-      {colors.split('').map((color, idx) => (
-        <i key={idx} className={`ms ms-${color.toLowerCase()} ms-cost ms-shadow`} style={{ fontSize }} aria-label={COLOR_CONFIG[color]?.name} title={COLOR_CONFIG[color]?.name} />
-      ))}
     </div>
   );
 }

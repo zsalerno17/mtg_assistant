@@ -2,8 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, TrendingUp, Package, DollarSign, AlertCircle, Info, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import CardTooltip from './CardTooltip'
-
-const MANA_SYMBOL_IDS = new Set(['W', 'U', 'B', 'R', 'G', 'C'])
+import { ColorPips, ProgressBar } from './shared'
 
 /**
  * CollectionEfficiency Component - Display utilization, duplicates, and high-value unused cards
@@ -112,30 +111,6 @@ export default function CollectionEfficiency({ efficiency, loading }) {
     ? Math.round((valueInUse / totalValue) * 100) 
     : 0
 
-  // Helper component to render color identity mana symbols
-  const ColorPips = ({ colors }) => {
-    if (!colors || colors.length === 0) {
-      return <span className="text-xs text-[var(--color-text-muted)]">—</span>
-    }
-
-    return (
-      <div className="flex gap-1 items-center">
-        {colors.map((c, idx) => {
-          const id = c.toUpperCase()
-          if (!MANA_SYMBOL_IDS.has(id)) return null
-          return (
-            <i
-              key={idx}
-              className={`ms ms-${id.toLowerCase()} ms-cost ms-shadow`}
-              style={{ fontSize: '0.9rem' }}
-              aria-label={id}
-            />
-          )
-        })}
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Overview Stats */}
@@ -157,12 +132,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
             <div className="text-xs text-[var(--color-text-muted)] mt-1">
               {efficiency.cards_in_use || 0} of {efficiency.total_cards || 0} cards in decks
             </div>
-            <div className="mt-3 h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[var(--color-primary)] transition-all"
-                style={{ width: `${utilizationPercent}%` }}
-              />
-            </div>
+            <ProgressBar value={utilizationPercent} max={100} color="var(--color-primary)" className="mt-3" />
           </div>
 
           {/* Unique Cards */}
@@ -194,12 +164,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
             <div className="text-xs text-[var(--color-text-muted)] mt-1 opacity-60">
               TCGPlayer market via Scryfall
             </div>
-            <div className="mt-3 h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[var(--color-primary)] transition-all"
-                style={{ width: `${valueUtilizationPercent}%` }}
-              />
-            </div>
+            <ProgressBar value={valueUtilizationPercent} max={100} color="var(--color-primary)" className="mt-3" />
           </div>
 
           {/* Unused Value */}

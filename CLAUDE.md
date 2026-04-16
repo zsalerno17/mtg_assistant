@@ -93,6 +93,16 @@ This is a full-stack web app for Magic: The Gathering Commander deck analysis an
 - `src/context/AuthContext.jsx` — Google OAuth via Supabase; wraps the app and provides user/session state
 - `src/lib/api.js` — HTTP abstraction over Edge Functions; handles auth token injection and 401 retry logic
 
+### Shared UI Primitives (`src/components/shared/`)
+
+**Before implementing any of the following patterns, import from `src/components/shared/` instead of writing your own.**
+
+| Component | Use for |
+|-----------|---------|
+| `ColorPips` | Mana color identity symbols (W/U/B/R/G/C) |
+| `TooltipWrapper` | Hover tooltips with edge-detection positioning |
+| `ProgressBar` | Any value/max progress bar |
+
 ### Database Schema
 
 Core tables: `allowed_users` (access control), `decks` (Moxfield deck cache), `collections`, `analyses`, `ai_cache`, `user_profiles`, `user_decks`
