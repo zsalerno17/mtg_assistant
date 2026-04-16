@@ -35,18 +35,41 @@ export async function getCardByName(name: string): Promise<Card | null> {
   return parseCard(data);
 }
 
+export interface CardIdentifier {
+  name: string;
+  edition?: string;       // set code e.g. "mh2"
+  collector_number?: string;
+}
+
 /**
- * Batch-fetch cards by name using Scryfall's /cards/collection endpoint.
- * Accepts up to any number of names, chunks into batches of 75, and returns
- * a Map keyed by lowercase card name for easy lookup.
+ * Batch-fetch cards using Scryfall's /cards/collection endpoint.
+ * When edition + collector_number are provided, uses exact printing lookup
+ * so prices reflect the specific printing the user owns.
+ * Falls back to name-only lookup for cards missing that info.
+ * Returns a Map keyed by lowercase card name.
  */
-export async function getCardsByNames(names: string[]): Promise<Map<string, Card>> {
+export async function getCardsByNames(cards: string[] | CardIdentifier[]): Promise<Map<string, Card>> {
   const result = new Map<string, Card>();
   const BATCH_SIZE = 75;
 
-  for (let i = 0; i < names.length; i += BATCH_SIZE) {
-    const batch = names.slice(i, i + BATCH_SIZE);
-    const identifiers = batch.map((name) => ({ name }));
+  // Normalize input: accept plain string[] or CardIdentifier[]
+  const identifiers: CardIdentifier[] = cards.map((c) =>
+    typeof c === "string" ? { name: c } : c
+  );
+
+  for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
+    const batch = identifiers.slice(i, i + BATCH_SIZE);
+
+    // Build Scryfall identifiers: use set+collector_number when available for exact pricing
+    const scryfallIdentifiers = batch.map(({ name, edition, collector_number }) => {
+      if (edition && collector_number) {
+        return { name, set: edition, collector_number };
+      }
+      if (edition) {
+        return { name, set: edition };
+      }
+      return { name };
+    });
 
     if (i > 0) {
       await sleep(REQUEST_DELAY);
@@ -56,7 +79,7 @@ export async function getCardsByNames(names: string[]): Promise<Map<string, Card
       const res = await fetch(`${SCRYFALL_API_BASE}/cards/collection`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ identifiers }),
+        body: JSON.stringify({ identifiers: scryfallIdentifiers }),
       });
       if (!res.ok) continue;
       const json = await res.json();
@@ -64,6 +87,34 @@ export async function getCardsByNames(names: string[]): Promise<Map<string, Card
       for (const cardData of cardDataArray) {
         const card = parseCard(cardData);
         result.set(card.name.toLowerCase(), card);
+      }
+
+      // Retry any not_found cards with name-only lookup so they get at least
+      // the default-printing price rather than falling back to a $0 stub.
+      const notFoundArray: Record<string, unknown>[] = Array.isArray(json?.not_found) ? json.not_found : [];
+      if (notFoundArray.length > 0) {
+        const retryNames = notFoundArray
+          .map((id) => (id.name as string) || "")
+          .filter(Boolean);
+        if (retryNames.length > 0) {
+          await sleep(REQUEST_DELAY);
+          const retryRes = await fetch(`${SCRYFALL_API_BASE}/cards/collection`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ identifiers: retryNames.map((name) => ({ name })) }),
+          });
+          if (retryRes.ok) {
+            const retryJson = await retryRes.json();
+            const retryData: Record<string, unknown>[] = Array.isArray(retryJson?.data) ? retryJson.data : [];
+            for (const cardData of retryData) {
+              const card = parseCard(cardData);
+              // Only set if not already in result (don't overwrite a good exact-printing match)
+              if (!result.has(card.name.toLowerCase())) {
+                result.set(card.name.toLowerCase(), card);
+              }
+            }
+          }
+        }
       }
     } catch {
       // ignore batch errors; missing cards will fall back to stubs

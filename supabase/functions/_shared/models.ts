@@ -19,6 +19,8 @@ export interface Card {
     tix?: string | null;
   } | null;
   foil?: boolean;
+  edition?: string;
+  collector_number?: string;
   card_faces?: Array<{
     name?: string;
     type_line?: string;

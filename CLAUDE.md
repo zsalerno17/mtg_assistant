@@ -24,6 +24,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Fix:** one line max, file path included
 - **Why it worked / what changed:** 1-2 bullets
 
+- Never end a response with commands for the user to run — either run them yourself or give numbered step-by-step instructions if they require user action (e.g. browser steps)
+- Don't list file changes as the primary structure; lead with what broke and why, then what changed
+
 **Example of what NOT to do:**
 > "Deployed. The games function was missing verify_jwt = false in config.toml, so Supabase's gateway was rejecting requests at the platform level before the function code ever ran — returning a 401 with no detail field, hence 'API error 401' on the frontend. The fix adds [functions.games] / verify_jwt = false to match all other functions, and redeploys. The function itself already handles auth via requireAllowedUser, so no code changes were needed."
 

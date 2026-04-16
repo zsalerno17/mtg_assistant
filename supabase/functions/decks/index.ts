@@ -340,7 +340,7 @@ async function handleAddToLibrary(
   };
 
   // user_decks is user-scoped — use user client
-  await userClient.from("user_decks").upsert(row, { onConflict: "user_id,moxfield_id,source" });
+  await userClient.from("user_decks").upsert(row, { onConflict: "user_id,moxfield_id" });
 
   return jsonResponse({ moxfield_id: deckId, deck_name: deckName, source }, req);
 }
@@ -394,8 +394,8 @@ async function handleGetLibrary(
   if (deckLookupKeys.length > 0) {
     try {
       // Group by source for efficient queries
-      const moxfieldIds = deckLookupKeys.filter(k => k.source === "moxfield").map(k => k.id);
-      const archidektIds = deckLookupKeys.filter(k => k.source === "archidekt").map(k => k.id);
+      const moxfieldIds = deckLookupKeys.filter((k: { source: string; id: string }) => k.source === "moxfield").map((k: { source: string; id: string }) => k.id);
+      const archidektIds = deckLookupKeys.filter((k: { source: string; id: string }) => k.source === "archidekt").map((k: { source: string; id: string }) => k.id);
 
       const queries: Promise<void>[] = [];
 
@@ -403,7 +403,7 @@ async function handleGetLibrary(
         queries.push(
           sb.from("decks").select("moxfield_id, source, data_json")
             .in("moxfield_id", moxfieldIds).eq("source", "moxfield")
-            .then(({ data: rows }) => {
+            .then(({ data: rows }: { data: Record<string, unknown>[] | null }) => {
               for (const row of rows || []) {
                 cachedDecksMap[`moxfield:${row.moxfield_id}`] = (row.data_json as Record<string, unknown>) || {};
               }
@@ -414,7 +414,7 @@ async function handleGetLibrary(
         queries.push(
           sb.from("decks").select("moxfield_id, source, data_json")
             .in("moxfield_id", archidektIds).eq("source", "archidekt")
-            .then(({ data: rows }) => {
+            .then(({ data: rows }: { data: Record<string, unknown>[] | null }) => {
               for (const row of rows || []) {
                 cachedDecksMap[`archidekt:${row.moxfield_id}`] = (row.data_json as Record<string, unknown>) || {};
               }

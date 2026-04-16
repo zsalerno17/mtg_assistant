@@ -44,8 +44,13 @@ serve(async (req) => {
       }
 
       // Enrich cards with Scryfall data using batch endpoint
-      const cardNames = collection.cards.map((c) => c.name);
-      const scryfallMap = await getCardsByNames(cardNames);
+      // Pass edition + collector_number so we get prices for the exact printing owned
+      const cardIdentifiers = collection.cards.map((c) => ({
+        name: c.name,
+        edition: (c as any).edition,
+        collector_number: (c as any).collector_number,
+      }));
+      const scryfallMap = await getCardsByNames(cardIdentifiers);
 
       const enriched = collection.cards.map((card) => {
         const scryfallCard = scryfallMap.get(card.name.toLowerCase());
@@ -53,7 +58,8 @@ serve(async (req) => {
           // Create a new object to avoid mutating the cached Scryfall data
           return {
             ...scryfallCard,
-            quantity: card.quantity
+            quantity: card.quantity,
+            foil: (card as any).foil || false,
           };
         }
         return card;
