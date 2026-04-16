@@ -273,10 +273,18 @@ function ColorPairCard({ pair }) {
   );
 }
 
+const CARD_TABLE_PAGE_SIZE = 15;
+
 function CardUsageTable({ title, cards, emptyMessage }) {
+  const [showAll, setShowAll] = useState(false);
+
   if (!cards?.length) {
     return <p className="text-xs text-[var(--color-muted)] italic">{emptyMessage}</p>;
   }
+
+  const visible = showAll ? cards : cards.slice(0, CARD_TABLE_PAGE_SIZE);
+  const hidden = cards.length - CARD_TABLE_PAGE_SIZE;
+
   return (
     <div>
       <div className="text-xs text-[var(--color-muted)] mb-1.5">{title}:</div>
@@ -290,18 +298,11 @@ function CardUsageTable({ title, cards, emptyMessage }) {
           </tr>
         </thead>
         <tbody>
-          {cards.map(card => (
+          {visible.map(card => (
             <tr key={card.name} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface)]/50">
               <td className="py-1.5">
                 <CardTooltip cardName={card.name}>
-                  <a
-                    href={`https://scryfall.com/search?q=!%22${encodeURIComponent(card.name)}%22`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--color-link)] hover:underline"
-                  >
-                    {card.name}
-                  </a>
+                  <span className="text-[var(--color-text)] cursor-default">{card.name}</span>
                 </CardTooltip>
               </td>
               <td className="text-center py-1.5 text-[var(--color-muted)]">{card.quantity}</td>
@@ -316,6 +317,22 @@ function CardUsageTable({ title, cards, emptyMessage }) {
           ))}
         </tbody>
       </table>
+      {!showAll && hidden > 0 && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-2 text-xs text-[var(--color-link)] hover:underline"
+        >
+          +{hidden} more
+        </button>
+      )}
+      {showAll && cards.length > CARD_TABLE_PAGE_SIZE && (
+        <button
+          onClick={() => setShowAll(false)}
+          className="mt-2 text-xs text-[var(--color-link)] hover:underline"
+        >
+          Show less
+        </button>
+      )}
     </div>
   );
 }

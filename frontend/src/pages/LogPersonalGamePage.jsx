@@ -86,7 +86,7 @@ export default function LogPersonalGamePage() {
       <div className="max-w-[900px] mx-auto px-8 py-10">
         <div className="mb-8">
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
-            Log a Game
+            Log a Skirmish
           </h1>
           <p className="text-[var(--color-muted)]">Track a Commander session without a league</p>
         </div>
@@ -99,17 +99,17 @@ export default function LogPersonalGamePage() {
 
         {success && (
           <div className="bg-green-500/10 border border-[var(--color-success-border)] text-[var(--color-success)] px-6 py-4 rounded-lg mb-6 text-center">
-            <div className="text-2xl font-brand font-bold mb-1">Game logged!</div>
-            <div className="text-sm">Heading back to your game history…</div>
+            <div className="text-2xl font-brand font-bold mb-1">Skirmish logged!</div>
+            <div className="text-sm">Heading back to your skirmish history…</div>
           </div>
         )}
 
         {!success && (
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Game Details */}
+            {/* Skirmish Details */}
             <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
               <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">
-                Game Details
+                Skirmish Details
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -224,7 +224,7 @@ export default function LogPersonalGamePage() {
                 disabled={saving}
                 className="btn btn-primary min-w-[140px]"
               >
-                {saving ? 'Saving…' : 'Log Game'}
+                {saving ? 'Saving…' : 'Log Skirmish'}
               </button>
             </div>
           </form>
