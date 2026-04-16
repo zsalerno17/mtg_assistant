@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import { useParams, useLocation, Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie, RadialBarChart, RadialBar, Legend } from 'recharts'
 import { api } from '../lib/api'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
-import { LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft } from 'lucide-react'
+import { LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft, Wand2, Axe, Skull } from 'lucide-react'
 
 function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function UpgradeIcon() { return <ArrowUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
@@ -769,7 +770,94 @@ function AiSourceBadge({ aiEnhanced }) {
   )
 }
 
-function StrategyTab({ deckId }) {
+// Parses text and wraps any deck card names with CardTooltip.
+// Sorted by name length (desc) so multi-word names match before substrings.
+function renderWithCardTooltips(text, cardNameSet) {
+  if (!text || !cardNameSet?.size) return text
+  const names = Array.from(cardNameSet).sort((a, b) => b.length - a.length)
+  const escaped = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const regex = new RegExp(`(${escaped.join('|')})`, 'gi')
+  return text.split(regex).map((part, i) => {
+    const match = names.find(n => n.toLowerCase() === part.toLowerCase())
+    if (match) {
+      return (
+        <CardTooltip key={i} cardName={match}>
+          <span className="text-[var(--color-primary)] cursor-help border-b border-dotted border-[var(--color-primary)]/40">{part}</span>
+        </CardTooltip>
+      )
+    }
+    return part
+  })
+}
+
+// Stacked card fan accordion for Early / Mid / Late game phases.
+// Inactive cards peek from left/right; clicking brings them to front.
+function GamePhasesAccordion({ phases, mainboardCards }) {
+  const [active, setActive] = useState(0)
+
+  const getCardAnim = (index) => {
+    const offset = index - active
+    if (offset === 0)  return { x: '0%',   scale: 1,    zIndex: 30, opacity: 1,    rotate: 0  }
+    if (offset === -1) return { x: '-52%', scale: 0.88, zIndex: 20, opacity: 0.72, rotate: -4 }
+    if (offset === 1)  return { x: '52%',  scale: 0.88, zIndex: 20, opacity: 0.72, rotate: 4  }
+    if (offset <= -2)  return { x: '-78%', scale: 0.80, zIndex: 10, opacity: 0.35, rotate: -7 }
+    return                    { x: '78%',  scale: 0.80, zIndex: 10, opacity: 0.35, rotate: 7  }
+  }
+
+  return (
+    <div className="relative flex justify-center" style={{ height: '300px' }}>
+      {phases.map((phase, i) => {
+        const isActive = i === active
+        return (
+          <motion.div
+            key={phase.label}
+            animate={getCardAnim(i)}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            style={{ position: 'absolute', width: '100%', maxWidth: '460px', cursor: isActive ? 'default' : 'pointer', top: 0 }}
+            onClick={() => !isActive && setActive(i)}
+            className={`bg-[var(--color-surface)] border rounded-2xl p-5 select-none overflow-hidden
+              ${isActive
+                ? 'border-[var(--color-primary)]/50 shadow-xl shadow-black/20'
+                : 'border-[var(--color-border)]'
+              }`}
+          >
+            {/* Card header */}
+            <div className="flex items-center gap-2 mb-3">
+              <phase.Icon className={`w-5 h-5 shrink-0 ${phase.color}`} strokeWidth={1.75} />
+              <div>
+                <p className={`font-heading text-sm font-semibold ${phase.color}`}>{phase.label}</p>
+                <p className="text-[var(--color-muted)] text-2xs">{phase.sub}</p>
+              </div>
+            </div>
+
+            {/* Active: full bullet list */}
+            {isActive && (
+              <ul className="space-y-2">
+                {phase.bullets.map((b, j) => (
+                  <li key={j} className="flex items-start gap-2 text-sm text-[var(--color-text)]">
+                    <span className={`mt-[3px] text-xs shrink-0 ${phase.color}`}>•</span>
+                    <span className="leading-relaxed">{renderWithCardTooltips(b, mainboardCards)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Inactive: faint skeleton lines as a visual hint */}
+            {!isActive && (
+              <div className="space-y-2 opacity-25 pointer-events-none">
+                {[80, 65, 50].map((w, j) => (
+                  <div key={j} className="h-2 bg-[var(--color-muted)]/50 rounded-full" style={{ width: `${w}%` }} />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )
+      })}
+    </div>
+  )
+}
+
+function StrategyTab({ deckId, mainboardCards = new Set() }) {
   const [data, setData] = useState(null)
   const [aiEnhanced, setAiEnhanced] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -789,6 +877,15 @@ function StrategyTab({ deckId }) {
   if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
   if (!data) return null
 
+  const toBullets = (val) =>
+    Array.isArray(val) ? val : (val || '').split(/\.\s+/).filter(Boolean)
+
+  const phases = [
+    { label: 'Early Game', sub: 'Turns 1–3', Icon: Wand2, color: 'text-emerald-400', bullets: toBullets(data.early_game) },
+    { label: 'Mid Game',   sub: 'Turns 4–6', Icon: Axe,   color: 'text-amber-400',   bullets: toBullets(data.mid_game)   },
+    { label: 'Late Game',  sub: 'Turns 7+',  Icon: Skull, color: 'text-rose-400',    bullets: toBullets(data.late_game)  },
+  ].filter(p => p.bullets.length > 0)
+
   return (
     <div className="space-y-6">
       <AiSourceBadge aiEnhanced={aiEnhanced} />
@@ -796,8 +893,8 @@ function StrategyTab({ deckId }) {
       {/* Game Plan */}
       {data.game_plan && (
         <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-5">
-          <SectionLabel className="mb-2 text-[var(--color-primary)]">{/* Cinzel amber for featured section */}Game Plan</SectionLabel>
-          <p className="text-[var(--color-text)] text-sm leading-relaxed">{data.game_plan}</p>
+          <SectionLabel className="mb-2 text-[var(--color-primary)]">Game Plan</SectionLabel>
+          <p className="text-[var(--color-text)] text-sm leading-relaxed">{renderWithCardTooltips(data.game_plan, mainboardCards)}</p>
         </div>
       )}
 
@@ -811,7 +908,7 @@ function StrategyTab({ deckId }) {
                 <IconCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 shrink-0" />
                 <div>
                   <span className="text-[var(--color-text)] font-semibold text-sm">{wc.name}</span>
-                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{wc.description}</p>
+                  <p className="text-[var(--color-muted)] text-xs mt-0.5">{renderWithCardTooltips(wc.description, mainboardCards)}</p>
                 </div>
               </div>
             ))}
@@ -827,25 +924,18 @@ function StrategyTab({ deckId }) {
             {data.key_cards.map((kc, i) => (
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-primary)] font-semibold text-sm"><CardTooltip cardName={kc.name}>{kc.name}</CardTooltip></span>
-                <p className="text-[var(--color-muted)] text-xs mt-0.5">{kc.role}</p>
+                <p className="text-[var(--color-muted)] text-xs mt-0.5">{renderWithCardTooltips(kc.role, mainboardCards)}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Game Phases */}
-      {(data.early_game || data.mid_game || data.late_game) && (
+      {/* Game Phases — stacked card fan */}
+      {phases.length > 0 && (
         <div>
-          <SectionLabel className="mb-3">Game Phases</SectionLabel>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[['Early Game', data.early_game], ['Mid Game', data.mid_game], ['Late Game', data.late_game]].map(([label, text]) => text && (
-              <div key={label} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3">
-                <p className="text-[var(--color-secondary)] font-heading text-2xs uppercase tracking-widest mb-1">{label}</p>
-                <p className="text-[var(--color-text)] text-sm leading-relaxed">{text}</p>
-              </div>
-            ))}
-          </div>
+          <SectionLabel className="mb-4">Game Phases</SectionLabel>
+          <GamePhasesAccordion phases={phases} mainboardCards={mainboardCards} />
         </div>
       )}
 
@@ -853,7 +943,7 @@ function StrategyTab({ deckId }) {
       {data.mulligan && (
         <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-5">
           <SectionLabel className="mb-2">Mulligan Strategy</SectionLabel>
-          <p className="text-[var(--color-text)] text-sm leading-relaxed">{data.mulligan}</p>
+          <p className="text-[var(--color-text)] text-sm leading-relaxed">{renderWithCardTooltips(data.mulligan, mainboardCards)}</p>
         </div>
       )}
 
@@ -865,7 +955,7 @@ function StrategyTab({ deckId }) {
             {data.matchup_tips.map((tip, i) => (
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-primary)] font-semibold text-sm">vs {tip.against}</span>
-                <p className="text-[var(--color-muted)] text-xs mt-0.5">{tip.advice}</p>
+                <p className="text-[var(--color-muted)] text-xs mt-0.5">{renderWithCardTooltips(tip.advice, mainboardCards)}</p>
               </div>
             ))}
           </div>
@@ -1948,7 +2038,7 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Strategy' && (
-            <StrategyTab deckId={deckId} />
+            <StrategyTab deckId={deckId} mainboardCards={new Set((deck?.mainboard || []).map(c => c.name))} />
           )}
 
           {activeTab === 'Improvements' && (

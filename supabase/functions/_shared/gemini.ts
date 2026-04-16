@@ -242,9 +242,9 @@ Return this exact JSON structure:
   "key_cards": [
     {"name": "Card Name", "role": "What this card does for the deck"}
   ],
-  "early_game": "Early game priorities (turns 1-3)",
-  "mid_game": "Mid game priorities (turns 4-6)",
-  "late_game": "Late game priorities (turns 7+)",
+  "early_game": ["Priority or tip 1", "Priority or tip 2", "Priority or tip 3"],
+  "mid_game": ["Priority or tip 1", "Priority or tip 2", "Priority or tip 3"],
+  "late_game": ["Priority or tip 1", "Priority or tip 2"],
   "mulligan": "Mulligan strategy — what to keep, what to ship",
   "matchup_tips": [
     {"against": "Archetype or strategy", "advice": "How to play against it"}

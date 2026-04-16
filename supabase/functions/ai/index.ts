@@ -161,7 +161,7 @@ async function handleStrategy(
   const sb = getServiceClient();
 
   // Serve from cache
-  const cached = await getCached(sb, moxfieldId, "strategy_v2");
+  const cached = await getCached(sb, moxfieldId, "strategy_v3");
   if (cached) {
     try {
       return jsonResponse({
@@ -182,7 +182,7 @@ async function handleStrategy(
     await setCached(
       sb,
       moxfieldId,
-      "strategy_v2",
+      "strategy_v3",
       JSON.stringify(result.content),
     );
   }
