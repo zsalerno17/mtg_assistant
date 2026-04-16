@@ -171,6 +171,18 @@ function deckContext(deck: Deck, analysis: AnalysisDict): string {
 
   const powerStr = powerLevel != null ? `${powerLevel}/10` : "Unknown";
 
+  // Include commander oracle text so Gemini reasons from actual card text, not training data
+  const commanderOracleLines: string[] = [];
+  if (deck.commander?.oracle_text) {
+    commanderOracleLines.push(`${deck.commander.name} oracle text: "${deck.commander.oracle_text}"`);
+  }
+  if (deck.partner?.oracle_text) {
+    commanderOracleLines.push(`${deck.partner.name} oracle text: "${deck.partner.oracle_text}"`);
+  }
+  const commanderOracleBlock = commanderOracleLines.length
+    ? `\nCommander card text (use this as ground truth for what the commander actually does):\n${commanderOracleLines.join("\n")}\n`
+    : "";
+
   return `You are analyzing a **${strategy}** deck at power level **${powerStr}**.
 
 Commander: ${commanderStr}
@@ -184,7 +196,7 @@ Average CMC: ${analysis.average_cmc ?? "?"}
 Lands: ${cardTypes["Lands"] ?? 0} | Creatures: ${cardTypes["Creatures"] ?? 0} | Instants: ${cardTypes["Instants"] ?? 0} | Sorceries: ${cardTypes["Sorceries"] ?? 0}
 Ramp: ${ramp} | Draw: ${draw} | Removal: ${removal} (exile-based: ${exileRemoval}) | Board Wipes: ${wipes}
 Fast Mana: ${fastMana} | Tutors: ${tutors} | Counterspells: ${counterspells}
-
+${commanderOracleBlock}
 Full decklist:
 ${deckLines.join("\n")}`;
 }
@@ -289,6 +301,7 @@ IMPORTANT RULES:
 - swaps: paired cut→add recommendations. Each swap has one card to CUT (must be in the decklist above) and one card to ADD (must NOT be in the decklist). Include why the add is better for this deck than the cut. Include a category and price_tier on the add side.
 - additions: unpaired cards to add that generally improve the deck (no specific cut). Do NOT list cards already in the decklist above. Include a price_tier for each.
 - Limit each category to the top 8 most impactful suggestions, ordered by priority.
+- CRITICAL: Base ALL synergy reasoning strictly on the commander's actual oracle text provided above. Do NOT hallucinate card abilities or invent interactions that are not supported by the oracle text. If a card produces Treasure tokens but the commander does not interact with Treasure tokens, do not claim there is a Treasure synergy.
 
 Return this exact JSON structure:
 {

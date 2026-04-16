@@ -10,6 +10,10 @@ export function parseMoxfieldCsv(content: string): Collection {
   const nameIdx = header.findIndex((h) => h === "Name");
   // Moxfield CSV has a "Foil" column with value "foil" for foil cards
   const foilIdx = header.findIndex((h) => h === "Foil");
+  // Moxfield CSV has an "Edition" column with the set code (e.g. "MH2", "OTJ")
+  const editionIdx = header.findIndex((h) => h === "Edition");
+  // Collector number for exact printing lookup
+  const collectorIdx = header.findIndex((h) => h === "Collector Number");
 
   if (nameIdx === -1) return { cards: [] };
 
@@ -27,7 +31,9 @@ export function parseMoxfieldCsv(content: string): Collection {
     const count = parseInt(countStr, 10) || 1;
     const foilStr = foilIdx >= 0 ? (fields[foilIdx] || "").trim().toLowerCase() : "";
     const isFoil = foilStr === "foil" || foilStr === "true" || foilStr === "1";
-    cards.push(createCard({ name, quantity: count, foil: isFoil }));
+    const edition = editionIdx >= 0 ? (fields[editionIdx] || "").trim().toLowerCase() : undefined;
+    const collectorNumber = collectorIdx >= 0 ? (fields[collectorIdx] || "").trim() : undefined;
+    cards.push(createCard({ name, quantity: count, foil: isFoil, edition, collector_number: collectorNumber }));
   }
 
   return { cards };

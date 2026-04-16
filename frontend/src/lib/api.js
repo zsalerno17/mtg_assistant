@@ -60,12 +60,17 @@ async function refreshAuthHeader() {
  * @param {string} path - Sub-path within the function (e.g. '/fetch', '/strategy')
  * @param {object} options - fetch options
  */
+// AI endpoints involve Gemini calls that can take longer than non-AI endpoints
+const AI_TIMEOUT_MS = 90000
+const DEFAULT_TIMEOUT_MS = 30000
+
 async function edgeFetch(fn, path, options = {}) {
   const authHeader = await getAuthHeader()
   const url = `${EDGE_BASE}/${fn}${path}`
 
+  const timeoutMs = fn === 'ai' ? AI_TIMEOUT_MS : DEFAULT_TIMEOUT_MS
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   const makeRequest = (headers) =>
     fetch(url, {
