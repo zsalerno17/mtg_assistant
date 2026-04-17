@@ -207,15 +207,22 @@ export const api = {
   /** Get the user's deck library with analysis status for each deck. */
   getDeckLibrary: () => edgeFetch('decks', '/library', {}),
 
+  /** Archive (soft-delete) a deck from the user's library. */
+  archiveDeck: (userDeckId) =>
+    edgeFetch('decks', `/library/${userDeckId}`, { method: 'DELETE' }),
+
   // ============================================================================
   // LEAGUE / POD TRACKING
   // ============================================================================
 
+  /** List all registered users for pilot picker dropdown. */
+  getUsers: () => edgeFetch('leagues', '/users', {}),
+
   /** Create a new league/season. */
-  createLeague: ({ name, description, season_start, season_end, status = 'active', scoring_config }) =>
+  createLeague: ({ name, description, season_start, season_end, status = 'active', scoring_config, invited_user_ids = [] }) =>
     edgeFetch('leagues', '', {
       method: 'POST',
-      body: JSON.stringify({ name, description, season_start, season_end, status, scoring_config }),
+      body: JSON.stringify({ name, description, season_start, season_end, status, scoring_config, invited_user_ids }),
     }),
 
   /** List all leagues the user is in. */
@@ -322,7 +329,7 @@ export const api = {
     edgeFetch('games', `/${game_id}`, { method: 'DELETE' }),
 
   /** Get league games the user participated in (for Skirmishes tab). */
-  getLeagueGames: () =>
+  getLeagueHistory: () =>
     edgeFetch('games', '/league-history', {}),
 
   // ---------------------------------------------------------------------------

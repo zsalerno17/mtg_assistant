@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
+import { SelectField } from '../components/shared'
 
 function ordinal(n) {
   if (n === 1) return '1st (Winner)'
@@ -88,7 +89,7 @@ export default function LogPersonalGamePage() {
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
             Log a Skirmish
           </h1>
-          <p className="text-[var(--color-text-muted)]">Track a Commander session without a league</p>
+          <p className="text-[var(--color-text-muted)]">Track a Commander session without a campaign</p>
         </div>
 
         {error && (

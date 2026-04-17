@@ -160,28 +160,28 @@ export default function HelpPage() {
     },
     {
       id: "leagues",
-      title: "Tracking Leagues & Pods",
+      title: "Tracking Campaigns & Pods",
       icon: (
         <Users className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
       ),
       content: (
         <>
           <p className="text-[var(--color-text)] leading-relaxed mb-3">
-            Create leagues to track Commander pod performance over multiple game nights:
+            Create campaigns to track Commander pod performance over multiple game nights:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-[var(--color-text)] mb-3">
-            <li><strong>Create a league:</strong> Set a name, description, and add players</li>
-            <li><strong>Add members:</strong> Invite players with deck names, personas, and entrance music</li>
-            <li><strong>Log games:</strong> Record who played, placement, and special achievements</li>
+            <li><strong>Create a campaign:</strong> Set a name, description, and add pilots</li>
+            <li><strong>Add pilots:</strong> Invite players with deck names, personas, and entrance music</li>
+            <li><strong>Log skirmishes:</strong> Record who played, placement, and special achievements</li>
             <li><strong>Track standings:</strong> See leaderboard with points, wins, and statistics</li>
           </ol>
           <div className="bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg p-4">
             <p className="text-sm text-[var(--color-text-muted)] mb-2"><strong>Point System:</strong></p>
             <ul className="space-y-1 text-sm text-[var(--color-text)]">
-              <li>🥇 1st place: 4 points</li>
-              <li>🥈 2nd place: 3 points</li>
-              <li>🥉 3rd place: 2 points</li>
-              <li>4th place: 1 point</li>
+              <li>🥇 1st place: 3 points (default)</li>
+              <li>🥈 2nd place: 2 points (default)</li>
+              <li>🥉 3rd place: 1 point (default)</li>
+              <li>4th place: 0 points (default)</li>
             </ul>
           </div>
         </>

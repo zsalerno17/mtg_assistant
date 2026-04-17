@@ -169,15 +169,15 @@ export default function LeaguePage() {
     const winner = sorted.find(r => r.placement === 1)?.league_members?.superstar_name
     const playerCount = sorted.length
     if (game.spicy_play_description) {
-      return `Game ${game.game_number}: ${winner || 'Unknown'} Claims Victory`
+      return `Skirmish ${game.game_number}: ${winner || 'Unknown'} Claims Victory`
     }
     if (playerCount >= 4 && winner) {
-      return `Game ${game.game_number}: ${winner} Dominates a ${playerCount}-Way Clash`
+      return `Skirmish ${game.game_number}: ${winner} Dominates a ${playerCount}-Way Clash`
     }
     if (winner) {
-      return `Game ${game.game_number}: ${winner} Takes the Crown`
+      return `Skirmish ${game.game_number}: ${winner} Takes the Crown`
     }
-    return `Game ${game.game_number}`
+    return `Skirmish ${game.game_number}`
   }
 
   function getSeasonTimeRemaining() {
@@ -280,7 +280,7 @@ export default function LeaguePage() {
       // Title
       ctx.fillStyle = '#f1f5f9'
       ctx.font = 'bold 22px serif'
-      ctx.fillText(league?.name || 'League Standings', padding, padding + 22)
+      ctx.fillText(league?.name || 'Campaign Standings', padding, padding + 22)
       ctx.fillStyle = '#94a3b8'
       ctx.font = '13px sans-serif'
       ctx.fillText(`Season ${new Date(league?.season_start).toLocaleDateString()} — ${new Date(league?.season_end).toLocaleDateString()}`, padding, padding + 42)
@@ -357,7 +357,7 @@ export default function LeaguePage() {
   }
 
   async function handleLeaveLeague() {
-    if (!confirm('Are you sure you want to leave this league? Your game history will be preserved.')) return
+    if (!confirm('Are you sure you want to leave this campaign? Your skirmish history will be preserved.')) return
     setLeaving(true)
     try {
       await api.leaveLeague(leagueId)
@@ -382,7 +382,7 @@ export default function LeaguePage() {
 
   function handleExportCSV() {
     if (!standings.length) return
-    const headers = ['Rank', 'Superstar Name', 'Total Points', 'Wins', '2nds', '3rds', 'Entrance Bonuses', 'Games']
+    const headers = ['Rank', 'Pilot Name', 'Total Points', 'Wins', '2nds', '3rds', 'Entrance Bonuses', 'Skirmishes']
     const rows = standings.map((m, i) => [
       i + 1,
       `"${(m.superstar_name || '').replace(/"/g, '""')}"`,
@@ -499,14 +499,14 @@ export default function LeaguePage() {
                 disabled={leaving}
                 className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-danger-border)] text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
               >
-                {leaving ? 'Leaving...' : 'Leave League'}
+                {leaving ? 'Leaving...' : 'Leave Campaign'}
               </button>
             )}
             <Link
               to={`/leagues/${leagueId}/log-game`}
               className="btn btn-primary px-5 py-2.5 rounded-lg font-medium"
             >
-              + Log Game
+              + Log Skirmish
             </Link>
           </div>
 
@@ -546,7 +546,7 @@ export default function LeaguePage() {
                   </div>
                   <div className="text-3xl font-brand font-bold text-[var(--color-text)]">{standings[0].superstar_name}</div>
                   <div className="text-sm text-[var(--color-text-muted)] mt-1">
-                    {standings[0].total_points} pts · {standings[0].wins} wins · {standings[0].games_played} games
+                    {standings[0].total_points} pts · {standings[0].wins} wins · {standings[0].games_played} skirmishes
                   </div>
                 </div>
               </div>
@@ -561,8 +561,8 @@ export default function LeaguePage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-[var(--color-border)] mb-8" role="tablist" aria-label="League sections">
-          {['members', 'standings', 'games'].map((tab) => (
+        <div className="flex gap-1 border-b border-[var(--color-border)] mb-8" role="tablist" aria-label="Campaign sections">
+          {['members', 'standings', 'skirmishes'].map((tab) => (
             <button
               key={tab}
               role="tab"
@@ -608,7 +608,7 @@ export default function LeaguePage() {
               </div>
             )}
             <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl overflow-x-auto">
-            <table className="w-full" aria-label="League standings">
+            <table className="w-full" aria-label="Campaign standings">
               <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                 <tr>
                   <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-text-muted)] w-10">#</th>
@@ -690,7 +690,7 @@ export default function LeaguePage() {
               <div className="text-center py-16 text-[var(--color-text-muted)]">
                 <SwordsIcon className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3" />
                 <div className="font-brand text-lg font-bold text-[var(--color-text)] mb-1">The season awaits.</div>
-                <div>Log your first game to stake your claim.</div>
+                <div>Log your first skirmish to stake your claim.</div>
               </div>
             )}
             </div>
@@ -804,23 +804,23 @@ export default function LeaguePage() {
           </div>
         )}
 
-        {/* Games Tab */}
-        {activeTab === 'games' && (
-          <div role="tabpanel" id="tabpanel-games" aria-labelledby="tab-games" className="space-y-4">
+        {/* Skirmishes Tab */}
+        {activeTab === 'skirmishes' && (
+          <div role="tabpanel" id="tabpanel-skirmishes" aria-labelledby="tab-skirmishes" className="space-y-4">
             {games.length === 0 && (
               <div className="text-center py-16 text-[var(--color-text-muted)] bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl">
                 <SwordsIcon className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3" />
                 <div className="font-brand text-lg font-bold text-[var(--color-text)] mb-1">No battles yet.</div>
                 <div className="mb-4">Make history.</div>
                 <Link to={`/leagues/${leagueId}/log-game`} className="text-[var(--color-primary)] hover:underline">
-                  Log your first game →
+                  Log your first skirmish →
                 </Link>
               </div>
             )}
 
             {games.length > 0 && (
               <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl overflow-hidden">
-                <table className="w-full" aria-label="Games history">
+                <table className="w-full" aria-label="Skirmishes history">
                   <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                     <tr>
                       <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] w-10">#</th>
@@ -995,7 +995,7 @@ export default function LeaguePage() {
                   disabled={loadingMoreGames}
                   className="px-6 py-2.5 bg-surface border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
                 >
-                  {loadingMoreGames ? 'Loading...' : 'Load More Games'}
+                  {loadingMoreGames ? 'Loading...' : 'Load More Skirmishes'}
                 </button>
               </div>
             )}

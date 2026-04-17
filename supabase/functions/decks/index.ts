@@ -346,6 +346,35 @@ async function handleAddToLibrary(
 }
 
 // ---------------------------------------------------------------------------
+// Route: DELETE /library/:id  (archive a deck)
+// ---------------------------------------------------------------------------
+
+async function handleArchiveDeck(
+  userDeckId: string,
+  userId: string,
+  userClient: ReturnType<typeof getUserClient>,
+  req: Request,
+): Promise<Response> {
+  const { data, error } = await userClient
+    .from("user_decks")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", userDeckId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[handleArchiveDeck] DB error:", error);
+    return errorResponse(500, "Failed to archive deck", req);
+  }
+  if (!data) {
+    return errorResponse(404, "Deck not found", req);
+  }
+
+  return jsonResponse({ archived: true, id: userDeckId }, req);
+}
+
+// ---------------------------------------------------------------------------
 // Route: GET /library
 // ---------------------------------------------------------------------------
 
@@ -356,9 +385,9 @@ async function handleGetLibrary(
 ): Promise<Response> {
   const sb = getServiceClient();
 
-  // Fetch user's library and analyses (user-scoped — user client)
+  // Fetch user's active (non-archived) library and analyses (user-scoped — user client)
   const [decksRes, analysesRes] = await Promise.all([
-    userClient.from("user_decks").select("*").eq("user_id", userId),
+    userClient.from("user_decks").select("*").eq("user_id", userId).is("archived_at", null),
     userClient.from("analyses").select("*").eq("user_id", userId),
   ]);
 
@@ -569,6 +598,13 @@ serve(async (req: Request) => {
 
     if (req.method === "GET" && path.startsWith("/library")) {
       return await handleGetLibrary(user.userId, userClient, req);
+    }
+
+    // DELETE /library/:id  — archive (soft-delete) a deck
+    const archiveMatch = path.match(/^\/library\/([^/]+)$/);
+    if (req.method === "DELETE" && archiveMatch) {
+      const userDeckId = archiveMatch[1];
+      return await handleArchiveDeck(userDeckId, user.userId, userClient, req);
     }
 
     return errorResponse(404, "Not found", req);

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
+import { SelectField } from '../components/shared'
 
 // Supports both old flat-key format and new bonus_awards array format
 function isAwardEnabled(league, awardId) {
@@ -30,7 +31,6 @@ export default function LogGamePage() {
   const [myDecks, setMyDecks] = useState([])
 
   // Game metadata
-  const [gameNumber, setGameNumber] = useState(1)
   const [playedAt, setPlayedAt] = useState(new Date().toISOString().slice(0, 16))
   const [screenshotUrl, setScreenshotUrl] = useState('')
   const [spicyPlayDescription, setSpicyPlayDescription] = useState('')
@@ -55,25 +55,18 @@ export default function LogGamePage() {
     setLoading(true)
     setError(null)
     try {
-      const [leagueData, membersData, decksData, gamesData] = await Promise.all([
+      const [leagueData, membersData, decksData] = await Promise.all([
         api.getLeague(leagueId),
         api.getLeagueMembers(leagueId),
         api.getDeckLibrary(),
-        api.getLeagueGames(leagueId),
       ])
       setLeague(leagueData.league)
       setMembers(membersData.members || [])
       setMyDecks(decksData.decks || [])
-      
+
       // Default pod size to number of members (clamped 2-10)
       const memberCount = membersData.members?.length || 4
       setPodSize(Math.max(2, Math.min(10, memberCount)))
-
-      // Auto-increment game number
-      const lastGame = gamesData.games?.[0]
-      if (lastGame) {
-        setGameNumber(lastGame.game_number + 1)
-      }
 
       // Initialize results for each member
       const initialResults = {}
@@ -115,12 +108,12 @@ export default function LogGamePage() {
         .map(Number)
 
       if (placements.length === 0) {
-        throw new Error('Please assign placements to at least one player')
+        throw new Error('Please assign placements to at least one pilot')
       }
 
       const uniquePlacements = new Set(placements)
       if (uniquePlacements.size !== placements.length) {
-        throw new Error('Each player must have a unique placement')
+        throw new Error('Each pilot must have a unique placement')
       }
 
       // Build results array
@@ -153,7 +146,6 @@ export default function LogGamePage() {
 
       await api.logGame(leagueId, {
         game: {
-          game_number: Number(gameNumber),
           played_at: new Date(playedAt).toISOString(),
           screenshot_url: screenshotUrl || null,
           spicy_play_description: spicyPlayDescription || null,
@@ -169,7 +161,7 @@ export default function LogGamePage() {
       const winnerMember = winnerResult ? members.find(m => m.id === winnerResult.member_id) : null
       const winnerName = winnerMember?.superstar_name || 'The champion'
       
-      setSuccess(`Game logged! ${winnerName} claims victory!`)
+      setSuccess(`Skirmish logged! ${winnerName} claims victory!`)
       setSaving(false)
       
       // Navigate after a brief celebration
@@ -207,7 +199,7 @@ export default function LogGamePage() {
         {success && (
           <div className="bg-green-500/10 border border-[var(--color-success-border)] text-[var(--color-success)] px-6 py-4 rounded-lg mb-6 text-center">
             <div className="text-2xl font-brand font-bold mb-1">{success}</div>
-            <div className="text-sm text-[var(--color-success)]">Redirecting to league page...</div>
+            <div className="text-sm text-[var(--color-success)]">Redirecting to campaign page...</div>
           </div>
         )}
 
@@ -219,34 +211,18 @@ export default function LogGamePage() {
             <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">
               Skirmish Details
             </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="game-number" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
-                  Skirmish Number
-                </label>
-                <input
-                  id="game-number"
-                  type="number"
-                  min="1"
-                  value={gameNumber}
-                  onChange={(e) => setGameNumber(e.target.value)}
-                  required
-                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
-                />
-              </div>
-              <div>
-                <label htmlFor="played-at" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
-                  Date & Time
-                </label>
-                <input
-                  id="played-at"
-                  type="datetime-local"
-                  value={playedAt}
-                  onChange={(e) => setPlayedAt(e.target.value)}
-                  required
-                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
-                />
-              </div>
+            <div>
+              <label htmlFor="played-at" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                Date & Time
+              </label>
+              <input
+                id="played-at"
+                type="datetime-local"
+                value={playedAt}
+                onChange={(e) => setPlayedAt(e.target.value)}
+                required
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+              />
             </div>
 
             <div className="mt-4">
@@ -277,11 +253,11 @@ export default function LogGamePage() {
             </div>
           </div>
 
-          {/* Player Results */}
+          {/* Pilot Results */}
           <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-brand font-bold text-[var(--color-text)]">
-                Player Results
+                Pilot Results
               </h2>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-[var(--color-text-muted)]">Pod size:</label>
@@ -291,7 +267,7 @@ export default function LogGamePage() {
                   className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                 >
                   {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>{n} players</option>
+                    <option key={n} value={n}>{n} pilots</option>
                   ))}
                 </select>
               </div>

@@ -59,7 +59,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-brand font-bold text-[var(--color-text)]">
-            Create New League
+            Create New Campaign
           </h2>
           <button
             onClick={onClose}
@@ -74,7 +74,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
-              League Name
+              Campaign Name
             </label>
             <input
               type="text"
@@ -94,7 +94,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Paste your league rules or description here..."
+              placeholder="Paste your campaign rules or description here..."
               rows={6}
               disabled={creating}
               className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] font-mono text-sm disabled:opacity-50"
@@ -267,7 +267,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
               disabled={creating}
               className="btn btn-primary min-w-[120px]"
             >
-              {creating ? 'Creating…' : 'Create League'}
+              {creating ? 'Creating…' : 'Create Campaign'}
             </button>
           </div>
         </form>
@@ -315,7 +315,7 @@ export default function LeaguesPage() {
     try {
       await api.createLeague(leagueData)
       setShowCreateModal(false)
-      setSuccessMessage('League created successfully!')
+      setSuccessMessage('Campaign created successfully!')
       // Reload leagues
       await loadLeagues()
       // Clear success message after 5 seconds
@@ -375,17 +375,17 @@ export default function LeaguesPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
-              My Leagues
+              My Campaigns
             </h1>
             <p className="text-[var(--color-text-muted)] text-sm">
-              Track your Commander pod sessions, standings, and legendary moments
+              Track your Commander campaign sessions, standings, and legendary moments
             </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn btn-primary"
           >
-            + Create League
+            + Create Campaign
           </button>
         </div>
 
@@ -448,13 +448,13 @@ export default function LeaguesPage() {
               Build a rivalry. Claim the championship.
             </p>
             <p className="text-[var(--color-text-muted)]/60 text-sm mb-6">
-              Create a league to start tracking pod sessions, standings, and legendary moments.
+              Create a campaign to start tracking standings and legendary moments.
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
               className="btn btn-primary px-6 py-2.5 rounded-lg font-medium"
             >
-              Create Your First League
+              Create Your First Campaign
             </button>
           </div>
         )}
@@ -494,7 +494,7 @@ export default function LeaguesPage() {
                   {league.league_members && (
                     <div className="flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-                      {league.league_members.length} members
+                      {league.league_members.length} pilots
                     </div>
                   )}
                   {(() => {

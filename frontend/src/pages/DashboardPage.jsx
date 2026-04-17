@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CardTooltip from '../components/CardTooltip'
-import { Eye, LoaderCircle, ClipboardCheck, Swords } from 'lucide-react'
+import { Eye, LoaderCircle, ClipboardCheck, Swords, Trash2 } from 'lucide-react'
 import PageTransition from '../components/PageTransition'
 
 function ImportModal({ onClose, onImported }) {
@@ -92,6 +92,44 @@ function ImportModal({ onClose, onImported }) {
   )
 }
 
+function ArchiveConfirmModal({ deckName, onConfirm, onCancel }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
+    >
+      <div className="w-full max-w-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-2xl shadow-black/60">
+        <div className="flex items-center gap-3 mb-3">
+          <Trash2 className="w-5 h-5 text-[var(--color-danger)] shrink-0" strokeWidth={2} />
+          <h3 className="font-heading text-[var(--color-text)] text-base tracking-wide">Archive Deck?</h3>
+        </div>
+        <p className="text-[var(--color-text-muted)] text-sm mb-1">
+          <span className="text-[var(--color-text)] font-medium">{deckName}</span> will be removed from your library.
+        </p>
+        <p className="text-[var(--color-text-muted)] text-xs mb-6">
+          Historical game stats are preserved — this won't break any campaign or skirmish records.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="bg-[var(--color-danger)] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all shadow-md"
+          >
+            Archive
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const MANA_SYMBOL_IDS = new Set(['W', 'U', 'B', 'R', 'G', 'C'])
 
 function ColorPips({ colors, size = '1.1rem', enableGlow = false }) {
@@ -168,7 +206,7 @@ function StatusBadge({ analyzed }) {
 }
 
 // Mobile card view for a single deck
-function DeckCard({ item, onAnalyze, analyzingId }) {
+function DeckCard({ item, onAnalyze, analyzingId, onArchive }) {
   const navigate = useNavigate()
   const isAnalyzing = analyzingId === item.moxfield_id
   const date = new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
@@ -180,7 +218,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
   }
 
   return (
-    <div 
+    <div
       className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 flex flex-col gap-3 transition-all hover:border-[var(--color-primary)]/50"
       onClick={item.analyzed ? handleCardClick : undefined}
       style={item.analyzed ? { cursor: 'pointer' } : undefined}
@@ -204,21 +242,31 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
       {/* Status */}
       <StatusBadge analyzed={item.analyzed} />
 
-      {/* Footer actions - left: source platform link, right: Analyze/View */}
+      {/* Footer actions - left: source platform link + archive, right: Analyze/View */}
       <div className="mt-auto pt-1 flex items-center justify-between">
-        {/* Left: source platform link */}
-        {item.moxfield_url && (
-          <a
-            href={item.moxfield_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--color-text-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
-            onClick={(e) => e.stopPropagation()}
+        {/* Left: source platform link + archive button */}
+        <div className="flex items-center gap-3">
+          {item.moxfield_url && (
+            <a
+              href={item.moxfield_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--color-text-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {item.source === 'archidekt' ? 'Archidekt' : 'Moxfield'} ↗
+            </a>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onArchive(item) }}
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors"
+            aria-label="Archive deck"
+            title="Archive deck"
           >
-            {item.source === 'archidekt' ? 'Archidekt' : 'Moxfield'} ↗
-          </a>
-        )}
-        
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+        </div>
+
         {/* Right: Action button */}
         <div className="ml-auto">
           {item.analyzed ? (
@@ -338,7 +386,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
 }
 
 // Desktop table row
-function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
+function DeckTableRow({ item, onAnalyze, analyzingId, onArchive, index = 0 }) {
   const navigate = useNavigate()
   const isAnalyzing = analyzingId === item.moxfield_id
 
@@ -430,6 +478,14 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
               )}
             </button>
           )}
+          <button
+            onClick={() => onArchive(item)}
+            className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors rounded"
+            aria-label="Archive deck"
+            title="Archive deck"
+          >
+            <Trash2 className="w-4 h-4" strokeWidth={2} />
+          </button>
         </div>
       </td>
     </motion.tr>
@@ -491,6 +547,9 @@ export default function DashboardPage() {
   const [analyzingId, setAnalyzingId] = useState(null)
   const [analyzeError, setAnalyzeError] = useState(null)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [archiveConfirm, setArchiveConfirm] = useState(null) // { id, deck_name } | null
+  const [archivingId, setArchivingId] = useState(null)
+  const [archiveError, setArchiveError] = useState(null)
 
   // loadDecks is used by the main useEffect AND by the retry button / import
   // callback.  We keep a ref-based "generation" counter so that when the
@@ -551,6 +610,25 @@ export default function DashboardPage() {
     loadDecks()
   }
 
+  const handleArchiveRequest = (item) => {
+    setArchiveConfirm({ id: item.id, deck_name: item.deck_name })
+  }
+
+  const handleArchiveConfirm = async () => {
+    const { id, deck_name } = archiveConfirm
+    setArchiveConfirm(null)
+    setArchivingId(id)
+    setArchiveError(null)
+    try {
+      await api.archiveDeck(id)
+      setDecks(prev => prev.filter(d => d.id !== id))
+    } catch (err) {
+      setArchiveError(`Failed to archive "${deck_name}": ${err.message}`)
+    } finally {
+      setArchivingId(null)
+    }
+  }
+
   const handleAnalyze = async (moxfieldId, source = 'moxfield') => {
     setAnalyzingId(moxfieldId)
     setAnalyzeError(null)
@@ -567,9 +645,16 @@ export default function DashboardPage() {
     <PageTransition>
       <div className="min-h-screen px-8 py-6">
         {showImportModal && (
-          <ImportModal
+        <ImportModal
           onClose={() => setShowImportModal(false)}
           onImported={handleImported}
+        />
+      )}
+      {archiveConfirm && (
+        <ArchiveConfirmModal
+          deckName={archiveConfirm.deck_name}
+          onConfirm={handleArchiveConfirm}
+          onCancel={() => setArchiveConfirm(null)}
         />
       )}
       <div className="max-w-[1400px] mx-auto">
@@ -635,6 +720,9 @@ export default function DashboardPage() {
 
         {analyzeError && (
           <p className="mb-4 text-[var(--color-danger)] text-sm">{analyzeError}</p>
+        )}
+        {archiveError && (
+          <p className="mb-4 text-[var(--color-danger)] text-sm">{archiveError}</p>
         )}
 
         {decksError && (
@@ -706,6 +794,7 @@ export default function DashboardPage() {
                     item={item}
                     onAnalyze={handleAnalyze}
                     analyzingId={analyzingId}
+                    onArchive={handleArchiveRequest}
                   />
                 </motion.div>
               ))}
@@ -731,6 +820,7 @@ export default function DashboardPage() {
                       item={item}
                       onAnalyze={handleAnalyze}
                       analyzingId={analyzingId}
+                      onArchive={handleArchiveRequest}
                       index={index}
                     />
                   ))}

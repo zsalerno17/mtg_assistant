@@ -68,8 +68,8 @@ serve(async (req) => {
           ? srv.from("user_decks").select("user_id, moxfield_id").in("user_id", signedInUserIds)
           : { data: [] as { user_id: string; moxfield_id: string }[], error: null },
         signedInUserIds.length > 0
-          ? srv.from("analyses").select("user_id, moxfield_id").in("user_id", signedInUserIds)
-          : { data: [] as { user_id: string; moxfield_id: string }[], error: null },
+          ? srv.from("analyses").select("user_id, deck_id").in("user_id", signedInUserIds)
+          : { data: [] as { user_id: string; deck_id: string }[], error: null },
       ]);
 
       const profileByUserId = new Map<string, { username: string | null; avatar_url: string | null }>();
@@ -88,8 +88,8 @@ serve(async (req) => {
         );
         const inAnalyses = new Set<string>(
           (analysesResult.data ?? [])
-            .filter((a: { user_id: string; moxfield_id: string }) => a.user_id === userId)
-            .map((a: { user_id: string; moxfield_id: string }) => a.moxfield_id)
+            .filter((a: { user_id: string; deck_id: string }) => a.user_id === userId)
+            .map((a: { user_id: string; deck_id: string }) => a.deck_id)
         );
         const combined = new Set([...inLibrary, ...inAnalyses]);
         deckCountByUserId.set(userId, combined.size);

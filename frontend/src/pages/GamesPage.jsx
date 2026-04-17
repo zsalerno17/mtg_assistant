@@ -112,7 +112,7 @@ function GameCard({ game, deckMap, onDelete }) {
             <button
               onClick={() => setConfirmDelete(true)}
               className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors p-1 rounded"
-              aria-label="Delete game"
+              aria-label="Delete skirmish"
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
             </button>
@@ -213,7 +213,7 @@ export default function GamesPage() {
               My Skirmishes
             </h1>
             <p className="text-[var(--color-text-muted)] text-sm">
-              Track your Commander sessions without a league
+              Track your Commander sessions without a campaign
             </p>
           </div>
           <Link to="/games/log" className="btn btn-primary">

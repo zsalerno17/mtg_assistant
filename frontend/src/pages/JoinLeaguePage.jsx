@@ -39,7 +39,7 @@ export default function JoinLeaguePage() {
           Join the Battle
         </h1>
         <p className="text-secondary">
-          You've been invited to join a Commander league. Create your wrestler persona below!
+          You've been invited to join a Commander campaign. Create your pilot persona below!
         </p>
       </div>
 
@@ -52,7 +52,7 @@ export default function JoinLeaguePage() {
       <form onSubmit={handleJoin} className="bg-surface border border-accent/30 rounded-xl p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium text-secondary mb-1.5">
-            Superstar Name *
+            Pilot Name *
           </label>
           <input
             type="text"

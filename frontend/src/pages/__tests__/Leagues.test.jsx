@@ -109,8 +109,8 @@ describe('LeaguesPage', () => {
       expect(screen.getByText('Form your first pod.')).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByText('+ Create League'))
-    expect(screen.getByText('Create New League')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('+ Create Campaign'))
+    expect(screen.getByText('Create New Campaign')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 

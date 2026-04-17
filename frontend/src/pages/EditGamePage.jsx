@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
+import { SelectField } from '../components/shared'
 
 // Supports both old flat-key format and new bonus_awards array format
 function isAwardEnabled(league, awardId) {
@@ -28,8 +29,8 @@ export default function EditGamePage() {
   const [members, setMembers] = useState([])
   const [myDecks, setMyDecks] = useState([])
 
-  // Game metadata
-  const [gameNumber, setGameNumber] = useState(1)
+  // Game metadata (gameNumber is read-only, set from loaded game for display)
+  const [gameNumber, setGameNumber] = useState(null)
   const [playedAt, setPlayedAt] = useState(new Date().toISOString().slice(0, 16))
   const [screenshotUrl, setScreenshotUrl] = useState('')
   const [spicyPlayDescription, setSpicyPlayDescription] = useState('')
@@ -116,11 +117,11 @@ export default function EditGamePage() {
         .map(Number)
 
       if (placements.length === 0)
-        throw new Error('Please assign placements to at least one player')
+        throw new Error('Please assign placements to at least one pilot')
 
       const uniquePlacements = new Set(placements)
       if (uniquePlacements.size !== placements.length)
-        throw new Error('Each player must have a unique placement')
+        throw new Error('Each pilot must have a unique placement')
 
       const gameResults = Object.entries(results)
         .filter(([_, r]) => r.placement !== null && r.placement !== '')
@@ -142,7 +143,6 @@ export default function EditGamePage() {
 
       await api.editGame(leagueId, gameId, {
         game: {
-          game_number: Number(gameNumber),
           played_at: new Date(playedAt).toISOString(),
           screenshot_url: screenshotUrl || null,
           spicy_play_description: spicyPlayDescription || null,
@@ -163,7 +163,7 @@ export default function EditGamePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-[var(--color-text-muted)]">Loading game...</div>
+        <div className="text-[var(--color-text-muted)]">Loading skirmish...</div>
       </div>
     )
   }
@@ -173,7 +173,7 @@ export default function EditGamePage() {
       <div className="max-w-[900px] mx-auto px-8 py-10">
         <div className="mb-8">
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
-            Edit Game #{gameNumber}
+            Edit Skirmish #{gameNumber}
           </h1>
           <p className="text-[var(--color-text-muted)]">{league?.name}</p>
         </div>
@@ -187,29 +187,16 @@ export default function EditGamePage() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Game Metadata */}
           <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
-            <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">Game Details</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Game Number</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={gameNumber}
-                  onChange={(e) => setGameNumber(e.target.value)}
-                  required
-                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Date &amp; Time</label>
-                <input
-                  type="datetime-local"
-                  value={playedAt}
-                  onChange={(e) => setPlayedAt(e.target.value)}
-                  required
-                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
-                />
-              </div>
+            <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">Skirmish Details</h2>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Date &amp; Time</label>
+              <input
+                type="datetime-local"
+                value={playedAt}
+                onChange={(e) => setPlayedAt(e.target.value)}
+                required
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+              />
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Screenshot URL (optional)</label>
@@ -235,7 +222,7 @@ export default function EditGamePage() {
           {/* Player Results */}
           <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-brand font-bold text-[var(--color-text)]">Player Results</h2>
+              <h2 className="text-lg font-brand font-bold text-[var(--color-text)]">Pilot Results</h2>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-[var(--color-text-muted)]">Pod size:</label>
                 <select
@@ -244,7 +231,7 @@ export default function EditGamePage() {
                   className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-sm text-[var(--color-text)]"
                 >
                   {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>{n} players</option>
+                    <option key={n} value={n}>{n} pilots</option>
                   ))}
                 </select>
               </div>

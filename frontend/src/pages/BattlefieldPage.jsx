@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { LeagueCardSkeleton, GameCardSkeleton } from '../components/Skeletons'
 import { SwordsIcon, TrophyIcon } from '../components/LeagueIcons'
 import PageTransition from '../components/PageTransition'
+import { SelectField } from '../components/shared'
 
 // ---------------------------------------------------------------------------
 // Shared constants / helpers
@@ -20,7 +21,9 @@ const PREMADE_AWARDS = [
   { id: 'jobber',        title: 'The Jobber',                 description: 'Eliminated early but nominated by pod for going out in style; consolation prize', points: 1 },
   { id: 'kingslayer',    title: 'Kingslayer',                 description: 'Eliminated the current #1 player in the standings during that game', points: 1 },
 ]
-const DEFAULT_BONUS_AWARDS = PREMADE_AWARDS.map((a, i) => ({ ...a, enabled: i < 3, isCustom: false }))
+const DEFAULT_BONUS_AWARDS = [...PREMADE_AWARDS]
+  .sort((a, b) => a.title.localeCompare(b.title))
+  .map((a) => ({ ...a, enabled: false, isCustom: false }))
 
 function ordinal(n) {
   if (n === 1) return '1st'
@@ -33,7 +36,7 @@ function ordinal(n) {
 // Create Campaign Modal (adapted from LeaguesPage CreateLeagueModal)
 // ---------------------------------------------------------------------------
 
-function CreateCampaignModal({ onClose, onCreate, creating }) {
+function CreateCampaignModal({ onClose, onCreate, creating, currentUserId }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [seasonStart, setSeasonStart] = useState('')
@@ -42,27 +45,71 @@ function CreateCampaignModal({ onClose, onCreate, creating }) {
   const [showAddBonus, setShowAddBonus] = useState(false)
   const [newBonus, setNewBonus] = useState({ title: '', description: '', points: 1 })
 
+  // Victory condition
+  const [victoryType, setVictoryType] = useState('time_period') // 'time_period' | 'threshold' | 'skirmish_count'
+  const [victoryPoints, setVictoryPoints] = useState(30)
+  const [victorySkirmishCount, setVictorySkirmishCount] = useState(10)
+
+  // Points per position
+  const [positionPoints, setPositionPoints] = useState({ '1': 3, '2': 2, '3': 1, '4': 0 })
+
+  // Pilots
+  const [allUsers, setAllUsers] = useState([])
+  const [usersLoading, setUsersLoading] = useState(true)
+  const [invitedIds, setInvitedIds] = useState(['', '', ''])
+
+  useEffect(() => {
+    api.getUsers()
+      .then(r => setAllUsers(r.users ?? []))
+      .catch(() => setAllUsers([]))
+      .finally(() => setUsersLoading(false))
+  }, [])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const findEnabled = (id) => bonusAwards.find(a => a.id === id)?.enabled ?? false
+
+    const victory_condition =
+      victoryType === 'threshold'     ? { type: 'threshold', points: victoryPoints } :
+      victoryType === 'skirmish_count' ? { type: 'skirmish_count', count: victorySkirmishCount } :
+      { type: 'time_period' }
+
     await onCreate({
       name,
       description,
-      season_start: seasonStart,
-      season_end: seasonEnd,
+      season_start: victoryType === 'time_period' ? seasonStart : null,
+      season_end:   victoryType === 'time_period' ? seasonEnd   : null,
       status: 'active',
       scoring_config: {
         entrance_bonus: findEnabled('entrance_bonus'),
         first_blood:    findEnabled('first_blood'),
         spicy_play:     findEnabled('spicy_play'),
         bonus_awards:   bonusAwards,
+        points:         positionPoints,
+        victory_condition,
       },
+      invited_user_ids: invitedIds.filter(Boolean),
     })
   }
 
   const handleBackdrop = (e) => {
     if (e.target === e.currentTarget && !creating) onClose()
   }
+
+  // Users available for each slot (exclude creator + already selected in other slots)
+  const availableFor = (slotIdx) =>
+    allUsers.filter(u =>
+      u.user_id !== currentUserId &&
+      !invitedIds.some((id, i) => i !== slotIdx && id === u.user_id)
+    )
+
+  const inputCls = "w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+  const victoryBtnCls = (active) =>
+    `flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+      active
+        ? 'bg-[var(--color-primary)]/15 border-[var(--color-primary)] text-[var(--color-primary)]'
+        : 'bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+    }`
 
   return (
     <div
@@ -78,21 +125,93 @@ function CreateCampaignModal({ onClose, onCreate, creating }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Campaign Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="The Commander Gauntlet" required disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="The Commander Gauntlet" required disabled={creating} className={inputCls} />
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Description / Rules (optional)</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Paste your league rules or description here..." rows={5} disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] font-mono text-sm disabled:opacity-50" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Paste your campaign rules or description here..." rows={5} disabled={creating} className={`${inputCls} font-mono text-sm`} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Season Start</label>
-              <input type="date" value={seasonStart} onChange={(e) => setSeasonStart(e.target.value)} required disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
+
+          {/* Victory Condition */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Victory Condition</label>
+            <div className="flex gap-2 mb-3">
+              <button type="button" onClick={() => setVictoryType('time_period')} disabled={creating} className={victoryBtnCls(victoryType === 'time_period')}>Time Period</button>
+              <button type="button" onClick={() => setVictoryType('threshold')} disabled={creating} className={victoryBtnCls(victoryType === 'threshold')}>Points Threshold</button>
+              <button type="button" onClick={() => setVictoryType('skirmish_count')} disabled={creating} className={victoryBtnCls(victoryType === 'skirmish_count')}>Skirmish Count</button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Season End</label>
-              <input type="date" value={seasonEnd} onChange={(e) => setSeasonEnd(e.target.value)} required disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
+            {victoryType === 'time_period' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">Season Start</label>
+                  <input type="date" value={seasonStart} onChange={(e) => setSeasonStart(e.target.value)} disabled={creating} className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">Season End</label>
+                  <input type="date" value={seasonEnd} onChange={(e) => setSeasonEnd(e.target.value)} disabled={creating} className={inputCls} />
+                </div>
+              </div>
+            )}
+            {victoryType === 'threshold' && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-[var(--color-text-muted)]">First to</span>
+                <input type="number" min="1" max="9999" value={victoryPoints} onChange={(e) => setVictoryPoints(Math.max(1, Number(e.target.value)))} disabled={creating} className="w-24 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
+                <span className="text-sm text-[var(--color-text-muted)]">points wins</span>
+              </div>
+            )}
+            {victoryType === 'skirmish_count' && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-[var(--color-text-muted)]">Most points after</span>
+                <input type="number" min="1" max="999" value={victorySkirmishCount} onChange={(e) => setVictorySkirmishCount(Math.max(1, Number(e.target.value)))} disabled={creating} className="w-24 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
+                <span className="text-sm text-[var(--color-text-muted)]">skirmishes wins</span>
+              </div>
+            )}
+          </div>
+
+          {/* Points per position */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Points per Position</label>
+            <div className="flex gap-3">
+              {[['1', '1st'], ['2', '2nd'], ['3', '3rd'], ['4', '4th+']].map(([key, label]) => (
+                <div key={key} className="flex flex-col items-center gap-1.5">
+                  <span className="text-xs text-[var(--color-text-muted)]">{label}</span>
+                  <input
+                    type="number" min="0" max="99"
+                    value={positionPoints[key]}
+                    onChange={(e) => setPositionPoints(prev => ({ ...prev, [key]: Math.max(0, Number(e.target.value)) }))}
+                    disabled={creating}
+                    className="w-16 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-2 py-2 text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-40"
+                  />
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* Pilots */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Add Pilots (optional)</label>
+            {usersLoading ? (
+              <p className="text-xs text-[var(--color-text-muted)] italic">Loading pilots…</p>
+            ) : (
+              <div className="space-y-2">
+                {[0, 1, 2].map((slotIdx) => (
+                  <div key={slotIdx} className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--color-text-muted)] w-14 shrink-0">Pilot {slotIdx + 1}</span>
+                    <select
+                      value={invitedIds[slotIdx]}
+                      onChange={(e) => setInvitedIds(prev => prev.map((id, i) => i === slotIdx ? e.target.value : id))}
+                      disabled={creating}
+                      className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+                    >
+                      <option value="">— Select a pilot —</option>
+                      {availableFor(slotIdx).map(u => (
+                        <option key={u.user_id} value={u.user_id}>{u.username}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Bonus Awards */}
@@ -286,11 +405,15 @@ export default function BattlefieldPage() {
     setLeaguesError(null)
     setSuccessMessage(null)
     try {
-      await api.createLeague(leagueData)
+      const result = await api.createLeague(leagueData)
       setShowCreateModal(false)
-      setSuccessMessage('Campaign created successfully!')
+      if (result.invite_errors?.length > 0) {
+        setSuccessMessage(`Campaign created! Some pilots could not be added: ${result.invite_errors.join('; ')}`)
+      } else {
+        setSuccessMessage('Campaign created successfully!')
+      }
       await loadLeagues()
-      setTimeout(() => setSuccessMessage(null), 5000)
+      setTimeout(() => setSuccessMessage(null), 8000)
     } catch (err) {
       setLeaguesError(err.message)
     } finally {
@@ -336,7 +459,7 @@ export default function BattlefieldPage() {
     try {
       const [gamesData, leagueGamesData, decksData] = await Promise.all([
         api.getPersonalGames(1),
-        api.getLeagueGames(),
+        api.getLeagueHistory(),
         api.getDeckLibrary(),
       ])
       const personal = gamesData.games || []
@@ -418,6 +541,7 @@ export default function BattlefieldPage() {
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreateLeague}
           creating={creating}
+          currentUserId={session?.user?.id}
         />
       )}
 
@@ -534,7 +658,7 @@ export default function BattlefieldPage() {
                       {league.league_members && (
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-                          {league.league_members.length} members
+                          {league.league_members.length} pilots
                         </div>
                       )}
                       {(() => {

@@ -131,8 +131,42 @@ async function verifyMembership(
 }
 
 // ---------------------------------------------------------------------------
+// Scoring helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Calculate total points for a game result using the league's configured
+ * placement points (falls back to 3-2-1-0 for backward compatibility).
+ */
+function calculatePoints(
+  placement: number,
+  earnedEntranceBonus: boolean,
+  earnedFirstBlood: boolean,
+  placementPointsConfig?: Record<string, number>,
+): number {
+  const pp = placementPointsConfig ?? { "1": 3, "2": 2, "3": 1, "4": 0 };
+  let pts = pp[String(placement)] ?? pp["4"] ?? 0;
+  if (earnedEntranceBonus) pts += 1;
+  if (earnedFirstBlood) pts += 1;
+  return pts;
+}
+
+// ---------------------------------------------------------------------------
 // Route handlers
 // ---------------------------------------------------------------------------
+
+// GET /users — list all registered users for pilot picker
+async function listAllUsers(
+  req: Request,
+): Promise<Response> {
+  const srv = getServiceClient();
+  const { data, error } = await srv
+    .from("user_profiles")
+    .select("user_id, username, avatar_url")
+    .order("username");
+  if (error) throw new HttpError(500, error.message);
+  return jsonResponse({ users: data ?? [] }, req);
+}
 
 // POST / — create league
 async function createLeague(
@@ -145,15 +179,13 @@ async function createLeague(
   if (!name) return errorResponse(400, "Name is required", req);
 
   const description = sanitizeText(body.description as string, 5000);
-  const seasonStart = body.season_start as string;
-  const seasonEnd = body.season_end as string;
-  const status = body.status as string || "active";
+  const seasonStart = (body.season_start as string) || null;
+  const seasonEnd = (body.season_end as string) || null;
+  const status = (body.status as string) || "active";
 
-  if (!seasonStart || !seasonEnd)
-    return errorResponse(400, "season_start and season_end are required", req);
   if (!/^(draft|active|completed)$/.test(status))
     return errorResponse(400, "Invalid status", req);
-  if (seasonEnd <= seasonStart)
+  if (seasonStart && seasonEnd && seasonEnd <= seasonStart)
     return errorResponse(400, "season_end must be after season_start", req);
 
   const { data, error } = await sb.from("leagues").insert({
@@ -189,7 +221,46 @@ async function createLeague(
 
   if (memberError) throw new HttpError(400, memberError.message);
 
-  return jsonResponse({ league: data }, req);
+  // Auto-add any invited pilots (up to 3)
+  const inviteErrors: string[] = [];
+  const invitedIds = Array.isArray(body.invited_user_ids)
+    ? (body.invited_user_ids as string[]).slice(0, 3)
+    : [];
+
+  if (invitedIds.length > 0) {
+    const srv = getServiceClient();
+    for (const invitedUserId of invitedIds) {
+      if (!invitedUserId || invitedUserId === userId) continue;
+
+      // Fetch their username for superstar_name default
+      const { data: invitedProfile } = await srv
+        .from("user_profiles")
+        .select("username")
+        .eq("user_id", invitedUserId)
+        .maybeSingle();
+
+      const invitedName = sanitizeText(
+        (invitedProfile as { username?: string } | null)?.username || "Pilot",
+        100,
+      ) ?? "Pilot";
+
+      const { error: inviteErr } = await srv.from("league_members").insert({
+        league_id: data.id,
+        user_id: invitedUserId,
+        superstar_name: invitedName,
+      });
+
+      if (inviteErr) {
+        if (inviteErr.message.toLowerCase().includes("duplicate")) {
+          inviteErrors.push(`${invitedUserId}: already a member`);
+        } else {
+          inviteErrors.push(`${invitedUserId}: could not add (${inviteErr.message})`);
+        }
+      }
+    }
+  }
+
+  return jsonResponse({ league: data, invite_errors: inviteErrors }, req);
 }
 
 // GET / — list leagues user is in
@@ -596,6 +667,23 @@ async function logGame(
     );
   }
 
+  // Fetch scoring config for placement points
+  const { data: leagueConfig } = await sb
+    .from("leagues")
+    .select("scoring_config")
+    .eq("id", leagueId)
+    .single();
+  const placementPointsConfig = (
+    (leagueConfig?.scoring_config as Record<string, unknown>)?.points
+  ) as Record<string, number> | undefined;
+
+  // Auto-calculate game number (sequential within league)
+  const { count: existingCount } = await sb
+    .from("league_games")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId);
+  const nextGameNumber = (existingCount ?? 0) + 1;
+
   // Create game record
   const playedAt = game.played_at
     ? new Date(game.played_at as string).toISOString()
@@ -607,7 +695,7 @@ async function logGame(
     .from("league_games")
     .insert({
       league_id: leagueId,
-      game_number: game.game_number,
+      game_number: nextGameNumber,
       played_at: playedAt,
       screenshot_url: screenshotUrl,
       spicy_play_description: sanitizeText(
@@ -631,12 +719,12 @@ async function logGame(
 
   // Create result records
   const resultsToInsert = results.map((r) => {
-    let points = 0;
-    if (r.earned_win) points += 3;
-    else if (r.earned_second_place) points += 2;
-    else if (r.earned_third_place) points += 1;
-    if (r.earned_entrance_bonus) points += 1;
-    if (r.earned_first_blood) points += 1;
+    const points = calculatePoints(
+      r.placement as number,
+      !!(r.earned_entrance_bonus),
+      !!(r.earned_first_blood),
+      placementPointsConfig,
+    );
 
     return {
       game_id: gameId,
@@ -743,6 +831,16 @@ async function editGame(
   if (new Set(placements).size !== placements.length)
     return errorResponse(400, "Each player must have a unique placement", req);
 
+  // Fetch scoring config for placement points
+  const { data: leagueConfigEdit } = await sb
+    .from("leagues")
+    .select("scoring_config")
+    .eq("id", leagueId)
+    .single();
+  const editPlacementPointsConfig = (
+    (leagueConfigEdit?.scoring_config as Record<string, unknown>)?.points
+  ) as Record<string, number> | undefined;
+
   const playedAt = game.played_at
     ? new Date(game.played_at as string).toISOString()
     : new Date().toISOString();
@@ -751,7 +849,6 @@ async function editGame(
   const { data: gameRecord, error: gameErr } = await sb
     .from("league_games")
     .update({
-      game_number: game.game_number,
       played_at: playedAt,
       screenshot_url: screenshotUrl,
       spicy_play_description: sanitizeText(game.spicy_play_description as string, 2000),
@@ -768,12 +865,12 @@ async function editGame(
   await sb.from("league_game_results").delete().eq("game_id", gameId);
 
   const resultsToInsert = results.map((r) => {
-    let points = 0;
-    if (r.earned_win) points += 3;
-    else if (r.earned_second_place) points += 2;
-    else if (r.earned_third_place) points += 1;
-    if (r.earned_entrance_bonus) points += 1;
-    if (r.earned_first_blood) points += 1;
+    const points = calculatePoints(
+      r.placement as number,
+      !!(r.earned_entrance_bonus),
+      !!(r.earned_first_blood),
+      editPlacementPointsConfig,
+    );
     return {
       game_id: gameId,
       member_id: String(r.member_id),
@@ -811,7 +908,10 @@ async function listGames(
   const pageSize = Math.min(50, Math.max(1, parseInt(url.searchParams.get("page_size") || "20")));
   const offset = (page - 1) * pageSize;
 
-  const { data, error } = await sb
+  // Use service client so RLS on league_game_results → league_members nested
+  // join doesn't silently return empty arrays. Membership is already verified above.
+  const srv = getServiceClient();
+  const { data, error } = await srv
     .from("league_games")
     .select(
       "*, league_game_results(*, league_members(superstar_name), user_decks(deck_name))",
@@ -1073,6 +1173,11 @@ serve(async (req: Request) => {
       segments[1] === "archive"
     ) {
       return await archiveCompletedLeagues(user.userId, sb, req);
+    }
+
+    // GET /users — list all users for pilot picker (must precede /:id routes)
+    if (method === "GET" && segments.length === 1 && segments[0] === "users") {
+      return await listAllUsers(req);
     }
 
     // POST / — create league
