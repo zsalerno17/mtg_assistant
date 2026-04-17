@@ -14,7 +14,6 @@ serve(async (req) => {
   try {
     const user = await requireAllowedUser(req);
 
-    // Only allow admin user to access this endpoint
     if (user.email !== ADMIN_EMAIL) {
       return new Response(
         JSON.stringify({ detail: "Admin access required" }),
@@ -24,9 +23,8 @@ serve(async (req) => {
 
     const srv = getServiceClient();
 
-    // GET /admin - List all allowed users with their auth status
+    // GET /admin — list all allowed users with profile + deck count
     if (req.method === "GET") {
-      // Get all allowed users
       const { data: allowedUsers, error: allowError } = await srv
         .from("allowed_users")
         .select("email")
@@ -40,36 +38,76 @@ serve(async (req) => {
         );
       }
 
-      // Get auth.users to check who has actually signed in
-      const { data: authUsers, error: authError } = await srv.auth.admin.listUsers();
-
+      // Get all auth users to build email → {id, timestamps} map
+      const { data: authData, error: authError } = await srv.auth.admin.listUsers();
       if (authError) {
         console.error("[admin/GET] Error fetching auth.users:", authError);
-        // Continue without auth data - non-critical
       }
 
-      // Build email -> auth user map (normalized to lowercase for matching)
-      const authUserMap = new Map();
-      if (authUsers?.users) {
-        for (const authUser of authUsers.users) {
-          if (authUser.email) {
-            authUserMap.set(authUser.email.toLowerCase(), {
-              id: authUser.id,
-              created_at: authUser.created_at,
-              last_sign_in_at: authUser.last_sign_in_at,
-            });
-          }
+      const authByEmail = new Map<string, { id: string; created_at: string; last_sign_in_at: string | null }>();
+      for (const u of (authData?.users ?? [])) {
+        if (u.email) {
+          authByEmail.set(u.email.toLowerCase(), {
+            id: u.id,
+            created_at: u.created_at,
+            last_sign_in_at: u.last_sign_in_at ?? null,
+          });
         }
       }
 
-      // Enrich allowlist with auth status
-      const enrichedUsers = (allowedUsers || []).map((allowedUser) => {
-        const authInfo = authUserMap.get(allowedUser.email.toLowerCase());
+      // Collect user_ids for signed-in users so we can batch-fetch profiles + deck counts
+      const signedInUserIds = (allowedUsers ?? [])
+        .map((u: { email: string }) => authByEmail.get(u.email.toLowerCase())?.id)
+        .filter((id: string | undefined): id is string => !!id);
+
+      const [profilesResult, userDecksResult, analysesResult] = await Promise.all([
+        signedInUserIds.length > 0
+          ? srv.from("user_profiles").select("user_id, username, avatar_url").in("user_id", signedInUserIds)
+          : { data: [] as { user_id: string; username: string | null; avatar_url: string | null }[], error: null },
+        signedInUserIds.length > 0
+          ? srv.from("user_decks").select("user_id, moxfield_id").in("user_id", signedInUserIds)
+          : { data: [] as { user_id: string; moxfield_id: string }[], error: null },
+        signedInUserIds.length > 0
+          ? srv.from("analyses").select("user_id, moxfield_id").in("user_id", signedInUserIds)
+          : { data: [] as { user_id: string; moxfield_id: string }[], error: null },
+      ]);
+
+      const profileByUserId = new Map<string, { username: string | null; avatar_url: string | null }>();
+      for (const p of (profilesResult.data ?? [])) {
+        profileByUserId.set(p.user_id, { username: p.username, avatar_url: p.avatar_url });
+      }
+
+      // Count distinct moxfield_ids per user across both user_decks and analyses
+      // (mirrors the backwards-compat logic in the deck library endpoint)
+      const deckCountByUserId = new Map<string, number>();
+      for (const userId of signedInUserIds) {
+        const inLibrary = new Set<string>(
+          (userDecksResult.data ?? [])
+            .filter((d: { user_id: string; moxfield_id: string }) => d.user_id === userId)
+            .map((d: { user_id: string; moxfield_id: string }) => d.moxfield_id)
+        );
+        const inAnalyses = new Set<string>(
+          (analysesResult.data ?? [])
+            .filter((a: { user_id: string; moxfield_id: string }) => a.user_id === userId)
+            .map((a: { user_id: string; moxfield_id: string }) => a.moxfield_id)
+        );
+        const combined = new Set([...inLibrary, ...inAnalyses]);
+        deckCountByUserId.set(userId, combined.size);
+      }
+
+      const enrichedUsers = (allowedUsers ?? []).map((u: { email: string }) => {
+        const authInfo = authByEmail.get(u.email.toLowerCase());
+        const profile = authInfo ? (profileByUserId.get(authInfo.id) ?? null) : null;
+        const deckCount = authInfo ? (deckCountByUserId.get(authInfo.id) ?? 0) : 0;
+
         return {
-          email: allowedUser.email,
+          email: u.email,
           has_signed_in: !!authInfo,
-          created_at: authInfo?.created_at || null,
-          last_sign_in_at: authInfo?.last_sign_in_at || null,
+          created_at: authInfo?.created_at ?? null,
+          last_sign_in_at: authInfo?.last_sign_in_at ?? null,
+          username: profile?.username ?? null,
+          avatar_url: profile?.avatar_url ?? null,
+          deck_count: deckCount,
         };
       });
 
@@ -79,7 +117,7 @@ serve(async (req) => {
       );
     }
 
-    // POST /admin - Add new email to allowlist
+    // POST /admin — add email to allowlist
     if (req.method === "POST") {
       const body = await req.json();
       const { email } = body;
@@ -91,7 +129,6 @@ serve(async (req) => {
         );
       }
 
-      // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return new Response(
@@ -100,10 +137,8 @@ serve(async (req) => {
         );
       }
 
-      // Normalize to lowercase
       const emailLower = email.toLowerCase();
 
-      // Check if already exists
       const { data: existing } = await srv
         .from("allowed_users")
         .select("email")
@@ -117,7 +152,6 @@ serve(async (req) => {
         );
       }
 
-      // Insert into allowed_users
       const { error: insertError } = await srv
         .from("allowed_users")
         .insert({ email: emailLower });
@@ -136,7 +170,7 @@ serve(async (req) => {
       );
     }
 
-    // DELETE /admin?email=... - Remove email from allowlist
+    // DELETE /admin?email=... — remove email from allowlist
     if (req.method === "DELETE") {
       const url = new URL(req.url);
       const email = url.searchParams.get("email");
@@ -150,7 +184,6 @@ serve(async (req) => {
 
       const emailLower = email.toLowerCase();
 
-      // Prevent admin from removing themselves
       if (emailLower === ADMIN_EMAIL) {
         return new Response(
           JSON.stringify({ detail: "Cannot remove admin email from allowlist" }),

@@ -72,45 +72,45 @@ function CreateCampaignModal({ onClose, onCreate, creating }) {
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-2xl shadow-black/60">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-brand font-bold text-[var(--color-text)]">Create New Campaign</h2>
-          <button onClick={onClose} disabled={creating} className="text-[var(--color-muted)] hover:text-[var(--color-text)] text-2xl leading-none transition-colors disabled:opacity-50" aria-label="Close">×</button>
+          <button onClick={onClose} disabled={creating} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-2xl leading-none transition-colors disabled:opacity-50" aria-label="Close">×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Campaign Name</label>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Campaign Name</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="The Commander Gauntlet" required disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Description / Rules (optional)</label>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Description / Rules (optional)</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Paste your league rules or description here..." rows={5} disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] font-mono text-sm disabled:opacity-50" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Season Start</label>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Season Start</label>
               <input type="date" value={seasonStart} onChange={(e) => setSeasonStart(e.target.value)} required disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Season End</label>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Season End</label>
               <input type="date" value={seasonEnd} onChange={(e) => setSeasonEnd(e.target.value)} required disabled={creating} className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50" />
             </div>
           </div>
 
           {/* Bonus Awards */}
           <div>
-            <label className="block text-sm font-medium text-[var(--color-muted)] mb-2">Bonus Awards</label>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Bonus Awards</label>
             <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
               <div className="grid items-center gap-3 px-4 py-2 bg-[var(--color-bg)]/60 border-b border-[var(--color-border)]" style={{gridTemplateColumns: '2rem 1fr 2fr 4rem'}}>
-                <div /><div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">Title</div><div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">Description</div><div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide text-right">Pts</div>
+                <div /><div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Title</div><div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Description</div><div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide text-right">Pts</div>
               </div>
               {bonusAwards.map((award, idx) => (
                 <div key={award.id} className={`grid items-start gap-3 px-4 py-3 border-b border-[var(--color-border)] transition-opacity ${!award.enabled ? 'opacity-40' : ''}`} style={{gridTemplateColumns: '2rem 1fr 2fr 4rem'}}>
-                  <input type="checkbox" checked={award.enabled} onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, enabled: e.target.checked } : a))} disabled={creating} className="mt-0.5 w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer disabled:opacity-50" />
+                  <input type="checkbox" checked={award.enabled} onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, enabled: e.target.checked } : a))} disabled={creating} className="mt-0.5 w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] cursor-pointer disabled:opacity-50" />
                   <div className="text-sm font-medium text-[var(--color-text)] leading-snug">{award.title}</div>
-                  <div className="text-xs text-[var(--color-muted)] leading-relaxed">{award.description}</div>
+                  <div className="text-xs text-[var(--color-text-muted)] leading-relaxed">{award.description}</div>
                   <div className="flex items-center justify-end gap-1.5">
                     <input type="number" min="0" max="10" value={award.points} onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, points: Math.max(0, Number(e.target.value)) } : a))} disabled={!award.enabled || creating} className="w-12 bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-sm text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-40" />
                     {award.isCustom && (
-                      <button type="button" onClick={() => setBonusAwards(prev => prev.filter((_, i) => i !== idx))} disabled={creating} aria-label="Remove award" className="text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors disabled:opacity-50">✕</button>
+                      <button type="button" onClick={() => setBonusAwards(prev => prev.filter((_, i) => i !== idx))} disabled={creating} aria-label="Remove award" className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors disabled:opacity-50">✕</button>
                     )}
                   </div>
                 </div>
@@ -126,7 +126,7 @@ function CreateCampaignModal({ onClose, onCreate, creating }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => { if (!newBonus.title.trim()) return; setBonusAwards(prev => [...prev, { id: `custom_${Date.now()}`, title: newBonus.title.trim(), description: newBonus.description.trim(), points: newBonus.points, enabled: true, isCustom: true }]); setNewBonus({ title: '', description: '', points: 1 }); setShowAddBonus(false) }} className="px-3 py-1.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] text-sm rounded-lg font-medium transition-colors">Add</button>
-                    <button type="button" onClick={() => { setShowAddBonus(false); setNewBonus({ title: '', description: '', points: 1 }) }} className="px-3 py-1.5 text-[var(--color-muted)] hover:text-[var(--color-text)] text-sm transition-colors">Cancel</button>
+                    <button type="button" onClick={() => { setShowAddBonus(false); setNewBonus({ title: '', description: '', points: 1 }) }} className="px-3 py-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-sm transition-colors">Cancel</button>
                   </div>
                 </div>
               )}
@@ -134,7 +134,7 @@ function CreateCampaignModal({ onClose, onCreate, creating }) {
           </div>
 
           <div className="flex gap-3 justify-end pt-2">
-            <button type="button" onClick={onClose} disabled={creating} className="px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50">Cancel</button>
+            <button type="button" onClick={onClose} disabled={creating} className="px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50">Cancel</button>
             <button type="submit" disabled={creating} className="btn btn-primary min-w-[140px]">{creating ? 'Creating…' : 'Create Campaign'}</button>
           </div>
         </form>
@@ -173,13 +173,13 @@ function SkirmishCard({ game, deckMap, onDelete }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1.5">
             <span className="text-sm font-medium text-[var(--color-text)]">{date}</span>
-            <span className="text-[var(--color-muted)]/50">·</span>
-            <span className="text-sm text-[var(--color-muted)]">{time}</span>
-            <span className="text-[var(--color-muted)]/50">·</span>
-            <span className="text-sm text-[var(--color-muted)]">{game.pod_size}-player pod</span>
+            <span className="text-[var(--color-text-muted)]/50">·</span>
+            <span className="text-sm text-[var(--color-text-muted)]">{time}</span>
+            <span className="text-[var(--color-text-muted)]/50">·</span>
+            <span className="text-sm text-[var(--color-text-muted)]">{game.pod_size}-player pod</span>
             {game.league_name && (
               <>
-                <span className="text-[var(--color-muted)]/50">·</span>
+                <span className="text-[var(--color-text-muted)]/50">·</span>
                 <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)] border border-[var(--color-secondary-border)]">
                   {game.league_name}
                 </span>
@@ -191,19 +191,19 @@ function SkirmishCard({ game, deckMap, onDelete }) {
               {deck.commander_image_uri && (
                 <img src={deck.commander_image_uri} alt="" className="w-6 h-6 rounded-full object-cover border border-[var(--color-border)]" />
               )}
-              <span className="text-sm text-[var(--color-muted)]">{deck.deck_name}</span>
+              <span className="text-sm text-[var(--color-text-muted)]">{deck.deck_name}</span>
             </div>
           ) : (
-            <span className="text-xs text-[var(--color-muted)]/50 italic">No deck recorded</span>
+            <span className="text-xs text-[var(--color-text-muted)]/50 italic">No deck recorded</span>
           )}
           {game.notes && (
-            <p className="mt-2 text-xs text-[var(--color-muted)] leading-relaxed line-clamp-2">
+            <p className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed line-clamp-2">
               {game.notes.slice(0, 120)}{game.notes.length > 120 ? '…' : ''}
             </p>
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className={`px-2.5 py-1 rounded text-xs font-bold ${isWin ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-[var(--color-surface-2)] text-[var(--color-muted)]'}`}>
+          <span className={`px-2.5 py-1 rounded text-xs font-bold ${isWin ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}`}>
             {ordinal(game.placement)}
           </span>
           {!game.is_league_game && (
@@ -212,10 +212,10 @@ function SkirmishCard({ game, deckMap, onDelete }) {
                 <button onClick={handleDelete} disabled={deleting} className="text-xs text-[var(--color-danger)] font-medium hover:underline disabled:opacity-50">
                   {deleting ? 'Deleting…' : 'Confirm'}
                 </button>
-                <button onClick={() => setConfirmDelete(false)} className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]">Cancel</button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]">Cancel</button>
               </div>
             ) : (
-              <button onClick={() => setConfirmDelete(true)} className="text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors p-1 rounded" aria-label="Delete skirmish">
+              <button onClick={() => setConfirmDelete(true)} className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors p-1 rounded" aria-label="Delete skirmish">
                 <Trash2 className="w-4 h-4" strokeWidth={1.5} />
               </button>
             )
@@ -406,7 +406,7 @@ export default function BattlefieldPage() {
     `px-5 py-2.5 text-sm font-medium transition-all border-b-2 ${
       activeTab === tab
         ? 'border-[var(--color-primary)] text-[var(--color-text)]'
-        : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+        : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
     }`
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -428,7 +428,7 @@ export default function BattlefieldPage() {
             <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
               The Battlefield
             </h1>
-            <p className="text-[var(--color-muted)] text-sm">
+            <p className="text-[var(--color-text-muted)] text-sm">
               Campaigns, skirmishes, standings, and legendary moments
             </p>
           </div>
@@ -471,14 +471,14 @@ export default function BattlefieldPage() {
             {/* Bulk actions */}
             {!leaguesLoading && leagues.length > 0 && (
               <div className="flex items-center gap-3 mb-6">
-                <button onClick={handleRefreshDecks} disabled={refreshing} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50">
+                <button onClick={handleRefreshDecks} disabled={refreshing} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50">
                   {refreshing ? 'Refreshing...' : 'Refresh Decks'}
                 </button>
-                <button onClick={handleArchiveCompleted} disabled={archiving} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50">
+                <button onClick={handleArchiveCompleted} disabled={archiving} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50">
                   {archiving ? 'Archiving...' : 'Archive Completed'}
                 </button>
                 {completedLeagues.length > 0 && (
-                  <button onClick={() => setShowCompleted(!showCompleted)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors">
+                  <button onClick={() => setShowCompleted(!showCompleted)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                     {showCompleted ? 'Hide Completed' : `Show Completed (${completedLeagues.length})`}
                   </button>
                 )}
@@ -495,9 +495,9 @@ export default function BattlefieldPage() {
             {/* Empty */}
             {!leaguesLoading && leagues.length === 0 && (
               <div className="text-center py-20">
-                <TrophyIcon className="w-16 h-16 text-[var(--color-muted)] mx-auto mb-4" />
+                <TrophyIcon className="w-16 h-16 text-[var(--color-text-muted)] mx-auto mb-4" />
                 <h3 className="text-2xl font-brand font-bold text-[var(--color-text)] mb-3">No campaigns yet.</h3>
-                <p className="text-[var(--color-muted)] mb-6">Create a campaign to start tracking your pod sessions and standings.</p>
+                <p className="text-[var(--color-text-muted)] mb-6">Create a campaign to start tracking your pod sessions and standings.</p>
                 <button onClick={() => setShowCreateModal(true)} className="btn btn-primary px-6 py-2.5 rounded-lg font-medium">
                   Create Your First Campaign
                 </button>
@@ -519,13 +519,13 @@ export default function BattlefieldPage() {
                       </h3>
                       <span className={`px-2.5 py-1 rounded text-xs font-medium ${
                         league.status === 'active' ? 'bg-green-500/20 text-green-300'
-                        : league.status === 'completed' ? 'bg-gray-500/20 text-gray-300'
+                        : league.status === 'completed' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
                         : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                       }`}>
                         {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
                       </span>
                     </div>
-                    <div className="text-sm text-[var(--color-muted)] space-y-1.5">
+                    <div className="text-sm text-[var(--color-text-muted)] space-y-1.5">
                       <div className="flex items-center gap-1.5">
                         <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
                         {new Date(league.season_start).toLocaleDateString()} —{' '}
@@ -544,14 +544,14 @@ export default function BattlefieldPage() {
                         return colorArray.length > 0 ? (
                           <div className="flex gap-1 mt-1">
                             {colorArray.map(color => (
-                              <i key={color} className={`ms ms-${color.toLowerCase()} ms-cost`} style={{ fontSize: '14px' }} />
+                              <i key={color} className={`ms ms-${color.toLowerCase()} ms-cost text-[14px]`} />
                             ))}
                           </div>
                         ) : null
                       })()}
                     </div>
                     {league.description && (
-                      <p className="mt-3 text-xs text-[var(--color-muted)] line-clamp-2">
+                      <p className="mt-3 text-xs text-[var(--color-text-muted)] line-clamp-2">
                         {league.description.slice(0, 120)}...
                       </p>
                     )}
@@ -576,21 +576,21 @@ export default function BattlefieldPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-[var(--color-text)] mb-0.5">{skirmishStats.total}</div>
-                  <div className="text-xs text-[var(--color-muted)]">Skirmishes</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">Skirmishes</div>
                 </div>
                 <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-yellow-400 mb-0.5">{skirmishStats.winRate}%</div>
-                  <div className="text-xs text-[var(--color-muted)]">Win Rate</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">Win Rate</div>
                 </div>
                 <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-[var(--color-text)] mb-0.5">{skirmishStats.avgPlacement}</div>
-                  <div className="text-xs text-[var(--color-muted)]">Avg Placement</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">Avg Placement</div>
                 </div>
                 <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
                   <div className="text-sm font-bold text-[var(--color-primary)] mb-0.5 truncate px-2" title={skirmishStats.topDeck || '—'}>
                     {skirmishStats.topDeck || '—'}
                   </div>
-                  <div className="text-xs text-[var(--color-muted)]">Top Deck</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">Top Deck</div>
                 </div>
               </div>
             )}
@@ -605,9 +605,9 @@ export default function BattlefieldPage() {
             {/* Empty */}
             {!gamesLoading && games.length === 0 && (
               <div className="text-center py-20">
-                <Swords className="w-16 h-16 text-[var(--color-muted)] mx-auto mb-4" />
+                <Swords className="w-16 h-16 text-[var(--color-text-muted)] mx-auto mb-4" />
                 <h3 className="text-2xl font-brand font-bold text-[var(--color-text)] mb-3">No skirmishes logged yet.</h3>
-                <p className="text-[var(--color-muted)] mb-6">Start tracking your Commander sessions.</p>
+                <p className="text-[var(--color-text-muted)] mb-6">Start tracking your Commander sessions.</p>
                 <Link to="/games/log" className="btn btn-primary px-6 py-2.5 rounded-lg font-medium">
                   Log Your First Skirmish
                 </Link>
@@ -627,7 +627,7 @@ export default function BattlefieldPage() {
                 ))}
                 {hasMoreGames && (
                   <div className="text-center pt-4">
-                    <button onClick={loadMoreSkirmishes} disabled={loadingMoreGames} className="px-6 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50">
+                    <button onClick={loadMoreSkirmishes} disabled={loadingMoreGames} className="px-6 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50">
                       {loadingMoreGames ? 'Loading…' : 'Load More'}
                     </button>
                   </div>

@@ -324,4 +324,21 @@ export const api = {
   /** Get league games the user participated in (for Skirmishes tab). */
   getLeagueGames: () =>
     edgeFetch('games', '/league-history', {}),
+
+  // ---------------------------------------------------------------------------
+  // Admin — allowlist management
+  // ---------------------------------------------------------------------------
+
+  admin: {
+    /** Get all entries in the allowed_users allowlist. */
+    getAllowedUsers: () => edgeFetch('admin', '', {}),
+
+    /** Add an email to the allowlist. */
+    addAllowedUser: (email) =>
+      edgeFetch('admin', '', { method: 'POST', body: JSON.stringify({ email }) }),
+
+    /** Remove an email from the allowlist. */
+    removeAllowedUser: (email) =>
+      edgeFetch('admin', `?email=${encodeURIComponent(email)}`, { method: 'DELETE' }),
+  },
 }

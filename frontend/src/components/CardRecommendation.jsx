@@ -38,7 +38,7 @@ export default function CardRecommendation({ card, owned, category, priceTier, r
             {category && (
               <TagTooltip
                 tip={CATEGORY_TOOLTIPS[category] || category}
-                className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${CATEGORY_COLORS[category] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${CATEGORY_COLORS[category] || 'bg-[var(--color-muted)]/10 text-[var(--color-text-muted)]'}`}
               >
                 {category}
               </TagTooltip>
@@ -46,14 +46,14 @@ export default function CardRecommendation({ card, owned, category, priceTier, r
             {priceTier && (
               <TagTooltip
                 tip={PRICE_TIER_TOOLTIPS[priceTier] || priceTier}
-                className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${PRICE_TIER_COLORS[priceTier] || 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'}`}
+                className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full cursor-help uppercase tracking-wide ${PRICE_TIER_COLORS[priceTier] || 'bg-[var(--color-muted)]/10 text-[var(--color-text-muted)]'}`}
               >
                 {priceTier}
               </TagTooltip>
             )}
           </div>
         )}
-        <p className="text-[var(--color-muted)] text-xs mt-0.5">{reason}</p>
+        <p className="text-[var(--color-text-muted)] text-xs mt-0.5">{reason}</p>
       </div>
     </div>
   )

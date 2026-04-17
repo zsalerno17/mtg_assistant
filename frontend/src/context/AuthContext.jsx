@@ -57,10 +57,17 @@ export function AuthProvider({ children }) {
     })
   }
 
+  const signInWithEmail = async (email) => {
+    return supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
+  }
+
   const signOut = () => supabase.auth.signOut()
 
   return (
-    <AuthContext.Provider value={{ session, profile, profileError, refreshProfile, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ session, profile, profileError, refreshProfile, signInWithGoogle, signInWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   )

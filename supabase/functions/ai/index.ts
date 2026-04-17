@@ -12,6 +12,7 @@ import {
   getStrategyAdvice,
   getImprovementSuggestions,
   explainScenarios,
+  validateStrategyCards,
 } from "../_shared/gemini.ts";
 import { createCard } from "../_shared/models.ts";
 import type { Card, Deck, Collection } from "../_shared/models.ts";
@@ -160,35 +161,32 @@ async function handleStrategy(
 
   const sb = getServiceClient();
 
-  // Serve from cache
-  const cached = await getCached(sb, moxfieldId, "strategy_v3");
+  // Load deck first so we can validate card references on both cache hits and misses
+  const deck = await loadDeck(moxfieldId);
+
+  const cached = await getCached(sb, moxfieldId, "strategy_v4");
   if (cached) {
     try {
-      return jsonResponse({
-        strategy: JSON.parse(cached),
-        ai_enhanced: true,
-        cached: true,
-      }, req);
+      const strategy = validateStrategyCards(JSON.parse(cached), deck.mainboard);
+      return jsonResponse({ strategy, ai_enhanced: true, cached: true }, req);
     } catch {
       // corrupted cache, continue
     }
   }
 
-  const deck = await loadDeck(moxfieldId);
   const analysis = analyzeDeck(deck);
   const result = await getStrategyAdvice(deck, analysis);
+  const strategy = validateStrategyCards(
+    result.content as Record<string, unknown>,
+    deck.mainboard,
+  );
 
-  if (result.ai_enhanced && result.content) {
-    await setCached(
-      sb,
-      moxfieldId,
-      "strategy_v3",
-      JSON.stringify(result.content),
-    );
+  if (result.ai_enhanced && strategy) {
+    await setCached(sb, moxfieldId, "strategy_v4", JSON.stringify(strategy));
   }
 
   return jsonResponse({
-    strategy: result.content,
+    strategy,
     ai_enhanced: result.ai_enhanced,
     cached: false,
   }, req);
@@ -211,7 +209,7 @@ async function handleImprovements(
 
   // Collection-aware cache key
   const cacheKey = `${moxfieldId}:${userId}`;
-  const cached = await getCached(sb, cacheKey, "improvements_v3");
+  const cached = await getCached(sb, cacheKey, "improvements_v4");
   if (cached) {
     try {
       return jsonResponse({
@@ -252,7 +250,7 @@ async function handleImprovements(
     collectionCards.map((c) => ((c.name as string) || "").toLowerCase()),
   );
 
-  // Remove urgent_fixes already in deck
+  // Remove urgent_fixes already in deck, add owned flag
   if (content.urgent_fixes && Array.isArray(content.urgent_fixes)) {
     content.urgent_fixes = (
       content.urgent_fixes as Record<string, unknown>[]
@@ -263,6 +261,10 @@ async function handleImprovements(
             ((f.card as string) || "").toLowerCase(),
           ),
       )
+      .map((f) => ({
+        ...f,
+        owned: ownedLower.has(((f.card as string) || "").toLowerCase()),
+      }))
       .slice(0, 5);
   }
 
@@ -347,7 +349,7 @@ async function handleImprovements(
     await setCached(
       sb,
       cacheKey,
-      "improvements_v3",
+      "improvements_v4",
       JSON.stringify(content),
     );
   }

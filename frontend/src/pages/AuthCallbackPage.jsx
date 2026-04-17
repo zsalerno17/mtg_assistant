@@ -60,7 +60,7 @@ export default function AuthCallbackPage() {
   return (
     <PageTransition>
       <div className="flex items-center justify-center min-h-screen bg-[var(--color-bg)]">
-      <div className="text-[var(--color-muted)]">Signing in...</div>
+      <div className="text-[var(--color-text-muted)]">Signing in...</div>
     </div>
     </PageTransition>
   )

@@ -69,7 +69,7 @@ export function AvatarDisplay({ avatarUrl, fallbackLabel, size = 'md', alt = 'Av
       style={{ background: '#1e293b', border: BORDER }}
       aria-hidden="true"
     >
-      <span className="text-[var(--color-muted)] font-semibold select-none">{initial}</span>
+      <span className="text-[var(--color-text-muted)] font-semibold select-none">{initial}</span>
     </div>
   )
 }

@@ -64,7 +64,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
           <button
             onClick={onClose}
             disabled={creating}
-            className="text-[var(--color-muted)] hover:text-[var(--color-text)] text-2xl leading-none transition-colors disabled:opacity-50"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-2xl leading-none transition-colors disabled:opacity-50"
             aria-label="Close"
           >
             ×
@@ -73,7 +73,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
               League Name
             </label>
             <input
@@ -88,7 +88,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
               Description / Rules (optional)
             </label>
             <textarea
@@ -103,7 +103,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                 Season Start
               </label>
               <input
@@ -116,7 +116,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                 Season End
               </label>
               <input
@@ -131,16 +131,16 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--color-muted)] mb-2">
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">
               Bonus Awards
             </label>
             <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
               {/* Header */}
               <div className="grid items-center gap-3 px-4 py-2 bg-[var(--color-bg)]/60 border-b border-[var(--color-border)]" style={{gridTemplateColumns: '2rem 1fr 2fr 4rem'}}>
                 <div />
-                <div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">Title</div>
-                <div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">Description</div>
-                <div className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide text-right">Pts</div>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Title</div>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Description</div>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide text-right">Pts</div>
               </div>
 
               {/* Award rows */}
@@ -155,10 +155,10 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
                     checked={award.enabled}
                     onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, enabled: e.target.checked } : a))}
                     disabled={creating}
-                    className="mt-0.5 w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer disabled:opacity-50"
+                    className="mt-0.5 w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] cursor-pointer disabled:opacity-50"
                   />
                   <div className="text-sm font-medium text-[var(--color-text)] leading-snug">{award.title}</div>
-                  <div className="text-xs text-[var(--color-muted)] leading-relaxed">{award.description}</div>
+                  <div className="text-xs text-[var(--color-text-muted)] leading-relaxed">{award.description}</div>
                   <div className="flex items-center justify-end gap-1.5">
                     <input
                       type="number"
@@ -175,7 +175,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
                         onClick={() => setBonusAwards(prev => prev.filter((_, i) => i !== idx))}
                         disabled={creating}
                         aria-label="Remove award"
-                        className="text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors disabled:opacity-50"
+                        className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors disabled:opacity-50"
                       >
                         ✕
                       </button>
@@ -243,7 +243,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
                     <button
                       type="button"
                       onClick={() => { setShowAddBonus(false); setNewBonus({ title: '', description: '', points: 1 }) }}
-                      className="px-3 py-1.5 text-[var(--color-muted)] hover:text-[var(--color-text)] text-sm transition-colors"
+                      className="px-3 py-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-sm transition-colors"
                     >
                       Cancel
                     </button>
@@ -258,7 +258,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
               type="button"
               onClick={onClose}
               disabled={creating}
-              className="px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -377,7 +377,7 @@ export default function LeaguesPage() {
             <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
               My Leagues
             </h1>
-            <p className="text-[var(--color-muted)] text-sm">
+            <p className="text-[var(--color-text-muted)] text-sm">
               Track your Commander pod sessions, standings, and legendary moments
             </p>
           </div>
@@ -409,21 +409,21 @@ export default function LeaguesPage() {
             <button
               onClick={handleRefreshDecks}
               disabled={refreshing}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
             >
               {refreshing ? 'Refreshing...' : 'Refresh Decks'}
             </button>
             <button
               onClick={handleArchiveCompleted}
               disabled={archiving}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
             >
               {archiving ? 'Archiving...' : 'Archive Completed'}
             </button>
             {completedLeagues.length > 0 && (
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
               >
                 {showCompleted ? 'Hide Completed' : `Show Completed (${completedLeagues.length})`}
               </button>
@@ -440,14 +440,14 @@ export default function LeaguesPage() {
 
         {!loading && leagues.length === 0 && (
           <div className="text-center py-20">
-            <SwordsIcon className="w-16 h-16 text-[var(--color-muted)] mx-auto mb-4" />
+            <SwordsIcon className="w-16 h-16 text-[var(--color-text-muted)] mx-auto mb-4" />
             <h3 className="text-2xl font-brand font-bold text-[var(--color-text)] mb-3">
               Form your first pod.
             </h3>
-            <p className="text-[var(--color-muted)] mb-2 text-lg">
+            <p className="text-[var(--color-text-muted)] mb-2 text-lg">
               Build a rivalry. Claim the championship.
             </p>
-            <p className="text-[var(--color-muted)]/60 text-sm mb-6">
+            <p className="text-[var(--color-text-muted)]/60 text-sm mb-6">
               Create a league to start tracking pod sessions, standings, and legendary moments.
             </p>
             <button
@@ -477,7 +477,7 @@ export default function LeaguesPage() {
                       league.status === 'active'
                         ? 'bg-green-500/20 text-green-300'
                         : league.status === 'completed'
-                        ? 'bg-gray-500/20 text-gray-300'
+                        ? 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
                         : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                     }`}
                   >
@@ -485,7 +485,7 @@ export default function LeaguesPage() {
                   </span>
                 </div>
 
-                <div className="text-sm text-[var(--color-muted)] space-y-1.5">
+                <div className="text-sm text-[var(--color-text-muted)] space-y-1.5">
                   <div className="flex items-center gap-1.5">
                     <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
                     {new Date(league.season_start).toLocaleDateString()} —{' '}
@@ -516,7 +516,7 @@ export default function LeaguesPage() {
                 </div>
 
                 {league.description && (
-                  <p className="mt-3 text-xs text-[var(--color-muted)] line-clamp-2">
+                  <p className="mt-3 text-xs text-[var(--color-text-muted)] line-clamp-2">
                     {league.description.slice(0, 120)}...
                   </p>
                 )}

@@ -95,7 +95,7 @@ export default function JoinLeaguePage() {
         <button
           type="submit"
           disabled={joining || !superstarName.trim()}
-          className="w-full btn-primary px-6 py-3 rounded-lg font-medium disabled:opacity-50"
+          className="w-full btn btn-primary px-6 py-3 rounded-lg font-medium disabled:opacity-50"
         >
           {joining ? 'Joining...' : 'Enter the Arena'}
         </button>

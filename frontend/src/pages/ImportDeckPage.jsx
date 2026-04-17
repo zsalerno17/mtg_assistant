@@ -36,7 +36,7 @@ export default function ImportDeckPage() {
         <div className="mb-8">
           <Link
             to="/"
-            className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-text)] text-sm transition-colors mb-4"
+            className="inline-flex items-center gap-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-sm transition-colors mb-4"
           >
             ← Dashboard
           </Link>
@@ -53,7 +53,7 @@ export default function ImportDeckPage() {
           onSubmit={handleImport}
           className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-lg shadow-black/40"
         >
-          <label className="block text-[var(--color-muted)] text-sm mb-2">
+          <label className="block text-[var(--color-text-muted)] text-sm mb-2">
             Deck URL
           </label>
           <div className="flex gap-3">
@@ -63,7 +63,7 @@ export default function ImportDeckPage() {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="moxfield.com/decks/... or archidekt.com/decks/..."
               disabled={loading}
-              className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all disabled:opacity-50"
+              className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all disabled:opacity-50"
             />
             <button
               type="submit"
@@ -83,14 +83,14 @@ export default function ImportDeckPage() {
           <div className="mt-5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-emerald-400 text-sm font-medium">Deck added to your library!</p>
-              <p className="text-[var(--color-muted)] text-xs mt-0.5 truncate max-w-[260px]">
+              <p className="text-[var(--color-text-muted)] text-xs mt-0.5 truncate max-w-[260px]">
                 {success.deck_name}
               </p>
             </div>
             <div className="flex gap-3 shrink-0">
               <button
                 onClick={() => { setSuccess(null); setUrl('') }}
-                className="text-[var(--color-muted)] text-xs hover:text-[var(--color-text)] transition-colors"
+                className="text-[var(--color-text-muted)] text-xs hover:text-[var(--color-text)] transition-colors"
               >
                 Import another
               </button>

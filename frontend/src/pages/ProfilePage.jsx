@@ -114,7 +114,7 @@ export default function ProfilePage() {
         {isFirstTime && (
           <div className="mb-6 bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-xl px-5 py-4">
             <p className="font-heading text-[var(--color-primary)] text-sm tracking-wide mb-1">Welcome to MTG Assistant!</p>
-            <p className="text-[var(--color-muted)] text-xs">Pick a username and avatar, then head to the dashboard to import your first deck.</p>
+            <p className="text-[var(--color-text-muted)] text-xs">Pick a username and avatar, then head to the dashboard to import your first deck.</p>
           </div>
         )}
         {/* Header */}
@@ -135,13 +135,13 @@ export default function ProfilePage() {
                 isCreaturePreset(selectedPresetId) ? (
                   renderCreatureAvatar(selectedPresetId)
                 ) : (
-                  <i className={`ms ms-${selectedPresetId} ms-cost ms-shadow`} style={{ fontSize: '5rem' }} aria-label={selectedPresetId}/>
+                  <i className={`ms ms-${selectedPresetId} ms-cost ms-shadow text-[5rem]`} aria-label={selectedPresetId}/>
                 )
               ) : isPresetUrl(displayAvatar) ? (
                 isCreaturePreset(urlToPresetId(displayAvatar)) ? (
                   renderCreatureAvatar(urlToPresetId(displayAvatar))
                 ) : (
-                  <i className={`ms ms-${urlToPresetId(displayAvatar)} ms-cost ms-shadow`} style={{ fontSize: '5rem' }} aria-label={urlToPresetId(displayAvatar)}
+                  <i className={`ms ms-${urlToPresetId(displayAvatar)} ms-cost ms-shadow text-[5rem]`} aria-label={urlToPresetId(displayAvatar)}
                 />
                 )
               ) : displayAvatar ? (
@@ -166,7 +166,7 @@ export default function ProfilePage() {
               >
                 {displayAvatar ? 'Upload your own' : 'Upload a photo'}
               </button>
-              <p className="text-[var(--color-muted)] text-xs">
+              <p className="text-[var(--color-text-muted)] text-xs">
                 JPG, PNG, GIF — max 2 MB
               </p>
               <input
@@ -181,7 +181,7 @@ export default function ProfilePage() {
 
           {/* Preset icons — mana symbols */}
           <div className="space-y-2">
-            <p className="text-[var(--color-muted)] text-xs">Mana symbols</p>
+            <p className="text-[var(--color-text-muted)] text-xs">Mana symbols</p>
             <div className="flex flex-wrap gap-2">
               {AVATAR_PRESETS.map((preset) => (
                 <button
@@ -195,7 +195,7 @@ export default function ProfilePage() {
                       : 'opacity-80 hover:opacity-100 hover:scale-105'
                   }`}
                 >
-                  <i className={`ms ms-${preset.id} ms-cost ms-shadow`} style={{ fontSize: '2.5rem' }} aria-hidden="true"/>
+                  <i className={`ms ms-${preset.id} ms-cost ms-shadow text-[2.5rem]`} aria-hidden="true"/>
                 </button>
               ))}
             </div>
@@ -203,7 +203,7 @@ export default function ProfilePage() {
 
           {/* Preset icons — creature archetypes */}
           <div className="space-y-2">
-            <p className="text-[var(--color-muted)] text-xs">Characters</p>
+            <p className="text-[var(--color-text-muted)] text-xs">Characters</p>
             <div className="flex flex-wrap gap-2">
               {CREATURE_PRESETS.map((preset) => (
                 <button
@@ -235,9 +235,9 @@ export default function ProfilePage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="3–20 chars: letters, numbers, - _"
               maxLength={20}
-              className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)]"
+              className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
             />
-            <p className="text-[var(--color-muted)] text-xs">
+            <p className="text-[var(--color-text-muted)] text-xs">
               This is how you'll appear in league standings.
             </p>
           </div>
@@ -266,7 +266,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={signOut}
-            className="text-sm text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors"
+            className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors"
           >
             Sign out
           </button>

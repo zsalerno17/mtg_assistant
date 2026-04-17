@@ -413,10 +413,10 @@ function IconCard({ name, lucide, strokeWidth, component: Current, lucideCompone
           <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text)]">
             <Current size={20} />
           </div>
-          <span className="text-[9px] text-[var(--color-muted)] font-mono">now</span>
+          <span className="text-[9px] text-[var(--color-text-muted)] font-mono">now</span>
         </div>
         {/* Arrow */}
-        <span className="text-[var(--color-muted)] text-xs opacity-60 flex-shrink-0">→</span>
+        <span className="text-[var(--color-text-muted)] text-xs opacity-60 flex-shrink-0">→</span>
         {/* Lucide replacement */}
         <div className="flex-1 flex flex-col items-center gap-1">
           <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
@@ -429,7 +429,7 @@ function IconCard({ name, lucide, strokeWidth, component: Current, lucideCompone
       <div className="text-center space-y-0.5">
         <p className="text-[10px] font-mono text-[var(--color-text)] truncate leading-tight" title={name}>{name}</p>
         <p className="text-[10px] text-[var(--color-primary)] font-medium truncate leading-tight" title={lucide}>{lucide}</p>
-        <p className="text-[9px] text-[var(--color-muted)]">sw: {strokeWidth}</p>
+        <p className="text-[9px] text-[var(--color-text-muted)]">sw: {strokeWidth}</p>
       </div>
     </div>
   )
@@ -442,25 +442,25 @@ export default function IconShowcasePage() {
       <div className="max-w-6xl mx-auto mb-10">
         <div className="flex items-center gap-3 mb-2">
           <span className="px-2 py-0.5 text-xs font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded">DEV ONLY</span>
-          <span className="text-[var(--color-muted)] text-sm">Route: /icons-dev</span>
+          <span className="text-[var(--color-text-muted)] text-sm">Route: /icons-dev</span>
         </div>
-        <h1 className="font-heading text-3xl text-[var(--color-text)] mb-2">Icon System Audit</h1>
-        <p className="text-[var(--color-muted)] mb-4">
+        <h1 style={{ fontFamily: 'var(--font-display)' }} className="font-heading text-3xl text-[var(--color-text)] mb-2">Icon System Audit</h1>
+        <p className="text-[var(--color-text-muted)] mb-4">
           All current inline SVG icons across the app. Each card shows the current icon, its component name, 
           the planned Lucide replacement, and current strokeWidth.
         </p>
         <div className="flex flex-wrap gap-3 text-sm">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
             <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
-            <span className="text-[var(--color-muted)]">Icon name (current)</span>
+            <span className="text-[var(--color-text-muted)]">Icon name (current)</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
             <span className="text-[var(--color-primary)] font-mono text-xs">→ LucideName</span>
-            <span className="text-[var(--color-muted)]">Planned Lucide replacement</span>
+            <span className="text-[var(--color-text-muted)]">Planned Lucide replacement</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
-            <span className="text-[var(--color-muted)] font-mono text-xs">sw: 2</span>
-            <span className="text-[var(--color-muted)]">Current strokeWidth</span>
+            <span className="text-[var(--color-text-muted)] font-mono text-xs">sw: 2</span>
+            <span className="text-[var(--color-text-muted)]">Current strokeWidth</span>
           </div>
         </div>
       </div>
@@ -471,8 +471,8 @@ export default function IconShowcasePage() {
           <section key={group.title}>
             <div className="flex items-baseline gap-3 mb-4">
               <h2 className="font-heading text-lg text-[var(--color-text)]">{group.title}</h2>
-              <span className="text-xs font-mono text-[var(--color-muted)]">{group.file}</span>
-              <span className="text-xs text-[var(--color-muted)] opacity-60">{group.icons.length} icons</span>
+              <span className="text-xs font-mono text-[var(--color-text-muted)]">{group.file}</span>
+              <span className="text-xs text-[var(--color-text-muted)] opacity-60">{group.icons.length} icons</span>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {group.icons.map((icon) => (
@@ -485,7 +485,7 @@ export default function IconShowcasePage() {
 
       {/* Footer note */}
       <div className="max-w-6xl mx-auto mt-14 pt-8 border-t border-[var(--color-border)]">
-        <p className="text-xs text-[var(--color-muted)]">
+        <p className="text-xs text-[var(--color-text-muted)]">
           See <span className="font-mono text-[var(--color-primary)]">.github/icon-audit-plan.md</span> for full migration plan.
           Install Lucide with <span className="font-mono text-amber-400">npm install lucide-react</span> in the frontend directory.
         </p>

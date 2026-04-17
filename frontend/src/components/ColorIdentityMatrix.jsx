@@ -99,7 +99,7 @@ export default function ColorIdentityMatrix({ colorData }) {
 
   if (!colorData || !colorData.matrix) {
     return (
-      <div className="text-center py-12 text-[var(--color-muted)]">
+      <div className="text-center py-12 text-[var(--color-text-muted)]">
         <p className="text-sm">No color identity analysis available</p>
         <p className="text-xs mt-2">Upload your collection to see which color combinations you can build</p>
       </div>
@@ -142,7 +142,7 @@ export default function ColorIdentityMatrix({ colorData }) {
               <th className="w-12 h-12" />
               {colors.map(color => (
                 <th key={color} className="w-16 h-12 text-center">
-                  <i className={`ms ms-${color.toLowerCase()} ms-cost ms-shadow`} style={{ fontSize: '1.25rem' }} aria-label={COLOR_CONFIG[color].name} title={COLOR_CONFIG[color].name} />
+                  <i className={`ms ms-${color.toLowerCase()} ms-cost ms-shadow text-[1.25rem]`} aria-label={COLOR_CONFIG[color].name} title={COLOR_CONFIG[color].name} />
                 </th>
               ))}
             </tr>
@@ -151,7 +151,7 @@ export default function ColorIdentityMatrix({ colorData }) {
             {colors.map((rowColor, i) => (
               <tr key={rowColor}>
                 <th className="w-12 h-12 text-center">
-                  <i className={`ms ms-${rowColor.toLowerCase()} ms-cost ms-shadow`} style={{ fontSize: '1.25rem' }} aria-label={COLOR_CONFIG[rowColor].name} title={COLOR_CONFIG[rowColor].name} />
+                  <i className={`ms ms-${rowColor.toLowerCase()} ms-cost ms-shadow text-[1.25rem]`} aria-label={COLOR_CONFIG[rowColor].name} title={COLOR_CONFIG[rowColor].name} />
                 </th>
                 {colors.map((colColor, j) => {
                   const value = matrix[i][j];
@@ -168,7 +168,7 @@ export default function ColorIdentityMatrix({ colorData }) {
                       onMouseLeave={() => setHoveredCell(null)}
                       title={`${getColorName(colorKey)}: ${value} cards`}
                     >
-                      <span className={`text-sm font-medium ${intensity > 0.5 ? 'text-white' : 'text-[var(--color-text)]'}`}>
+                      <span className={`text-sm font-medium ${intensity > 0.5 ? 'text-[var(--color-text-on-primary)]' : 'text-[var(--color-text)]'}`}>
                         {value > 0 ? value : '—'}
                       </span>
                     </td>
@@ -186,17 +186,17 @@ export default function ColorIdentityMatrix({ colorData }) {
             className="mt-3 p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-xs"
           >
             <span className="font-semibold text-[var(--color-text)]">{getColorName(hoveredCell.colorKey)}</span>
-            <span className="text-[var(--color-muted)] ml-2">
+            <span className="text-[var(--color-text-muted)] ml-2">
               {hoveredCell.pairData.card_count} cards · {hoveredCell.pairData.deck_staples ?? hoveredCell.pairData.staple_count} staples
             </span>
           </motion.div>
         )}
 
-        <p className="mt-3 text-xs text-[var(--color-muted)]">Darker cells = more quality cards for that color pair</p>
+        <p className="mt-3 text-xs text-[var(--color-text-muted)]">Darker cells = more quality cards for that color pair</p>
       </div>
 
       {/* Staple count explanation */}
-      <p className="text-xs text-[var(--color-muted)] px-1">
+      <p className="text-xs text-[var(--color-text-muted)] px-1">
         Staple counts include all cards legally playable in that color identity (subset + colorless).
       </p>
 
@@ -242,7 +242,7 @@ function ColorPairCard({ pair }) {
           ) : (
             <span className="text-sm font-medium text-[var(--color-text)]">{colorName}</span>
           )}
-          <span className="text-xs text-[var(--color-muted)]">
+          <span className="text-xs text-[var(--color-text-muted)]">
             {deckStaples} staples · {deckCardCount} playable cards
           </span>
         </div>
@@ -250,7 +250,7 @@ function ColorPairCard({ pair }) {
           <span className="text-xs font-medium" style={{ color: statusCfg.color }}>
             {statusCfg.label}
           </span>
-          <svg className={`w-4 h-4 text-[var(--color-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className={`w-4 h-4 text-[var(--color-text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
@@ -280,7 +280,7 @@ function CardUsageTable({ title, cards, emptyMessage }) {
   const [showAll, setShowAll] = useState(false);
 
   if (!cards?.length) {
-    return <p className="text-xs text-[var(--color-muted)] italic">{emptyMessage}</p>;
+    return <p className="text-xs text-[var(--color-text-muted)] italic">{emptyMessage}</p>;
   }
 
   const visible = showAll ? cards : cards.slice(0, CARD_TABLE_PAGE_SIZE);
@@ -288,14 +288,14 @@ function CardUsageTable({ title, cards, emptyMessage }) {
 
   return (
     <div>
-      <div className="text-xs text-[var(--color-muted)] mb-1.5">{title}:</div>
+      <div className="text-xs text-[var(--color-text-muted)] mb-1.5">{title}:</div>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
-            <th className="text-left py-1 text-[var(--color-muted)] font-medium">Card</th>
-            <th className="text-center py-1 text-[var(--color-muted)] font-medium w-14">Owned</th>
-            <th className="text-center py-1 text-[var(--color-muted)] font-medium w-14">In Use</th>
-            <th className="text-center py-1 text-[var(--color-muted)] font-medium w-16">Available</th>
+            <th className="text-left py-1 text-[var(--color-text-muted)] font-medium">Card</th>
+            <th className="text-center py-1 text-[var(--color-text-muted)] font-medium w-14">Owned</th>
+            <th className="text-center py-1 text-[var(--color-text-muted)] font-medium w-14">In Use</th>
+            <th className="text-center py-1 text-[var(--color-text-muted)] font-medium w-16">Available</th>
           </tr>
         </thead>
         <tbody>
@@ -306,8 +306,8 @@ function CardUsageTable({ title, cards, emptyMessage }) {
                   <span className="text-[var(--color-text)] cursor-default">{card.name}</span>
                 </CardTooltip>
               </td>
-              <td className="text-center py-1.5 text-[var(--color-muted)]">{card.quantity}</td>
-              <td className="text-center py-1.5 text-[var(--color-muted)]">{card.in_use}</td>
+              <td className="text-center py-1.5 text-[var(--color-text-muted)]">{card.quantity}</td>
+              <td className="text-center py-1.5 text-[var(--color-text-muted)]">{card.in_use}</td>
               <td
                 className="text-center py-1.5 font-medium"
                 style={{ color: card.available > 0 ? 'var(--color-success, #22c55e)' : 'var(--color-muted)' }}

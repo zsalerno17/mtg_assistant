@@ -4,7 +4,7 @@ const FONT_SIZES = { sm: '0.875rem', md: '0.9rem', lg: '1.25rem' }
 
 export default function ColorPips({ colors, size = 'md' }) {
   if (!colors || colors.length === 0) {
-    return <span className="text-xs text-[var(--color-muted)]">—</span>
+    return <span className="text-xs text-[var(--color-text-muted)]">—</span>
   }
 
   const fontSize = FONT_SIZES[size] ?? FONT_SIZES.md

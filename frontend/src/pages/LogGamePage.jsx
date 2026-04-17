@@ -183,7 +183,7 @@ export default function LogGamePage() {
   if (loading) {
     return (
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-[var(--color-muted)]">Loading...</div>
+          <div className="text-[var(--color-text-muted)]">Loading...</div>
         </div>
     )
   }
@@ -195,7 +195,7 @@ export default function LogGamePage() {
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
             Log Campaign Skirmish
           </h1>
-          <p className="text-[var(--color-muted)]">{league?.name}</p>
+          <p className="text-[var(--color-text-muted)]">{league?.name}</p>
         </div>
 
         {error && (
@@ -221,7 +221,7 @@ export default function LogGamePage() {
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="game-number" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                <label htmlFor="game-number" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                   Skirmish Number
                 </label>
                 <input
@@ -235,7 +235,7 @@ export default function LogGamePage() {
                 />
               </div>
               <div>
-                <label htmlFor="played-at" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                <label htmlFor="played-at" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                   Date & Time
                 </label>
                 <input
@@ -250,7 +250,7 @@ export default function LogGamePage() {
             </div>
 
             <div className="mt-4">
-              <label htmlFor="screenshot-url" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+              <label htmlFor="screenshot-url" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                 Screenshot URL (optional)
               </label>
               <input
@@ -264,7 +264,7 @@ export default function LogGamePage() {
             </div>
 
             <div className="mt-4">
-              <label htmlFor="game-notes" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+              <label htmlFor="game-notes" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                 Notes (optional)
               </label>
               <textarea
@@ -284,7 +284,7 @@ export default function LogGamePage() {
                 Player Results
               </h2>
               <div className="flex items-center gap-2">
-                <label className="text-sm text-[var(--color-muted)]">Pod size:</label>
+                <label className="text-sm text-[var(--color-text-muted)]">Pod size:</label>
                 <select
                   value={podSize}
                   onChange={(e) => setPodSize(Number(e.target.value))}
@@ -314,13 +314,13 @@ export default function LogGamePage() {
                     <div className="font-medium text-[var(--color-text)] mb-1">
                       {member.superstar_name}
                     </div>
-                    <div className="text-xs text-[var(--color-muted)]">
+                    <div className="text-xs text-[var(--color-text-muted)]">
                       @{member.user_profiles?.display_name}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-[var(--color-muted)] mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">
                       Placement
                     </label>
                     <select
@@ -338,7 +338,7 @@ export default function LogGamePage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-[var(--color-muted)] mb-1.5">
+                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">
                       Deck (optional)
                     </label>
                     {member.user_id === session?.user?.id ? (
@@ -355,7 +355,7 @@ export default function LogGamePage() {
                         ))}
                       </select>
                     ) : (
-                      <div className="text-xs text-[var(--color-muted)] italic py-2">
+                      <div className="text-xs text-[var(--color-text-muted)] italic py-2">
                         Only the deck owner can select
                       </div>
                     )}
@@ -364,7 +364,7 @@ export default function LogGamePage() {
                   {/* Live Points Preview */}
                   {totalPreview !== null && (
                     <div className="mt-2 pt-2 border-t border-[var(--color-primary)]/10 flex items-center gap-3 text-xs">
-                      <span className="text-[var(--color-muted)]">
+                      <span className="text-[var(--color-text-muted)]">
                         {placement === 1 ? '1st → 3 pts' : placement === 2 ? '2nd → 2 pts' : placement === 3 ? '3rd → 1 pt' : `${placement}th → 0 pts`}
                       </span>
                       {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+1 entrance</span>}
@@ -377,7 +377,7 @@ export default function LogGamePage() {
               })}
             </div>
 
-            <div className="mt-4 text-xs text-[var(--color-muted)]">
+            <div className="mt-4 text-xs text-[var(--color-text-muted)]">
               <strong>Points awarded automatically:</strong> 1st = 3pts, 2nd = 2pts, 3rd = 1pt, 4th+ = 0pts. Entrance &amp; First Blood bonus = +1pt each.
             </div>
           </div>
@@ -391,7 +391,7 @@ export default function LogGamePage() {
             <div className="space-y-4">
               {isAwardEnabled(league, 'entrance_bonus') && (
               <div>
-                <label htmlFor="entrance-winner" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                <label htmlFor="entrance-winner" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                   WWE Entrance of the Week (+1pt)
                 </label>
                 <select
@@ -412,7 +412,7 @@ export default function LogGamePage() {
 
               {isAwardEnabled(league, 'first_blood') && (
               <div>
-                <label htmlFor="first-blood-winner" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                <label htmlFor="first-blood-winner" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                   First Blood — First to Deal Damage (+1pt)
                 </label>
                 <select
@@ -434,7 +434,7 @@ export default function LogGamePage() {
               {isAwardEnabled(league, 'spicy_play') && (
               <>
               <div>
-                <label htmlFor="spicy-play" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                <label htmlFor="spicy-play" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                   Spicy Play of the Week
                 </label>
                 <textarea
@@ -448,7 +448,7 @@ export default function LogGamePage() {
               </div>
 
               <div>
-                <label htmlFor="spicy-player" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                <label htmlFor="spicy-player" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                   Spicy Play Player
                 </label>
                 <select
@@ -473,14 +473,14 @@ export default function LogGamePage() {
             <button
               type="button"
               onClick={() => navigate(`/leagues/${leagueId}`)}
-              className="text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              className="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="btn-primary px-8 py-3 rounded-lg font-medium disabled:opacity-50"
+              className="btn btn-primary px-8 py-3 rounded-lg font-medium disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Log Skirmish'}
             </button>

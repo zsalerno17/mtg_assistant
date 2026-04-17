@@ -38,7 +38,7 @@ export default function CollectionDepth({ analysis }) {
 
   if (!analysis) {
     return (
-      <div className="text-center py-12 text-[var(--color-muted)]">
+      <div className="text-center py-12 text-[var(--color-text-muted)]">
         <p className="text-sm">No analysis available yet</p>
         <p className="text-xs mt-2">Upload a collection to see your functional breakdown</p>
       </div>
@@ -211,12 +211,12 @@ export default function CollectionDepth({ analysis }) {
                   {section.total}
                 </span>
               </div>
-              <span className="text-xs text-[var(--color-muted)] hidden sm:inline">
+              <span className="text-xs text-[var(--color-text-muted)] hidden sm:inline">
                 {section.description}
               </span>
             </div>
             <ChevronDown
-              className={`w-4 h-4 text-[var(--color-muted)] transition-transform ${
+              className={`w-4 h-4 text-[var(--color-text-muted)] transition-transform ${
                 expandedSections.has(section.id) ? 'rotate-180' : ''
               }`}
             />
@@ -250,7 +250,7 @@ export default function CollectionDepth({ analysis }) {
                           <div className="flex items-center gap-2">
                             {hasCards && (
                               <ChevronRight
-                                className={`w-3.5 h-3.5 text-[var(--color-muted)] transition-transform ${
+                                className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform ${
                                   isExpanded ? 'rotate-90' : ''
                                 }`}
                               />
@@ -259,13 +259,13 @@ export default function CollectionDepth({ analysis }) {
                               {item.label}
                             </span>
                             <TooltipWrapper content={item.tooltip}>
-                              <Info className="w-3.5 h-3.5 text-[var(--color-muted)] opacity-0 group-hover:opacity-100 transition-opacity cursor-help" />
+                              <Info className="w-3.5 h-3.5 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity cursor-help" />
                             </TooltipWrapper>
                           </div>
                           <div className="flex items-center gap-3">
                             {item.value === 0 ? (
                               <TooltipWrapper content={`No ${item.label.toLowerCase()} found in your collection. Consider adding some to improve your deck-building options.`}>
-                                <span className="text-sm text-[var(--color-muted)] cursor-help">
+                                <span className="text-sm text-[var(--color-text-muted)] cursor-help">
                                   —
                                 </span>
                               </TooltipWrapper>
@@ -296,12 +296,12 @@ export default function CollectionDepth({ analysis }) {
                               <table className="w-full">
                                 <thead>
                                   <tr className="border-b border-[var(--color-border)]">
-                                    <th className="text-left text-xs text-[var(--color-muted)] font-medium pb-2">Card Name</th>
-                                    <th className="text-left text-xs text-[var(--color-muted)] font-medium pb-2 w-16">CMC</th>
-                                    <th className="text-left text-xs text-[var(--color-muted)] font-medium pb-2 w-24">Colors</th>
-                                    <th className="text-right text-xs text-[var(--color-muted)] font-medium pb-2 w-16">Owned</th>
-                                    <th className="text-right text-xs text-[var(--color-muted)] font-medium pb-2 w-16">In Use</th>
-                                    <th className="text-right text-xs text-[var(--color-muted)] font-medium pb-2 w-16">Available</th>
+                                    <th className="text-left text-xs text-[var(--color-text-muted)] font-medium pb-2">Card Name</th>
+                                    <th className="text-left text-xs text-[var(--color-text-muted)] font-medium pb-2 w-16">CMC</th>
+                                    <th className="text-left text-xs text-[var(--color-text-muted)] font-medium pb-2 w-24">Colors</th>
+                                    <th className="text-right text-xs text-[var(--color-text-muted)] font-medium pb-2 w-16">Owned</th>
+                                    <th className="text-right text-xs text-[var(--color-text-muted)] font-medium pb-2 w-16">In Use</th>
+                                    <th className="text-right text-xs text-[var(--color-text-muted)] font-medium pb-2 w-16">Available</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -315,7 +315,7 @@ export default function CollectionDepth({ analysis }) {
                                           <span className="cursor-help hover:text-[var(--color-primary)]">{card.name}</span>
                                         </CardTooltip>
                                       </td>
-                                      <td className="py-2 text-xs text-[var(--color-muted)] font-mono">{card.cmc}</td>
+                                      <td className="py-2 text-xs text-[var(--color-text-muted)] font-mono">{card.cmc}</td>
                                       <td className="py-2">
                                         <ColorPips colors={card.color_identity} />
                                       </td>
@@ -334,12 +334,12 @@ export default function CollectionDepth({ analysis }) {
                                               </div>
                                             }
                                           >
-                                            <span className="text-[var(--color-muted)] cursor-help border-b border-dotted border-[var(--color-muted)]">
+                                            <span className="text-[var(--color-text-muted)] cursor-help border-b border-dotted border-[var(--color-muted)]">
                                               {card.in_use}
                                             </span>
                                           </TooltipWrapper>
                                         ) : (
-                                          <span className="text-[var(--color-muted)]">{card.in_use}</span>
+                                          <span className="text-[var(--color-text-muted)]">{card.in_use}</span>
                                         )}
                                       </td>
                                       <td className="py-2 text-xs text-right">
@@ -384,7 +384,7 @@ export default function CollectionDepth({ analysis }) {
                   })}
                   
                   {section.total === 0 && (
-                    <div className="text-center py-4 text-[var(--color-muted)] text-sm">
+                    <div className="text-center py-4 text-[var(--color-text-muted)] text-sm">
                       <p>No {section.title.toLowerCase()} detected in your collection</p>
                       <TooltipWrapper content={section.description}>
                         <p className="text-xs mt-1 cursor-help inline-flex items-center gap-1">

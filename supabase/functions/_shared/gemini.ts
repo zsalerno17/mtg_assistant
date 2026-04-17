@@ -233,6 +233,8 @@ Return ONLY a valid JSON object — no markdown, no explanation outside the JSON
 
 ${context}
 
+CRITICAL: Every card name you mention anywhere in your response (key_cards, win_conditions, game phases, matchup tips) MUST appear verbatim in the Full decklist above. Do NOT reference any card that is not in that list.
+
 Return this exact JSON structure:
 {
   "game_plan": "2-3 sentence overview of the deck's primary strategy",
@@ -256,18 +258,30 @@ Return this exact JSON structure:
   if (raw) {
     const parsed = tryParseJson(raw);
     if (parsed && "game_plan" in parsed) {
-      // Validate key_cards against actual deck
-      const deckCardNames = new Set(deck.mainboard.map(c => c.name));
-      if (parsed.key_cards && Array.isArray(parsed.key_cards)) {
-        parsed.key_cards = parsed.key_cards.filter(
-          (kc: any) => kc.name && deckCardNames.has(kc.name)
-        );
-      }
-      
       return { content: parsed, ai_enhanced: true };
     }
   }
   return { content: fallbackStrategy(deck, analysis), ai_enhanced: false };
+}
+
+/**
+ * Filter a parsed strategy response to remove hallucinated card references.
+ * Call this on both live AI responses and cached results.
+ */
+export function validateStrategyCards(
+  strategy: Record<string, unknown>,
+  mainboard: Array<{ name: string }>,
+): Record<string, unknown> {
+  const deckCardNames = new Set(mainboard.map(c => c.name.toLowerCase()));
+
+  // key_cards: must reference actual deck cards
+  if (strategy.key_cards && Array.isArray(strategy.key_cards)) {
+    strategy.key_cards = strategy.key_cards.filter(
+      (kc: any) => kc.name && deckCardNames.has(kc.name.toLowerCase()),
+    );
+  }
+
+  return strategy;
 }
 
 // ---------------------------------------------------------------------------
@@ -282,7 +296,7 @@ export async function getImprovementSuggestions(
   const context = deckContext(deck, analysis);
   const owned = collectionCards.length
     ? collectionCards
-        .slice(0, 100)
+        .slice(0, 300)
         .map((c) => c.name)
         .join(", ")
     : "Not provided";

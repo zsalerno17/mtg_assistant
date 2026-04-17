@@ -216,16 +216,16 @@ export default function CollectionPage() {
                 />
               </div>
               
-              <p className="text-[var(--color-muted)] text-xs">
+              <p className="text-[var(--color-text-muted)] text-xs">
                 Usually takes just a few seconds
               </p>
             </div>
           </div>
         ) : (
           <> 
-            <CloudUpload className="w-10 h-10 mx-auto mb-3 text-[var(--color-muted)] opacity-50" strokeWidth={2} aria-hidden="true" />
+            <CloudUpload className="w-10 h-10 mx-auto mb-3 text-[var(--color-text-muted)] opacity-50" strokeWidth={2} aria-hidden="true" />
             <p className="text-[var(--color-text)] font-medium mb-1">Drop your collection CSV here</p>
-            <p className="text-[var(--color-muted)] text-sm mb-2">Moxfield or Archidekt · or click to browse</p>
+            <p className="text-[var(--color-text-muted)] text-sm mb-2">Moxfield or Archidekt · or click to browse</p>
             <Link
               to="/help#collection"
               onClick={(e) => e.stopPropagation()}
@@ -252,7 +252,7 @@ export default function CollectionPage() {
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-heading whitespace-nowrap border-b-2 transition-colors active:scale-[0.97] cursor-pointer ${
                       activeTab === label
                         ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-                        : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                        : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                     }`}
                   >
                     <TabIcon />
@@ -314,11 +314,11 @@ function CardListTab({ collection, groupedCards, filteredCards, search, setSearc
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <h3 className="text-[var(--color-text)] font-medium">
           {groupedCards.length} unique cards
-          <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
+          <span className="text-[var(--color-text-muted)] text-sm font-normal ml-2">
             · {collection.cards.reduce((sum, c) => sum + (c.quantity || 1), 0)} total
           </span>
           {collection.updated_at && (
-            <span className="text-[var(--color-muted)] text-sm font-normal ml-2">
+            <span className="text-[var(--color-text-muted)] text-sm font-normal ml-2">
               · updated {new Date(collection.updated_at).toLocaleDateString()}
             </span>
           )}
@@ -328,7 +328,7 @@ function CardListTab({ collection, groupedCards, filteredCards, search, setSearc
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search cards…"
-          className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_rgba(251,191,36,0.12)] transition-all w-full sm:w-64"
+          className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] placeholder-[var(--color-muted)] text-sm focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all w-full sm:w-64"
         />
       </div>
 
@@ -347,13 +347,13 @@ function CardListTab({ collection, groupedCards, filteredCards, search, setSearc
             <CardTooltip cardName={card.name}>
               <span className="text-[var(--color-text)] text-sm truncate">{card.name}</span>
             </CardTooltip>
-            <span className="text-[var(--color-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>
+            <span className="text-[var(--color-text-muted)] font-mono text-xs ml-2 shrink-0">×{card.quantity}</span>
           </motion.div>
         ))}
       </div>
 
       {search && filteredCards.length === 0 && (
-        <p className="text-[var(--color-muted)] text-sm mt-4">No cards match "{search}"</p>
+        <p className="text-[var(--color-text-muted)] text-sm mt-4">No cards match "{search}"</p>
       )}
     </div>
   )

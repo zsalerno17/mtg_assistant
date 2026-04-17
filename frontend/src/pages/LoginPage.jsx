@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
@@ -15,12 +15,30 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { signInWithGoogle, session } = useAuth()
+  const { signInWithGoogle, signInWithEmail, session } = useAuth()
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [magicLinkError, setMagicLinkError] = useState(null)
+  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     if (session) navigate('/', { replace: true })
   }, [session, navigate])
+
+  const handleMagicLink = async (e) => {
+    e.preventDefault()
+    setSending(true)
+    setMagicLinkError(null)
+    const { error } = await signInWithEmail(email)
+    setSending(false)
+    if (error) {
+      setMagicLinkError(error.message)
+    } else {
+      setMagicLinkSent(true)
+      setEmail('')
+    }
+  }
 
   return (
     <PageTransition>
@@ -42,11 +60,11 @@ export default function LoginPage() {
       {/* Mana pip row */}
       <div className="flex gap-2 mb-4">
         {['w','u','b','r','g'].map(c => (
-          <i key={c} className={`ms ms-${c} ms-cost ms-shadow mana-glow-hover transition-all`} style={{ fontSize: '1.5rem' }} aria-label={c} />
+          <i key={c} className={`ms ms-${c} ms-cost ms-shadow mana-glow-hover transition-all text-[1.5rem]`} aria-label={c} />
         ))}
       </div>
 
-      <p className="text-[var(--color-muted)] mb-10 text-center max-w-xs text-sm font-heading">
+      <p className="text-[var(--color-text-muted)] mb-10 text-center max-w-xs text-sm font-heading">
         Know your deck. Command your game.
       </p>
 
@@ -57,6 +75,41 @@ export default function LoginPage() {
         <GoogleIcon />
         <span>Continue with Google</span>
       </button>
+
+      {/* Divider */}
+      <div className="flex items-center gap-3 w-full max-w-xs mt-6">
+        <div className="flex-1 h-px bg-[var(--color-border)]" />
+        <span className="text-xs text-[var(--color-text-muted)] font-heading">or</span>
+        <div className="flex-1 h-px bg-[var(--color-border)]" />
+      </div>
+
+      {/* Magic link form */}
+      {magicLinkSent ? (
+        <p className="mt-4 text-sm text-[var(--color-text-muted)] font-heading text-center max-w-xs">
+          Check your inbox — a sign-in link is on its way.
+        </p>
+      ) : (
+        <form onSubmit={handleMagicLink} className="flex flex-col gap-3 w-full max-w-xs mt-4">
+          <input
+            type="email"
+            required
+            placeholder="your@email.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-text-muted)] px-4 py-3 rounded-lg font-heading text-sm focus:outline-none focus:border-[var(--color-primary)]/60 transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={sending}
+            className="bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-6 py-3 rounded-lg hover:border-[var(--color-primary)]/60 hover:shadow-[0_4px_24px_rgba(251,191,36,0.2)] hover:-translate-y-0.5 active:translate-y-0 transition-all font-heading text-sm disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {sending ? 'Sending…' : 'Send magic link'}
+          </button>
+          {magicLinkError && (
+            <p className="text-xs text-red-400 font-heading text-center">{magicLinkError}</p>
+          )}
+        </form>
+      )}
     </div>
     </PageTransition>
   )

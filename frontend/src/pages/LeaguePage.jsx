@@ -462,7 +462,7 @@ export default function LeaguePage() {
                 league.status === 'active'
                   ? 'bg-green-500/20 text-green-300'
                   : league.status === 'completed'
-                  ? 'bg-gray-500/20 text-gray-300'
+                  ? 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
                   : 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
               }`}
             >
@@ -471,7 +471,7 @@ export default function LeaguePage() {
           </div>
 
           {/* Dates + Time Remaining */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--color-muted)] mb-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--color-text-muted)] mb-4">
             <span className="flex items-center gap-1.5">
               <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
               {new Date(league.season_start).toLocaleDateString()} —{' '}
@@ -488,7 +488,7 @@ export default function LeaguePage() {
               <button
                 onClick={handleGenerateInvite}
                 disabled={generatingInvite}
-                className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+                className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
               >
                 {generatingInvite ? 'Generating...' : 'Invite Link'}
               </button>
@@ -504,7 +504,7 @@ export default function LeaguePage() {
             )}
             <Link
               to={`/leagues/${leagueId}/log-game`}
-              className="btn-primary px-5 py-2.5 rounded-lg font-medium"
+              className="btn btn-primary px-5 py-2.5 rounded-lg font-medium"
             >
               + Log Game
             </Link>
@@ -545,7 +545,7 @@ export default function LeaguePage() {
                     {league.status === 'completed' ? 'Season Champion' : 'Current Leader'}
                   </div>
                   <div className="text-3xl font-brand font-bold text-[var(--color-text)]">{standings[0].superstar_name}</div>
-                  <div className="text-sm text-[var(--color-muted)] mt-1">
+                  <div className="text-sm text-[var(--color-text-muted)] mt-1">
                     {standings[0].total_points} pts · {standings[0].wins} wins · {standings[0].games_played} games
                   </div>
                 </div>
@@ -556,7 +556,7 @@ export default function LeaguePage() {
           <div className="bg-[var(--color-secondary-subtle)] border border-[var(--color-secondary-border)] rounded-xl p-6 mb-8 text-center">
             <CrownIcon className="w-8 h-8 text-[var(--color-secondary)] opacity-60 mx-auto mb-2" />
             <div className="text-lg font-brand font-bold text-[var(--color-text)]">The throne is empty.</div>
-            <div className="text-sm text-[var(--color-muted)]">Log a game to stake your claim.</div>
+            <div className="text-sm text-[var(--color-text-muted)]">Log a game to stake your claim.</div>
           </div>
         )}
 
@@ -573,7 +573,7 @@ export default function LeaguePage() {
               className={`px-6 py-3 font-medium capitalize transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] rounded-t-lg ${
                 activeTab === tab
                   ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
-                  : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
               }`}
             >
               {tab}
@@ -589,19 +589,19 @@ export default function LeaguePage() {
                 <button
                   onClick={handleExportImage}
                   disabled={exportingImage}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {exportingImage ? 'Exporting...' : 'Export Image'}
                 </button>
                 <button
                   onClick={handlePrintPDF}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer"
                 >
                   Print / PDF
                 </button>
                 <button
                   onClick={handleExportCSV}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer"
                 >
                   Export CSV
                 </button>
@@ -611,16 +611,16 @@ export default function LeaguePage() {
             <table className="w-full" aria-label="League standings">
               <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                 <tr>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-muted)] w-10">#</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Pilot</th>
-                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Pts</th>
-                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">W</th>
-                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">2nd</th>
-                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">3rd</th>
-                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Avg</th>
-                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]" title="Unique commanders used this season">Cmds</th>
-                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">Bonuses</th>
-                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)]">GP</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-text-muted)] w-10">#</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">Pilot</th>
+                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">Pts</th>
+                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">W</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">2nd</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">3rd</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">Avg</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]" title="Unique commanders used this season">Cmds</th>
+                  <th className="hidden sm:table-cell text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">Bonuses</th>
+                  <th className="text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)]">GP</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-accent/20">
@@ -634,10 +634,10 @@ export default function LeaguePage() {
                           idx === 0
                             ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
                             : idx === 1
-                            ? 'bg-gray-400/20 text-gray-300'
+                            ? 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
                             : idx === 2
                             ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]'
-                            : 'bg-[var(--color-primary)]/10 text-[var(--color-muted)]'
+                            : 'bg-[var(--color-primary)]/10 text-[var(--color-text-muted)]'
                         }`}
                       >
                         <span className="sr-only">{idx === 0 ? '1st place' : idx === 1 ? '2nd place' : idx === 2 ? '3rd place' : `${idx + 1}th place`}</span>
@@ -653,7 +653,7 @@ export default function LeaguePage() {
                         const h2h = getH2H(member.member_id, standings[idx - 1].member_id)
                         if (!h2h) return null
                         return (
-                          <span className={`ml-2 text-xs font-medium ${h2h.wins1 > h2h.wins2 ? 'text-[var(--color-success)]' : h2h.wins1 < h2h.wins2 ? 'text-[var(--color-danger)]' : 'text-[var(--color-muted)]'}`} title={`H2H vs ${standings[idx - 1].superstar_name}`}>
+                          <span className={`ml-2 text-xs font-medium ${h2h.wins1 > h2h.wins2 ? 'text-[var(--color-success)]' : h2h.wins1 < h2h.wins2 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'}`} title={`H2H vs ${standings[idx - 1].superstar_name}`}>
                             H2H {h2h.wins1}-{h2h.wins2}
                           </span>
                         )
@@ -662,23 +662,23 @@ export default function LeaguePage() {
                     <td className="px-4 py-3 text-center">
                       <span className="text-lg font-bold text-[var(--color-primary)]">{member.total_points}</span>
                     </td>
-                    <td className="px-4 py-3 text-center text-[var(--color-muted)]">{member.wins}</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)]">
+                    <td className="px-4 py-3 text-center text-[var(--color-text-muted)]">{member.wins}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-text-muted)]">
                       {member.second_places || 0}
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)]">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-text-muted)]">
                       {member.third_places || 0}
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)] text-sm">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-text-muted)] text-sm">
                       {seasonStats[member.member_id]?.avgPlacement?.toFixed(1) ?? '—'}
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)] text-sm">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-text-muted)] text-sm">
                       {seasonStats[member.member_id]?.uniqueCommanders ?? '—'}
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-muted)]">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-text-muted)]">
                       {member.entrance_bonuses}
                     </td>
-                    <td className="px-4 py-3 text-center text-[var(--color-muted)]">
+                    <td className="px-4 py-3 text-center text-[var(--color-text-muted)]">
                       {member.games_played}
                     </td>
                   </tr>
@@ -687,8 +687,8 @@ export default function LeaguePage() {
             </table>
 
             {standings.length === 0 && (
-              <div className="text-center py-16 text-[var(--color-muted)]">
-                <SwordsIcon className="w-10 h-10 text-[var(--color-muted)] mx-auto mb-3" />
+              <div className="text-center py-16 text-[var(--color-text-muted)]">
+                <SwordsIcon className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3" />
                 <div className="font-brand text-lg font-bold text-[var(--color-text)] mb-1">The season awaits.</div>
                 <div>Log your first game to stake your claim.</div>
               </div>
@@ -698,7 +698,7 @@ export default function LeaguePage() {
             {/* Season Highlights */}
             {seasonHighlights && (
               <div className="mt-6">
-                <h3 className="text-xs font-brand font-bold text-[var(--color-muted)] uppercase tracking-wider mb-3">
+                <h3 className="text-xs font-brand font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
                   Season Highlights
                 </h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -706,51 +706,51 @@ export default function LeaguePage() {
                     <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Flame className="w-4 h-4 text-orange-400" aria-hidden="true" />
-                        <span className="text-xs font-medium text-[var(--color-muted)]">Win Streak</span>
+                        <span className="text-xs font-medium text-[var(--color-text-muted)]">Win Streak</span>
                       </div>
                       <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
                         {seasonHighlights.streakLeader.maxStreak}
-                        <span className="text-sm font-normal text-[var(--color-muted)] ml-1">in a row</span>
+                        <span className="text-sm font-normal text-[var(--color-text-muted)] ml-1">in a row</span>
                       </div>
-                      <div className="text-sm text-[var(--color-muted)] mt-1">{seasonHighlights.streakLeader.name}</div>
+                      <div className="text-sm text-[var(--color-text-muted)] mt-1">{seasonHighlights.streakLeader.name}</div>
                     </div>
                   )}
                   {seasonHighlights.commanderLeader && (
                     <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Layers className="w-4 h-4 text-[var(--color-primary)]" aria-hidden="true" />
-                        <span className="text-xs font-medium text-[var(--color-muted)]">Most Diverse</span>
+                        <span className="text-xs font-medium text-[var(--color-text-muted)]">Most Diverse</span>
                       </div>
                       <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
                         {seasonHighlights.commanderLeader.uniqueCommanders}
-                        <span className="text-sm font-normal text-[var(--color-muted)] ml-1">commanders</span>
+                        <span className="text-sm font-normal text-[var(--color-text-muted)] ml-1">commanders</span>
                       </div>
-                      <div className="text-sm text-[var(--color-muted)] mt-1">{seasonHighlights.commanderLeader.name}</div>
+                      <div className="text-sm text-[var(--color-text-muted)] mt-1">{seasonHighlights.commanderLeader.name}</div>
                     </div>
                   )}
                   {seasonHighlights.deckLeader && (
                     <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Target className="w-4 h-4 text-[var(--color-secondary)]" aria-hidden="true" />
-                        <span className="text-xs font-medium text-[var(--color-muted)]">Best Winrate</span>
+                        <span className="text-xs font-medium text-[var(--color-text-muted)]">Best Winrate</span>
                       </div>
                       <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
                         {Math.round(seasonHighlights.deckLeader.bestDeck.wins / seasonHighlights.deckLeader.bestDeck.games * 100)}%
                       </div>
-                      <div className="text-sm text-[var(--color-muted)] mt-0.5">{seasonHighlights.deckLeader.name}</div>
-                      <div className="text-xs text-[var(--color-muted)]/60 mt-0.5 truncate">{seasonHighlights.deckLeader.bestDeck.name}</div>
+                      <div className="text-sm text-[var(--color-text-muted)] mt-0.5">{seasonHighlights.deckLeader.name}</div>
+                      <div className="text-xs text-[var(--color-text-muted)]/60 mt-0.5 truncate">{seasonHighlights.deckLeader.bestDeck.name}</div>
                     </div>
                   )}
                   {seasonHighlights.avgLeader && seasonHighlights.avgLeader.avgPlacement != null && (
                     <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <TrendingUp className="w-4 h-4 text-green-400" aria-hidden="true" />
-                        <span className="text-xs font-medium text-[var(--color-muted)]">Best Avg. Finish</span>
+                        <span className="text-xs font-medium text-[var(--color-text-muted)]">Best Avg. Finish</span>
                       </div>
                       <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
                         {seasonHighlights.avgLeader.avgPlacement.toFixed(1)}
                       </div>
-                      <div className="text-sm text-[var(--color-muted)] mt-1">{seasonHighlights.avgLeader.name}</div>
+                      <div className="text-sm text-[var(--color-text-muted)] mt-1">{seasonHighlights.avgLeader.name}</div>
                     </div>
                   )}
                 </div>
@@ -760,18 +760,18 @@ export default function LeaguePage() {
             {/* Bonus Award Standings */}
             {bonusAwardStandings && (
               <div className="mt-6">
-                <h3 className="text-xs font-brand font-bold text-[var(--color-muted)] uppercase tracking-wider mb-3">
+                <h3 className="text-xs font-brand font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
                   Bonus Award Standings
                 </h3>
                 <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl overflow-x-auto">
                   <table className="w-full min-w-[500px]" aria-label="Bonus award standings">
                     <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                       <tr>
-                        <th className="text-left px-2 py-3 text-sm font-medium text-[var(--color-muted)] min-w-20">
+                        <th className="text-left px-2 py-3 text-sm font-medium text-[var(--color-text-muted)] min-w-20">
                           Award
                         </th>
                         {standings.map(m => (
-                          <th key={m.member_id} className="text-center px-4 py-3 text-sm font-medium text-[var(--color-muted)] whitespace-nowrap">
+                          <th key={m.member_id} className="text-center px-4 py-3 text-sm font-medium text-[var(--color-text-muted)] whitespace-nowrap">
                             {m.superstar_name}
                           </th>
                         ))}
@@ -789,7 +789,7 @@ export default function LeaguePage() {
                               <td key={m.member_id} className="px-4 py-3 text-center text-sm">
                                 {count > 0
                                   ? <span className="font-bold text-[var(--color-primary)]">{count}</span>
-                                  : <span className="text-[var(--color-muted)]">—</span>
+                                  : <span className="text-[var(--color-text-muted)]">—</span>
                                 }
                               </td>
                             )
@@ -808,8 +808,8 @@ export default function LeaguePage() {
         {activeTab === 'games' && (
           <div role="tabpanel" id="tabpanel-games" aria-labelledby="tab-games" className="space-y-4">
             {games.length === 0 && (
-              <div className="text-center py-16 text-[var(--color-muted)] bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl">
-                <SwordsIcon className="w-10 h-10 text-[var(--color-muted)] mx-auto mb-3" />
+              <div className="text-center py-16 text-[var(--color-text-muted)] bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl">
+                <SwordsIcon className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3" />
                 <div className="font-brand text-lg font-bold text-[var(--color-text)] mb-1">No battles yet.</div>
                 <div className="mb-4">Make history.</div>
                 <Link to={`/leagues/${leagueId}/log-game`} className="text-[var(--color-primary)] hover:underline">
@@ -823,10 +823,10 @@ export default function LeaguePage() {
                 <table className="w-full" aria-label="Games history">
                   <thead className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)] w-10">#</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)] whitespace-nowrap">Date</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)]">Results</th>
-                      <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[var(--color-muted)]">Awards</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] w-10">#</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">Results</th>
+                      <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">Awards</th>
                       <th className="px-4 py-3 w-24"></th>
                     </tr>
                   </thead>
@@ -851,24 +851,24 @@ export default function LeaguePage() {
                             transition={{ duration: 0.25, delay: index * 0.04 }}
                             className="hover:bg-[var(--color-surface)]/40 transition-colors align-top"
                           >
-                            <td className="px-4 py-3 text-sm font-medium text-[var(--color-muted)] whitespace-nowrap">
+                            <td className="px-4 py-3 text-sm font-medium text-[var(--color-text-muted)] whitespace-nowrap">
                               {game.game_number}
                             </td>
-                            <td className="px-4 py-3 text-sm text-[var(--color-muted)] whitespace-nowrap">
+                            <td className="px-4 py-3 text-sm text-[var(--color-text-muted)] whitespace-nowrap">
                               {new Date(game.played_at).toLocaleDateString()}
                             </td>
                             <td className="px-4 py-3">
                               <div className="space-y-1">
                                 {sorted.map(result => (
                                   <div key={result.id} className="flex items-center gap-1.5 text-sm flex-wrap">
-                                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold flex-shrink-0 ${result.placement === 1 ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary)]/10 text-[var(--color-muted)]'}`}>
+                                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold flex-shrink-0 ${result.placement === 1 ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-secondary)]' : 'bg-[var(--color-primary)]/10 text-[var(--color-text-muted)]'}`}>
                                       {result.placement}
                                     </span>
-                                    <span className={`font-medium ${result.placement === 1 ? 'text-[var(--color-text)]' : 'text-[var(--color-muted)]'}`}>
+                                    <span className={`font-medium ${result.placement === 1 ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`}>
                                       {result.league_members?.superstar_name}
                                     </span>
                                     {result.user_decks?.deck_name && (
-                                      <span className="hidden sm:inline text-xs text-[var(--color-muted)]/60">({result.user_decks.deck_name})</span>
+                                      <span className="hidden sm:inline text-xs text-[var(--color-text-muted)]/60">({result.user_decks.deck_name})</span>
                                     )}
                                     <span className="text-xs font-bold text-[var(--color-primary)]">+{result.total_points}</span>
                                   </div>
@@ -877,7 +877,7 @@ export default function LeaguePage() {
                               {game.spicy_play_description && (
                                 <div className="md:hidden mt-2 pt-2 border-t border-[var(--color-border)]/50 text-xs">
                                   <span className="font-medium text-orange-400">Spicy: </span>
-                                  <span className="text-[var(--color-muted)]">{game.spicy_play_description}</span>
+                                  <span className="text-[var(--color-text-muted)]">{game.spicy_play_description}</span>
                                 </div>
                               )}
                             </td>
@@ -887,17 +887,17 @@ export default function LeaguePage() {
                                   {gameAwards.map(award => (
                                     <div key={award.label} className="flex items-baseline gap-1.5 text-xs">
                                       <span className={`font-medium whitespace-nowrap ${award.color}`}>{award.label}:</span>
-                                      <span className="text-[var(--color-muted)]">{award.name}</span>
+                                      <span className="text-[var(--color-text-muted)]">{award.name}</span>
                                     </div>
                                   ))}
                                   {game.spicy_play_description && (
-                                    <div className="mt-1 pt-1 border-t border-[var(--color-border)]/40 text-xs text-[var(--color-muted)]/70 italic line-clamp-2">
+                                    <div className="mt-1 pt-1 border-t border-[var(--color-border)]/40 text-xs text-[var(--color-text-muted)]/70 italic line-clamp-2">
                                       {game.spicy_play_description}
                                     </div>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-xs text-[var(--color-muted)]/40">—</span>
+                                <span className="text-xs text-[var(--color-text-muted)]/40">—</span>
                               )}
                             </td>
                             <td className="px-4 py-3 align-top">
@@ -918,13 +918,13 @@ export default function LeaguePage() {
                                     if (!gameVotes[game.id]) loadGameVotes(game.id)
                                     setVotingGameId(prev => prev === game.id ? null : game.id)
                                   }}
-                                  className={`text-xs transition-colors cursor-pointer ${votingGameId === game.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)] hover:text-[var(--color-primary)]'}`}
+                                  className={`text-xs transition-colors cursor-pointer ${votingGameId === game.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
                                 >
                                   Vote
                                 </button>
                                 <Link
                                   to={`/leagues/${leagueId}/games/${game.id}/edit`}
-                                  className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] rounded-lg px-2 py-0.5 hover:border-[var(--color-primary)] transition-colors"
+                                  className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] rounded-lg px-2 py-0.5 hover:border-[var(--color-primary)] transition-colors"
                                 >
                                   Edit
                                 </Link>
@@ -941,7 +941,7 @@ export default function LeaguePage() {
                                     const members = league?.league_members || []
                                     return (
                                       <div key={category}>
-                                        <div className="text-xs font-medium text-[var(--color-muted)] mb-1.5">
+                                        <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5">
                                           {category === 'entrance' ? 'Best Entrance' : 'Spiciest Play'}
                                         </div>
                                         <div className="flex flex-wrap gap-1.5">
@@ -952,7 +952,7 @@ export default function LeaguePage() {
                                               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                                                 myVote === m.id
                                                   ? 'bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]'
-                                                  : 'bg-[var(--color-surface)]/60 text-[var(--color-muted)] border border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
+                                                  : 'bg-[var(--color-surface)]/60 text-[var(--color-text-muted)] border border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
                                               }`}
                                             >
                                               {m.superstar_name}
@@ -993,7 +993,7 @@ export default function LeaguePage() {
                     }
                   }}
                   disabled={loadingMoreGames}
-                  className="px-6 py-2.5 bg-surface border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
+                  className="px-6 py-2.5 bg-surface border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
                 >
                   {loadingMoreGames ? 'Loading...' : 'Load More Games'}
                 </button>
@@ -1034,7 +1034,7 @@ export default function LeaguePage() {
                       </div>
                     )}
                     {member.catchphrase && (
-                      <div className="text-base italic text-[var(--color-muted)] mb-3">
+                      <div className="text-base italic text-[var(--color-text-muted)] mb-3">
                         "{member.catchphrase}"
                       </div>
                     )}

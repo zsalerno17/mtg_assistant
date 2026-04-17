@@ -3,7 +3,9 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isPresetUrl, urlToPresetId, isCreaturePreset, CREATURE_PRESET_MAP } from '../lib/avatarPresets'
 import { CreaturePresetIcon } from '../lib/creatureIcons'
-import { User, CircleHelp, LogOut, House, Trophy, Library, Swords } from 'lucide-react'
+import { User, CircleHelp, LogOut, House, Trophy, Library, Swords, Shield } from 'lucide-react'
+
+const ADMIN_EMAIL = 'zsalerno17@gmail.com'
 
 function UserAvatar({ email, avatarUrl, size = 'md' }) {
   const sizeClasses = {
@@ -67,6 +69,7 @@ export default function TopNavbar() {
   const location = useLocation()
   const email = session?.user?.email || ''
   const isBattlefieldActive = location.pathname.startsWith('/battlefield') || location.pathname.startsWith('/leagues') || location.pathname.startsWith('/games')
+  const isAdmin = email.toLowerCase() === ADMIN_EMAIL
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -106,7 +109,7 @@ export default function TopNavbar() {
                   `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
                       ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
+                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -118,7 +121,7 @@ export default function TopNavbar() {
                   `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isActive
                       ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
+                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -130,7 +133,7 @@ export default function TopNavbar() {
                   `px-4 py-2 rounded-lg text-sm font-body font-medium transition-all ${
                     isBattlefieldActive
                       ? 'bg-[var(--color-secondary-subtle)] text-[var(--color-text)] border border-[var(--color-secondary-border)]'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
+                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-secondary-subtle)]'
                   }`
                 }
               >
@@ -153,7 +156,7 @@ export default function TopNavbar() {
                   {profile?.username && (
                     <p className="text-[var(--color-text)] text-xs font-medium leading-tight">{profile.username}</p>
                   )}
-                  <p className="text-[var(--color-muted)] text-xs leading-tight">{email}</p>
+                  <p className="text-[var(--color-text-muted)] text-xs leading-tight">{email}</p>
                 </div>
               </button>
 
@@ -173,6 +176,15 @@ export default function TopNavbar() {
                   <CircleHelp className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                   Help & Resources
                 </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => { navigate('/admin'); setMenuOpen(false) }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-2 cursor-pointer"
+                  >
+                    <Shield className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+                    Admin
+                  </button>
+                )}
                 <div className="border-t border-[var(--color-border)]" />
                 <button
                   onClick={() => { signOut(); setMenuOpen(false) }}
@@ -197,7 +209,7 @@ export default function TopNavbar() {
             end
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all min-w-[72px] ${
-                isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'
+                isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'
               }`
             }
           >
@@ -208,7 +220,7 @@ export default function TopNavbar() {
             to="/battlefield"
             className={() =>
               `flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all min-w-[72px] ${
-                isBattlefieldActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'
+                isBattlefieldActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'
               }`
             }
           >
@@ -219,7 +231,7 @@ export default function TopNavbar() {
             to="/collection"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all min-w-[72px] ${
-                isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'
+                isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'
               }`
             }
           >
@@ -228,7 +240,7 @@ export default function TopNavbar() {
           </NavLink>
           <button
             onClick={() => navigate('/profile')}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-primary)] transition-all min-w-[72px] cursor-pointer"
+            className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all min-w-[72px] cursor-pointer"
           >
             <UserAvatar email={email} avatarUrl={profile?.avatar_url} size="sm" />
             <span className="text-xs font-medium">Profile</span>

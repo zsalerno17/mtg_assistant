@@ -12,7 +12,7 @@ export default function EmptyState({ icon: Icon, iconNode, iconClassName = '', t
     <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
       {iconNode ?? (Icon && <Icon className={`w-8 h-8 ${iconClassName}`} />)}
       {title && <p className="text-[var(--color-text)] font-semibold text-sm">{title}</p>}
-      {description && <p className="text-[var(--color-muted)] text-xs text-center">{description}</p>}
+      {description && <p className="text-[var(--color-text-muted)] text-xs text-center">{description}</p>}
     </div>
   )
 }

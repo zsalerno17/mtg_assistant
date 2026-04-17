@@ -78,7 +78,7 @@ export default function ArchetypeReadiness({ archetypes }) {
 
   if (!archetypes || archetypes.length === 0) {
     return (
-      <div className="text-center py-12 text-[var(--color-muted)]">
+      <div className="text-center py-12 text-[var(--color-text-muted)]">
         <p className="text-sm">No archetype analysis available</p>
         <p className="text-xs mt-2">Upload your collection to see which Commander archetypes you can build</p>
       </div>
@@ -144,7 +144,7 @@ function ArchetypeCard({ archetype, info, isExpanded, onToggle }) {
               {archetype.name}
             </h3>
             <TooltipWrapper content={info?.description || 'Commander archetype'}>
-              <Info className="w-3.5 h-3.5 text-[var(--color-muted)] opacity-0 group-hover:opacity-100 transition-opacity cursor-help" />
+              <Info className="w-3.5 h-3.5 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity cursor-help" />
             </TooltipWrapper>
             <div className="flex items-center gap-1.5">
               <div
@@ -168,7 +168,7 @@ function ArchetypeCard({ archetype, info, isExpanded, onToggle }) {
             {archetype.progress}%
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-[var(--color-muted)] transition-transform ${
+            className={`w-4 h-4 text-[var(--color-text-muted)] transition-transform ${
               isExpanded ? 'rotate-180' : ''
             }`}
           />
@@ -264,7 +264,7 @@ function ArchetypeCard({ archetype, info, isExpanded, onToggle }) {
                             {key.replace(/_/g, ' ')}
                           </span>
                           <TooltipWrapper content={tooltipText}>
-                            <Info className="w-3.5 h-3.5 text-[var(--color-muted)] opacity-0 group-hover:opacity-100 transition-opacity cursor-help" />
+                            <Info className="w-3.5 h-3.5 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity cursor-help" />
                           </TooltipWrapper>
                         </div>
                         <div className="flex items-center gap-3">

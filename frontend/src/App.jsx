@@ -21,6 +21,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import GamesPage from './pages/GamesPage'
 import LogPersonalGamePage from './pages/LogPersonalGamePage'
 import BattlefieldPage from './pages/BattlefieldPage'
+import AdminPage from './pages/AdminPage'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -43,6 +44,7 @@ function AnimatedRoutes() {
         <Route path="/leagues/join/:inviteToken" element={<JoinLeaguePage />} />
         <Route path="/games" element={<Navigate to="/battlefield" replace />} />
         <Route path="/games/log" element={<LogPersonalGamePage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AnimatePresence>

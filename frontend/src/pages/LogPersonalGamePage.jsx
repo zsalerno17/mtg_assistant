@@ -76,7 +76,7 @@ export default function LogPersonalGamePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-[var(--color-muted)]">Loading...</div>
+        <div className="text-[var(--color-text-muted)]">Loading...</div>
       </div>
     )
   }
@@ -88,7 +88,7 @@ export default function LogPersonalGamePage() {
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
             Log a Skirmish
           </h1>
-          <p className="text-[var(--color-muted)]">Track a Commander session without a league</p>
+          <p className="text-[var(--color-text-muted)]">Track a Commander session without a league</p>
         </div>
 
         {error && (
@@ -113,7 +113,7 @@ export default function LogPersonalGamePage() {
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="played-at" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  <label htmlFor="played-at" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     Date &amp; Time
                   </label>
                   <input
@@ -127,7 +127,7 @@ export default function LogPersonalGamePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="pod-size" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  <label htmlFor="pod-size" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     Pod Size
                   </label>
                   <select
@@ -152,7 +152,7 @@ export default function LogPersonalGamePage() {
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="placement" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  <label htmlFor="placement" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     Placement
                   </label>
                   <select
@@ -169,8 +169,8 @@ export default function LogPersonalGamePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="deck" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
-                    Deck Played <span className="text-[var(--color-muted)]/60">(optional)</span>
+                  <label htmlFor="deck" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                    Deck Played <span className="text-[var(--color-text-muted)]/60">(optional)</span>
                   </label>
                   {myDecks.length > 0 ? (
                     <select
@@ -186,15 +186,15 @@ export default function LogPersonalGamePage() {
                       ))}
                     </select>
                   ) : (
-                    <p className="text-sm text-[var(--color-muted)] italic py-2">
+                    <p className="text-sm text-[var(--color-text-muted)] italic py-2">
                       No decks in your library yet. Import one to track deck performance.
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
-                    Notes <span className="text-[var(--color-muted)]/60">(optional)</span>
+                  <label htmlFor="notes" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                    Notes <span className="text-[var(--color-text-muted)]/60">(optional)</span>
                   </label>
                   <textarea
                     id="notes"
@@ -215,7 +215,7 @@ export default function LogPersonalGamePage() {
                 type="button"
                 onClick={() => navigate('/games')}
                 disabled={saving}
-                className="px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>

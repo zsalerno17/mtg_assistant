@@ -151,7 +151,7 @@ export default function HelpPage() {
               <Info className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
               Pro Tip:
             </p>
-            <p className="text-sm text-[var(--color-muted)]">
+            <p className="text-sm text-[var(--color-text-muted)]">
               Upload your collection first — the Collection Upgrades tab only suggests cards you already own, so you get actionable upgrades without spending a dime.
             </p>
           </div>
@@ -176,7 +176,7 @@ export default function HelpPage() {
             <li><strong>Track standings:</strong> See leaderboard with points, wins, and statistics</li>
           </ol>
           <div className="bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg p-4">
-            <p className="text-sm text-[var(--color-muted)] mb-2"><strong>Point System:</strong></p>
+            <p className="text-sm text-[var(--color-text-muted)] mb-2"><strong>Point System:</strong></p>
             <ul className="space-y-1 text-sm text-[var(--color-text)]">
               <li>🥇 1st place: 4 points</li>
               <li>🥈 2nd place: 3 points</li>
@@ -208,7 +208,7 @@ export default function HelpPage() {
             Scryfall Card Search
             <ChevronRight className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" strokeWidth={2} aria-hidden="true" />
           </a>
-          <p className="text-sm text-[var(--color-muted)]">
+          <p className="text-sm text-[var(--color-text-muted)]">
             Scryfall provides card images, Oracle text, prices, legality, and advanced search filters.
           </p>
         </>
@@ -225,7 +225,7 @@ export default function HelpPage() {
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-4xl md:text-5xl font-bold text-[var(--color-primary)] mb-4">
             Help & Resources
           </h1>
-          <p className="text-lg text-[var(--color-muted)] max-w-2xl mx-auto">
+          <p className="text-lg text-[var(--color-text-muted)] max-w-2xl mx-auto">
             Learn how to get the most out of MTG Assistant
           </p>
         </div>
@@ -258,7 +258,7 @@ export default function HelpPage() {
           <h3 className="text-xl font-bold text-[var(--color-text)] mb-2">
             Still have questions?
           </h3>
-          <p className="text-[var(--color-muted)] mb-4">
+          <p className="text-[var(--color-text-muted)] mb-4">
             The best way to learn is by exploring! Start by importing a deck or uploading your collection.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">

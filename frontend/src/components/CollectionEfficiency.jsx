@@ -229,7 +229,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
                     placeholder="Filter by card name..."
                     value={unusedFilter}
                     onChange={(e) => setUnusedFilter(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                   />
                   
                   <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
@@ -353,7 +353,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
                     placeholder="Filter by card name..."
                     value={duplicatesFilter}
                     onChange={(e) => setDuplicatesFilter(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
                   />
                   
                   <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">

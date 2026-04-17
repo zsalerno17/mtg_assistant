@@ -163,7 +163,7 @@ export default function EditGamePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-[var(--color-muted)]">Loading game...</div>
+        <div className="text-[var(--color-text-muted)]">Loading game...</div>
       </div>
     )
   }
@@ -175,7 +175,7 @@ export default function EditGamePage() {
           <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
             Edit Game #{gameNumber}
           </h1>
-          <p className="text-[var(--color-muted)]">{league?.name}</p>
+          <p className="text-[var(--color-text-muted)]">{league?.name}</p>
         </div>
 
         {error && (
@@ -190,7 +190,7 @@ export default function EditGamePage() {
             <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">Game Details</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Game Number</label>
+                <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Game Number</label>
                 <input
                   type="number"
                   min="1"
@@ -201,7 +201,7 @@ export default function EditGamePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Date &amp; Time</label>
+                <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Date &amp; Time</label>
                 <input
                   type="datetime-local"
                   value={playedAt}
@@ -212,7 +212,7 @@ export default function EditGamePage() {
               </div>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Screenshot URL (optional)</label>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Screenshot URL (optional)</label>
               <input
                 type="url"
                 value={screenshotUrl}
@@ -222,7 +222,7 @@ export default function EditGamePage() {
               />
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Notes (optional)</label>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Notes (optional)</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -237,7 +237,7 @@ export default function EditGamePage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-brand font-bold text-[var(--color-text)]">Player Results</h2>
               <div className="flex items-center gap-2">
-                <label className="text-sm text-[var(--color-muted)]">Pod size:</label>
+                <label className="text-sm text-[var(--color-text-muted)]">Pod size:</label>
                 <select
                   value={podSize}
                   onChange={(e) => setPodSize(Number(e.target.value))}
@@ -264,7 +264,7 @@ export default function EditGamePage() {
                         <div className="font-medium text-[var(--color-text)] mb-1">{member.superstar_name}</div>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-[var(--color-muted)] mb-1.5">Placement</label>
+                        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Placement</label>
                         <select
                           value={results[member.id]?.placement || ''}
                           onChange={(e) => updateResult(member.id, 'placement', e.target.value)}
@@ -279,7 +279,7 @@ export default function EditGamePage() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-[var(--color-muted)] mb-1.5">Deck (optional)</label>
+                        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Deck (optional)</label>
                         {member.user_id === session?.user?.id ? (
                           <select
                             value={results[member.id]?.deck_id || ''}
@@ -292,13 +292,13 @@ export default function EditGamePage() {
                             ))}
                           </select>
                         ) : (
-                          <div className="text-xs text-[var(--color-muted)] italic py-2">Only the deck owner can select</div>
+                          <div className="text-xs text-[var(--color-text-muted)] italic py-2">Only the deck owner can select</div>
                         )}
                       </div>
                     </div>
                     {totalPreview !== null && (
                       <div className="mt-2 pt-2 border-t border-[var(--color-primary)]/10 flex items-center gap-3 text-xs">
-                        <span className="text-[var(--color-muted)]">
+                        <span className="text-[var(--color-text-muted)]">
                           {placement === 1 ? '1st → 3 pts' : placement === 2 ? '2nd → 2 pts' : placement === 3 ? '3rd → 1 pt' : `${placement}th → 0 pts`}
                         </span>
                         {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+1 entrance</span>}
@@ -318,7 +318,7 @@ export default function EditGamePage() {
             <div className="space-y-4">
               {isAwardEnabled(league, 'entrance_bonus') && (
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     WWE Entrance of the Week (+1pt)
                   </label>
                   <select
@@ -333,7 +333,7 @@ export default function EditGamePage() {
               )}
               {isAwardEnabled(league, 'first_blood') && (
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                  <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     First Blood — First to Deal Damage (+1pt)
                   </label>
                   <select
@@ -349,7 +349,7 @@ export default function EditGamePage() {
               {isAwardEnabled(league, 'spicy_play') && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">
+                    <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                       Spicy Play of the Week
                     </label>
                     <textarea
@@ -361,7 +361,7 @@ export default function EditGamePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--color-muted)] mb-1.5">Spicy Play Player</label>
+                    <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Spicy Play Player</label>
                     <select
                       value={spicyPlayWinnerId}
                       onChange={(e) => setSpicyPlayWinnerId(e.target.value)}
@@ -381,14 +381,14 @@ export default function EditGamePage() {
             <button
               type="button"
               onClick={() => navigate(`/leagues/${leagueId}`)}
-              className="text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              className="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="btn-primary px-8 py-3 rounded-lg font-medium disabled:opacity-50"
+              className="btn btn-primary px-8 py-3 rounded-lg font-medium disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>

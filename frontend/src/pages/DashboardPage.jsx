@@ -48,13 +48,13 @@ function ImportModal({ onClose, onImported }) {
           <h3 className="font-heading text-[var(--color-text)] text-lg tracking-wide">Import Deck</h3>
           <button
             onClick={onClose}
-            className="text-[var(--color-muted)] hover:text-[var(--color-text)] text-xl leading-none transition-colors"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl leading-none transition-colors"
             aria-label="Close"
           >
             ×
           </button>
         </div>
-        <p className="text-[var(--color-muted)] text-xs mb-4">
+        <p className="text-[var(--color-text-muted)] text-xs mb-4">
           Paste a public deck URL from Moxfield or Archidekt. No analysis runs yet — analyze from the dashboard when you're ready.
         </p>
         <form onSubmit={handleSubmit}>
@@ -65,7 +65,7 @@ function ImportModal({ onClose, onImported }) {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="moxfield.com/decks/... or archidekt.com/decks/..."
             disabled={loading}
-            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)] transition-all disabled:opacity-50 mb-3"
+            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all disabled:opacity-50 mb-3"
           />
           {error && (
             <p className="mb-3 text-[var(--color-danger)] text-xs">{error}</p>
@@ -74,7 +74,7 @@ function ImportModal({ onClose, onImported }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+              className="px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
             >
               Cancel
             </button>
@@ -160,7 +160,7 @@ function StatusBadge({ analyzed }) {
       Analyzed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-[var(--color-surface-2)] text-[var(--color-muted)] border border-[var(--color-border)] whitespace-nowrap font-semibold">
+    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)] whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       Pending
     </span>
@@ -190,7 +190,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
         <h3 className="text-[var(--color-text)] text-sm leading-snug line-clamp-2 flex-1" style={{ fontFamily: 'var(--font-display)' }}>
           {item.deck_name}
         </h3>
-        <span className="text-[var(--color-muted)] text-xs shrink-0 pt-0.5">{date}</span>
+        <span className="text-[var(--color-text-muted)] text-xs shrink-0 pt-0.5">{date}</span>
       </div>
 
       {/* Color pips */}
@@ -198,7 +198,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
 
       {/* Commander */}
       {item.commander && (
-        <p className="text-[var(--color-muted)] text-xs truncate font-[var(--font-display)]">{item.commander}</p>
+        <p className="text-[var(--color-text-muted)] text-xs truncate font-[var(--font-display)]">{item.commander}</p>
       )}
 
       {/* Status */}
@@ -212,7 +212,7 @@ function DeckCard({ item, onAnalyze, analyzingId }) {
             href={item.moxfield_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--color-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
+            className="text-[var(--color-text-muted)] text-xs hover:text-[var(--color-secondary)] transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
             {item.source === 'archidekt' ? 'Archidekt' : 'Moxfield'} ↗
@@ -271,7 +271,7 @@ function CommanderArtStack({ commanderUri, partnerUri, commanderName }) {
   if (!commanderUri && !partnerUri) {
     return (
       <div className="w-[46px] h-[64px] rounded bg-[var(--color-surface)] border border-[var(--color-border)] shrink-0 flex items-center justify-center">
-        <span className="text-[var(--color-muted)] text-xs">?</span>
+        <span className="text-[var(--color-text-muted)] text-xs">?</span>
       </div>
     )
   }
@@ -366,7 +366,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
               {item.deck_name}
             </span>
             {item.commander && (
-              <span className="text-[var(--color-muted)] text-xs truncate font-[var(--font-display)]">
+              <span className="text-[var(--color-text-muted)] text-xs truncate font-[var(--font-display)]">
                 {item.commander}
               </span>
             )}
@@ -377,12 +377,12 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
       <td>
         {item.colors?.length > 0
           ? <ColorPips colors={item.colors} size="18px" enableGlow />
-          : <span className="text-[var(--color-muted)] opacity-30 text-xs">—</span>
+          : <span className="text-[var(--color-text-muted)] opacity-30 text-xs">—</span>
         }
       </td>
       {/* Format */}
       <td>
-        <span className="text-[var(--color-muted)] text-[11px] font-medium uppercase tracking-[0.3px]">
+        <span className="text-[var(--color-text-muted)] text-[11px] font-medium uppercase tracking-[0.3px]">
           {item.format || 'Commander'}
         </span>
       </td>
@@ -397,7 +397,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId, index = 0 }) {
             {item.power_level.toFixed(1)}
           </span>
         ) : (
-          <span className="text-[var(--color-muted)] font-medium text-sm">—</span>
+          <span className="text-[var(--color-text-muted)] font-medium text-sm">—</span>
         )}
       </td>
       {/* Actions */}
@@ -444,7 +444,7 @@ function CollectionSummaryWidget({ summary, loading }) {
       <div className="mt-8 flex items-center justify-between bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-5 py-4">
         <div>
           <p className="text-[var(--color-text)] text-sm font-medium">No collection uploaded yet</p>
-          <p className="text-[var(--color-muted)] text-xs mt-0.5">Upload your Moxfield or Archidekt collection CSV to enable collection-based upgrade suggestions.</p>
+          <p className="text-[var(--color-text-muted)] text-xs mt-0.5">Upload your Moxfield or Archidekt collection CSV to enable collection-based upgrade suggestions.</p>
         </div>
         <Link
           to="/collection"
@@ -466,7 +466,7 @@ function CollectionSummaryWidget({ summary, loading }) {
         <span className="w-2 h-2 rounded-full bg-[var(--color-success)] shrink-0" />
         <p className="text-[var(--color-text)] text-sm">
           <span className="font-semibold">{summary.count.toLocaleString()} cards</span> loaded
-          {lastUpdated && <span className="text-[var(--color-muted)] font-normal"> · Last updated {lastUpdated}</span>}
+          {lastUpdated && <span className="text-[var(--color-text-muted)] font-normal"> · Last updated {lastUpdated}</span>}
         </p>
       </div>
       <Link
@@ -579,7 +579,7 @@ export default function DashboardPage() {
             Deck Vault
           </h1>
           {!decksLoading && (
-            <span className="text-sm text-[var(--color-muted)]">{decks.length} decks</span>
+            <span className="text-sm text-[var(--color-text-muted)]">{decks.length} decks</span>
           )}
         </div>
 
@@ -587,25 +587,25 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {/* Total Decks */}
           <div className="stat-card stat-card-1 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
-            <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Total Decks</p>
-            <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
+            <p className="text-[var(--color-text-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Total Decks</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold">
               {decksLoading ? '—' : decks.length}
             </p>
           </div>
 
           {/* Analyzed Decks */}
           <div className="stat-card stat-card-2 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
-            <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Analyzed</p>
-            <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
+            <p className="text-[var(--color-text-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Analyzed</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold">
               {decksLoading ? '—' : decks.filter(d => d.analyzed).length}
             </p>
           </div>
 
           {/* Average Power Level */}
           <div className="stat-card stat-card-3 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
-            <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Avg Power</p>
-            <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
-              {decksLoading ? '—' : 
+            <p className="text-[var(--color-text-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Avg Power</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold">
+              {decksLoading ? '—' :
                 decks.filter(d => d.power_level != null).length > 0
                   ? (decks.filter(d => d.power_level != null).reduce((sum, d) => sum + d.power_level, 0) / decks.filter(d => d.power_level != null).length).toFixed(1)
                   : '—'
@@ -615,8 +615,8 @@ export default function DashboardPage() {
 
           {/* Collection Cards */}
           <div className="stat-card stat-card-4 bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:border-[#2d3748]">
-            <p className="text-[var(--color-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Collection</p>
-            <p className="text-[var(--color-text)] text-[34px] font-bold font-heading leading-none">
+            <p className="text-[var(--color-text-muted)] text-xs uppercase tracking-[0.8px] font-semibold mb-2.5">Collection</p>
+            <p className="text-[var(--color-text)] text-2xl font-bold">
               {summaryLoading ? '—' : collectionSummary?.count?.toLocaleString() || '0'}
             </p>
           </div>
@@ -683,9 +683,9 @@ export default function DashboardPage() {
         ) : decks.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center py-16 max-w-xs mx-auto gap-4">
-            <Swords className="w-10 h-10 text-[var(--color-muted)] opacity-30" strokeWidth={2} aria-hidden="true" />
+            <Swords className="w-10 h-10 text-[var(--color-text-muted)] opacity-30" strokeWidth={2} aria-hidden="true" />
             <p className="text-[var(--color-text)] font-semibold text-sm">No decks in your library yet</p>
-            <p className="text-[var(--color-muted)] text-xs text-center">Click <span className="text-[var(--color-primary)] font-medium">+ Import Deck</span> above to get started.</p>
+            <p className="text-[var(--color-text-muted)] text-xs text-center">Click <span className="text-[var(--color-primary)] font-medium">+ Import Deck</span> above to get started.</p>
           </div>
         ) : (
           <>

@@ -20,7 +20,7 @@ function PlacementBadge({ placement }) {
       className={`px-2.5 py-1 rounded text-xs font-bold ${
         isWin
           ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-          : 'bg-[var(--color-surface-2)] text-[var(--color-muted)]'
+          : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
       }`}
     >
       {ordinal(placement)}
@@ -58,10 +58,10 @@ function GameCard({ game, deckMap, onDelete }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1.5">
             <span className="text-sm font-medium text-[var(--color-text)]">{date}</span>
-            <span className="text-[var(--color-muted)]/50">·</span>
-            <span className="text-sm text-[var(--color-muted)]">{time}</span>
-            <span className="text-[var(--color-muted)]/50">·</span>
-            <span className="text-sm text-[var(--color-muted)]">{game.pod_size}-player pod</span>
+            <span className="text-[var(--color-text-muted)]/50">·</span>
+            <span className="text-sm text-[var(--color-text-muted)]">{time}</span>
+            <span className="text-[var(--color-text-muted)]/50">·</span>
+            <span className="text-sm text-[var(--color-text-muted)]">{game.pod_size}-player pod</span>
           </div>
 
           {/* Deck info */}
@@ -74,15 +74,15 @@ function GameCard({ game, deckMap, onDelete }) {
                   className="w-6 h-6 rounded-full object-cover border border-[var(--color-border)]"
                 />
               )}
-              <span className="text-sm text-[var(--color-muted)]">{deck.deck_name}</span>
+              <span className="text-sm text-[var(--color-text-muted)]">{deck.deck_name}</span>
             </div>
           ) : (
-            <span className="text-xs text-[var(--color-muted)]/50 italic">No deck recorded</span>
+            <span className="text-xs text-[var(--color-text-muted)]/50 italic">No deck recorded</span>
           )}
 
           {/* Notes */}
           {game.notes && (
-            <p className="mt-2 text-xs text-[var(--color-muted)] leading-relaxed line-clamp-2">
+            <p className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed line-clamp-2">
               {game.notes.slice(0, 120)}{game.notes.length > 120 ? '…' : ''}
             </p>
           )}
@@ -103,7 +103,7 @@ function GameCard({ game, deckMap, onDelete }) {
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
               >
                 Cancel
               </button>
@@ -111,7 +111,7 @@ function GameCard({ game, deckMap, onDelete }) {
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="text-[var(--color-muted)] hover:text-[var(--color-danger)] transition-colors p-1 rounded"
+              className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors p-1 rounded"
               aria-label="Delete game"
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
@@ -212,7 +212,7 @@ export default function GamesPage() {
             <h1 style={{ fontFamily: 'var(--font-display)' }} className="text-3xl font-bold text-[var(--color-text)] mb-2">
               My Skirmishes
             </h1>
-            <p className="text-[var(--color-muted)] text-sm">
+            <p className="text-[var(--color-text-muted)] text-sm">
               Track your Commander sessions without a league
             </p>
           </div>
@@ -232,21 +232,21 @@ export default function GamesPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-[var(--color-text)] mb-0.5">{stats.total}</div>
-              <div className="text-xs text-[var(--color-muted)]">Skirmishes Fought</div>
+              <div className="text-xs text-[var(--color-text-muted)]">Skirmishes Fought</div>
             </div>
             <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-yellow-400 mb-0.5">{stats.winRate}%</div>
-              <div className="text-xs text-[var(--color-muted)]">Win Rate</div>
+              <div className="text-xs text-[var(--color-text-muted)]">Win Rate</div>
             </div>
             <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-[var(--color-text)] mb-0.5">{stats.avgPlacement}</div>
-              <div className="text-xs text-[var(--color-muted)]">Avg Placement</div>
+              <div className="text-xs text-[var(--color-text-muted)]">Avg Placement</div>
             </div>
             <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4 text-center">
               <div className="text-sm font-bold text-[var(--color-primary)] mb-0.5 truncate px-2" title={stats.topDeck || '—'}>
                 {stats.topDeck || '—'}
               </div>
-              <div className="text-xs text-[var(--color-muted)]">Top Deck</div>
+              <div className="text-xs text-[var(--color-text-muted)]">Top Deck</div>
             </div>
           </div>
         )}
@@ -261,11 +261,11 @@ export default function GamesPage() {
         {/* Empty state */}
         {!loading && games.length === 0 && (
           <div className="text-center py-20">
-            <Swords className="w-16 h-16 text-[var(--color-muted)] mx-auto mb-4" />
+            <Swords className="w-16 h-16 text-[var(--color-text-muted)] mx-auto mb-4" />
             <h3 className="text-2xl font-brand font-bold text-[var(--color-text)] mb-3">
               No skirmishes logged yet.
             </h3>
-            <p className="text-[var(--color-muted)] mb-6">
+            <p className="text-[var(--color-text-muted)] mb-6">
               Start tracking your Commander sessions.
             </p>
             <Link to="/games/log" className="btn btn-primary px-6 py-2.5 rounded-lg font-medium">
@@ -291,7 +291,7 @@ export default function GamesPage() {
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="px-6 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors disabled:opacity-50"
                 >
                   {loadingMore ? 'Loading…' : 'Load More'}
                 </button>
