@@ -150,19 +150,19 @@ function StatBadge({ label, value }) {
   }
   
   // SVG circle calculations
-  const radius = 28
+  const radius = 41
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference - (percentage / 100) * circumference
-  
+
   return (
     <div className="flex flex-col items-center gap-2 py-2">
       {/* Radial progress ring */}
-      <div className="relative" style={{ width: '64px', height: '64px' }}>
+      <div className="relative" style={{ width: '90px', height: '90px' }}>
         {/* Background circle */}
-        <svg className="transform -rotate-90" width="64" height="64">
+        <svg className="transform -rotate-90" width="90" height="90">
           <circle
-            cx="32"
-            cy="32"
+            cx="45"
+            cy="45"
             r={radius}
             fill="none"
             stroke="currentColor"
@@ -171,8 +171,8 @@ function StatBadge({ label, value }) {
           />
           {/* Progress circle */}
           <circle
-            cx="32"
-            cy="32"
+            cx="45"
+            cy="45"
             r={radius}
             fill="none"
             stroke="currentColor"
