@@ -457,7 +457,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId, onArchive, index = 0 }) {
               className="btn btn-secondary btn-sm"
             >
               <Eye className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
-              View Deck
+              View
             </button>
           ) : (
             <button
@@ -480,11 +480,10 @@ function DeckTableRow({ item, onAnalyze, analyzingId, onArchive, index = 0 }) {
           )}
           <button
             onClick={() => onArchive(item)}
-            className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors rounded"
-            aria-label="Archive deck"
-            title="Archive deck"
+            className="btn btn-danger btn-sm"
           >
-            <Trash2 className="w-4 h-4" strokeWidth={2} />
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
+            Archive
           </button>
         </div>
       </td>

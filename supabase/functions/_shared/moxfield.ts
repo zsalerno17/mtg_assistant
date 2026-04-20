@@ -120,7 +120,7 @@ function parseMoxfieldCard(entry: Record<string, unknown>): Card {
     (scryfallId ? `https://api.scryfall.com/cards/${scryfallId}?format=image` : "");
 
   return createCard({
-    name: (card.name as string) || "",
+    name: (card.printed_name as string) || (card.name as string) || "",
     quantity,
     mana_cost: (card.mana_cost as string) || "",
     cmc: Number(card.cmc || 0),

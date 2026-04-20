@@ -131,17 +131,17 @@ export default function LogPersonalGamePage() {
                   <label htmlFor="pod-size" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     Pod Size
                   </label>
-                  <select
+                  <SelectField
                     id="pod-size"
                     value={podSize}
                     onChange={(e) => handlePodSizeChange(e.target.value)}
                     disabled={saving}
-                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+                    className="w-full"
                   >
                     {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                       <option key={n} value={n}>{n} players</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
               </div>
             </div>
@@ -156,17 +156,17 @@ export default function LogPersonalGamePage() {
                   <label htmlFor="placement" className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     Placement
                   </label>
-                  <select
+                  <SelectField
                     id="placement"
                     value={placement}
                     onChange={(e) => setPlacement(Number(e.target.value))}
                     disabled={saving}
-                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+                    className="w-full"
                   >
                     {Array.from({ length: podSize }, (_, i) => i + 1).map((n) => (
                       <option key={n} value={n}>{ordinal(n)}</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
 
                 <div>
@@ -174,18 +174,18 @@ export default function LogPersonalGamePage() {
                     Deck Played <span className="text-[var(--color-text-muted)]/60">(optional)</span>
                   </label>
                   {myDecks.length > 0 ? (
-                    <select
+                    <SelectField
                       id="deck"
                       value={deckId}
                       onChange={(e) => setDeckId(e.target.value)}
                       disabled={saving}
-                      className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+                      className="w-full"
                     >
                       <option value="">— No deck selected —</option>
                       {myDecks.map((deck) => (
                         <option key={deck.id} value={deck.id}>{deck.deck_name}</option>
                       ))}
-                    </select>
+                    </SelectField>
                   ) : (
                     <p className="text-sm text-[var(--color-text-muted)] italic py-2">
                       No decks in your library yet. Import one to track deck performance.

@@ -8,6 +8,260 @@ import { StandingsRowSkeleton, MemberCardSkeleton, GameCardSkeleton } from '../c
 import { TrophyIcon, CrownIcon, SwordsIcon } from '../components/LeagueIcons'
 import PageTransition from '../components/PageTransition'
 import { AvatarDisplay } from '../components/AvatarDisplay'
+import SelectField from '../components/shared/SelectField'
+
+const PREMADE_AWARDS = [
+  { id: 'entrance_bonus', title: 'WWE Entrance of the Week', description: 'Best themed or dramatic entrance to the weekly pod', points: 1 },
+  { id: 'first_blood',   title: 'First Blood',               description: 'First to deal combat damage to another player', points: 1 },
+  { id: 'spicy_play',    title: 'Wildest Play / Spicy Play',  description: 'Most creative, devastating, or unhinged play of the game', points: 1 },
+  { id: 'card_of_match', title: 'Card of the Match',          description: 'Pod votes — most impactful or memorable card played', points: 1 },
+  { id: 'villain',       title: 'The Villain',                description: 'Most cutthroat/backstabbing moment — betrayal, infinite combo out of nowhere', points: 1 },
+  { id: 'jobber',        title: 'The Jobber',                 description: 'Eliminated early but nominated by pod for going out in style; consolation prize', points: 1 },
+  { id: 'kingslayer',    title: 'Kingslayer',                 description: 'Eliminated the current #1 player in the standings during that game', points: 1 },
+]
+const DEFAULT_BONUS_AWARDS = PREMADE_AWARDS.map((a, i) => ({ ...a, enabled: i < 3, isCustom: false }))
+
+function initBonusAwards(scoringConfig) {
+  if (scoringConfig?.bonus_awards?.length) {
+    return scoringConfig.bonus_awards.map(a => ({ ...a, isCustom: a.isCustom ?? false }))
+  }
+  return DEFAULT_BONUS_AWARDS
+}
+
+function EditCampaignModal({ league, onClose, onSave, saving }) {
+  const [name, setName] = useState(league.name || '')
+  const [description, setDescription] = useState(league.description || '')
+  const [seasonStart, setSeasonStart] = useState(
+    league.season_start ? league.season_start.slice(0, 10) : ''
+  )
+  const [seasonEnd, setSeasonEnd] = useState(
+    league.season_end ? league.season_end.slice(0, 10) : ''
+  )
+  const [status, setStatus] = useState(league.status || 'active')
+  const [bonusAwards, setBonusAwards] = useState(() => initBonusAwards(league.scoring_config))
+  const [showAddBonus, setShowAddBonus] = useState(false)
+  const [newBonus, setNewBonus] = useState({ title: '', description: '', points: 1 })
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const findEnabled = (id) => bonusAwards.find(a => a.id === id)?.enabled ?? false
+    onSave({
+      name: name.trim() || undefined,
+      description: description.trim() || undefined,
+      season_start: seasonStart || null,
+      season_end: seasonEnd || null,
+      status,
+      scoring_config: {
+        entrance_bonus: findEnabled('entrance_bonus'),
+        first_blood:    findEnabled('first_blood'),
+        spicy_play:     findEnabled('spicy_play'),
+        bonus_awards:   bonusAwards,
+      },
+    })
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-8"
+      onClick={(e) => { if (e.target === e.currentTarget && !saving) onClose() }}
+    >
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-2xl shadow-black/60">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-brand font-bold text-[var(--color-text)]">Edit Campaign</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-2xl leading-none transition-colors disabled:opacity-50 cursor-pointer"
+            aria-label="Close"
+          >×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Campaign Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              disabled={saving}
+              className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Description / Rules (optional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Paste your campaign rules or description here..."
+              rows={6}
+              disabled={saving}
+              className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] font-mono text-sm disabled:opacity-50"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Season Start</label>
+              <input
+                type="date"
+                value={seasonStart}
+                onChange={(e) => setSeasonStart(e.target.value)}
+                disabled={saving}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Season End</label>
+              <input
+                type="date"
+                value={seasonEnd}
+                onChange={(e) => setSeasonEnd(e.target.value)}
+                disabled={saving}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Status</label>
+            <SelectField
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              disabled={saving}
+              className="w-full"
+            >
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+            </SelectField>
+          </div>
+
+          {/* Bonus Awards */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Bonus Awards</label>
+            <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+              <div className="grid items-center gap-3 px-4 py-2 bg-[var(--color-bg)]/60 border-b border-[var(--color-border)]" style={{gridTemplateColumns: '2rem 1fr 2fr 4rem'}}>
+                <div />
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Title</div>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Description</div>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide text-right">Pts</div>
+              </div>
+              {bonusAwards.map((award, idx) => (
+                <div
+                  key={award.id}
+                  className={`grid items-start gap-3 px-4 py-3 border-b border-[var(--color-border)] transition-opacity ${!award.enabled ? 'opacity-40' : ''}`}
+                  style={{gridTemplateColumns: '2rem 1fr 2fr 4rem'}}
+                >
+                  <input
+                    type="checkbox"
+                    checked={award.enabled}
+                    onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, enabled: e.target.checked } : a))}
+                    disabled={saving}
+                    className="mt-0.5 w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] cursor-pointer disabled:opacity-50"
+                  />
+                  <div className="text-sm font-medium text-[var(--color-text)] leading-snug">{award.title}</div>
+                  <div className="text-xs text-[var(--color-text-muted)] leading-relaxed">{award.description}</div>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={award.points}
+                      onChange={(e) => setBonusAwards(prev => prev.map((a, i) => i === idx ? { ...a, points: Math.max(0, Number(e.target.value)) } : a))}
+                      disabled={!award.enabled || saving}
+                      className="w-12 bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-sm text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-40"
+                    />
+                    {award.isCustom && (
+                      <button
+                        type="button"
+                        onClick={() => setBonusAwards(prev => prev.filter((_, i) => i !== idx))}
+                        disabled={saving}
+                        aria-label="Remove award"
+                        className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors cursor-pointer disabled:opacity-50"
+                      >✕</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {!showAddBonus ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAddBonus(true)}
+                  disabled={saving}
+                  className="w-full px-4 py-2.5 text-sm text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 text-left font-medium transition-colors cursor-pointer disabled:opacity-50"
+                >+ Add Custom Bonus</button>
+              ) : (
+                <div className="px-4 py-3 bg-[var(--color-bg)]/40 space-y-3">
+                  <div className="grid gap-3" style={{gridTemplateColumns: '1fr 2fr 4rem'}}>
+                    <input
+                      type="text"
+                      value={newBonus.title}
+                      onChange={(e) => setNewBonus(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Title"
+                      className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                    />
+                    <input
+                      type="text"
+                      value={newBonus.description}
+                      onChange={(e) => setNewBonus(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Description"
+                      className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={newBonus.points}
+                      onChange={(e) => setNewBonus(prev => ({ ...prev, points: Math.max(0, Number(e.target.value)) }))}
+                      className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-2 py-2 text-sm text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newBonus.title.trim()) return
+                        setBonusAwards(prev => [...prev, {
+                          id: `custom_${Date.now()}`,
+                          title: newBonus.title.trim(),
+                          description: newBonus.description.trim(),
+                          points: newBonus.points,
+                          enabled: true,
+                          isCustom: true,
+                        }])
+                        setNewBonus({ title: '', description: '', points: 1 })
+                        setShowAddBonus(false)
+                      }}
+                      className="px-3 py-1.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] text-sm rounded-lg font-medium transition-colors cursor-pointer"
+                    >Add</button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowAddBonus(false); setNewBonus({ title: '', description: '', points: 1 }) }}
+                      className="px-3 py-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-sm transition-colors cursor-pointer"
+                    >Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer disabled:opacity-50"
+            >Cancel</button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn btn-primary min-w-[120px]"
+            >{saving ? 'Saving…' : 'Save Changes'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 export default function LeaguePage() {
   const { leagueId } = useParams()
@@ -29,6 +283,8 @@ export default function LeaguePage() {
   const [gameVotes, setGameVotes] = useState({}) // { [gameId]: { votes: [], myVotes: {} } }
   const [votingGameId, setVotingGameId] = useState(null)
   const [exportingImage, setExportingImage] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     if (!session?.access_token) return
@@ -148,6 +404,18 @@ export default function LeaguePage() {
     }
     return { enabledAwards, counts }
   }, [games, standings, league])
+
+  // Vote categories derived from enabled bonus awards — only show votes for configured awards
+  const voteCategories = useMemo(() => {
+    const AWARD_TO_VOTE = {
+      entrance_bonus: { category: 'entrance', label: 'Best Entrance' },
+      spicy_play:     { category: 'spicy_play', label: 'Spiciest Play' },
+    }
+    const awards = league?.scoring_config?.bonus_awards || []
+    return awards
+      .filter(a => a.enabled && AWARD_TO_VOTE[a.id])
+      .map(a => AWARD_TO_VOTE[a.id])
+  }, [league])
 
   function getH2H(memberId1, memberId2) {
     let wins1 = 0, wins2 = 0
@@ -283,7 +551,11 @@ export default function LeaguePage() {
       ctx.fillText(league?.name || 'Campaign Standings', padding, padding + 22)
       ctx.fillStyle = '#94a3b8'
       ctx.font = '13px sans-serif'
-      ctx.fillText(`Season ${new Date(league?.season_start).toLocaleDateString()} — ${new Date(league?.season_end).toLocaleDateString()}`, padding, padding + 42)
+      const dateLabel = [
+        league?.season_start ? new Date(league.season_start).toLocaleDateString() : null,
+        league?.season_end ? new Date(league.season_end).toLocaleDateString() : null,
+      ].filter(Boolean).join(' — ')
+      if (dateLabel) ctx.fillText(`Season ${dateLabel}`, padding, padding + 42)
 
       // Column headers
       const cols = [
@@ -354,6 +626,20 @@ export default function LeaguePage() {
 
   function handlePrintPDF() {
     window.print()
+  }
+
+  async function handleEditLeague(updates) {
+    setEditing(true)
+    setError(null)
+    try {
+      await api.updateLeague(leagueId, updates)
+      setShowEditModal(false)
+      await loadLeagueData()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setEditing(false)
+    }
   }
 
   async function handleLeaveLeague() {
@@ -449,6 +735,14 @@ export default function LeaguePage() {
 
   return (
     <PageTransition>
+      {showEditModal && league && (
+        <EditCampaignModal
+          league={league}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleEditLeague}
+          saving={editing}
+        />
+      )}
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10">
         {/* Header */}
         <div className="mb-8">
@@ -472,11 +766,14 @@ export default function LeaguePage() {
 
           {/* Dates + Time Remaining */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--color-text-muted)] mb-4">
-            <span className="flex items-center gap-1.5">
-              <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
-              {new Date(league.season_start).toLocaleDateString()} —{' '}
-              {new Date(league.season_end).toLocaleDateString()}
-            </span>
+            {(league.season_start || league.season_end) && (
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
+                {league.season_start && new Date(league.season_start).toLocaleDateString()}
+                {league.season_start && league.season_end && ' — '}
+                {league.season_end && new Date(league.season_end).toLocaleDateString()}
+              </span>
+            )}
             {getSeasonTimeRemaining() && (
               <span className="text-[var(--color-primary)] font-medium">{getSeasonTimeRemaining()}</span>
             )}
@@ -485,13 +782,22 @@ export default function LeaguePage() {
           {/* Buttons */}
           <div className="flex flex-wrap items-center gap-3">
             {isCreator && (
-              <button
-                onClick={handleGenerateInvite}
-                disabled={generatingInvite}
-                className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
-              >
-                {generatingInvite ? 'Generating...' : 'Invite Link'}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); setShowEditModal(true) }}
+                  className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+                >
+                  Edit Campaign
+                </button>
+                <button
+                  onClick={handleGenerateInvite}
+                  disabled={generatingInvite}
+                  className="px-4 py-2.5 rounded-lg font-medium text-sm border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+                >
+                  {generatingInvite ? 'Generating...' : 'Invite Link'}
+                </button>
+              </>
             )}
             {!isCreator && (
               <button
@@ -913,15 +1219,17 @@ export default function LeaguePage() {
                                     <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
                                   </a>
                                 )}
-                                <button
-                                  onClick={() => {
-                                    if (!gameVotes[game.id]) loadGameVotes(game.id)
-                                    setVotingGameId(prev => prev === game.id ? null : game.id)
-                                  }}
-                                  className={`text-xs transition-colors cursor-pointer ${votingGameId === game.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
-                                >
-                                  Vote
-                                </button>
+                                {voteCategories.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      if (!gameVotes[game.id]) loadGameVotes(game.id)
+                                      setVotingGameId(prev => prev === game.id ? null : game.id)
+                                    }}
+                                    className={`text-xs transition-colors cursor-pointer ${votingGameId === game.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
+                                  >
+                                    Vote
+                                  </button>
+                                )}
                                 <Link
                                   to={`/leagues/${leagueId}/games/${game.id}/edit`}
                                   className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] rounded-lg px-2 py-0.5 hover:border-[var(--color-primary)] transition-colors"
@@ -935,14 +1243,14 @@ export default function LeaguePage() {
                             <tr className="bg-[var(--color-surface)]/20">
                               <td colSpan={5} className="px-4 pb-4 pt-3">
                                 <div className="space-y-3">
-                                  {['entrance', 'spicy_play'].map(category => {
+                                  {voteCategories.map(({ category, label }) => {
                                     const tally = getVoteTally(game.id, category)
                                     const myVote = gameVotes[game.id]?.myVotes?.[category]
                                     const members = league?.league_members || []
                                     return (
                                       <div key={category}>
                                         <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5">
-                                          {category === 'entrance' ? 'Best Entrance' : 'Spiciest Play'}
+                                          {label}
                                         </div>
                                         <div className="flex flex-wrap gap-1.5">
                                           {members.map(m => (
@@ -1017,7 +1325,7 @@ export default function LeaguePage() {
                 }}
                 className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-secondary)]/5 transition-all"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-4">
                   <AvatarDisplay
                     avatarUrl={member.user_profiles?.avatar_url}
                     fallbackLabel={member.superstar_name}
@@ -1025,7 +1333,7 @@ export default function LeaguePage() {
                     alt={member.superstar_name}
                   />
                   <div className="flex-1">
-                    <h3 className="text-2xl font-brand font-bold text-[var(--color-text)] mb-1">
+                    <h3 className="text-2xl font-brand font-bold text-[var(--color-text)]">
                       {member.superstar_name}
                     </h3>
                     {member.current_title && (

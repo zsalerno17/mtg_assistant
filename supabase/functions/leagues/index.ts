@@ -269,10 +269,25 @@ async function listLeagues(
   sb: ReturnType<typeof getUserClient>,
   req: Request,
 ): Promise<Response> {
+  // Step 1: get the league IDs this user belongs to
+  const { data: memberships, error: memberError } = await sb
+    .from("league_members")
+    .select("league_id")
+    .eq("user_id", userId);
+  if (memberError) throw new HttpError(400, memberError.message);
+
+  const leagueIds = (memberships || []).map(
+    (m: Record<string, unknown>) => m.league_id as string,
+  );
+  if (!leagueIds.length) return jsonResponse({ leagues: [] }, req);
+
+  // Step 2: fetch those leagues with ALL their members so the frontend
+  // can show an accurate pilot count (the old !inner join only returned
+  // the requesting user's own membership row).
   const { data, error } = await sb
     .from("leagues")
-    .select("*, league_members!inner(user_id)")
-    .eq("league_members.user_id", userId);
+    .select("*, league_members(user_id, superstar_name)")
+    .in("id", leagueIds);
   if (error) throw new HttpError(400, error.message);
   return jsonResponse({ leagues: data }, req);
 }
@@ -345,6 +360,7 @@ async function updateLeague(
       return errorResponse(400, "Invalid status", req);
     payload.status = body.status;
   }
+  if (body.scoring_config != null) payload.scoring_config = body.scoring_config;
   payload.updated_at = new Date().toISOString();
 
   const { data, error } = await sb

@@ -5,6 +5,18 @@ import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
 import { SelectField } from '../components/shared'
 
+function ordinal(n) {
+  return n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`
+}
+
+function getPointsForPlacement(placement, league) {
+  const pts = league?.scoring_config?.points
+  if (!pts) return placement === 1 ? 3 : placement === 2 ? 2 : placement === 3 ? 1 : 0
+  const sortedKeys = Object.keys(pts).map(Number).sort((a, b) => a - b)
+  const lastKey = sortedKeys[sortedKeys.length - 1]
+  return pts[String(placement)] ?? pts[String(lastKey)] ?? 0
+}
+
 // Supports both old flat-key format and new bonus_awards array format
 function isAwardEnabled(league, awardId) {
   const cfg = league?.scoring_config
@@ -221,25 +233,13 @@ export default function EditGamePage() {
 
           {/* Player Results */}
           <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4">
               <h2 className="text-lg font-brand font-bold text-[var(--color-text)]">Pilot Results</h2>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-[var(--color-text-muted)]">Pod size:</label>
-                <select
-                  value={podSize}
-                  onChange={(e) => setPodSize(Number(e.target.value))}
-                  className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-sm text-[var(--color-text)]"
-                >
-                  {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>{n} pilots</option>
-                  ))}
-                </select>
-              </div>
             </div>
             <div className="space-y-4">
               {members.map((member) => {
                 const placement = results[member.id]?.placement ? Number(results[member.id].placement) : null
-                const placementPts = placement === 1 ? 3 : placement === 2 ? 2 : placement === 3 ? 1 : 0
+                const placementPts = placement ? getPointsForPlacement(placement, league) : 0
                 const entrancePts = member.id === entranceWinnerId ? 1 : 0
                 const firstBloodPts = member.id === firstBloodWinnerId ? 1 : 0
                 const totalPreview = placement ? placementPts + entrancePts + firstBloodPts : null
@@ -252,32 +252,32 @@ export default function EditGamePage() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Placement</label>
-                        <select
+                        <SelectField
                           value={results[member.id]?.placement || ''}
                           onChange={(e) => updateResult(member.id, 'placement', e.target.value)}
-                          className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)]"
+                          className="w-full"
                         >
                           <option value="">—</option>
                           {Array.from({ length: podSize }, (_, i) => i + 1).map((n) => (
                             <option key={n} value={n}>
-                              {n === 1 ? '1st (Winner)' : n === podSize ? `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'} (Last Out)` : `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`}
+                              {n === 1 ? '1st (Winner)' : n === podSize ? `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'} (First Out)` : `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`}
                             </option>
                           ))}
-                        </select>
+                        </SelectField>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Deck (optional)</label>
                         {member.user_id === session?.user?.id ? (
-                          <select
+                          <SelectField
                             value={results[member.id]?.deck_id || ''}
                             onChange={(e) => updateResult(member.id, 'deck_id', e.target.value)}
-                            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)]"
+                            className="w-full"
                           >
                             <option value="">—</option>
                             {myDecks.map((deck) => (
                               <option key={deck.id} value={deck.id}>{deck.deck_name}</option>
                             ))}
-                          </select>
+                          </SelectField>
                         ) : (
                           <div className="text-xs text-[var(--color-text-muted)] italic py-2">Only the deck owner can select</div>
                         )}
@@ -286,7 +286,7 @@ export default function EditGamePage() {
                     {totalPreview !== null && (
                       <div className="mt-2 pt-2 border-t border-[var(--color-primary)]/10 flex items-center gap-3 text-xs">
                         <span className="text-[var(--color-text-muted)]">
-                          {placement === 1 ? '1st → 3 pts' : placement === 2 ? '2nd → 2 pts' : placement === 3 ? '3rd → 1 pt' : `${placement}th → 0 pts`}
+                          {ordinal(placement)} → {placementPts} pt{placementPts !== 1 ? 's' : ''}
                         </span>
                         {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+1 entrance</span>}
                         {firstBloodPts > 0 && <span className="text-red-400">+1 first blood</span>}
@@ -308,14 +308,14 @@ export default function EditGamePage() {
                   <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     WWE Entrance of the Week (+1pt)
                   </label>
-                  <select
+                  <SelectField
                     value={entranceWinnerId}
                     onChange={(e) => setEntranceWinnerId(e.target.value)}
-                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)]"
+                    className="w-full"
                   >
                     <option value="">— No winner —</option>
                     {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
-                  </select>
+                  </SelectField>
                 </div>
               )}
               {isAwardEnabled(league, 'first_blood') && (
@@ -323,14 +323,14 @@ export default function EditGamePage() {
                   <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
                     First Blood — First to Deal Damage (+1pt)
                   </label>
-                  <select
+                  <SelectField
                     value={firstBloodWinnerId}
                     onChange={(e) => setFirstBloodWinnerId(e.target.value)}
-                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)]"
+                    className="w-full"
                   >
                     <option value="">— No winner —</option>
                     {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
-                  </select>
+                  </SelectField>
                 </div>
               )}
               {isAwardEnabled(league, 'spicy_play') && (
@@ -349,14 +349,14 @@ export default function EditGamePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Spicy Play Player</label>
-                    <select
+                    <SelectField
                       value={spicyPlayWinnerId}
                       onChange={(e) => setSpicyPlayWinnerId(e.target.value)}
-                      className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)]"
+                      className="w-full"
                     >
                       <option value="">— No winner —</option>
                       {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
-                    </select>
+                    </SelectField>
                   </div>
                 </>
               )}

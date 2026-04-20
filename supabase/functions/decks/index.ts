@@ -510,17 +510,17 @@ async function handleGetLibrary(
     });
   }
 
-  // Backwards-compat: include analyses that have no user_decks entry
-  const userDeckKeys = new Set(
-    userDecks.map((d: Record<string, unknown>) =>
-      `${(d.source as string) || "moxfield"}:${d.moxfield_id as string}`
-    )
+  // Backwards-compat: include analyses that have no user_decks entry.
+  // Dedup by moxfield_id only (not source) so a deck in user_decks under any
+  // source is not duplicated here as a no-id entry.
+  const userDeckMoxfieldIds = new Set(
+    userDecks.map((d: Record<string, unknown>) => d.moxfield_id as string)
   );
 
   for (const [key, analysis] of Object.entries(analysesByDeck)) {
-    if (userDeckKeys.has(key)) continue;
-    const rj = (analysis.result_json as Record<string, unknown>) || {};
     const [analysisSource, deckId] = key.split(":") as [string, string];
+    if (userDeckMoxfieldIds.has(deckId)) continue;
+    const rj = (analysis.result_json as Record<string, unknown>) || {};
 
     let commanderImageUri: string | null = null;
     let partnerImageUri: string | null = null;
@@ -542,7 +542,33 @@ async function handleGetLibrary(
       console.warn(`[handleGetLibrary] Failed to fetch commander images for legacy deck ${deckId}:`, e instanceof Error ? e.message : String(e));
     }
 
+    // Auto-migrate: upsert this analysis-only deck into user_decks so it gets a
+    // real id and behaves like any normal library deck going forward.
+    let migratedId: string | null = null;
+    try {
+      const { data: migratedDeck } = await userClient
+        .from("user_decks")
+        .upsert({
+          user_id: userId,
+          moxfield_id: deckId,
+          source: analysisSource,
+          deck_name: (analysis.deck_name as string) || deckId,
+          moxfield_url: (analysis.moxfield_url as string) || null,
+          commander_image_uri: commanderImageUri,
+          partner_image_uri: partnerImageUri,
+        }, { onConflict: "user_id,moxfield_id" })
+        .select("id")
+        .single();
+      migratedId = (migratedDeck as Record<string, unknown> | null)?.id as string ?? null;
+      // Prevent a duplicate result entry if the same moxfield_id appears under
+      // a second analysis source key in this same request.
+      userDeckMoxfieldIds.add(deckId);
+    } catch (e) {
+      console.warn(`[handleGetLibrary] Failed to migrate legacy deck ${deckId} to user_decks:`, e instanceof Error ? e.message : String(e));
+    }
+
     resultList.push({
+      id: migratedId,
       moxfield_id: deckId,
       source: analysisSource,
       deck_name: analysis.deck_name || deckId,

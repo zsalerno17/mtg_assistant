@@ -486,11 +486,14 @@ export default function LeaguesPage() {
                 </div>
 
                 <div className="text-sm text-[var(--color-text-muted)] space-y-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-                    {new Date(league.season_start).toLocaleDateString()} —{' '}
-                    {new Date(league.season_end).toLocaleDateString()}
-                  </div>
+                  {(league.season_start || league.season_end) && (
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                      {league.season_start && new Date(league.season_start).toLocaleDateString()}
+                      {league.season_start && league.season_end && ' — '}
+                      {league.season_end && new Date(league.season_end).toLocaleDateString()}
+                    </div>
+                  )}
                   {league.league_members && (
                     <div className="flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />

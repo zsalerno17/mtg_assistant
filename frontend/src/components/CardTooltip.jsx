@@ -16,7 +16,7 @@ const imageCache = new Map()
  * tooltip positioned near the cursor, rendered via React Portal to escape
  * overflow/stacking contexts.
  */
-export default function CardTooltip({ cardName, imageUrl: imageUrlProp, children }) {
+export default function CardTooltip({ cardName, imageUrl: imageUrlProp, href: hrefProp, children }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [imageUrl, setImageUrl] = useState(imageUrlProp || null)
   const [imageError, setImageError] = useState(false)
@@ -186,7 +186,7 @@ export default function CardTooltip({ cardName, imageUrl: imageUrlProp, children
       ) : (
         // Clickable Scryfall card image
         <a
-          href={`https://scryfall.com/search?q=!"${encodeURIComponent(cardName)}"`}
+          href={hrefProp || `https://scryfall.com/search?q=!"${encodeURIComponent(cardName)}"`}
           target="_blank"
           rel="noopener noreferrer"
           className="block"

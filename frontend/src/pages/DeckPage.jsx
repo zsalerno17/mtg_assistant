@@ -771,17 +771,22 @@ function AiSourceBadge({ aiEnhanced }) {
 
 
 // Parses text and wraps any deck card names with CardTooltip.
-// Sorted by name length (desc) so multi-word names match before substrings.
-function renderWithCardTooltips(text, cardNameSet) {
-  if (!text || !cardNameSet?.size) return text
-  const names = Array.from(cardNameSet).sort((a, b) => b.length - a.length)
+// cardMap: Map<string, {image_uri, scryfall_id}> — sorted by name length (desc) so multi-word names match before substrings.
+function renderWithCardTooltips(text, cardMap) {
+  if (!text || !cardMap?.size) return text
+  const names = Array.from(cardMap.keys()).sort((a, b) => b.length - a.length)
   const escaped = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const regex = new RegExp(`(${escaped.join('|')})`, 'gi')
   return text.split(regex).map((part, i) => {
     const match = names.find(n => n.toLowerCase() === part.toLowerCase())
     if (match) {
+      const card = cardMap.get(match)
+      const imageUrl = card?.image_uri || undefined
+      const href = card?.scryfall_id
+        ? `https://scryfall.com/search?q=id:${card.scryfall_id}`
+        : undefined
       return (
-        <CardTooltip key={i} cardName={match}>
+        <CardTooltip key={i} cardName={match} imageUrl={imageUrl} href={href}>
           <span className="text-[var(--color-primary)] cursor-help border-b border-dotted border-[var(--color-primary)]/40">{part}</span>
         </CardTooltip>
       )
@@ -792,7 +797,7 @@ function renderWithCardTooltips(text, cardNameSet) {
 
 // Stacked card fan accordion for Early / Mid / Late game phases.
 // Inactive cards peek from left/right; clicking brings them to front.
-function GamePhasesAccordion({ phases, mainboardCards }) {
+function GamePhasesAccordion({ phases, cardMap }) {
   const [active, setActive] = useState(0)
 
   const getCardAnim = (index) => {
@@ -836,7 +841,7 @@ function GamePhasesAccordion({ phases, mainboardCards }) {
                 {phase.bullets.map((b, j) => (
                   <li key={j} className="flex items-start gap-2 text-sm text-[var(--color-text)]">
                     <span className={`mt-[3px] text-xs shrink-0 ${phase.color}`}>•</span>
-                    <span className="leading-relaxed">{renderWithCardTooltips(b, mainboardCards)}</span>
+                    <span className="leading-relaxed">{renderWithCardTooltips(b, cardMap)}</span>
                   </li>
                 ))}
               </ul>
@@ -857,7 +862,7 @@ function GamePhasesAccordion({ phases, mainboardCards }) {
   )
 }
 
-function StrategyTab({ deckId, mainboardCards = new Set() }) {
+function StrategyTab({ deckId, cardMap = new Map() }) {
   const { data: raw, loading, error } = useDataFetch(() => api.getStrategy(deckId), [deckId])
   const data = raw?.strategy
   const aiEnhanced = raw?.ai_enhanced ?? false
@@ -883,7 +888,7 @@ function StrategyTab({ deckId, mainboardCards = new Set() }) {
       {data.game_plan && (
         <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-5">
           <SectionLabel className="mb-2 text-[var(--color-primary)]">Game Plan</SectionLabel>
-          <p className="text-[var(--color-text)] text-sm leading-relaxed">{renderWithCardTooltips(data.game_plan, mainboardCards)}</p>
+          <p className="text-[var(--color-text)] text-sm leading-relaxed">{renderWithCardTooltips(data.game_plan, cardMap)}</p>
         </div>
       )}
 
@@ -897,7 +902,7 @@ function StrategyTab({ deckId, mainboardCards = new Set() }) {
                 <IconCheck className="w-4 h-4 text-[var(--color-success)] mt-0.5 shrink-0" />
                 <div>
                   <span className="text-[var(--color-text)] font-semibold text-sm">{wc.name}</span>
-                  <p className="text-[var(--color-text-muted)] text-xs mt-0.5">{renderWithCardTooltips(wc.description, mainboardCards)}</p>
+                  <p className="text-[var(--color-text-muted)] text-xs mt-0.5">{renderWithCardTooltips(wc.description, cardMap)}</p>
                 </div>
               </div>
             ))}
@@ -910,12 +915,21 @@ function StrategyTab({ deckId, mainboardCards = new Set() }) {
         <div>
           <SectionLabel className="mb-3">Key Cards</SectionLabel>
           <div className="grid gap-2 sm:grid-cols-2">
-            {data.key_cards.map((kc, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
-                <span className="text-[var(--color-primary)] font-semibold text-sm"><CardTooltip cardName={kc.name}>{kc.name}</CardTooltip></span>
-                <p className="text-[var(--color-text-muted)] text-xs mt-0.5">{renderWithCardTooltips(kc.role, mainboardCards)}</p>
-              </div>
-            ))}
+            {data.key_cards.map((kc, i) => {
+              const kcCard = cardMap.get(kc.name)
+              return (
+                <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
+                  <span className="text-[var(--color-primary)] font-semibold text-sm">
+                    <CardTooltip
+                      cardName={kc.name}
+                      imageUrl={kcCard?.image_uri || undefined}
+                      href={kcCard?.scryfall_id ? `https://scryfall.com/search?q=id:${kcCard.scryfall_id}` : undefined}
+                    >{kc.name}</CardTooltip>
+                  </span>
+                  <p className="text-[var(--color-text-muted)] text-xs mt-0.5">{renderWithCardTooltips(kc.role, cardMap)}</p>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -924,7 +938,7 @@ function StrategyTab({ deckId, mainboardCards = new Set() }) {
       {phases.length > 0 && (
         <div>
           <SectionLabel className="mb-4">Game Phases</SectionLabel>
-          <GamePhasesAccordion phases={phases} mainboardCards={mainboardCards} />
+          <GamePhasesAccordion phases={phases} cardMap={cardMap} />
         </div>
       )}
 
@@ -932,7 +946,7 @@ function StrategyTab({ deckId, mainboardCards = new Set() }) {
       {data.mulligan && (
         <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-5">
           <SectionLabel className="mb-2">Mulligan Strategy</SectionLabel>
-          <p className="text-[var(--color-text)] text-sm leading-relaxed">{renderWithCardTooltips(data.mulligan, mainboardCards)}</p>
+          <p className="text-[var(--color-text)] text-sm leading-relaxed">{renderWithCardTooltips(data.mulligan, cardMap)}</p>
         </div>
       )}
 
@@ -944,7 +958,7 @@ function StrategyTab({ deckId, mainboardCards = new Set() }) {
             {data.matchup_tips.map((tip, i) => (
               <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
                 <span className="text-[var(--color-primary)] font-semibold text-sm">vs {tip.against}</span>
-                <p className="text-[var(--color-text-muted)] text-xs mt-0.5">{renderWithCardTooltips(tip.advice, mainboardCards)}</p>
+                <p className="text-[var(--color-text-muted)] text-xs mt-0.5">{renderWithCardTooltips(tip.advice, cardMap)}</p>
               </div>
             ))}
           </div>
@@ -2028,7 +2042,7 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Strategy' && (
-            <StrategyTab deckId={deckId} mainboardCards={new Set((deck?.mainboard || []).map(c => c.name))} />
+            <StrategyTab deckId={deckId} cardMap={new Map((deck?.mainboard || []).map(c => [c.name, c]))} />
           )}
 
           {activeTab === 'Improvements' && (

@@ -102,6 +102,7 @@ This is a full-stack web app for Magic: The Gathering Commander deck analysis an
 | `ColorPips` | Mana color identity symbols (W/U/B/R/G/C) |
 | `TooltipWrapper` | Hover tooltips with edge-detection positioning |
 | `ProgressBar` | Any value/max progress bar |
+| `SelectField` | **All dropdowns** — fully custom styled listbox, never use a raw `<select>`. API matches native: `value`, `onChange(e)` (receives `{ target: { value } }`), `disabled`, `id`, `className` (on wrapper), `children` as `<option>` elements. |
 
 ### Database Schema
 

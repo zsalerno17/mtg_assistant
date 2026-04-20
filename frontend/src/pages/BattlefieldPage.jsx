@@ -197,17 +197,17 @@ function CreateCampaignModal({ onClose, onCreate, creating, currentUserId }) {
                 {[0, 1, 2].map((slotIdx) => (
                   <div key={slotIdx} className="flex items-center gap-2">
                     <span className="text-xs text-[var(--color-text-muted)] w-14 shrink-0">Pilot {slotIdx + 1}</span>
-                    <select
+                    <SelectField
                       value={invitedIds[slotIdx]}
                       onChange={(e) => setInvitedIds(prev => prev.map((id, i) => i === slotIdx ? e.target.value : id))}
                       disabled={creating}
-                      className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
+                      className="flex-1"
                     >
                       <option value="">— Select a pilot —</option>
                       {availableFor(slotIdx).map(u => (
                         <option key={u.user_id} value={u.user_id}>{u.username}</option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                 ))}
               </div>
@@ -650,11 +650,14 @@ export default function BattlefieldPage() {
                       </span>
                     </div>
                     <div className="text-sm text-[var(--color-text-muted)] space-y-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-                        {new Date(league.season_start).toLocaleDateString()} —{' '}
-                        {new Date(league.season_end).toLocaleDateString()}
-                      </div>
+                      {(league.season_start || league.season_end) && (
+                        <div className="flex items-center gap-1.5">
+                          <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                          {league.season_start && new Date(league.season_start).toLocaleDateString()}
+                          {league.season_start && league.season_end && ' — '}
+                          {league.season_end && new Date(league.season_end).toLocaleDateString()}
+                        </div>
+                      )}
                       {league.league_members && (
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
