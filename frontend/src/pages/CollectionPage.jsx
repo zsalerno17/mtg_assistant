@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PageTransition from '../components/PageTransition'
@@ -245,7 +245,7 @@ export default function CollectionPage() {
           {collection?.cards?.length > 0 && (
             <>
               <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] mt-8">
-                {TAB_CONFIG.map(({ label, icon: TabIcon }) => (
+                {TAB_CONFIG.map(({ label, icon: TabIcon }) => ( // eslint-disable-line no-unused-vars
                   <button
                     key={label}
                     onClick={() => setActiveTab(label)}

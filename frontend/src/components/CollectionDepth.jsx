@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { ChevronDown, ChevronRight, Info } from 'lucide-react'
 import CardTooltip from './CardTooltip'
 import { ColorPips, TooltipWrapper, ProgressBar } from './shared'

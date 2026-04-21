@@ -142,7 +142,7 @@ export default function LogGamePage() {
 
       // Build results array
       const gameResults = Object.entries(results)
-        .filter(([_, r]) => r.placement !== null && r.placement !== '')
+        .filter(([, r]) => r.placement !== null && r.placement !== '')
         .map(([memberId, r]) => {
           const placement = Number(r.placement)
           

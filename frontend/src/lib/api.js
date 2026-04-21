@@ -121,8 +121,8 @@ export const api = {
     edgeFetch('ai', '/strategy', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
 
   /** Get Gemini improvement suggestions (cross-referenced with user's collection). */
-  getImprovements: (moxfield_id) =>
-    edgeFetch('ai', '/improvements', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
+  getImprovements: (moxfield_id, allowedSets = []) =>
+    edgeFetch('ai', '/improvements', { method: 'POST', body: JSON.stringify({ moxfield_id, ...(allowedSets.length ? { allowed_sets: allowedSets } : {}) }) }),
 
   /** Get rule-based collection upgrade suggestions (cards you own that could improve the deck). */
   getCollectionUpgrades: (moxfield_id) =>

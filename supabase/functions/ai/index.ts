@@ -197,18 +197,20 @@ async function handleStrategy(
 // ---------------------------------------------------------------------------
 
 async function handleImprovements(
-  body: { moxfield_id?: string },
+  body: { moxfield_id?: string; allowed_sets?: string[] },
   userId: string,
   userClient: ReturnType<typeof getUserClient>,
   req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
   if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
+  const allowedSets = body.allowed_sets?.length ? body.allowed_sets : undefined;
 
   const sb = getServiceClient();
 
-  // Collection-aware cache key
-  const cacheKey = `${moxfieldId}:${userId}`;
+  // Collection-aware cache key — include set filter so filtered results are cached separately
+  const setsKey = allowedSets ? `:${allowedSets.slice().sort().join(",")}` : "";
+  const cacheKey = `${moxfieldId}:${userId}${setsKey}`;
   const cached = await getCached(sb, cacheKey, "improvements_v4");
   if (cached) {
     try {
@@ -235,10 +237,19 @@ async function handleImprovements(
   const collectionCards: Record<string, unknown>[] =
     colRow?.cards_json || [];
 
+  // Filter collection to allowed sets if specified
+  const filteredCards = allowedSets
+    ? collectionCards.filter((c) => {
+        const code = ((c.set_code as string) || "").toLowerCase();
+        return allowedSets.some((s) => s.toLowerCase() === code);
+      })
+    : collectionCards;
+
   const result = await getImprovementSuggestions(
     deck,
     analysis,
-    collectionCards,
+    filteredCards,
+    allowedSets,
   );
 
   // --- Post-process: validate swaps, merge legacy formats, add owned flags ---
@@ -247,7 +258,7 @@ async function handleImprovements(
     deck.mainboard.map((c) => c.name.toLowerCase()),
   );
   const ownedLower = new Set(
-    collectionCards.map((c) => ((c.name as string) || "").toLowerCase()),
+    filteredCards.map((c) => ((c.name as string) || "").toLowerCase()),
   );
 
   // Remove urgent_fixes already in deck, add owned flag

@@ -403,7 +403,7 @@ const ICON_GROUPS = [
   },
 ]
 
-function IconCard({ name, lucide, strokeWidth, component: Current, lucideComponent: LucideIcon }) {
+function IconCard({ name, lucide, strokeWidth, component: Current, lucideComponent: LucideIcon }) { // eslint-disable-line no-unused-vars
   return (
     <div className="flex flex-col gap-2 p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)]/50 transition-colors">
       {/* Side-by-side icon comparison */}

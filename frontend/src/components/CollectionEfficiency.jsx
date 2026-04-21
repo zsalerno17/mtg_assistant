@@ -1,8 +1,22 @@
-import { useState, useMemo, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { ChevronDown, TrendingUp, Package, DollarSign, AlertCircle, Info, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import CardTooltip from './CardTooltip'
 import { ColorPips, ProgressBar } from './shared'
+
+function SortHeader({ label, sortKey, currentSort, onSort }) {
+  const isActive = currentSort.key === sortKey
+  const Icon = isActive ? (currentSort.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
+  return (
+    <button
+      onClick={() => onSort(sortKey)}
+      className="flex items-center gap-1 hover:text-[var(--color-text)] transition-colors"
+    >
+      {label}
+      <Icon className="w-3 h-3" />
+    </button>
+  )
+}
 
 /**
  * CollectionEfficiency Component - Display utilization, duplicates, and high-value unused cards
@@ -39,7 +53,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
       )
     }
     return sortData(filtered, unusedSort)
-  }, [efficiency?.high_value_unused, unusedFilter, unusedSort])
+  }, [efficiency, unusedFilter, unusedSort])
 
   // Filter and sort duplicates
   const filteredDuplicates = useMemo(() => {
@@ -51,23 +65,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
       )
     }
     return sortData(filtered, duplicatesSort)
-  }, [efficiency?.duplicates, duplicatesFilter, duplicatesSort])
-
-  // Sort header component
-  const SortHeader = ({ label, sortKey, currentSort, onSort }) => {
-    const isActive = currentSort.key === sortKey
-    const Icon = isActive ? (currentSort.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
-    
-    return (
-      <button
-        onClick={() => onSort(sortKey)}
-        className="flex items-center gap-1 hover:text-[var(--color-text)] transition-colors"
-      >
-        {label}
-        <Icon className="w-3 h-3" />
-      </button>
-    )
-  }
+  }, [efficiency, duplicatesFilter, duplicatesSort])
 
   const handleUnusedSort = (key) => {
     setUnusedSort(prev => ({
@@ -270,7 +268,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
                             </td>
                           </tr>
                         ) : (
-                          filteredUnused.map((card, idx) => (
+                          filteredUnused.map((card) => (
                             <tr key={card.name} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface)]/50 transition-colors">
                               <td className="px-4 py-3 font-medium text-[var(--color-text)]">
                                 <CardTooltip cardName={card.name}>
@@ -398,7 +396,7 @@ export default function CollectionEfficiency({ efficiency, loading }) {
                             </td>
                           </tr>
                         ) : (
-                          filteredDuplicates.map((card, idx) => (
+                          filteredDuplicates.map((card) => (
                             <tr key={card.name} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface)]/50 transition-colors">
                               <td className="px-4 py-3 font-medium text-[var(--color-text)]">
                                 <CardTooltip cardName={card.name}>

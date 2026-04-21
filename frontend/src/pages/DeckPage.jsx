@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { useParams, useLocation, Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie, RadialBarChart, RadialBar, Legend } from 'recharts'
 import { api } from '../lib/api'
+import { getDeckBracket } from '../lib/deckUtils'
 import CardTooltip from '../components/CardTooltip'
 import PageTransition from '../components/PageTransition'
 import TagTooltip from '../components/TagTooltip'
@@ -59,7 +60,7 @@ const STRATEGY_DEFINITIONS = {
   tribal: 'Built around a specific creature type, using lords and tribal synergies. Strength varies by tribe and available support.',
 }
 
-const POWER_LEVEL_TOOLTIP = 'Power Level 1-10 scale measuring how quickly and consistently a deck can win. 1-3: precon/casual, 4-6: upgraded casual, 6-7: focused/tuned, 7-8: optimized, 9-10: cEDH (competitive).'
+const POWER_LEVEL_TOOLTIP = 'Power Level 1–10 scale. Bracket 1 (1–3): precon/jank. Bracket 2 (4–5): casual upgraded. Bracket 3 (6–9): focused to optimized. Bracket 4 (10): cEDH competitive.'
 
 // Simple markdown → HTML-like renderer for Gemini output
 function MarkdownBlock({ text }) {
@@ -304,7 +305,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
   const cardTypes = analysis.card_types || {}
   // Derive color identity from commanders if available
   // Deduplicate colors for partner decks (both commanders may share colors)
-  const commanderColors = [
+  const _commanderColors = [
     ...new Set([
       ...(deck.commander?.color_identity || []),
       ...(deck.partner?.color_identity || []),
@@ -969,14 +970,50 @@ function StrategyTab({ deckId, cardMap = new Map() }) {
 }
 
 function ImprovementsTab({ deckId }) {
-  const { data: raw, loading, error } = useDataFetch(() => api.getImprovements(deckId), [deckId])
+  const [selectedSets, setSelectedSets] = useState([])
+  const [appliedSets, setAppliedSets] = useState([])
+  const [availableSets, setAvailableSets] = useState([])
+
+  // Fetch collection + Scryfall set names to populate the set picker
+  useEffect(() => {
+    Promise.all([
+      api.getCollection(),
+      fetch('https://api.scryfall.com/sets').then(r => r.json()),
+    ]).then(([collectionData, scryfallSets]) => {
+      const setNameMap = new Map((scryfallSets.data || []).map(s => [s.code, s.name]))
+      const cards = collectionData.cards || []
+      const uniqueCodes = [...new Set(cards.filter(c => c.set_code).map(c => c.set_code))]
+      const sets = uniqueCodes
+        .map(code => ({ code, name: setNameMap.get(code) || code }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+      setAvailableSets(sets)
+    }).catch(() => {}) // non-critical — set picker just won't appear
+  }, [])
+
+  const appliedKey = appliedSets.join(',')
+  const [raw, setRaw] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.getImprovements(deckId, appliedSets)
+      .then(setRaw)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckId, appliedKey])
+
   const data = raw?.improvements
   const aiEnhanced = raw?.ai_enhanced ?? false
   const { expanded, toggle, visible } = useExpandable(5)
 
-  if (loading) return <LoadingSpinner />
-  if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
-  if (!data) return null
+  const toggleSet = (code) =>
+    setSelectedSets(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code])
+  const applyFilter = () => setAppliedSets([...selectedSets])
+  const clearFilter = () => { setSelectedSets([]); setAppliedSets([]) }
+  const filterChanged = [...selectedSets].sort().join(',') !== [...appliedSets].sort().join(',')
 
   const renderShowMore = (key, total) => {
     if (total <= 5) return null
@@ -992,6 +1029,65 @@ function ImprovementsTab({ deckId }) {
 
   return (
     <div className="space-y-6">
+      {/* Set filter */}
+      {availableSets.length > 0 && (
+        <div className="bg-[var(--color-surface)]/60 border border-[var(--color-border)] rounded-xl p-4">
+          <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-1">Filter by Set</p>
+          <p className="text-[var(--color-text-muted)] text-xs mb-3">Only suggest improvements using cards you own from specific sets.</p>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {availableSets.map(({ code, name }) => {
+              const isSelected = selectedSets.includes(code)
+              return (
+                <button
+                  key={code}
+                  onClick={() => toggleSet(code)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-all duration-150 cursor-pointer ${
+                    isSelected
+                      ? 'bg-[var(--color-primary)]/20 border-[var(--color-primary)] text-[var(--color-primary)]'
+                      : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]/50'
+                  }`}
+                >
+                  {name}
+                </button>
+              )
+            })}
+          </div>
+          {(selectedSets.length > 0 || appliedSets.length > 0) && (
+            <div className="flex items-center gap-2">
+              {filterChanged && (
+                <button
+                  onClick={applyFilter}
+                  className="text-xs px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  Apply Filter
+                </button>
+              )}
+              <button
+                onClick={clearFilter}
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active filter banner */}
+      {appliedSets.length > 0 && (
+        <div className="flex items-center flex-wrap gap-1.5 text-xs text-[var(--color-text-muted)]">
+          <span>Showing upgrades from:</span>
+          {appliedSets.map(code => (
+            <span key={code} className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] font-medium">
+              {availableSets.find(s => s.code === code)?.name || code}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {loading && <LoadingSpinner />}
+      {error && <p className="text-[var(--color-danger)] text-sm">{error}</p>}
+      {!loading && !error && data && (<>
       <AiSourceBadge aiEnhanced={aiEnhanced} />
 
       {/* Weakness Fixes — cards to ADD, split by owned vs need to acquire */}
@@ -1151,6 +1247,7 @@ function ImprovementsTab({ deckId }) {
           description="No urgent improvements identified."
         />
       )}
+      </>)}
     </div>
   )
 }
@@ -1261,7 +1358,7 @@ function CollectionUpgradesTab({ deckId }) {
   )
 }
 
-function ScenariosTab({ deckId, deck, analysis }) {
+function ScenariosTab({ deckId, deck, analysis: _analysis }) {
   // Selected cards (arrays of card names)
   const [cardsToAdd, setCardsToAdd] = useState([])
   const [cardsToRemove, setCardsToRemove] = useState([])
@@ -1836,7 +1933,7 @@ export default function DeckPage() {
       .catch((err) => setLoadError(err.message))
   }, [deckId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleReanalyze = useCallback(() => {
+  const handleReanalyze = useCallback(() => { // eslint-disable-line react-hooks/preserve-manual-memoization
     setReanalyzing(true)
     api.analyzeDeck(deckId, { force: true, source })
       .then((result) => {
@@ -1847,7 +1944,7 @@ export default function DeckPage() {
       .finally(() => setReanalyzing(false))
   }, [deckId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const deckName = deck?.name || deckId
+  const _deckName = deck?.name || deckId
 
   return (
     <PageTransition>
@@ -1916,21 +2013,24 @@ export default function DeckPage() {
                       )}
                     </span>
                   )}
-                  {analysis.power_level != null && (
-                    <span 
-                      className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold cursor-help relative group"
-                      title={POWER_LEVEL_TOOLTIP}
-                    >
-                      Power {analysis.power_level}/10
-                      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
-                        <span className="block text-[var(--color-primary)] text-xs font-semibold mb-1">Power Level Scale</span>
-                        <span className="block text-[var(--color-text)] text-xs leading-relaxed">
-                          {POWER_LEVEL_TOOLTIP}
+                  {analysis.power_level != null && (() => {
+                    const b = getDeckBracket(analysis.power_level);
+                    return (
+                      <span
+                        className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold cursor-help relative group"
+                        title={POWER_LEVEL_TOOLTIP}
+                      >
+                        Power {analysis.power_level}/10 · B{b?.bracket} {b?.label}
+                        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 shadow-xl shadow-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                          <span className="block text-[var(--color-primary)] text-xs font-semibold mb-1">Power Level Scale</span>
+                          <span className="block text-[var(--color-text)] text-xs leading-relaxed">
+                            {POWER_LEVEL_TOOLTIP}
+                          </span>
+                          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
                         </span>
-                        <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-[var(--color-surface)]" />
                       </span>
-                    </span>
-                  )}
+                    );
+                  })()}
                   <span className="text-[var(--color-text-muted)] text-sm capitalize">
                     {deck.format}
                   </span>
@@ -1980,11 +2080,14 @@ export default function DeckPage() {
                       {analysis.strategy}
                     </span>
                   )}
-                  {analysis.power_level != null && (
-                    <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold">
-                      Power {analysis.power_level}/10
-                    </span>
-                  )}
+                  {analysis.power_level != null && (() => {
+                    const b = getDeckBracket(analysis.power_level);
+                    return (
+                      <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs px-2 py-0.5 rounded-full border border-[var(--color-primary)]/20 font-semibold">
+                        Power {analysis.power_level}/10 · B{b?.bracket} {b?.label}
+                      </span>
+                    );
+                  })()}
                   <span className="text-[var(--color-text-muted)] text-sm capitalize">
                     {deck.format}
                   </span>
@@ -1996,7 +2099,7 @@ export default function DeckPage() {
         
         {/* Tab bar */}
         <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)]">
-          {TAB_CONFIG.map(({ label, icon: TabIcon, mobileLabel }) => (
+          {TAB_CONFIG.map(({ label, icon: TabIcon, mobileLabel }) => ( // eslint-disable-line no-unused-vars
             <button
               key={label}
               onClick={() => setActiveTab(label)}
@@ -2019,20 +2122,18 @@ export default function DeckPage() {
 
         {/* Tab content */}
         <div key={activeTab} className="max-w-5xl py-8 tab-content">
-          {isCached && (
-            <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
-              <span className="text-[var(--color-text-muted)] text-sm">
-                Showing cached results — deck hasn't changed on Moxfield.
-              </span>
-              <button
-                onClick={handleReanalyze}
-                disabled={reanalyzing}
-                className="ml-auto btn btn-ghost text-xs"
-              >
-                {reanalyzing ? 'Re-analyzing…' : 'Force Re-analyze'}
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <span className="text-[var(--color-text-muted)] text-sm">
+              {isCached ? "Showing cached results — deck hasn't changed on Moxfield." : 'Analysis up to date.'}
+            </span>
+            <button
+              onClick={handleReanalyze}
+              disabled={reanalyzing}
+              className="ml-auto btn btn-ghost text-xs"
+            >
+              {reanalyzing ? 'Re-analyzing…' : 'Force Re-analyze'}
+            </button>
+          </div>
           {loadError && (
             <p className="text-[var(--color-danger)] text-sm">Failed to load deck: {loadError}</p>
           )}

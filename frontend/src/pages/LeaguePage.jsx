@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { CalendarDays, Image as ImageIcon, Flame, Layers, Target, TrendingUp } from 'lucide-react'
 import { api } from '../lib/api'
@@ -432,21 +432,6 @@ export default function LeaguePage() {
     return { wins1, wins2 }
   }
 
-  function getGameNarrative(game) {
-    const sorted = game.league_game_results?.sort((a, b) => a.placement - b.placement) || []
-    const winner = sorted.find(r => r.placement === 1)?.league_members?.superstar_name
-    const playerCount = sorted.length
-    if (game.spicy_play_description) {
-      return `Skirmish ${game.game_number}: ${winner || 'Unknown'} Claims Victory`
-    }
-    if (playerCount >= 4 && winner) {
-      return `Skirmish ${game.game_number}: ${winner} Dominates a ${playerCount}-Way Clash`
-    }
-    if (winner) {
-      return `Skirmish ${game.game_number}: ${winner} Takes the Crown`
-    }
-    return `Skirmish ${game.game_number}`
-  }
 
   function getSeasonTimeRemaining() {
     if (!league?.season_end) return null

@@ -136,7 +136,7 @@ export default function EditGamePage() {
         throw new Error('Each pilot must have a unique placement')
 
       const gameResults = Object.entries(results)
-        .filter(([_, r]) => r.placement !== null && r.placement !== '')
+        .filter(([, r]) => r.placement !== null && r.placement !== '')
         .map(([memberId, r]) => {
           const placement = Number(r.placement)
           return {

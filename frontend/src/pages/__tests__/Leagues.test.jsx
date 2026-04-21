@@ -11,14 +11,8 @@ vi.mock('../../components/PageTransition', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }) => {
-      const { initial, animate, transition, exit, ...rest } = props
-      return <div {...rest}>{children}</div>
-    },
-    tr: ({ children, ...props }) => {
-      const { initial, animate, transition, exit, ...rest } = props
-      return <tr {...rest}>{children}</tr>
-    },
+    div: ({ children, initial: _i, animate: _a, transition: _t, exit: _e, ...rest }) => <div {...rest}>{children}</div>,
+    tr: ({ children, initial: _i, animate: _a, transition: _t, exit: _e, ...rest }) => <tr {...rest}>{children}</tr>,
   },
 }))
 

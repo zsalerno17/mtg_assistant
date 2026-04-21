@@ -126,6 +126,8 @@ interface AnalysisDict {
   card_types?: Record<string, number>;
   strategy?: string;
   power_level?: number;
+  bracket?: number;
+  bracket_label?: string;
   ramp_count?: number;
   draw_count?: number;
   removal_count?: number;
@@ -148,6 +150,8 @@ function deckContext(deck: Deck, analysis: AnalysisDict): string {
   const themes = (analysis.theme_names ?? []).join(", ") || "None detected";
   const strategy = analysis.strategy ?? "midrange";
   const powerLevel = analysis.power_level;
+  const bracket = analysis.bracket;
+  const bracketLabel = analysis.bracket_label;
 
   const rawWeaknesses = analysis.weaknesses ?? [];
   const weaknessLabels =
@@ -169,7 +173,8 @@ function deckContext(deck: Deck, analysis: AnalysisDict): string {
     (c) => `${c.name} [${c.type_line}] (CMC ${Math.round(c.cmc)})`,
   );
 
-  const powerStr = powerLevel != null ? `${powerLevel}/10` : "Unknown";
+  const bracketStr = bracket != null && bracketLabel ? ` (Bracket ${bracket} – ${bracketLabel})` : "";
+  const powerStr = powerLevel != null ? `${powerLevel}/10${bracketStr}` : "Unknown";
 
   // Include commander oracle text so Gemini reasons from actual card text, not training data
   const commanderOracleLines: string[] = [];
@@ -292,6 +297,7 @@ export async function getImprovementSuggestions(
   deck: Deck,
   analysis: AnalysisDict,
   collectionCards: { name: string }[],
+  allowedSets?: string[],
 ): Promise<{ content: Record<string, unknown>; ai_enhanced: boolean }> {
   const context = deckContext(deck, analysis);
   const owned = collectionCards.length
@@ -301,6 +307,10 @@ export async function getImprovementSuggestions(
         .join(", ")
     : "Not provided";
 
+  const setConstraint = allowedSets?.length
+    ? `\nSET RESTRICTION: The player wants suggestions ONLY from these sets: ${allowedSets.join(", ")}. Do NOT recommend cards from any other set, even if they would be stronger upgrades. Only suggest cards the player already owns from those sets (listed above).\n`
+    : "";
+
   const prompt = `
 Suggest improvements for this Commander deck. Prioritise cards the player already owns.
 Return ONLY a valid JSON object — no markdown, no explanation outside the JSON.
@@ -309,7 +319,7 @@ ${context}
 
 Cards the player owns (from their collection):
 ${owned}
-
+${setConstraint}
 IMPORTANT RULES:
 - urgent_fixes: cards to ADD that fix a critical gap (e.g. deck has 4 ramp but needs 10). No paired cut needed. Do NOT list cards already in the decklist above.
 - swaps: paired cut→add recommendations. Each swap has one card to CUT (must be in the decklist above) and one card to ADD (must NOT be in the decklist). Include why the add is better for this deck than the cut. Include a category and price_tier on the add side.

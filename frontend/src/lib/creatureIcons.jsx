@@ -81,6 +81,7 @@ function MerfolkIcon({ className }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const CREATURE_ICONS = {
   dragon:           makeIcon('spiked-dragon-head'),
   goblin:           makeIcon('goblin-head'),

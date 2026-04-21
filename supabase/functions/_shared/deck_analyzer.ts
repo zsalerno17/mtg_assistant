@@ -117,6 +117,8 @@ export interface DeckAnalysis {
   total_cards: number;
   strategy: string;
   power_level: number;
+  bracket: number;
+  bracket_label: string;
   mana_curve: Record<number, number>;
   average_cmc: number;
   card_types: Record<string, number>;
@@ -224,6 +226,7 @@ export function analyzeDeck(deck: Deck): DeckAnalysis {
     total_cards: getCardCount(deck),
     strategy,
     power_level: powerLevel,
+    ...getDeckBracket(powerLevel),
     mana_curve: buildManaCurve(allCards),
     average_cmc: calculateAverageCmc(allCards),
     card_types: categorizeCardTypes(allCards),
@@ -670,11 +673,19 @@ const _FAST_MANA_NAMES = new Set([
   "pyretic ritual", "seething song",
 ]);
 
+const _FAST_MANA_LAND_NAMES = new Set([
+  "ancient tomb", "city of traitors", "gemstone caverns", "cabal coffers",
+]);
+
 export function countFastMana(cards: Card[]): number {
   let count = 0;
   for (const card of cards) {
-    if (isLand(card)) continue;
-    if (_FAST_MANA_NAMES.has(card.name.toLowerCase())) {
+    const nameLower = card.name.toLowerCase();
+    if (isLand(card)) {
+      if (_FAST_MANA_LAND_NAMES.has(nameLower)) count += card.quantity;
+      continue;
+    }
+    if (_FAST_MANA_NAMES.has(nameLower)) {
       count += card.quantity;
     } else if (card.cmc <= 1) {
       const oracle = card.oracle_text.toLowerCase();
@@ -1072,23 +1083,71 @@ export function classifyStrategy(deck: Deck): string {
 
 // ─── Power Level Detection ───────────────────────────────────────────────────
 
+const _PREMIUM_TUTOR_NAMES = new Set([
+  "demonic tutor", "vampiric tutor", "imperial seal", "grim tutor",
+  "mystical tutor", "enlightened tutor", "worldly tutor", "diabolic intent",
+  "dark petition", "tainted pact", "demonic consultation",
+]);
+
+const _HIGH_POWER_COMMANDERS = new Set([
+  "thassa's oracle", "kinnan, bonder prodigy", "najeela, the blade-blossom",
+  "tymna the weaver", "thrasios, triton hero", "urza, lord high artificer",
+  "prossh, skyraider of kher", "kenrith, the returned king",
+  "selvala, heart of the wilds", "kraum, ludevic's opus",
+]);
+
+const _STRONG_COMMANDERS = new Set([
+  "yisan, the wanderer bard", "edgar markov", "atraxa, praetors' voice",
+  "breya, etherium shaper", "zur the enchanter", "the gitrog monster",
+]);
+
+export function getDeckBracket(powerLevel: number): { bracket: number; bracket_label: string } {
+  if (powerLevel <= 3) return { bracket: 1, bracket_label: "Precon" };
+  if (powerLevel <= 5) return { bracket: 2, bracket_label: "Casual" };
+  if (powerLevel <= 7) return { bracket: 3, bracket_label: "Focused" };
+  if (powerLevel <= 9) return { bracket: 3, bracket_label: "Optimized" };
+  return { bracket: 4, bracket_label: "cEDH" };
+}
+
 export function calculatePowerLevel(deck: Deck): number {
   const allCards = getAllCards(deck);
   const avgCmc = calculateAverageCmc(allCards);
 
   const fastMana = countFastMana(allCards);
-  const tutors = countTutors(allCards);
   const counters = countCounterspells(allCards);
   const draw = countDraw(allCards);
   const interaction = countInteraction(allCards);
 
-  let score = 4.0;
+  // Split tutors into premium and generic
+  let premiumTutors = 0;
+  let genericTutors = 0;
+  for (const card of allCards) {
+    if (isLand(card)) continue;
+    const nameLower = card.name.toLowerCase();
+    const oracle = card.oracle_text.toLowerCase();
+    if (_PREMIUM_TUTOR_NAMES.has(nameLower)) {
+      premiumTutors += card.quantity;
+    } else if (oracle.includes("search your library")) {
+      if (
+        oracle.includes("land") &&
+        !["card", "creature", "instant", "sorcery", "artifact", "enchantment"].some(
+          (kw) => oracle.includes(kw),
+        )
+      ) {
+        continue;
+      }
+      genericTutors += card.quantity;
+    }
+  }
+
+  let score = 3.0;
 
   // Fast mana: +0.5 each, max +2
   score += Math.min(fastMana * 0.5, 2.0);
 
-  // Tutors: +0.4 each, max +2
-  score += Math.min(tutors * 0.4, 2.0);
+  // Tutors: premium +0.5 each (cap +2.5), generic +0.2 each (cap +1.0)
+  score += Math.min(premiumTutors * 0.5, 2.5);
+  score += Math.min(genericTutors * 0.2, 1.0);
 
   // Counterspells: +0.3 each, max +1.5
   score += Math.min(counters * 0.3, 1.5);
@@ -1103,7 +1162,21 @@ export function calculatePowerLevel(deck: Deck): number {
   // Interaction density
   if (interaction >= 15) score += 0.5;
 
-  return Math.max(4, Math.min(10, Math.round(score)));
+  // Low-interaction penalty (goldfish/pure combo with no answers)
+  if (interaction < 8) score -= 0.5;
+
+  // Commander power signals
+  const commanderBonus = (name: string | undefined): number => {
+    if (!name) return 0;
+    const n = name.toLowerCase();
+    if (_HIGH_POWER_COMMANDERS.has(n)) return 1.5;
+    if (_STRONG_COMMANDERS.has(n)) return 0.75;
+    return 0;
+  };
+  score += commanderBonus(deck.commander?.name);
+  score += commanderBonus(deck.partner?.name);
+
+  return Math.max(1, Math.min(10, Math.round(score)));
 }
 
 // ─── Dynamic Thresholds ─────────────────────────────────────────────────────

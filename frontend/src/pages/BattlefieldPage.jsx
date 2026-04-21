@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { CalendarDays, Users, Trash2, Swords } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
@@ -351,7 +351,6 @@ function SkirmishCard({ game, deckMap, onDelete }) {
 
 export default function BattlefieldPage() {
   const { session } = useAuth()
-  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('campaigns')
 
   // ── Campaigns state ──────────────────────────────────────────────────────

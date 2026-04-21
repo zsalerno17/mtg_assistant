@@ -76,6 +76,7 @@ serve(async (req) => {
         keywords: c.keywords || [],
         card_faces: c.card_faces || null,
         prices: c.prices || null,
+        set_code: (c as any).set_code || "",
       }));
 
       const unpricedCount = enriched.filter((c) => !(c as any).prices).length;

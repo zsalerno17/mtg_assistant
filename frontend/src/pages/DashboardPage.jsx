@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { api } from '../lib/api'
+import { getDeckBracket } from '../lib/deckUtils'
 import { useAuth } from '../context/AuthContext'
 import CardTooltip from '../components/CardTooltip'
 import { Eye, LoaderCircle, ClipboardCheck, Swords, Trash2 } from 'lucide-react'
@@ -440,11 +441,15 @@ function DeckTableRow({ item, onAnalyze, analyzingId, onArchive, index = 0 }) {
       </td>
       {/* Power Level */}
       <td>
-        {item.power_level != null ? (
-          <span className="text-[var(--color-primary)] font-bold text-sm">
-            {item.power_level.toFixed(1)}
-          </span>
-        ) : (
+        {item.power_level != null ? (() => {
+          const b = getDeckBracket(item.power_level);
+          return (
+            <div className="flex flex-col leading-tight">
+              <span className="text-[var(--color-primary)] font-bold text-sm">{item.power_level}/10</span>
+              <span className="text-[var(--color-text-muted)] text-xs">B{b?.bracket} {b?.label}</span>
+            </div>
+          );
+        })() : (
           <span className="text-[var(--color-text-muted)] font-medium text-sm">—</span>
         )}
       </td>
@@ -542,12 +547,12 @@ export default function DashboardPage() {
   const [decksError, setDecksError] = useState(null)
   const [collectionSummary, setCollectionSummary] = useState(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
-  const [summaryError, setSummaryError] = useState(null)
+  const [_summaryError, setSummaryError] = useState(null)
   const [analyzingId, setAnalyzingId] = useState(null)
   const [analyzeError, setAnalyzeError] = useState(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(null) // { id, deck_name } | null
-  const [archivingId, setArchivingId] = useState(null)
+  const [_archivingId, setArchivingId] = useState(null)
   const [archiveError, setArchiveError] = useState(null)
 
   // loadDecks is used by the main useEffect AND by the retry button / import
@@ -581,7 +586,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!session?.access_token) return
     const gen = ++loadGenRef.current
-    setDecksLoading(true) // eslint-disable-line react-hooks/set-state-in-effect -- loading state must be set synchronously before the async fetch begins
+    setDecksLoading(true)
     setSummaryLoading(true)
     loadDecks(gen)
 
@@ -601,7 +606,7 @@ export default function DashboardPage() {
         if (gen !== loadGenRef.current) return
         setSummaryLoading(false)
       })
-  }, [session?.user?.id])
+  }, [session?.user?.id, session?.access_token])
 
   const handleImported = () => {
     setShowImportModal(false)
