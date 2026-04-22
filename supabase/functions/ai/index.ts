@@ -7,6 +7,9 @@ import {
   analyzeDeck,
   findCollectionImprovements,
   scenariosFallback,
+  identifyWeaknesses,
+  _findCut,
+  _isWeakCategoryCard,
 } from "../_shared/deck_analyzer.ts";
 import {
   getStrategyAdvice,
@@ -211,7 +214,7 @@ async function handleImprovements(
   // Collection-aware cache key — include set filter so filtered results are cached separately
   const setsKey = allowedSets ? `:${allowedSets.slice().sort().join(",")}` : "";
   const cacheKey = `${moxfieldId}:${userId}${setsKey}`;
-  const cached = await getCached(sb, cacheKey, "improvements_v4");
+  const cached = await getCached(sb, cacheKey, "improvements_v5");
   if (cached) {
     try {
       return jsonResponse({
@@ -226,6 +229,14 @@ async function handleImprovements(
 
   const deck = await loadDeck(moxfieldId);
   const analysis = analyzeDeck(deck);
+
+  // Compute weakness list once — used for weakness-aware cut selection and swap validation
+  const weaknesses = identifyWeaknesses(
+    deck,
+    analysis.strategy as string | undefined,
+    analysis.power_level as number | undefined,
+  );
+  const weakLabels = weaknesses.map((w) => w.label);
 
   // Load user collection (user-scoped — user client)
   const { data: colRow } = await userClient
@@ -261,23 +272,25 @@ async function handleImprovements(
     filteredCards.map((c) => ((c.name as string) || "").toLowerCase()),
   );
 
+  // Build a lookup of collection cards by name for type_line / oracle_text info
+  // (needed to call _findCut with a properly typed Card)
+  const collectionByName = new Map<string, Record<string, unknown>>();
+  for (const c of filteredCards) {
+    collectionByName.set(((c.name as string) || "").toLowerCase(), c);
+  }
+
   // Remove urgent_fixes already in deck, add owned flag
-  if (content.urgent_fixes && Array.isArray(content.urgent_fixes)) {
-    content.urgent_fixes = (
-      content.urgent_fixes as Record<string, unknown>[]
-    )
-      .filter(
-        (f) =>
-          !mainboardLower.has(
-            ((f.card as string) || "").toLowerCase(),
-          ),
-      )
-      .map((f) => ({
+  const urgentFixesRaw: Record<string, unknown>[] = Array.isArray(
+    content.urgent_fixes,
+  )
+    ? (content.urgent_fixes as Record<string, unknown>[]).filter(
+        (f) => !mainboardLower.has(((f.card as string) || "").toLowerCase()),
+      ).map((f) => ({
         ...f,
         owned: ownedLower.has(((f.card as string) || "").toLowerCase()),
-      }))
-      .slice(0, 5);
-  }
+      })).slice(0, 5)
+    : [];
+  content.urgent_fixes = urgentFixesRaw;
 
   // Process swaps: validate cut in deck, add not in deck, set owned flag
   let rawSwaps = [
@@ -299,8 +312,7 @@ async function handleImprovements(
         rawSwaps.push({
           cut: oldCuts[i].card || "",
           add: oldAdds[i].card || "",
-          reason:
-            oldAdds[i].reason || oldCuts[i].reason || "",
+          reason: oldAdds[i].reason || oldCuts[i].reason || "",
           category: oldCuts[i].type || "upgrade",
           price_tier: oldAdds[i].price_tier || "mid",
         });
@@ -313,18 +325,7 @@ async function handleImprovements(
 
   delete content.cuts;
 
-  const validatedSwaps: Record<string, unknown>[] = [];
-  for (const swap of rawSwaps) {
-    const cutName = ((swap.cut as string) || "").toLowerCase();
-    const addName = ((swap.add as string) || "").toLowerCase();
-    if (mainboardLower.has(cutName) && !mainboardLower.has(addName)) {
-      swap.owned = ownedLower.has(addName);
-      validatedSwaps.push(swap);
-    }
-  }
-  content.swaps = validatedSwaps.slice(0, 8);
-
-  // Merge staples_to_buy into additions
+  // Merge staples_to_buy into additions before further processing
   const mergedAdditions = [
     ...((content.additions as Record<string, unknown>[]) || []),
     ...unpairedAdds,
@@ -343,11 +344,10 @@ async function handleImprovements(
   }
   delete content.staples_to_buy;
 
-  // Filter out cards already in deck, add truthful owned flag
-  content.additions = mergedAdditions
+  // Stamp owned flag on all additions
+  const stampedAdditions: Record<string, unknown>[] = mergedAdditions
     .filter(
-      (a) =>
-        !mainboardLower.has(((a.card as string) || "").toLowerCase()),
+      (a) => !mainboardLower.has(((a.card as string) || "").toLowerCase()),
     )
     .map((a) => ({
       ...a,
@@ -355,12 +355,106 @@ async function handleImprovements(
     }))
     .slice(0, 10);
 
+  // --- Promote owned urgent_fixes and owned additions into concrete swaps ---
+  // If a user already owns a card that fixes a weakness or is a recommended addition,
+  // pair it with a weakness-safe cut so it appears in Recommended Swaps immediately.
+  const promotedSwaps: Record<string, unknown>[] = [];
+  const promotedCardNames = new Set<string>();
+
+  function tryPromoteToSwap(
+    item: Record<string, unknown>,
+    priority: "critical" | "upgrade",
+  ): void {
+    const cardName = (item.card as string) || "";
+    const cardNameLower = cardName.toLowerCase();
+    if (promotedCardNames.has(cardNameLower)) return;
+
+    const colCard = collectionByName.get(cardNameLower);
+    const incomingCard = createCard({
+      name: cardName,
+      quantity: 1,
+      mana_cost: "",
+      cmc: Number(colCard?.cmc) || 0,
+      type_line: (colCard?.type_line as string) || "",
+      oracle_text: (colCard?.oracle_text as string) || "",
+      colors: [],
+      color_identity: [],
+      keywords: [],
+      rarity: "",
+      set_code: "",
+      image_uri: "",
+      scryfall_id: "",
+    });
+    const [cutCard] = _findCut(deck, incomingCard, weaknesses);
+    if (cutCard) {
+      promotedSwaps.push({
+        cut: cutCard.name,
+        add: cardName,
+        reason: (item.reason as string) ||
+          (priority === "critical"
+            ? `Addresses a critical deck weakness`
+            : `Upgrade from your collection`),
+        category: (item.category as string) || "upgrade",
+        price_tier: (item.price_tier as string) || "budget",
+        owned: true,
+        priority,
+      });
+      promotedCardNames.add(cardNameLower);
+    }
+  }
+
+  // Owned urgent_fixes first (critical priority)
+  for (const fix of urgentFixesRaw) {
+    if (fix.owned) tryPromoteToSwap(fix, "critical");
+  }
+  // Owned additions second (upgrade priority)
+  for (const add of stampedAdditions) {
+    if (add.owned) tryPromoteToSwap(add, "upgrade");
+  }
+
+  // Remove promoted items from urgent_fixes and additions (they now live in swaps)
+  content.urgent_fixes = urgentFixesRaw.filter(
+    (f) => !promotedCardNames.has(((f.card as string) || "").toLowerCase()),
+  );
+  content.additions = stampedAdditions.filter(
+    (a) => !promotedCardNames.has(((a.card as string) || "").toLowerCase()),
+  );
+
+  // --- Validate Gemini swaps: cut must be in deck, add must not be, cut must not worsen a weakness ---
+  const validatedSwaps: Record<string, unknown>[] = [];
+  for (const swap of rawSwaps) {
+    const cutName = ((swap.cut as string) || "").toLowerCase();
+    const addName = ((swap.add as string) || "").toLowerCase();
+    if (!mainboardLower.has(cutName) || mainboardLower.has(addName)) continue;
+    // Skip if the cut card belongs to a weak category (would make the deck worse)
+    const cutCard = deck.mainboard.find((c) => c.name.toLowerCase() === cutName);
+    if (cutCard && _isWeakCategoryCard(cutCard, weakLabels)) continue;
+    // Skip if the add card was already promoted into a swap
+    if (promotedCardNames.has(addName)) continue;
+    swap.owned = ownedLower.has(addName);
+    validatedSwaps.push(swap);
+  }
+
+  // Promoted swaps first (owned, concrete, highest value), then Gemini swaps
+  const allSwaps = [...promotedSwaps, ...validatedSwaps];
+  // Deduplicate by add card name
+  const seenAdds = new Set<string>();
+  const dedupedSwaps: Record<string, unknown>[] = [];
+  for (const s of allSwaps) {
+    const addName = ((s.add as string) || "").toLowerCase();
+    if (!seenAdds.has(addName)) {
+      seenAdds.add(addName);
+      dedupedSwaps.push(s);
+    }
+  }
+  content.swaps = dedupedSwaps.slice(0, 8);
+
   // Cache AI responses
   if (result.ai_enhanced && content) {
     await setCached(
       sb,
       cacheKey,
-      "improvements_v4",
+      "improvements_v5",
       JSON.stringify(content),
     );
   }

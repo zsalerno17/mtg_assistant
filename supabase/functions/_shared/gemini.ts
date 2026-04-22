@@ -8,6 +8,7 @@ import {
   type GenerativeModel,
 } from "https://esm.sh/@google/generative-ai@0.21.0";
 import type { Card, Deck } from "./models.ts";
+import { getThresholds } from "./deck_analyzer.ts";
 
 // ---------------------------------------------------------------------------
 // Client / model setup
@@ -311,6 +312,12 @@ export async function getImprovementSuggestions(
     ? `\nSET RESTRICTION: The player wants suggestions ONLY from these sets: ${allowedSets.join(", ")}. Do NOT recommend cards from any other set, even if they would be stronger upgrades. Only suggest cards the player already owns from those sets (listed above).\n`
     : "";
 
+  // Build a plain-English list of weak categories so Gemini knows what NOT to cut
+  const rawWeaknesses = (analysis.weaknesses ?? []) as Array<{ label: string } | string>;
+  const weakCategoryLine = rawWeaknesses.length
+    ? `The deck has these flagged weaknesses (DO NOT suggest cutting cards that fill these roles): ${rawWeaknesses.map((w) => (typeof w === "object" ? w.label : w)).join("; ")}`
+    : "";
+
   const prompt = `
 Suggest improvements for this Commander deck. Prioritise cards the player already owns.
 Return ONLY a valid JSON object — no markdown, no explanation outside the JSON.
@@ -326,6 +333,7 @@ IMPORTANT RULES:
 - additions: unpaired cards to add that generally improve the deck (no specific cut). Do NOT list cards already in the decklist above. Include a price_tier for each.
 - Limit each category to the top 8 most impactful suggestions, ordered by priority.
 - CRITICAL: Base ALL synergy reasoning strictly on the commander's actual oracle text provided above. Do NOT hallucinate card abilities or invent interactions that are not supported by the oracle text. If a card produces Treasure tokens but the commander does not interact with Treasure tokens, do not claim there is a Treasure synergy.
+${weakCategoryLine ? `- CRITICAL: ${weakCategoryLine}. Cutting a card that fills a flagged weakness makes the deck worse, not better. Only suggest cuts from categories where the deck is already meeting or exceeding the recommended count.` : ""}
 
 Return this exact JSON structure:
 {
@@ -465,14 +473,21 @@ function fallbackImprovements(
   const draw = analysis.draw_count ?? 0;
   const removal = analysis.removal_count ?? 0;
 
+  // Use the same strategy-aware thresholds as identifyWeaknesses — not hardcoded numbers
+  const strategy = (analysis.strategy as string) || "midrange";
+  const thresholds = getThresholds(strategy);
+  const recRamp = thresholds["ramp"][0];
+  const recDraw = thresholds["draw"][0];
+  const recRemoval = thresholds["removal"][0];
+
   const urgentFixes: Record<string, string>[] = [];
   const swaps: Record<string, string>[] = [];
   const additions: Record<string, string>[] = [];
 
-  if (ramp < 10) {
+  if (ramp < recRamp) {
     urgentFixes.push({
       card: "Sol Ring",
-      reason: `Deck needs more ramp sources (currently ${ramp})`,
+      reason: `Deck needs more ramp sources (currently ${ramp}, recommend ${recRamp}+ for ${strategy})`,
       category: "ramp",
     });
     additions.push(
@@ -488,10 +503,10 @@ function fallbackImprovements(
       },
     );
   }
-  if (draw < 10) {
+  if (draw < recDraw) {
     urgentFixes.push({
       card: "Phyrexian Arena",
-      reason: `Deck needs more card draw (currently ${draw})`,
+      reason: `Deck needs more card draw (currently ${draw}, recommend ${recDraw}+ for ${strategy})`,
       category: "draw",
     });
     additions.push({
@@ -500,10 +515,10 @@ function fallbackImprovements(
       price_tier: "premium",
     });
   }
-  if (removal < 8) {
+  if (removal < recRemoval) {
     urgentFixes.push({
       card: "Swords to Plowshares",
-      reason: `Deck needs more removal (currently ${removal})`,
+      reason: `Deck needs more removal (currently ${removal}, recommend ${recRemoval}+ for ${strategy})`,
       category: "removal",
     });
     additions.push({

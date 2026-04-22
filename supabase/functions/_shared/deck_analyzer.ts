@@ -1194,7 +1194,7 @@ const _STRATEGY_THRESHOLDS: Record<
   ramp:     { ramp: [14, 18], draw: [10, 12], removal: [8, 10],  lands: [38, 42] },
 };
 
-function getThresholds(
+export function getThresholds(
   strategy: string,
 ): Record<string, [number, number]> {
   return (
@@ -1692,9 +1692,66 @@ function _evaluateCard(
 // Minimum oracle text length to consider a card as a non-essential cut candidate.
 const _MIN_ORACLE_TEXT_FOR_CUT = 40;
 
-function _findCut(
+// Returns true if the card functionally belongs to a category that is flagged as weak.
+// Used to prevent _findCut from recommending cuts that would worsen an existing weakness.
+export function _isWeakCategoryCard(card: Card, weakLabels: string[]): boolean {
+  if (weakLabels.length === 0) return false;
+  const oracle = card.oracle_text.toLowerCase();
+  const tl = card.type_line.toLowerCase();
+
+  if (weakLabels.some((l) => l.includes("Low ramp")) && !isLand(card)) {
+    if (
+      oracle.includes("add {") ||
+      oracle.includes("adds {") ||
+      oracle.includes("add one mana") ||
+      oracle.includes("add two mana") ||
+      oracle.includes("add three mana") ||
+      oracle.includes("add mana") ||
+      oracle.includes("treasure token") ||
+      ((tl.includes("sorcery") || tl.includes("instant")) &&
+        oracle.includes("search your library") &&
+        oracle.includes("land"))
+    ) {
+      return true;
+    }
+  }
+
+  if (weakLabels.some((l) => l.includes("Low card draw"))) {
+    const drawPhrases = [
+      "draw a card",
+      "draw cards",
+      "draw two",
+      "draw three",
+      "draw x ",
+      "draw that many",
+      "draw an additional",
+    ];
+    if (drawPhrases.some((p) => oracle.includes(p))) return true;
+  }
+
+  if (
+    weakLabels.some(
+      (l) => l.includes("Low removal") || l.includes("Low exile"),
+    )
+  ) {
+    if (
+      oracle.includes("destroy target") ||
+      oracle.includes("exile target") ||
+      oracle.includes("deals damage to any target") ||
+      oracle.includes("deals damage to target creature") ||
+      (tl.includes("enchantment") && oracle.includes("loses all"))
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function _findCut(
   deck: Deck,
-  incoming: Card
+  incoming: Card,
+  weaknesses?: WeaknessResult[],
 ): [Card | null, string | null] {
   const themes = identifyThemes(deck);
   const themeNames = themes.map((t) =>
@@ -1708,6 +1765,12 @@ function _findCut(
   if (deck.commander) commanderNames.add(deck.commander.name.toLowerCase());
   if (deck.partner) commanderNames.add(deck.partner.name.toLowerCase());
 
+  const weakLabels = (weaknesses ?? []).map((w) =>
+    typeof w === "object" && w !== null && "label" in w
+      ? (w as WeaknessResult).label
+      : String(w)
+  );
+
   const isOnTheme = (c: Card): boolean =>
     themeNames.some((tn) => _cardFitsTheme(c, tn));
 
@@ -1719,7 +1782,8 @@ function _findCut(
       !isLand(c) &&
       c.oracle_text.length > _MIN_ORACLE_TEXT_FOR_CUT &&
       !isOnTheme(c) &&
-      !isCommander(c)
+      !isCommander(c) &&
+      !_isWeakCategoryCard(c, weakLabels),
   );
 
   // If no suitable candidates, explain why
@@ -1743,7 +1807,7 @@ function _findCut(
   const sameType = candidates.filter((c) =>
     broadTypes.some(
       (t) =>
-        c.type_line.toLowerCase().includes(t) && incomingType.includes(t)
+        c.type_line.toLowerCase().includes(t) && incomingType.includes(t),
     )
   );
 

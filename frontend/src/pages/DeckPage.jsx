@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { useParams, useLocation, Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList, CartesianGrid, PieChart, Pie, RadialBarChart, RadialBar, Legend } from 'recharts'
@@ -1009,11 +1010,24 @@ function ImprovementsTab({ deckId }) {
   const aiEnhanced = raw?.ai_enhanced ?? false
   const { expanded, toggle, visible } = useExpandable(5)
 
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dropdownStyle, setDropdownStyle] = useState({})
+  const [setSearch, setSetSearch] = useState('')
+  const triggerRef = useRef(null)
+
   const toggleSet = (code) =>
     setSelectedSets(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code])
-  const applyFilter = () => setAppliedSets([...selectedSets])
-  const clearFilter = () => { setSelectedSets([]); setAppliedSets([]) }
+  const closeDropdown = () => { setDropdownOpen(false); setSetSearch('') }
+  const applyFilter = () => { setAppliedSets([...selectedSets]); closeDropdown() }
+  const clearFilter = () => { setSelectedSets([]); setAppliedSets([]); closeDropdown() }
   const filterChanged = [...selectedSets].sort().join(',') !== [...appliedSets].sort().join(',')
+
+  function openSetDropdown() {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    setDropdownStyle({ position: 'fixed', top: rect.bottom + 4, left: rect.left, minWidth: Math.max(rect.width, 220) })
+    setDropdownOpen(o => !o)
+  }
 
   const renderShowMore = (key, total) => {
     if (total <= 5) return null
@@ -1029,59 +1043,90 @@ function ImprovementsTab({ deckId }) {
 
   return (
     <div className="space-y-6">
-      {/* Set filter */}
+      {/* Set filter dropdown */}
       {availableSets.length > 0 && (
-        <div className="bg-[var(--color-surface)]/60 border border-[var(--color-border)] rounded-xl p-4">
-          <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-1">Filter by Set</p>
-          <p className="text-[var(--color-text-muted)] text-xs mb-3">Only suggest improvements using cards you own from specific sets.</p>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {availableSets.map(({ code, name }) => {
-              const isSelected = selectedSets.includes(code)
-              return (
-                <button
-                  key={code}
-                  onClick={() => toggleSet(code)}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-all duration-150 cursor-pointer ${
-                    isSelected
-                      ? 'bg-[var(--color-primary)]/20 border-[var(--color-primary)] text-[var(--color-primary)]'
-                      : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]/50'
-                  }`}
-                >
-                  {name}
-                </button>
-              )
-            })}
-          </div>
-          {(selectedSets.length > 0 || appliedSets.length > 0) && (
-            <div className="flex items-center gap-2">
-              {filterChanged && (
-                <button
-                  onClick={applyFilter}
-                  className="text-xs px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-                >
-                  Apply Filter
-                </button>
-              )}
+        <div>
+          <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">Filter by Set</p>
+          <div className="flex items-center gap-3">
+            <div className="relative">
               <button
-                onClick={clearFilter}
-                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+                ref={triggerRef}
+                type="button"
+                onClick={openSetDropdown}
+                className="flex items-center gap-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg pl-3 pr-2.5 py-1.5 text-sm text-[var(--color-text)] cursor-pointer hover:border-[var(--color-primary)]/50 transition-colors w-64"
               >
-                Clear
+                <span className="text-xs text-[var(--color-text-muted)] flex-1 text-left truncate">
+                  {appliedSets.length === 0 ? 'Select sets…' : `${appliedSets.length} set${appliedSets.length > 1 ? 's' : ''} applied`}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)] transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Active filter banner */}
-      {appliedSets.length > 0 && (
-        <div className="flex items-center flex-wrap gap-1.5 text-xs text-[var(--color-text-muted)]">
-          <span>Showing upgrades from:</span>
-          {appliedSets.map(code => (
-            <span key={code} className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] font-medium">
-              {availableSets.find(s => s.code === code)?.name || code}
-            </span>
-          ))}
+              {dropdownOpen && createPortal(
+                <>
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onMouseDown={closeDropdown} />
+                  <div style={{ ...dropdownStyle, zIndex: 9999, width: 320 }} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-2">
+                    {/* Type-ahead search */}
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Search sets…"
+                      value={setSearch}
+                      onChange={e => setSetSearch(e.target.value)}
+                      onMouseDown={e => e.stopPropagation()}
+                      className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] mb-2"
+                    />
+                    <div className="max-h-56 overflow-y-auto space-y-0.5 mb-2">
+                      {availableSets
+                        .filter(({ name, code }) =>
+                          !setSearch || name.toLowerCase().includes(setSearch.toLowerCase()) || code.toLowerCase().includes(setSearch.toLowerCase())
+                        )
+                        .map(({ code, name }) => (
+                          <label key={code} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-[var(--color-border)]/40 select-none">
+                            <input
+                              type="checkbox"
+                              checked={selectedSets.includes(code)}
+                              onChange={() => toggleSet(code)}
+                              onMouseDown={e => e.stopPropagation()}
+                              className="accent-[var(--color-primary)] cursor-pointer"
+                            />
+                            <span className="text-sm text-[var(--color-text)]">{name}</span>
+                          </label>
+                        ))
+                      }
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-border)]">
+                      <button
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={applyFilter}
+                        disabled={!filterChanged}
+                        className="text-xs px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-default"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={clearFilter}
+                        className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </>,
+                document.body
+              )}
+            </div>
+
+            {appliedSets.length > 0 && (
+              <div className="flex items-center flex-wrap gap-1.5">
+                {appliedSets.map(code => (
+                  <span key={code} className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] font-medium">
+                    {availableSets.find(s => s.code === code)?.name || code}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1090,69 +1135,14 @@ function ImprovementsTab({ deckId }) {
       {!loading && !error && data && (<>
       <AiSourceBadge aiEnhanced={aiEnhanced} />
 
-      {/* Weakness Fixes — cards to ADD, split by owned vs need to acquire */}
-      {data.urgent_fixes?.length > 0 && (() => {
-        const hasOwnershipData = data.urgent_fixes.some(f => f.owned !== undefined)
-        const ownedFixes = hasOwnershipData ? data.urgent_fixes.filter(f => f.owned === true) : data.urgent_fixes
-        const acquireFixes = hasOwnershipData ? data.urgent_fixes.filter(f => f.owned !== true) : []
-        return (
-          <div>
-            <h3 className="font-heading text-[var(--color-danger)] text-2xs uppercase tracking-widest mb-1 flex items-center gap-1.5">
-              <IconWarning className="w-3.5 h-3.5" />
-              Weakness Fixes
-            </h3>
-            <p className="text-[var(--color-text-muted)] text-xs mb-3">Cards that address critical gaps in your deck.</p>
-
-            {ownedFixes.length > 0 && (
-              <div className={acquireFixes.length > 0 ? 'mb-4' : ''}>
-                {hasOwnershipData && <p className="font-heading text-[var(--color-success)] text-2xs font-semibold uppercase tracking-widest mb-1.5">In Your Collection</p>}
-                <div className="space-y-2">
-                  {visible('fixes_owned', ownedFixes).map((fix, i) => (
-                    <CardRecommendation
-                      key={i}
-                      card={fix.card}
-                      owned={fix.owned}
-                      category={fix.category}
-                      priceTier={fix.price_tier}
-                      reason={fix.reason}
-                      variant="danger"
-                    />
-                  ))}
-                </div>
-                {renderShowMore('fixes_owned', ownedFixes.length)}
-              </div>
-            )}
-
-            {acquireFixes.length > 0 && (
-              <div>
-                <p className="font-heading text-[var(--color-text-muted)] text-2xs font-semibold uppercase tracking-widest mb-1.5">Worth Acquiring</p>
-                <div className="space-y-2">
-                  {visible('fixes_acquire', acquireFixes).map((fix, i) => (
-                    <CardRecommendation
-                      key={i}
-                      card={fix.card}
-                      category={fix.category}
-                      priceTier={fix.price_tier}
-                      reason={fix.reason}
-                      variant="danger"
-                    />
-                  ))}
-                </div>
-                {renderShowMore('fixes_acquire', acquireFixes.length)}
-              </div>
-            )}
-          </div>
-        )
-      })()}
-
-      {/* Recommended Swaps — paired cut → add */}
+      {/* Recommended Swaps — paired cut → add, owned critical fixes first */}
       {data.swaps?.length > 0 && (
         <div>
           <SectionLabel className="mb-1">Recommended Swaps</SectionLabel>
-          <p className="text-[var(--color-text-muted)] text-xs mb-3">Paired cut → add recommendations to improve your deck.</p>
+          <p className="text-[var(--color-text-muted)] text-xs mb-3">Concrete cut → add pairs. Owned cards and weakness fixes appear first.</p>
           <div className="space-y-2">
             {visible('swaps', data.swaps).map((swap, i) => (
-              <div key={i} className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-4 py-3 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150">
+              <div key={i} className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border rounded-xl px-4 py-3 hover:-translate-y-0.5 transition-all duration-150 ${swap.priority === 'critical' ? 'border-[var(--color-danger)]/30 hover:border-[var(--color-danger)]/50' : 'border-[var(--color-border)] hover:border-[var(--color-border)]/80'}`}>
                 {/* Row 1: cut → add */}
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[var(--color-danger)] font-semibold text-sm shrink-0">−</span>
@@ -1161,10 +1151,13 @@ function ImprovementsTab({ deckId }) {
                   <span className="text-[var(--color-success)] font-semibold text-sm shrink-0">+</span>
                   <span className="text-[var(--color-success)] font-semibold text-sm truncate"><CardTooltip cardName={swap.add}>{swap.add}</CardTooltip></span>
                 </div>
-                {/* Row 2: meta tags — subordinate, small pills */}
+                {/* Row 2: meta tags */}
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                   {swap.owned && (
                     <span className="text-[9px] text-[var(--color-success)]">✓ owned</span>
+                  )}
+                  {swap.priority === 'critical' && (
+                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-danger)]/10 text-[var(--color-danger)]">fixes weakness</span>
                   )}
                   {swap.category && (
                     <TagTooltip
@@ -1191,49 +1184,38 @@ function ImprovementsTab({ deckId }) {
         </div>
       )}
 
-      {/* Cards to Add — unpaired additions, split by owned vs need to buy */}
-      {data.additions?.length > 0 && (() => {
-        const ownedCards = data.additions.filter(a => a.owned === true)
-        const buyCards = data.additions.filter(a => !a.owned)
+      {/* Cards to Acquire — merged urgent_fixes (critical gaps) + additions (general upgrades) */}
+      {(() => {
+        // Critical gaps (remaining urgent_fixes that couldn't be promoted to swaps)
+        const criticalCards = (data.urgent_fixes || []).map(f => ({ ...f, _isCritical: true }))
+        // General upgrades (remaining additions)
+        const generalCards = (data.additions || []).map(a => ({ ...a, _isCritical: false }))
+        // Sort order: critical first, general second; owned before unowned within each group
+        const allAcquire = [
+          ...criticalCards.filter(c => c.owned),
+          ...criticalCards.filter(c => !c.owned),
+          ...generalCards.filter(c => c.owned),
+          ...generalCards.filter(c => !c.owned),
+        ]
+        if (allAcquire.length === 0) return null
         return (
           <div>
-            <SectionLabel className="mb-3">Cards to Add</SectionLabel>
-
-            {ownedCards.length > 0 && (
-              <div className="mb-4">
-                <p className="font-heading text-[var(--color-success)] text-2xs font-semibold uppercase tracking-widest mb-1.5">In Your Collection</p>
-                <div className="space-y-2">
-                  {visible('additions_owned', ownedCards).map((add, i) => (
-                    <CardRecommendation
-                      key={i}
-                      card={add.card}
-                      owned
-                      priceTier={add.price_tier}
-                      reason={add.reason}
-                      variant="success"
-                    />
-                  ))}
-                </div>
-                {renderShowMore('additions_owned', ownedCards.length)}
-              </div>
-            )}
-
-            {buyCards.length > 0 && (
-              <div>
-                <p className="font-heading text-[var(--color-text-muted)] text-2xs font-semibold uppercase tracking-widest mb-1.5">Worth Acquiring</p>
-                <div className="space-y-2">
-                  {visible('additions_buy', buyCards).map((add, i) => (
-                    <CardRecommendation
-                      key={i}
-                      card={add.card}
-                      priceTier={add.price_tier}
-                      reason={add.reason}
-                    />
-                  ))}
-                </div>
-                {renderShowMore('additions_buy', buyCards.length)}
-              </div>
-            )}
+            <SectionLabel className="mb-1">Cards to Acquire</SectionLabel>
+            <p className="text-[var(--color-text-muted)] text-xs mb-3">No cut is paired — find a card in your deck that isn't filling a needed role to remove. Critical gaps shown first.</p>
+            <div className="space-y-2">
+              {visible('acquire', allAcquire).map((card, i) => (
+                <CardRecommendation
+                  key={i}
+                  card={card.card}
+                  owned={card.owned}
+                  category={card.category}
+                  priceTier={card.price_tier}
+                  reason={card.reason}
+                  variant={card._isCritical ? 'danger' : undefined}
+                />
+              ))}
+            </div>
+            {renderShowMore('acquire', allAcquire.length)}
           </div>
         )
       })()}

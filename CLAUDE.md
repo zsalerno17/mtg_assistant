@@ -18,6 +18,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Example: "Wire up `league_game_votes` RLS policies and vote submission endpoint → Users can approve or dispute game results without needing an admin to intervene"
 - Avoid pure-technical phase goals like "Add RLS policies and API endpoint" with no user outcome
 
+### Bug triage
+- If you find a bug unrelated to the current task, log it to `.github/bugs.md` (create if it doesn't exist) and move on — don't fix it, don't explain it at length
+- Format: `- [ ] **[file:line]** short description`
+
 ### Responses
 - Use short bulleted lists grouped by topic — no prose paragraphs
 - **Root cause:** one line max
