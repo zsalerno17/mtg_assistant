@@ -406,36 +406,20 @@ export default function LeaguePage() {
     const cfg = league?.scoring_config
     const bonusAwardsConfig = Array.isArray(cfg?.bonus_awards) ? cfg.bonus_awards : []
 
-    // Build the enabled awards list from config.
-    // Premade awards that may have legacy flat-key format:
-    const PREMADE_IDS = ['entrance_bonus', 'first_blood', 'spicy_play']
-    function isPremadeEnabled(awardId) {
-      if (bonusAwardsConfig.length) {
-        const found = bonusAwardsConfig.find(a => a.id === awardId)
-        return found ? found.enabled !== false : false
-      }
-      // Legacy flat-key format
-      return cfg ? cfg[awardId] !== false : true
-    }
-
-    const premadeTracked = [
-      { id: 'entrance_bonus', title: 'WWE Entrance of the Week' },
-      { id: 'first_blood',   title: 'First Blood' },
-      { id: 'spicy_play',    title: 'Spicy Play' },
-    ].filter(a => isPremadeEnabled(a.id))
-
-    const customTracked = bonusAwardsConfig
-      .filter(a => a.isCustom && a.enabled !== false)
+    // All enabled awards — no preference for preset vs custom
+    const enabledAwards = bonusAwardsConfig
+      .filter(a => a.enabled !== false)
       .map(a => ({ id: a.id, title: a.title }))
 
-    const enabledAwards = [...premadeTracked, ...customTracked]
     if (!enabledAwards.length) return null
 
     // Count per award per member_id
     const counts = {}
     enabledAwards.forEach(a => { counts[a.id] = {} })
+
     for (const game of games) {
       for (const r of (game.league_game_results || [])) {
+        // Legacy column awards — read from dedicated DB columns
         if (counts.entrance_bonus && r.earned_entrance_bonus) {
           counts.entrance_bonus[r.member_id] = (counts.entrance_bonus[r.member_id] || 0) + 1
         }
@@ -443,11 +427,12 @@ export default function LeaguePage() {
           counts.first_blood[r.member_id] = (counts.first_blood[r.member_id] || 0) + 1
         }
       }
+      // spicy_play is stored at the game level
       if (counts.spicy_play && game.spicy_play_winner_id) {
         const mid = String(game.spicy_play_winner_id)
         counts.spicy_play[mid] = (counts.spicy_play[mid] || 0) + 1
       }
-      // Custom awards stored in custom_bonus_winners: { awardId: memberId }
+      // All other awards stored in custom_bonus_winners: { awardId: memberId }
       for (const [awardId, memberId] of Object.entries(game.custom_bonus_winners || {})) {
         if (counts[awardId] && memberId) {
           const mid = String(memberId)
@@ -455,6 +440,7 @@ export default function LeaguePage() {
         }
       }
     }
+
     // Total bonus wins per member (sum across all award types)
     const totalByMember = {}
     for (const awardCounts of Object.values(counts)) {

@@ -157,25 +157,37 @@ function calculatePoints(
   placement: number,
   earnedEntranceBonus: boolean,
   earnedFirstBlood: boolean,
+  earnedSpicyPlay: boolean,
   placementPointsConfig?: Record<string, number>,
+  bonusAwardsCfg?: Array<{ id: string; points?: number }>,
 ): number {
   const pp = placementPointsConfig ?? { "1": 3, "2": 2, "3": 1, "4": 0 };
-  let pts = pp[String(placement)] ?? pp["4"] ?? 0;
-  if (earnedEntranceBonus) pts += 1;
-  if (earnedFirstBlood) pts += 1;
+  // Use last configured key as fallback (matches frontend getPointsForPlacement)
+  const keys = Object.keys(pp).map(Number).sort((a, b) => a - b);
+  const lastKey = String(keys[keys.length - 1] ?? 4);
+  let pts = pp[String(placement)] ?? pp[lastKey] ?? 0;
+  // Look up each award's configured point value instead of hardcoding +1
+  const awardPts = (id: string) =>
+    bonusAwardsCfg?.find((a) => a.id === id)?.points ?? 1;
+  if (earnedEntranceBonus) pts += awardPts("entrance_bonus");
+  if (earnedFirstBlood) pts += awardPts("first_blood");
+  if (earnedSpicyPlay) pts += awardPts("spicy_play");
   return pts;
 }
 
-/** Sum points from custom bonus awards won by a specific member in a game. */
+/** Sum points from bonus awards won by a specific member in a game.
+ *  Counts all awards in the winners map — isCustom is a UI hint only,
+ *  not a scoring filter.
+ */
 function customBonusPoints(
   memberId: string,
   winners: Record<string, string>,
-  awardsCfg: Array<{ id: string; points?: number; isCustom?: boolean }>,
+  awardsCfg: Array<{ id: string; points?: number }>,
 ): number {
   let pts = 0;
   for (const [awardId, winnerId] of Object.entries(winners)) {
     if (winnerId === memberId) {
-      const award = awardsCfg.find((a) => a.id === awardId && a.isCustom);
+      const award = awardsCfg.find((a) => a.id === awardId);
       if (award) pts += award.points ?? 0;
     }
   }
@@ -767,6 +779,7 @@ async function logGame(
 
   // Create result records
   const customWinners = sanitizeCustomBonusWinners(game.custom_bonus_winners);
+  const spicyPlayWinnerId = game.spicy_play_winner_id ? String(game.spicy_play_winner_id) : null;
   const resultsToInsert = results.map((r) => {
     const memberId = String(r.member_id);
     const customBonusPts = customBonusPoints(memberId, customWinners, bonusAwardsCfg);
@@ -774,7 +787,9 @@ async function logGame(
       r.placement as number,
       !!(r.earned_entrance_bonus),
       !!(r.earned_first_blood),
+      spicyPlayWinnerId === memberId,
       placementPointsConfig,
+      bonusAwardsCfg,
     ) + customBonusPts;
 
     return {
@@ -898,6 +913,7 @@ async function editGame(
   const screenshotUrl = validateHttpUrl(game.screenshot_url as string);
 
   const editCustomWinners = sanitizeCustomBonusWinners(game.custom_bonus_winners);
+  const editSpicyPlayWinnerId = game.spicy_play_winner_id ? String(game.spicy_play_winner_id) : null;
 
   const { data: gameRecord, error: gameErr } = await sb
     .from("league_games")
@@ -905,7 +921,7 @@ async function editGame(
       played_at: playedAt,
       screenshot_url: screenshotUrl,
       spicy_play_description: sanitizeText(game.spicy_play_description as string, 2000),
-      spicy_play_winner_id: game.spicy_play_winner_id ? String(game.spicy_play_winner_id) : null,
+      spicy_play_winner_id: editSpicyPlayWinnerId,
       entrance_winner_id: game.entrance_winner_id ? String(game.entrance_winner_id) : null,
       notes: sanitizeText(game.notes as string, 2000),
       custom_bonus_winners: editCustomWinners,
@@ -925,7 +941,9 @@ async function editGame(
       r.placement as number,
       !!(r.earned_entrance_bonus),
       !!(r.earned_first_blood),
+      editSpicyPlayWinnerId === memberId,
       editPlacementPointsConfig,
+      editBonusAwardsCfg,
     ) + editCustomBonusPts;
     return {
       game_id: gameId,

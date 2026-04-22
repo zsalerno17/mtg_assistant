@@ -26,17 +26,6 @@ function getAwardPoints(league, awardId) {
   return 1
 }
 
-// Supports both old flat-key format and new bonus_awards array format
-function isAwardEnabled(league, awardId) {
-  const cfg = league?.scoring_config
-  if (!cfg) return true
-  if (Array.isArray(cfg.bonus_awards)) {
-    const found = cfg.bonus_awards.find(a => a.id === awardId)
-    return found ? found.enabled !== false : false
-  }
-  // Legacy flat keys
-  return cfg[awardId] !== false
-}
 
 export default function EditGamePage() {
   const { leagueId, gameId } = useParams()
@@ -255,7 +244,12 @@ export default function EditGamePage() {
                 const placementPts = placement ? getPointsForPlacement(placement, league) : 0
                 const entrancePts = member.id === entranceWinnerId ? getAwardPoints(league, 'entrance_bonus') : 0
                 const firstBloodPts = member.id === firstBloodWinnerId ? getAwardPoints(league, 'first_blood') : 0
-                const totalPreview = placement ? placementPts + entrancePts + firstBloodPts : null
+                const spicyPts = member.id === spicyPlayWinnerId ? getAwardPoints(league, 'spicy_play') : 0
+                const customPts = Object.entries(customBonusWinners).reduce((sum, [awardId, winnerId]) => {
+                  if (winnerId !== member.id) return sum
+                  return sum + getAwardPoints(league, awardId)
+                }, 0)
+                const totalPreview = placement ? placementPts + entrancePts + firstBloodPts + spicyPts + customPts : null
 
                 return (
                   <div key={member.id} className="bg-[var(--color-surface)]/40 rounded-lg p-4">
@@ -298,12 +292,14 @@ export default function EditGamePage() {
                       </div>
                     </div>
                     {totalPreview !== null && (
-                      <div className="mt-2 pt-2 border-t border-[var(--color-primary)]/10 flex items-center gap-3 text-xs">
+                      <div className="mt-2 pt-2 border-t border-[var(--color-primary)]/10 flex items-center gap-3 text-xs flex-wrap">
                         <span className="text-[var(--color-text-muted)]">
                           {ordinal(placement)} → {placementPts} pt{placementPts !== 1 ? 's' : ''}
                         </span>
                         {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+{entrancePts} entrance</span>}
                         {firstBloodPts > 0 && <span className="text-red-400">+{firstBloodPts} first blood</span>}
+                        {spicyPts > 0 && <span className="text-orange-400">+{spicyPts} spicy play</span>}
+                        {customPts > 0 && <span className="text-purple-400">+{customPts} bonus</span>}
                         <span className="ml-auto font-bold text-[var(--color-primary)]">{totalPreview} pts total</span>
                       </div>
                     )}
@@ -313,91 +309,107 @@ export default function EditGamePage() {
             </div>
           </div>
 
-          {/* Special Awards */}
+          {/* Special Awards — unified loop over all enabled awards */}
+          {(league?.scoring_config?.bonus_awards || []).filter(a => a.enabled !== false).length > 0 && (
           <div className="bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl p-6">
             <h2 className="text-lg font-brand font-bold text-[var(--color-text)] mb-4">Special Awards</h2>
             <div className="space-y-4">
-              {isAwardEnabled(league, 'entrance_bonus') && (
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
-                    WWE Entrance of the Week (+1pt)
-                  </label>
-                  <SelectField
-                    value={entranceWinnerId}
-                    onChange={(e) => setEntranceWinnerId(e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">— No winner —</option>
-                    {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
-                  </SelectField>
-                </div>
-              )}
-              {isAwardEnabled(league, 'first_blood') && (
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
-                    First Blood — First to Deal Damage (+1pt)
-                  </label>
-                  <SelectField
-                    value={firstBloodWinnerId}
-                    onChange={(e) => setFirstBloodWinnerId(e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">— No winner —</option>
-                    {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
-                  </SelectField>
-                </div>
-              )}
-              {isAwardEnabled(league, 'spicy_play') && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
-                      Spicy Play of the Week
-                    </label>
-                    <textarea
-                      value={spicyPlayDescription}
-                      onChange={(e) => setSpicyPlayDescription(e.target.value)}
-                      placeholder="Describe the most unhinged, creative, or devastating play..."
-                      rows={2}
-                      className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">Spicy Play Player</label>
-                    <SelectField
-                      value={spicyPlayWinnerId}
-                      onChange={(e) => setSpicyPlayWinnerId(e.target.value)}
-                      className="w-full"
-                    >
-                      <option value="">— No winner —</option>
-                      {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
-                    </SelectField>
-                  </div>
-                </>
-              )}
-
-              {/* Custom bonus awards */}
               {(league?.scoring_config?.bonus_awards || [])
-                .filter(a => a.isCustom && a.enabled !== false)
-                .map(award => (
-                  <div key={award.id}>
-                    <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
-                      {award.title}{award.points ? ` (+${award.points}pt${award.points !== 1 ? 's' : ''})` : ''}
-                    </label>
-                    {award.description && (
-                      <p className="text-xs text-[var(--color-text-muted)] mb-1.5">{award.description}</p>
-                    )}
-                    <SelectField
-                      value={customBonusWinners[award.id] || ''}
-                      onChange={(e) => setCustomBonusWinners(prev => ({ ...prev, [award.id]: e.target.value }))}
-                      className="w-full"
-                    >
-                      <option value="">— No winner —</option>
-                      {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
-                    </SelectField>
-                  </div>
-                ))}
+                .filter(a => a.enabled !== false)
+                .map(award => {
+                  const ptLabel = award.points != null ? ` (+${award.points}pt${award.points !== 1 ? 's' : ''})` : ''
+
+                  if (award.id === 'entrance_bonus') {
+                    return (
+                      <div key={award.id}>
+                        <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                          {award.title}{ptLabel}
+                        </label>
+                        <SelectField
+                          value={entranceWinnerId}
+                          onChange={(e) => setEntranceWinnerId(e.target.value)}
+                          className="w-full"
+                        >
+                          <option value="">— No winner —</option>
+                          {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
+                        </SelectField>
+                      </div>
+                    )
+                  }
+
+                  if (award.id === 'first_blood') {
+                    return (
+                      <div key={award.id}>
+                        <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                          {award.title}{ptLabel}
+                        </label>
+                        <SelectField
+                          value={firstBloodWinnerId}
+                          onChange={(e) => setFirstBloodWinnerId(e.target.value)}
+                          className="w-full"
+                        >
+                          <option value="">— No winner —</option>
+                          {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
+                        </SelectField>
+                      </div>
+                    )
+                  }
+
+                  if (award.id === 'spicy_play') {
+                    return (
+                      <div key={award.id} className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                            {award.title} — Description
+                          </label>
+                          <textarea
+                            value={spicyPlayDescription}
+                            onChange={(e) => setSpicyPlayDescription(e.target.value)}
+                            placeholder="Describe the most unhinged, creative, or devastating play..."
+                            rows={2}
+                            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                            {award.title} — Winner{ptLabel}
+                          </label>
+                          <SelectField
+                            value={spicyPlayWinnerId}
+                            onChange={(e) => setSpicyPlayWinnerId(e.target.value)}
+                            className="w-full"
+                          >
+                            <option value="">— No winner —</option>
+                            {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
+                          </SelectField>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // All other awards (new presets + user-created) route through customBonusWinners
+                  return (
+                    <div key={award.id}>
+                      <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                        {award.title}{ptLabel}
+                      </label>
+                      {award.description && (
+                        <p className="text-xs text-[var(--color-text-muted)] mb-1.5">{award.description}</p>
+                      )}
+                      <SelectField
+                        value={customBonusWinners[award.id] || ''}
+                        onChange={(e) => setCustomBonusWinners(prev => ({ ...prev, [award.id]: e.target.value }))}
+                        className="w-full"
+                      >
+                        <option value="">— No winner —</option>
+                        {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
+                      </SelectField>
+                    </div>
+                  )
+                })}
             </div>
           </div>
+          )}
 
           {/* Submit */}
           <div className="flex items-center justify-between">
