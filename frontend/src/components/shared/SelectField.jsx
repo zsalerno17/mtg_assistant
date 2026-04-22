@@ -32,18 +32,29 @@ export default function SelectField({ value, onChange, disabled, id, className =
   const selected = options.find((o) => o.value === String(value ?? ''))
   const displayLabel = selected?.label ?? ''
 
+  function calcStyle(rect) {
+    const DROPDOWN_MAX_H = 240 // matches max-h-60
+    const MARGIN = 4
+    const spaceBelow = window.innerHeight - rect.bottom - MARGIN
+    const spaceAbove = rect.top - MARGIN
+    const openUpward = spaceBelow < DROPDOWN_MAX_H && spaceAbove > spaceBelow
+    return {
+      position: 'fixed',
+      left: rect.left,
+      minWidth: rect.width,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + MARGIN }
+        : { top: rect.bottom + MARGIN }),
+    }
+  }
+
   // Reposition when open so the dropdown tracks the trigger if the page resizes
   useEffect(() => {
     if (!open || !triggerRef.current) return
     function reposition() {
       const rect = triggerRef.current?.getBoundingClientRect()
       if (!rect) return
-      setDropdownStyle({
-        position: 'fixed',
-        top: rect.bottom + 4,
-        left: rect.left,
-        minWidth: rect.width,
-      })
+      setDropdownStyle(calcStyle(rect))
     }
     window.addEventListener('resize', reposition)
     return () => window.removeEventListener('resize', reposition)
@@ -52,12 +63,7 @@ export default function SelectField({ value, onChange, disabled, id, className =
   function openDropdown() {
     if (disabled || !triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
-    setDropdownStyle({
-      position: 'fixed',
-      top: rect.bottom + 4,
-      left: rect.left,
-      minWidth: rect.width,
-    })
+    setDropdownStyle(calcStyle(rect))
     setOpen((o) => !o)
   }
 

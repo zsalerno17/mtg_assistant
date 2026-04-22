@@ -29,6 +29,15 @@ function getPlacementHelperText(league) {
   }).join(', ')
 }
 
+function getAwardPoints(league, awardId) {
+  const awards = league?.scoring_config?.bonus_awards
+  if (Array.isArray(awards)) {
+    const found = awards.find(a => a.id === awardId)
+    if (found) return found.points ?? 1
+  }
+  return 1
+}
+
 // Supports both old flat-key format and new bonus_awards array format
 function isAwardEnabled(league, awardId) {
   const cfg = league?.scoring_config
@@ -62,6 +71,8 @@ export default function LogGamePage() {
   const [entranceWinnerId, setEntranceWinnerId] = useState('')
   const [firstBloodWinnerId, setFirstBloodWinnerId] = useState('')
   const [notes, setNotes] = useState('')
+  // custom_bonus_winners: { [awardId]: memberId }
+  const [customBonusWinners, setCustomBonusWinners] = useState({})
 
   // Pod size (determines placement options)
   const [podSize, setPodSize] = useState(4)
@@ -176,6 +187,7 @@ export default function LogGamePage() {
           spicy_play_winner_id: spicyPlayWinnerId || null,
           entrance_winner_id: entranceWinnerId || null,
           notes: notes || null,
+          custom_bonus_winners: customBonusWinners,
         },
         results: gameResults,
       })
@@ -288,8 +300,8 @@ export default function LogGamePage() {
               {members.map((member) => {
                 const placement = results[member.id]?.placement ? Number(results[member.id].placement) : null
                 const placementPts = placement ? getPointsForPlacement(placement, league) : 0
-                const entrancePts = member.id === entranceWinnerId ? 1 : 0
-                const firstBloodPts = member.id === firstBloodWinnerId ? 1 : 0
+                const entrancePts = member.id === entranceWinnerId ? getAwardPoints(league, 'entrance_bonus') : 0
+                const firstBloodPts = member.id === firstBloodWinnerId ? getAwardPoints(league, 'first_blood') : 0
                 const totalPreview = placement ? placementPts + entrancePts + firstBloodPts : null
                 
                 return (
@@ -353,8 +365,8 @@ export default function LogGamePage() {
                       <span className="text-[var(--color-text-muted)]">
                         {ordinal(placement)} → {placementPts} pt{placementPts !== 1 ? 's' : ''}
                       </span>
-                      {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+1 entrance</span>}
-                      {firstBloodPts > 0 && <span className="text-red-400">+1 first blood</span>}
+                      {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+{entrancePts} entrance</span>}
+                      {firstBloodPts > 0 && <span className="text-red-400">+{firstBloodPts} first blood</span>}
                       <span className="ml-auto font-bold text-[var(--color-primary)]">{totalPreview} pts total</span>
                     </div>
                   )}
@@ -453,6 +465,32 @@ export default function LogGamePage() {
               </div>
               </>
               )}
+
+              {/* Custom bonus awards */}
+              {(league?.scoring_config?.bonus_awards || [])
+                .filter(a => a.isCustom && a.enabled !== false)
+                .map(award => (
+                  <div key={award.id}>
+                    <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                      {award.title}{award.points ? ` (+${award.points}pt${award.points !== 1 ? 's' : ''})` : ''}
+                    </label>
+                    {award.description && (
+                      <p className="text-xs text-[var(--color-text-muted)] mb-1.5">{award.description}</p>
+                    )}
+                    <SelectField
+                      value={customBonusWinners[award.id] || ''}
+                      onChange={(e) => setCustomBonusWinners(prev => ({ ...prev, [award.id]: e.target.value }))}
+                      className="w-full"
+                    >
+                      <option value="">— No winner —</option>
+                      {members.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.superstar_name}
+                        </option>
+                      ))}
+                    </SelectField>
+                  </div>
+                ))}
             </div>
           </div>
           <div className="flex items-center justify-between">

@@ -39,6 +39,9 @@ function EditCampaignModal({ league, onClose, onSave, saving }) {
   )
   const [status, setStatus] = useState(league.status || 'active')
   const [bonusAwards, setBonusAwards] = useState(() => initBonusAwards(league.scoring_config))
+  const [placementPoints, setPlacementPoints] = useState(
+    () => league.scoring_config?.points ?? { 1: 3, 2: 2, 3: 1, 4: 0 }
+  )
   const [showAddBonus, setShowAddBonus] = useState(false)
   const [newBonus, setNewBonus] = useState({ title: '', description: '', points: 1 })
 
@@ -56,6 +59,7 @@ function EditCampaignModal({ league, onClose, onSave, saving }) {
         first_blood:    findEnabled('first_blood'),
         spicy_play:     findEnabled('spicy_play'),
         bonus_awards:   bonusAwards,
+        points:         placementPoints,
       },
     })
   }
@@ -133,6 +137,38 @@ function EditCampaignModal({ league, onClose, onSave, saving }) {
               <option value="active">Active</option>
               <option value="completed">Completed</option>
             </SelectField>
+          </div>
+
+          {/* Placement Points */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Placement Points</label>
+            <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+              <div className="grid items-center gap-3 px-4 py-2 bg-[var(--color-bg)]/60 border-b border-[var(--color-border)]" style={{gridTemplateColumns: '1fr 4rem'}}>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Placement</div>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide text-right">Pts</div>
+              </div>
+              {[
+                { place: 1, label: '1st (Winner)' },
+                { place: 2, label: '2nd' },
+                { place: 3, label: '3rd' },
+                { place: 4, label: '4th+ (last place & beyond)' },
+              ].map(({ place, label }) => (
+                <div key={place} className="grid items-center gap-3 px-4 py-3 border-b border-[var(--color-border)] last:border-0" style={{gridTemplateColumns: '1fr 4rem'}}>
+                  <div className="text-sm text-[var(--color-text)]">{label}</div>
+                  <div className="flex justify-end">
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={placementPoints[place] ?? 0}
+                      onChange={(e) => setPlacementPoints(prev => ({ ...prev, [place]: Math.max(0, Number(e.target.value)) }))}
+                      disabled={saving}
+                      className="w-12 bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-sm text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-40"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Bonus Awards */}
@@ -368,21 +404,31 @@ export default function LeaguePage() {
   const bonusAwardStandings = useMemo(() => {
     if (!games.length || !standings.length) return null
     const cfg = league?.scoring_config
-    // Determine which tracked awards are enabled
-    const TRACKED = [
+    const bonusAwardsConfig = Array.isArray(cfg?.bonus_awards) ? cfg.bonus_awards : []
+
+    // Build the enabled awards list from config.
+    // Premade awards that may have legacy flat-key format:
+    const PREMADE_IDS = ['entrance_bonus', 'first_blood', 'spicy_play']
+    function isPremadeEnabled(awardId) {
+      if (bonusAwardsConfig.length) {
+        const found = bonusAwardsConfig.find(a => a.id === awardId)
+        return found ? found.enabled !== false : false
+      }
+      // Legacy flat-key format
+      return cfg ? cfg[awardId] !== false : true
+    }
+
+    const premadeTracked = [
       { id: 'entrance_bonus', title: 'WWE Entrance of the Week' },
       { id: 'first_blood',   title: 'First Blood' },
       { id: 'spicy_play',    title: 'Spicy Play' },
-    ]
-    function isEnabled(awardId) {
-      if (!cfg) return true
-      if (Array.isArray(cfg.bonus_awards)) {
-        const found = cfg.bonus_awards.find(a => a.id === awardId)
-        return found ? found.enabled !== false : false
-      }
-      return cfg[awardId] !== false
-    }
-    const enabledAwards = TRACKED.filter(a => isEnabled(a.id))
+    ].filter(a => isPremadeEnabled(a.id))
+
+    const customTracked = bonusAwardsConfig
+      .filter(a => a.isCustom && a.enabled !== false)
+      .map(a => ({ id: a.id, title: a.title }))
+
+    const enabledAwards = [...premadeTracked, ...customTracked]
     if (!enabledAwards.length) return null
 
     // Count per award per member_id
@@ -401,8 +447,23 @@ export default function LeaguePage() {
         const mid = String(game.spicy_play_winner_id)
         counts.spicy_play[mid] = (counts.spicy_play[mid] || 0) + 1
       }
+      // Custom awards stored in custom_bonus_winners: { awardId: memberId }
+      for (const [awardId, memberId] of Object.entries(game.custom_bonus_winners || {})) {
+        if (counts[awardId] && memberId) {
+          const mid = String(memberId)
+          counts[awardId][mid] = (counts[awardId][mid] || 0) + 1
+        }
+      }
     }
-    return { enabledAwards, counts }
+    // Total bonus wins per member (sum across all award types)
+    const totalByMember = {}
+    for (const awardCounts of Object.values(counts)) {
+      for (const [mid, n] of Object.entries(awardCounts)) {
+        totalByMember[mid] = (totalByMember[mid] || 0) + n
+      }
+    }
+
+    return { enabledAwards, counts, totalByMember }
   }, [games, standings, league])
 
   // Vote categories derived from enabled bonus awards — only show votes for configured awards
@@ -967,7 +1028,9 @@ export default function LeaguePage() {
                       {seasonStats[member.member_id]?.uniqueCommanders ?? '—'}
                     </td>
                     <td className="hidden sm:table-cell px-4 py-3 text-center text-[var(--color-text-muted)]">
-                      {member.entrance_bonuses}
+                      {bonusAwardStandings
+                        ? (bonusAwardStandings.totalByMember[member.member_id] || 0)
+                        : member.entrance_bonuses}
                     </td>
                     <td className="px-4 py-3 text-center text-[var(--color-text-muted)]">
                       {member.games_played}

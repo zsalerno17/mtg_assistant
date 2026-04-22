@@ -25,6 +25,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
   const [seasonStart, setSeasonStart] = useState('')
   const [seasonEnd, setSeasonEnd] = useState('')
   const [bonusAwards, setBonusAwards] = useState(DEFAULT_BONUS_AWARDS)
+  const [placementPoints, setPlacementPoints] = useState({ 1: 3, 2: 2, 3: 1, 4: 0 })
   const [showAddBonus, setShowAddBonus] = useState(false)
   const [newBonus, setNewBonus] = useState({ title: '', description: '', points: 1 })
 
@@ -42,6 +43,7 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
         first_blood:    findEnabled('first_blood'),
         spicy_play:     findEnabled('spicy_play'),
         bonus_awards:   bonusAwards,
+        points:         placementPoints,
       },
     })
   }
@@ -127,6 +129,38 @@ function CreateLeagueModal({ onClose, onCreate, creating }) {
                 disabled={creating}
                 className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-50"
               />
+            </div>
+          </div>
+
+          {/* Placement Points */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Placement Points</label>
+            <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+              <div className="grid items-center gap-3 px-4 py-2 bg-[var(--color-bg)]/60 border-b border-[var(--color-border)]" style={{gridTemplateColumns: '1fr 4rem'}}>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Placement</div>
+                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide text-right">Pts</div>
+              </div>
+              {[
+                { place: 1, label: '1st (Winner)' },
+                { place: 2, label: '2nd' },
+                { place: 3, label: '3rd' },
+                { place: 4, label: '4th+ (last place & beyond)' },
+              ].map(({ place, label }) => (
+                <div key={place} className="grid items-center gap-3 px-4 py-3 border-b border-[var(--color-border)] last:border-0" style={{gridTemplateColumns: '1fr 4rem'}}>
+                  <div className="text-sm text-[var(--color-text)]">{label}</div>
+                  <div className="flex justify-end">
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={placementPoints[place] ?? 0}
+                      onChange={(e) => setPlacementPoints(prev => ({ ...prev, [place]: Math.max(0, Number(e.target.value)) }))}
+                      disabled={creating}
+                      className="w-12 bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-sm text-center text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] disabled:opacity-40"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

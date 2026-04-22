@@ -17,6 +17,15 @@ function getPointsForPlacement(placement, league) {
   return pts[String(placement)] ?? pts[String(lastKey)] ?? 0
 }
 
+function getAwardPoints(league, awardId) {
+  const awards = league?.scoring_config?.bonus_awards
+  if (Array.isArray(awards)) {
+    const found = awards.find(a => a.id === awardId)
+    if (found) return found.points ?? 1
+  }
+  return 1
+}
+
 // Supports both old flat-key format and new bonus_awards array format
 function isAwardEnabled(league, awardId) {
   const cfg = league?.scoring_config
@@ -50,6 +59,8 @@ export default function EditGamePage() {
   const [entranceWinnerId, setEntranceWinnerId] = useState('')
   const [firstBloodWinnerId, setFirstBloodWinnerId] = useState('')
   const [notes, setNotes] = useState('')
+  // custom_bonus_winners: { [awardId]: memberId }
+  const [customBonusWinners, setCustomBonusWinners] = useState({})
 
   const [podSize, setPodSize] = useState(4)
   const [results, setResults] = useState({})
@@ -84,6 +95,7 @@ export default function EditGamePage() {
       setEntranceWinnerId(game.entrance_winner_id || '')
       setPodSize(Math.max(2, Math.min(10, membersData.members?.length || 4)))
       setNotes(game.notes || '')
+      setCustomBonusWinners(game.custom_bonus_winners || {})
 
       // Pre-fill per-player results
       const existingResults = {}
@@ -161,6 +173,7 @@ export default function EditGamePage() {
           spicy_play_winner_id: spicyPlayWinnerId || null,
           entrance_winner_id: entranceWinnerId || null,
           notes: notes || null,
+          custom_bonus_winners: customBonusWinners,
         },
         results: gameResults,
       })
@@ -240,15 +253,16 @@ export default function EditGamePage() {
               {members.map((member) => {
                 const placement = results[member.id]?.placement ? Number(results[member.id].placement) : null
                 const placementPts = placement ? getPointsForPlacement(placement, league) : 0
-                const entrancePts = member.id === entranceWinnerId ? 1 : 0
-                const firstBloodPts = member.id === firstBloodWinnerId ? 1 : 0
+                const entrancePts = member.id === entranceWinnerId ? getAwardPoints(league, 'entrance_bonus') : 0
+                const firstBloodPts = member.id === firstBloodWinnerId ? getAwardPoints(league, 'first_blood') : 0
                 const totalPreview = placement ? placementPts + entrancePts + firstBloodPts : null
 
                 return (
                   <div key={member.id} className="bg-[var(--color-surface)]/40 rounded-lg p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
                       <div>
-                        <div className="font-medium text-[var(--color-text)] mb-1">{member.superstar_name}</div>
+                        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Pilot</label>
+                        <div className="font-medium text-[var(--color-text)] py-2">{member.superstar_name}</div>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Placement</label>
@@ -288,8 +302,8 @@ export default function EditGamePage() {
                         <span className="text-[var(--color-text-muted)]">
                           {ordinal(placement)} → {placementPts} pt{placementPts !== 1 ? 's' : ''}
                         </span>
-                        {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+1 entrance</span>}
-                        {firstBloodPts > 0 && <span className="text-red-400">+1 first blood</span>}
+                        {entrancePts > 0 && <span className="text-[var(--color-secondary)]">+{entrancePts} entrance</span>}
+                        {firstBloodPts > 0 && <span className="text-red-400">+{firstBloodPts} first blood</span>}
                         <span className="ml-auto font-bold text-[var(--color-primary)]">{totalPreview} pts total</span>
                       </div>
                     )}
@@ -360,6 +374,28 @@ export default function EditGamePage() {
                   </div>
                 </>
               )}
+
+              {/* Custom bonus awards */}
+              {(league?.scoring_config?.bonus_awards || [])
+                .filter(a => a.isCustom && a.enabled !== false)
+                .map(award => (
+                  <div key={award.id}>
+                    <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1.5">
+                      {award.title}{award.points ? ` (+${award.points}pt${award.points !== 1 ? 's' : ''})` : ''}
+                    </label>
+                    {award.description && (
+                      <p className="text-xs text-[var(--color-text-muted)] mb-1.5">{award.description}</p>
+                    )}
+                    <SelectField
+                      value={customBonusWinners[award.id] || ''}
+                      onChange={(e) => setCustomBonusWinners(prev => ({ ...prev, [award.id]: e.target.value }))}
+                      className="w-full"
+                    >
+                      <option value="">— No winner —</option>
+                      {members.map((m) => <option key={m.id} value={m.id}>{m.superstar_name}</option>)}
+                    </SelectField>
+                  </div>
+                ))}
             </div>
           </div>
 
