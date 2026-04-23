@@ -19,6 +19,7 @@ import {
 } from "../_shared/gemini.ts";
 import { createCard } from "../_shared/models.ts";
 import type { Card, Deck, Collection } from "../_shared/models.ts";
+import { buildCardUsageMap } from "../_shared/deck_usage.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -196,7 +197,7 @@ async function handleStrategy(
 }
 
 // ---------------------------------------------------------------------------
-// Route: POST /improvements
+// Route: POST /improvements  (kept for backwards compatibility — prefer /suggestions)
 // ---------------------------------------------------------------------------
 
 async function handleImprovements(
@@ -256,12 +257,7 @@ async function handleImprovements(
       })
     : collectionCards;
 
-  const result = await getImprovementSuggestions(
-    deck,
-    analysis,
-    filteredCards,
-    allowedSets,
-  );
+  const result = await getImprovementSuggestions(deck, analysis as unknown as Record<string, unknown>, allowedSets);
 
   // --- Post-process: validate swaps, merge legacy formats, add owned flags ---
   const content = result.content as Record<string, unknown>;
@@ -600,6 +596,214 @@ async function handleCollectionUpgrades(
 }
 
 // ---------------------------------------------------------------------------
+// Route: POST /suggestions
+// ---------------------------------------------------------------------------
+// Unified deck improvement suggestions: collection (rule-based), any card (AI),
+// or both. Replaces the separate /improvements and /collection-upgrades routes.
+
+async function handleSuggestions(
+  body: { moxfield_id?: string; mode?: string; allowed_sets?: string[] },
+  userId: string,
+  userClient: ReturnType<typeof getUserClient>,
+  req: Request,
+): Promise<Response> {
+  const moxfieldId = body.moxfield_id;
+  if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
+
+  const mode = (["collection", "any"].includes(body.mode || "")
+    ? body.mode
+    : "collection") as "collection" | "any";
+  const allowedSets = body.allowed_sets?.length ? body.allowed_sets : undefined;
+
+  const sb = getServiceClient();
+  const setsKey = allowedSets ? `:${allowedSets.slice().sort().join(",")}` : "";
+  const cacheKey = `suggestions:${moxfieldId}:${userId}:${mode}${setsKey}`;
+
+  const cached = await getCached(sb, cacheKey, "suggestions_v4");
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      return jsonResponse({
+        suggestions: parsed.suggestions,
+        has_collection: parsed.has_collection,
+        ai_enhanced: mode !== "collection",
+        cached: true,
+        mode,
+      }, req);
+    } catch {
+      // corrupted cache, continue
+    }
+  }
+
+  const deck = await loadDeck(moxfieldId);
+  const analysis = analyzeDeck(deck);
+  const weaknesses = identifyWeaknesses(
+    deck,
+    analysis.strategy as string | undefined,
+    analysis.power_level as number | undefined,
+  );
+  const weakLabels = weaknesses.map((w) => w.label);
+  const mainboardLower = new Set(deck.mainboard.map((c) => c.name.toLowerCase()));
+
+  // Load collection + deck usage map in parallel
+  const [{ data: colRow }, usageMap] = await Promise.all([
+    userClient.from("collections").select("cards_json").eq("user_id", userId).maybeSingle(),
+    buildCardUsageMap(userClient, userId),
+  ]);
+
+  const collectionCards: Record<string, unknown>[] = colRow?.cards_json || [];
+  const hasCollection = collectionCards.length > 0;
+  const ownedLower = new Set(
+    collectionCards.map((c) => ((c.name as string) || "").toLowerCase()),
+  );
+
+  let swaps: Record<string, unknown>[] = [];
+  let additions: Record<string, unknown>[] = [];
+  let aiEnhanced = false;
+
+  // --- Collection mode (fully rule-based, no Gemini) ---
+  if (mode === "collection" && hasCollection) {
+    // Apply set filter to collection cards if specified
+    const filteredForCollection = allowedSets
+      ? collectionCards.filter((c) => {
+          const code = ((c.set_code as string) || "").toLowerCase();
+          return allowedSets.some((s) => s.toLowerCase() === code);
+        })
+      : collectionCards;
+
+    const collection: Collection = {
+      cards: filteredForCollection.map((c) =>
+        createCard({
+          name: (c.name as string) || "",
+          quantity: (c.quantity as number) || 1,
+          cmc: Number(c.cmc) || 0,
+          type_line: (c.type_line as string) || "",
+          oracle_text: (c.oracle_text as string) || "",
+          color_identity: (c.color_identity as string[]) || [],
+        })
+      ),
+    };
+    const collectionResults = findCollectionImprovements(deck, collection);
+    for (const [colCard, cutCard, reason, score] of collectionResults) {
+      if (cutCard) {
+        swaps.push({
+          cut: cutCard.name,
+          add: colCard.name,
+          reason,
+          score,
+          owned: true,
+          source: "collection",
+        });
+      } else {
+        additions.push({
+          card: colCard.name,
+          reason,
+          owned: true,
+          source: "collection",
+        });
+      }
+    }
+  }
+
+  // --- AI mode (Gemini) ---
+  // Pass the full collection so Gemini can cross-reference ownership and prioritize
+  // cards the user already owns. Results include any card in Magic; owned flag is stamped
+  // on each suggestion so the frontend can highlight them.
+  if (mode === "any") {
+    const filteredForAI = allowedSets
+      ? collectionCards.filter((c) => {
+          const code = ((c.set_code as string) || "").toLowerCase();
+          return allowedSets.some((s) => s.toLowerCase() === code);
+        })
+      : collectionCards;
+
+    // Pass empty collection — Gemini suggests on merit (no ownership bias = shorter prompt, faster).
+    // Ownership is stamped below from ownedLower after Gemini responds.
+    const result = await getImprovementSuggestions(deck, analysis as unknown as Record<string, unknown>, allowedSets);
+    aiEnhanced = result.ai_enhanced;
+
+    if (result.ai_enhanced) {
+      const content = result.content as Record<string, unknown>;
+      const collectionByName = new Map<string, Record<string, unknown>>();
+      for (const c of filteredForAI) {
+        collectionByName.set(((c.name as string) || "").toLowerCase(), c);
+      }
+
+      // Validate AI swaps and stamp owned flag
+      const rawSwaps = (content.swaps as Record<string, unknown>[]) || [];
+      const seenAI = new Set<string>();
+      for (const swap of rawSwaps) {
+        const cutName = ((swap.cut as string) || "").toLowerCase();
+        const addName = ((swap.add as string) || "").toLowerCase();
+        if (!mainboardLower.has(cutName) || mainboardLower.has(addName)) continue;
+        const cutCard = deck.mainboard.find((c) => c.name.toLowerCase() === cutName);
+        if (cutCard && _isWeakCategoryCard(cutCard, weakLabels)) continue;
+        if (seenAI.has(addName)) continue;
+        swap.owned = ownedLower.has(addName);
+        swaps.push({ ...swap, source: "ai" });
+        seenAI.add(addName);
+      }
+
+      // Merge urgent_fixes + additions
+      const urgentFixes = (content.urgent_fixes as Record<string, unknown>[]) || [];
+      const aiAdditions = (content.additions as Record<string, unknown>[]) || [];
+      for (const item of [...urgentFixes, ...aiAdditions]) {
+        const cardName = ((item.card as string) || "").toLowerCase();
+        if (mainboardLower.has(cardName) || seenAI.has(cardName)) continue;
+        item.owned = ownedLower.has(cardName);
+        additions.push({ ...item, source: "ai" });
+        seenAI.add(cardName);
+      }
+    }
+  }
+
+  // Helper: get deck names a card is already in (excluding the current deck)
+  const getInDecks = (cardName: string): string[] => {
+    const entry = usageMap.get(cardName.toLowerCase());
+    if (!entry) return [];
+    return entry.decks
+      .filter((d: { deck_name: string }) => d.deck_name !== deck.name)
+      .map((d: { deck_name: string }) => d.deck_name);
+  };
+
+  // Stamp in_decks on all owned suggestions
+  for (const s of swaps) {
+    if (s.owned) s.in_decks = getInDecks((s.add as string) || "");
+  }
+  for (const a of additions) {
+    if (a.owned) a.in_decks = getInDecks((a.card as string) || "");
+  }
+
+  // Deduplicate swaps by add card name, then limit
+  const seenAdds = new Set<string>();
+  const dedupedSwaps: Record<string, unknown>[] = [];
+  for (const s of swaps) {
+    const addName = ((s.add as string) || "").toLowerCase();
+    if (!seenAdds.has(addName)) {
+      seenAdds.add(addName);
+      dedupedSwaps.push(s);
+    }
+  }
+  swaps = dedupedSwaps.slice(0, 10);
+  additions = additions.slice(0, 8);
+
+  const suggestions = { swaps, additions };
+  const cachePayload = { suggestions, has_collection: hasCollection };
+
+  if (swaps.length > 0 || additions.length > 0) {
+    await setCached(sb, cacheKey, "suggestions_v4", JSON.stringify(cachePayload));
+  }
+
+  return jsonResponse({
+    suggestions,
+    has_collection: hasCollection,
+    ai_enhanced: aiEnhanced,
+    cached: false,
+    mode,
+  }, req);
+}
+
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
@@ -634,6 +838,11 @@ serve(async (req: Request) => {
     ) {
       const body = await req.json();
       return await handleCollectionUpgrades(body, user.userId, userClient, req);
+    }
+
+    if (req.method === "POST" && path.startsWith("/suggestions")) {
+      const body = await req.json();
+      return await handleSuggestions(body, user.userId, userClient, req);
     }
 
     return errorResponse(404, "Not found", req);

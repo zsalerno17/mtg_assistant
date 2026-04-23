@@ -10,23 +10,22 @@ import PageTransition from '../components/PageTransition'
 import TagTooltip from '../components/TagTooltip'
 import EmptyState from '../components/EmptyState'
 import CardRecommendation from '../components/CardRecommendation'
+import TooltipWrapper from '../components/shared/TooltipWrapper'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useDataFetch } from '../hooks/useDataFetch'
 import { useExpandable } from '../hooks/useExpandable'
 import { CATEGORY_COLORS, CATEGORY_TOOLTIPS, PRICE_TIER_COLORS, PRICE_TIER_TOOLTIPS } from '../constants/improvementMaps'
-import { LayoutGrid, ArrowUp, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft, Wand2, Axe, Skull } from 'lucide-react'
+import { LayoutGrid, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft, Wand2, Axe, Skull } from 'lucide-react'
 
 function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
-function UpgradeIcon() { return <ArrowUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function StrategyIcon() { return <ScrollText className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function ImprovementsIcon() { return <TrendingUp className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function ScenariosIcon() { return <MessageSquare className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 
 const TAB_CONFIG = [
   { label: 'Overview', icon: OverviewIcon },
-  { label: 'Upgrades', icon: UpgradeIcon, mobileLabel: 'Upgrades' },
   { label: 'Strategy', icon: StrategyIcon },
-  { label: 'Improvements', icon: ImprovementsIcon },
+  { label: 'Deck Improvements', icon: ImprovementsIcon },
   { label: 'Scenarios', icon: ScenariosIcon },
 ]
 const TABS = TAB_CONFIG.map(t => t.label)
@@ -744,7 +743,7 @@ function OverviewTab({ deck, analysis, onTabChange }) {
             <p className="text-[var(--color-text-muted)] text-xs mt-0.5">Game plan, win conditions, mulligan advice, matchup tips</p>
           </button>
           <button
-            onClick={() => onTabChange?.('Upgrades')}
+            onClick={() => onTabChange?.('Deck Improvements')}
             className="text-left bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-success)]/20 rounded-xl px-4 py-3 hover:border-[var(--color-success)]/50 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
           >
             <p className="text-[var(--color-success)] font-semibold text-sm">Upgrade with Your Collection →</p>
@@ -970,12 +969,31 @@ function StrategyTab({ deckId, cardMap = new Map() }) {
   )
 }
 
-function ImprovementsTab({ deckId }) {
+const IMPROVEMENT_MODES = [
+  { value: 'collection', label: 'In Collection' },
+  { value: 'any', label: 'Any Card' },
+]
+
+const AI_LOADING_MESSAGES = [
+  "Consulting the Scryfall oracle...",
+  "Weighing your commander's strengths...",
+  "Scanning the multiverse for upgrades...",
+  "Evaluating cut candidates...",
+  "Checking synergy with your strategy...",
+  "Reading oracle text across 30,000 cards...",
+  "Calculating mana curve impact...",
+  "Prioritising on-theme improvements...",
+  "Sifting through the card pool...",
+  "Almost ready to tap out...",
+]
+
+function DeckImprovementsTab({ deckId }) {
+  const [mode, setMode] = useState('collection')
   const [selectedSets, setSelectedSets] = useState([])
   const [appliedSets, setAppliedSets] = useState([])
   const [availableSets, setAvailableSets] = useState([])
 
-  // Fetch collection + Scryfall set names to populate the set picker
+  // Fetch collection sets to populate the set picker (only relevant for any/both modes)
   useEffect(() => {
     Promise.all([
       api.getCollection(),
@@ -995,19 +1013,32 @@ function ImprovementsTab({ deckId }) {
   const [raw, setRaw] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
+
+  // Rotate loading messages during AI fetch
+  useEffect(() => {
+    if (!loading || mode !== 'any') return
+    setLoadingMsgIdx(0)
+    const interval = setInterval(() => {
+      setLoadingMsgIdx(prev => (prev + 1) % AI_LOADING_MESSAGES.length)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [loading, mode])
 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    api.getImprovements(deckId, appliedSets)
+    setRaw(null)
+    api.getDeckImprovements(deckId, mode, appliedSets)
       .then(setRaw)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckId, appliedKey])
+  }, [deckId, mode, appliedKey])
 
-  const data = raw?.improvements
+  const data = raw?.suggestions
   const aiEnhanced = raw?.ai_enhanced ?? false
+  const hasCollection = raw?.has_collection ?? true
   const { expanded, toggle, visible } = useExpandable(5)
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -1043,10 +1074,38 @@ function ImprovementsTab({ deckId }) {
 
   return (
     <div className="space-y-6">
-      {/* Set filter dropdown */}
+      {/* Mode toggle */}
+      <div>
+        <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">Show suggestions from</p>
+        <div className="inline-flex rounded-lg border border-[var(--color-border)] overflow-hidden">
+          {IMPROVEMENT_MODES.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setMode(value)}
+              className={`px-4 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                mode === value
+                  ? 'bg-[var(--color-primary)] text-white'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {mode === 'collection' && (
+          <p className="text-[var(--color-text-muted)] text-xs mt-2">Cards you already own that would improve this deck. Fast, rule-based, no AI.</p>
+        )}
+        {mode === 'any' && (
+          <p className="text-[var(--color-text-muted)] text-xs mt-2">AI-powered suggestions from any card in Magic. Marks cards you already own.</p>
+        )}
+      </div>
+
+      {/* Set filter — restrict suggestions to cards from specific sets */}
       {availableSets.length > 0 && (
         <div>
-          <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">Filter by Set</p>
+          <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">
+            Filter by Set{mode === 'any' && <span className="normal-case tracking-normal ml-1 text-[var(--color-text-muted)] opacity-60">(hint only — AI may not match perfectly)</span>}
+          </p>
           <div className="flex items-center gap-3">
             <div className="relative">
               <button
@@ -1065,7 +1124,6 @@ function ImprovementsTab({ deckId }) {
                 <>
                   <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onMouseDown={closeDropdown} />
                   <div style={{ ...dropdownStyle, zIndex: 9999, width: 320 }} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-2">
-                    {/* Type-ahead search */}
                     <input
                       autoFocus
                       type="text"
@@ -1130,20 +1188,56 @@ function ImprovementsTab({ deckId }) {
         </div>
       )}
 
-      {loading && <LoadingSpinner />}
+      {loading && mode === 'any' ? (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+          <div className="text-center space-y-3 max-w-xs">
+            <p className="text-[var(--color-text)] text-sm font-medium">
+              {AI_LOADING_MESSAGES[loadingMsgIdx]}
+            </p>
+            <div className="w-full bg-[var(--color-border)] rounded-full h-1.5 overflow-hidden">
+              <div className="h-full bg-[var(--color-secondary)] animate-pulse" style={{ width: '100%' }} />
+            </div>
+            <p className="text-[var(--color-text-muted)] text-xs">AI analysis can take up to 60 seconds</p>
+          </div>
+        </div>
+      ) : loading ? (
+        <LoadingSpinner />
+      ) : null}
       {error && <p className="text-[var(--color-danger)] text-sm">{error}</p>}
-      {!loading && !error && data && (<>
-      <AiSourceBadge aiEnhanced={aiEnhanced} />
 
-      {/* Recommended Swaps — paired cut → add, owned critical fixes first */}
+      {/* No collection empty state for collection mode */}
+      {!loading && !error && mode === 'collection' && !hasCollection && (
+        <EmptyState
+          iconNode={<ImprovementsIcon />}
+          title="No collection uploaded"
+          description={
+            <span>
+              Upload your Moxfield collection CSV on the{' '}
+              <Link to="/collection" className="text-[var(--color-secondary)] hover:underline">Collection page</Link>
+              {' '}to see upgrade suggestions from cards you already own, or switch to{' '}
+              <button onClick={() => setMode('any')} className="text-[var(--color-secondary)] hover:underline cursor-pointer">Any Card</button>
+              {' '}for AI-powered suggestions.
+            </span>
+          }
+        />
+      )}
+
+      {!loading && !error && data && hasCollection && (<>
+      {(mode === 'any' || mode === 'both') && <AiSourceBadge aiEnhanced={aiEnhanced} />}
+
+      {/* Recommended Swaps */}
       {data.swaps?.length > 0 && (
         <div>
           <SectionLabel className="mb-1">Recommended Swaps</SectionLabel>
-          <p className="text-[var(--color-text-muted)] text-xs mb-3">Concrete cut → add pairs. Owned cards and weakness fixes appear first.</p>
+          <p className="text-[var(--color-text-muted)] text-xs mb-3">
+            {mode === 'collection'
+              ? 'Cards you own that would replace weaker options in this deck.'
+              : 'Concrete cut → add pairs. Owned cards appear first.'}
+          </p>
           <div className="space-y-2">
             {visible('swaps', data.swaps).map((swap, i) => (
               <div key={i} className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border rounded-xl px-4 py-3 hover:-translate-y-0.5 transition-all duration-150 ${swap.priority === 'critical' ? 'border-[var(--color-danger)]/30 hover:border-[var(--color-danger)]/50' : 'border-[var(--color-border)] hover:border-[var(--color-border)]/80'}`}>
-                {/* Row 1: cut → add */}
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[var(--color-danger)] font-semibold text-sm shrink-0">−</span>
                   <span className="text-[var(--color-danger)] font-semibold text-sm truncate"><CardTooltip cardName={swap.cut}>{swap.cut}</CardTooltip></span>
@@ -1151,10 +1245,14 @@ function ImprovementsTab({ deckId }) {
                   <span className="text-[var(--color-success)] font-semibold text-sm shrink-0">+</span>
                   <span className="text-[var(--color-success)] font-semibold text-sm truncate"><CardTooltip cardName={swap.add}>{swap.add}</CardTooltip></span>
                 </div>
-                {/* Row 2: meta tags */}
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                   {swap.owned && (
                     <span className="text-[9px] text-[var(--color-success)]">✓ owned</span>
+                  )}
+                  {swap.in_decks?.length > 0 && (
+                    <TooltipWrapper content={swap.in_decks.length === 1 ? `In: ${swap.in_decks[0]}` : `In: ${swap.in_decks.join(', ')}`}>
+                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">in a deck</span>
+                    </TooltipWrapper>
                   )}
                   {swap.priority === 'critical' && (
                     <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-danger)]/10 text-[var(--color-danger)]">fixes weakness</span>
@@ -1184,49 +1282,66 @@ function ImprovementsTab({ deckId }) {
         </div>
       )}
 
-      {/* Cards to Acquire — merged urgent_fixes (critical gaps) + additions (general upgrades) */}
-      {(() => {
-        // Critical gaps (remaining urgent_fixes that couldn't be promoted to swaps)
-        const criticalCards = (data.urgent_fixes || []).map(f => ({ ...f, _isCritical: true }))
-        // General upgrades (remaining additions)
-        const generalCards = (data.additions || []).map(a => ({ ...a, _isCritical: false }))
-        // Sort order: critical first, general second; owned before unowned within each group
-        const allAcquire = [
-          ...criticalCards.filter(c => c.owned),
-          ...criticalCards.filter(c => !c.owned),
-          ...generalCards.filter(c => c.owned),
-          ...generalCards.filter(c => !c.owned),
-        ]
-        if (allAcquire.length === 0) return null
-        return (
-          <div>
-            <SectionLabel className="mb-1">Cards to Acquire</SectionLabel>
-            <p className="text-[var(--color-text-muted)] text-xs mb-3">No cut is paired — find a card in your deck that isn't filling a needed role to remove. Critical gaps shown first.</p>
-            <div className="space-y-2">
-              {visible('acquire', allAcquire).map((card, i) => (
-                <CardRecommendation
-                  key={i}
-                  card={card.card}
-                  owned={card.owned}
-                  category={card.category}
-                  priceTier={card.price_tier}
-                  reason={card.reason}
-                  variant={card._isCritical ? 'danger' : undefined}
-                />
-              ))}
+      {/* Cards to Add — unpaired additions, split by ownership in any-card mode */}
+      {data.additions?.length > 0 && (() => {
+        if (mode === 'collection') {
+          return (
+            <div>
+              <SectionLabel className="mb-1">Additional Options</SectionLabel>
+              <p className="text-[var(--color-text-muted)] text-xs mb-3">No direct cut identified — find an underperforming card to remove.</p>
+              <div className="space-y-2">
+                {visible('additions', data.additions).map((card, i) => (
+                  <CardRecommendation key={i} card={card.card} owned={card.owned} inDecks={card.in_decks} category={card.category} priceTier={card.price_tier} reason={card.reason} />
+                ))}
+              </div>
+              {renderShowMore('additions', data.additions.length)}
             </div>
-            {renderShowMore('acquire', allAcquire.length)}
-          </div>
+          )
+        }
+        // any-card mode: split by owned
+        const ownedAdditions = data.additions.filter(c => c.owned)
+        const toAcquire = data.additions.filter(c => !c.owned)
+        return (
+          <>
+            {ownedAdditions.length > 0 && (
+              <div>
+                <SectionLabel className="mb-1">Add From Your Collection</SectionLabel>
+                <p className="text-[var(--color-text-muted)] text-xs mb-3">You already own these — no cut is paired. Find a card to swap out.</p>
+                <div className="space-y-2">
+                  {visible('ownedAdditions', ownedAdditions).map((card, i) => (
+                    <CardRecommendation key={i} card={card.card} owned inDecks={card.in_decks} category={card.category} priceTier={card.price_tier} reason={card.reason} />
+                  ))}
+                </div>
+                {renderShowMore('ownedAdditions', ownedAdditions.length)}
+              </div>
+            )}
+            {toAcquire.length > 0 && (
+              <div>
+                <SectionLabel className="mb-1">Cards to Acquire</SectionLabel>
+                <p className="text-[var(--color-text-muted)] text-xs mb-3">No cut is paired — find a card in your deck that isn't filling a needed role to remove.</p>
+                <div className="space-y-2">
+                  {visible('toAcquire', toAcquire).map((card, i) => (
+                    <CardRecommendation key={i} card={card.card} category={card.category} priceTier={card.price_tier} reason={card.reason} />
+                  ))}
+                </div>
+                {renderShowMore('toAcquire', toAcquire.length)}
+              </div>
+            )}
+          </>
         )
       })()}
 
       {/* Empty state */}
-      {!data.urgent_fixes?.length && !data.swaps?.length && !data.additions?.length && (
+      {!data.swaps?.length && !data.additions?.length && (
         <EmptyState
           icon={IconCheck}
           iconClassName="text-[var(--color-success)]"
           title="Deck looks solid!"
-          description="No urgent improvements identified."
+          description={
+            mode === 'collection'
+              ? "No obvious upgrades found in your collection for this deck."
+              : "No improvements identified."
+          }
         />
       )}
       </>)}
@@ -1234,111 +1349,6 @@ function ImprovementsTab({ deckId }) {
   )
 }
 
-function CollectionUpgradesTab({ deckId }) {
-  const [upgrades, setUpgrades] = useState(null)
-  const [hasCollection, setHasCollection] = useState(true)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    api.getCollectionUpgrades(deckId)
-      .then((data) => {
-        // Deduplicate upgrades based on (cut, add) pair
-        const seen = new Set()
-        const uniqueUpgrades = (data.upgrades || []).filter(u => {
-          const key = `${u.cut || 'none'}::${u.add}`
-          if (seen.has(key)) return false
-          seen.add(key)
-          return true
-        })
-        
-        // Group by card to cut for better UX when showing multiple options
-        const grouped = {}
-        uniqueUpgrades.forEach(u => {
-          const cutKey = u.cut || '_no_cut'
-          if (!grouped[cutKey]) grouped[cutKey] = []
-          grouped[cutKey].push(u)
-        })
-        
-        setUpgrades({ raw: uniqueUpgrades, grouped })
-        setHasCollection(data.has_collection)
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [deckId])
-
-  if (loading) return <LoadingSpinner />
-  if (error) return <p className="text-[var(--color-danger)] text-sm">{error}</p>
-
-  if (!hasCollection) {
-    return (
-      <EmptyState
-        iconNode={<UpgradeIcon />}
-        title="No collection uploaded"
-        description={<>Upload your Moxfield collection CSV on the{' '}<Link to="/collection" className="text-[var(--color-secondary)] hover:underline">Collection page</Link>{' '}to see upgrade suggestions from cards you already own.</>}
-      />
-    )
-  }
-
-  if (!upgrades?.raw?.length) {
-    return (
-      <EmptyState
-        icon={IconCheck}
-        iconClassName="text-[var(--color-success)]"
-        title="No upgrades found"
-        description="Your collection doesn't have obvious upgrades for this deck based on its current weaknesses and themes."
-      />
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      <SectionLabel className="mb-1">From My Collection</SectionLabel>
-      <p className="text-[var(--color-text-muted)] text-sm mb-4">
-        {upgrades.raw.length} upgrade{upgrades.raw.length !== 1 ? 's' : ''} from your collection.
-        Check the <span className="text-[var(--color-secondary)]">Improvements</span> tab for additional suggestions including cards to purchase.
-      </p>
-      {Object.entries(upgrades.grouped).map(([cutKey, options]) => {
-        const hasCut = cutKey !== '_no_cut'
-        const multipleOptions = options.length > 1
-        
-        // Sort options by score (if available) descending
-        const sortedOptions = [...options].sort((a, b) => (b.score || 0) - (a.score || 0))
-        
-        return (
-          <div key={cutKey} className="space-y-2">
-            {hasCut && multipleOptions && (
-              <p className="text-[var(--color-text-muted)] text-xs font-semibold">
-                {options.length} options for replacing <CardTooltip cardName={options[0].cut}>{options[0].cut}</CardTooltip> (sorted by quality):
-              </p>
-            )}
-            {sortedOptions.map((u, i) => (
-              <div
-                key={i}
-                className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl px-5 py-4 flex items-start gap-4 hover:border-[var(--color-border)]/80 hover:-translate-y-0.5 transition-all duration-150 ${
-                  multipleOptions && hasCut ? 'ml-4' : ''
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[var(--color-success)] font-semibold text-sm">+ <CardTooltip cardName={u.add}>{u.add}</CardTooltip></span>
-                    {u.cut && (
-                      <>
-                        <span className="text-[var(--color-text-muted)] text-xs">for</span>
-                        <span className="text-[var(--color-danger)] font-semibold text-sm">− <CardTooltip cardName={u.cut}>{u.cut}</CardTooltip></span>
-                      </>
-                    )}
-                  </div>
-                  <p className="text-[var(--color-text-muted)] text-xs mt-1">{u.reason}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 function ScenariosTab({ deckId, deck, analysis: _analysis }) {
   // Selected cards (arrays of card names)
@@ -1354,81 +1364,32 @@ function ScenariosTab({ deckId, deck, analysis: _analysis }) {
   const [result, setResult] = useState(null)
   const [aiEnhanced, setAiEnhanced] = useState(false)
 
-  // Load improvements data for suggestions
-  const [improvements, setImprovements] = useState(null)
-  const [collectionUpgrades, setCollectionUpgrades] = useState(null)
-  
+  // Load suggestions for the card picker (both modes: collection first, then AI gaps)
+  const [suggestionData, setSuggestionData] = useState(null)
+
   useEffect(() => {
-    api.getImprovements(deckId)
-      .then((res) => setImprovements(res.improvements))
-      .catch(() => {}) // Silent fail — suggestions are optional
-  }, [deckId])
-  
-  useEffect(() => {
-    api.getCollectionUpgrades(deckId)
-      .then((res) => setCollectionUpgrades(res.upgrades || []))
+    api.getDeckImprovements(deckId, 'any')
+      .then((res) => setSuggestionData(res.suggestions))
       .catch(() => {}) // Silent fail — suggestions are optional
   }, [deckId])
 
-  // Build list of suggestions from improvements + collection upgrades
+  // Build flat suggestions list from unified response
   const suggestions = (() => {
+    if (!suggestionData) return []
     const items = []
-    const seenSwaps = new Set() // Track "cut::add" pairs
-    const seenAdds = new Set()  // Track all added card names
-    
-    // Helper to check/add swap
-    const tryAddSwap = (cut, add, category, owned) => {
-      const swapKey = `${cut}::${add}`
-      if (!seenSwaps.has(swapKey) && !seenAdds.has(add)) {
-        seenSwaps.add(swapKey)
-        seenAdds.add(add)
-        items.push({ type: 'swap', cut, add, category, owned })
-        return true
-      }
-      return false
-    }
-    
-    // Helper to check/add addition
-    const tryAddAddition = (card, category, owned) => {
-      if (!seenAdds.has(card)) {
-        seenAdds.add(card)
-        items.push({ type: 'addition', card, category, owned })
-        return true
-      }
-      return false
-    }
-    
-    // Prioritize collection upgrades (cards you already own)
-    if (collectionUpgrades) {
-      collectionUpgrades.forEach(u => {
-        if (items.length >= 12) return
-        if (u.cut) {
-          tryAddSwap(u.cut, u.add, 'collection', true)
-        } else {
-          tryAddAddition(u.add, 'collection', true)
-        }
-      })
-    }
-    
-    // Then add AI improvements (may include cards to buy)
-    if (improvements && items.length < 12) {
-      // Add swaps (paired cut → add)
-      ;(improvements.swaps || []).forEach(swap => {
-        if (items.length >= 12) return
-        tryAddSwap(swap.cut, swap.add, swap.category, swap.owned)
-      })
-      
-      // Add pure additions (urgent fixes + additions)
-      ;(improvements.urgent_fixes || []).forEach(fix => {
-        if (items.length >= 12) return
-        tryAddAddition(fix.card, fix.category, fix.owned)
-      })
-      ;(improvements.additions || []).forEach(add => {
-        if (items.length >= 12) return
-        tryAddAddition(add.card, add.category || 'general', add.owned)
-      })
-    }
-    
+    const seenAdds = new Set()
+
+    ;(suggestionData.swaps || []).forEach(swap => {
+      if (items.length >= 12 || seenAdds.has(swap.add)) return
+      seenAdds.add(swap.add)
+      items.push({ type: 'swap', cut: swap.cut, add: swap.add, category: swap.category, owned: swap.owned })
+    })
+    ;(suggestionData.additions || []).forEach(add => {
+      if (items.length >= 12 || seenAdds.has(add.card)) return
+      seenAdds.add(add.card)
+      items.push({ type: 'addition', card: add.card, category: add.category, owned: add.owned })
+    })
+
     return items
   })()
 
@@ -2128,12 +2089,8 @@ export default function DeckPage() {
             <StrategyTab deckId={deckId} cardMap={new Map((deck?.mainboard || []).map(c => [c.name, c]))} />
           )}
 
-          {activeTab === 'Improvements' && (
-            <ImprovementsTab deckId={deckId} />
-          )}
-
-          {activeTab === 'Upgrades' && (
-            <CollectionUpgradesTab deckId={deckId} />
+          {activeTab === 'Deck Improvements' && (
+            <DeckImprovementsTab deckId={deckId} />
           )}
 
           {activeTab === 'Scenarios' && (

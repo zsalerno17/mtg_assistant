@@ -128,6 +128,10 @@ export const api = {
   getCollectionUpgrades: (moxfield_id) =>
     edgeFetch('ai', '/collection-upgrades', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
 
+  /** Get unified deck improvement suggestions (mode: 'collection' | 'any' | 'both'). */
+  getDeckImprovements: (moxfield_id, mode = 'collection', allowedSets = []) =>
+    edgeFetch('ai', '/suggestions', { method: 'POST', body: JSON.stringify({ moxfield_id, mode, ...(allowedSets.length ? { allowed_sets: allowedSets } : {}) }) }),
+
   /** Get the authenticated user's profile (username, avatar_url). */
   getProfile: () =>
     edgeFetch('users', '/profile', {}),

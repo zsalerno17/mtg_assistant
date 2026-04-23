@@ -16,7 +16,7 @@ const imageCache = new Map()
  * tooltip positioned near the cursor, rendered via React Portal to escape
  * overflow/stacking contexts.
  */
-export default function CardTooltip({ cardName, imageUrl: imageUrlProp, href: hrefProp, children }) {
+export default function CardTooltip({ cardName, imageUrl: imageUrlProp, href: hrefProp, triggerClassName, children }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [imageUrl, setImageUrl] = useState(imageUrlProp || null)
   const [imageError, setImageError] = useState(false)
@@ -57,22 +57,29 @@ export default function CardTooltip({ cardName, imageUrl: imageUrlProp, href: hr
 
     setLoading(true)
     try {
-      // Use 'normal' size (488×680px) instead of default thumbnail (146×204px)
-      const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&format=image&version=normal`
-      
-      // Test if image loads successfully
-      const img = new Image()
-      img.onload = () => {
-        imageCache.set(cardName, url)
-        setImageUrl(url)
-        setLoading(false)
-      }
-      img.onerror = () => {
+      // Fetch the card JSON via fuzzy search — more forgiving than exact for
+      // AI-generated names that may have slight variations or special characters.
+      const apiUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`
+      const res = await fetch(apiUrl)
+      if (!res.ok) {
         imageCache.set(cardName, 'error')
         setImageError(true)
         setLoading(false)
+        return
       }
-      img.src = url
+      const card = await res.json()
+      // For double-faced cards, use card_faces[0].image_uris; otherwise use top-level image_uris
+      const uris = card.image_uris ?? card.card_faces?.[0]?.image_uris
+      const url = uris?.normal ?? uris?.large
+      if (!url) {
+        imageCache.set(cardName, 'error')
+        setImageError(true)
+        setLoading(false)
+        return
+      }
+      imageCache.set(cardName, url)
+      setImageUrl(url)
+      setLoading(false)
     } catch (error) {
       console.error('Scryfall image fetch error:', error)
       imageCache.set(cardName, 'error')
@@ -127,9 +134,9 @@ export default function CardTooltip({ cardName, imageUrl: imageUrlProp, href: hr
     setShowTooltip(false)
   }
 
-  // Don't show tooltip if image failed to load
+  // Don't show tooltip if image failed to load — still render the trigger so layout is unchanged
   if (imageError) {
-    return <span>{children || cardName}</span>
+    return <span className={triggerClassName}>{children || cardName}</span>
   }
 
   // Calculate position near cursor, avoiding viewport edges
@@ -206,12 +213,12 @@ export default function CardTooltip({ cardName, imageUrl: imageUrlProp, href: hr
 
   return (
     <>
-      <span 
+      <span
         ref={elementRef}
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="relative inline-block cursor-help"
+        className={`relative inline-block cursor-help${triggerClassName ? ` ${triggerClassName}` : ''}`}
       >
         {children || cardName}
       </span>

@@ -205,6 +205,15 @@ export type ImprovementSuggestion = [
   string | null
 ];
 
+export interface CardRoles {
+  isRamp: boolean;
+  isDraw: boolean;
+  isRemoval: boolean;
+  isBoardWipe: boolean;
+  isLegendaryOrGod: boolean;
+  themes: string[];
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export function analyzeDeck(deck: Deck): DeckAnalysis {
@@ -265,6 +274,8 @@ export function findCollectionImprovements(
   const commanderColors = new Set(getDeckColorIdentity(deck));
   const weaknesses = identifyWeaknesses(deck);
   const themes = identifyThemes(deck);
+  // Build per-card roles once — passed to _findCut and _isWeakCategoryCard to avoid re-scanning
+  const cardRoles = buildCardRoles(deck);
 
   const suggestions: ImprovementSuggestion[] = [];
 
@@ -284,7 +295,7 @@ export function findCollectionImprovements(
     const result = _evaluateCard(colCard, weaknesses, themes);
     if (result) {
       const [reason, score] = result;
-      const [cut, neverCutReason] = _findCut(deck, colCard);
+      const [cut, neverCutReason] = _findCut(deck, colCard, weaknesses, cardRoles);
       suggestions.push([colCard, cut, reason, score, neverCutReason]);
     }
   }
@@ -1223,6 +1234,8 @@ export const THEME_DEFINITIONS: Record<string, string> = {
     "Draws cards and gains value from casting enchantments.",
   "Artifacts Matter":
     "Synergies around casting and controlling artifacts — affinity, triggers, and recursion.",
+  "Combat":
+    "Gains value from attacking — menace, first/double strike, combat triggers, and exalted effects.",
 };
 
 const _THEME_THRESHOLDS: Record<string, number> = {
@@ -1235,6 +1248,7 @@ const _THEME_THRESHOLDS: Record<string, number> = {
   "+1/+1 Counters": 8,
   Enchantress: 2,
   "Artifacts Matter": 2,
+  "Combat": 6,
 };
 
 // Minimum percentage of non-land cards that must match a theme (density gate)
@@ -1312,6 +1326,20 @@ function _cardFitsTheme(card: Card, theme: string): boolean {
         "whenever an artifact enters",
         "affinity for artifacts",
       ].some((kw) => oracle.includes(kw));
+    case "Combat":
+      return (
+        [
+          "whenever a creature you control attacks",
+          "whenever you attack",
+          "attacking creatures you control",
+          "combat damage",
+          "battle cry",
+          "exalted",
+        ].some((kw) => oracle.includes(kw)) ||
+        card.keywords.map((k) => k.toLowerCase()).some((k) =>
+          ["first strike", "double strike", "menace", "exalted", "battle cry"].includes(k)
+        )
+      );
     default:
       return false;
   }
@@ -1488,6 +1516,76 @@ export function identifyWeaknesses(
   }
 
   return weaknesses;
+}
+
+// ─── Per-Card Role Map ────────────────────────────────────────────────────────
+
+// Builds a map of per-card functional roles by scanning each card's oracle text
+// once. Downstream consumers (_findCut, _isWeakCategoryCard, findCollectionImprovements)
+// use this map instead of re-scanning oracle text on every call.
+export function buildCardRoles(deck: Deck): Map<string, CardRoles> {
+  const allThemes = Object.keys(_THEME_THRESHOLDS);
+  const manaAdders = [
+    "add {", "adds {", "add one mana", "add two mana", "add three mana", "add mana",
+  ];
+  const wipePhrases = [
+    "destroy all creatures", "destroy all nonland", "destroy all permanents",
+    "destroy all artifact", "exile all", "all creatures get -",
+    "return all creatures", "return all nonland", "damage to each creature",
+  ];
+  const drawPhrases = [
+    "draw a card", "draw cards", "draw two", "draw three",
+    "draw x ", "draw that many", "draw an additional",
+  ];
+
+  const roles = new Map<string, CardRoles>();
+
+  const allCards = getAllCards(deck);
+  for (const card of allCards) {
+    if (isLand(card)) continue;
+    const oracle = card.oracle_text.toLowerCase();
+    const tl = card.type_line.toLowerCase();
+
+    const isRamp =
+      manaAdders.some((p) => oracle.includes(p)) ||
+      oracle.includes("treasure token") ||
+      ((tl.includes("sorcery") || tl.includes("instant")) &&
+        oracle.includes("search your library") &&
+        oracle.includes("land"));
+
+    const isDraw = drawPhrases.some((p) => oracle.includes(p));
+
+    const isRemoval =
+      oracle.includes("destroy target") ||
+      oracle.includes("exile target") ||
+      oracle.includes("deals damage to any target") ||
+      oracle.includes("deals damage to target creature") ||
+      (tl.includes("enchantment") && oracle.includes("loses all")) ||
+      (oracle.includes("shuffle") &&
+        oracle.includes("into") &&
+        oracle.includes("library") &&
+        oracle.includes("target"));
+
+    const isBoardWipe =
+      wipePhrases.some((p) => oracle.includes(p)) ||
+      (oracle.includes("-1/-1 counter") && oracle.includes("each creature"));
+
+    const isLegendaryOrGod =
+      tl.includes("legendary") || tl.includes("god");
+
+    const themes = allThemes.filter((theme) => _cardFitsTheme(card, theme));
+
+    roles.set(card.name.toLowerCase(), {
+      isRamp,
+      isDraw,
+      isRemoval,
+      isBoardWipe,
+      isLegendaryOrGod,
+      themes,
+    });
+  }
+
+  return roles;
 }
 
 export function generateDeckVerdict(
@@ -1694,8 +1792,25 @@ const _MIN_ORACLE_TEXT_FOR_CUT = 40;
 
 // Returns true if the card functionally belongs to a category that is flagged as weak.
 // Used to prevent _findCut from recommending cuts that would worsen an existing weakness.
-export function _isWeakCategoryCard(card: Card, weakLabels: string[]): boolean {
+// Pass `roles` (from buildCardRoles) to skip redundant oracle re-scanning.
+export function _isWeakCategoryCard(
+  card: Card,
+  weakLabels: string[],
+  roles?: CardRoles,
+): boolean {
   if (weakLabels.length === 0) return false;
+
+  if (roles) {
+    if (weakLabels.some((l) => l.includes("Low ramp")) && roles.isRamp) return true;
+    if (weakLabels.some((l) => l.includes("Low card draw")) && roles.isDraw) return true;
+    if (
+      weakLabels.some((l) => l.includes("Low removal") || l.includes("Low exile")) &&
+      roles.isRemoval
+    ) return true;
+    return false;
+  }
+
+  // Fallback: oracle text scan (used when no roles map is available)
   const oracle = card.oracle_text.toLowerCase();
   const tl = card.type_line.toLowerCase();
 
@@ -1718,22 +1833,13 @@ export function _isWeakCategoryCard(card: Card, weakLabels: string[]): boolean {
 
   if (weakLabels.some((l) => l.includes("Low card draw"))) {
     const drawPhrases = [
-      "draw a card",
-      "draw cards",
-      "draw two",
-      "draw three",
-      "draw x ",
-      "draw that many",
-      "draw an additional",
+      "draw a card", "draw cards", "draw two", "draw three",
+      "draw x ", "draw that many", "draw an additional",
     ];
     if (drawPhrases.some((p) => oracle.includes(p))) return true;
   }
 
-  if (
-    weakLabels.some(
-      (l) => l.includes("Low removal") || l.includes("Low exile"),
-    )
-  ) {
+  if (weakLabels.some((l) => l.includes("Low removal") || l.includes("Low exile"))) {
     if (
       oracle.includes("destroy target") ||
       oracle.includes("exile target") ||
@@ -1752,14 +1858,8 @@ export function _findCut(
   deck: Deck,
   incoming: Card,
   weaknesses?: WeaknessResult[],
+  cardRoles?: Map<string, CardRoles>,
 ): [Card | null, string | null] {
-  const themes = identifyThemes(deck);
-  const themeNames = themes.map((t) =>
-    typeof t === "object" && t !== null && "name" in t
-      ? (t as ThemeResult).name
-      : String(t)
-  );
-
   // Get commander names (case-insensitive)
   const commanderNames = new Set<string>();
   if (deck.commander) commanderNames.add(deck.commander.name.toLowerCase());
@@ -1771,11 +1871,32 @@ export function _findCut(
       : String(w)
   );
 
-  const isOnTheme = (c: Card): boolean =>
-    themeNames.some((tn) => _cardFitsTheme(c, tn));
-
   const isCommander = (c: Card): boolean =>
     commanderNames.has(c.name.toLowerCase());
+
+  // When roles map is available, use it directly — no redundant oracle/theme scanning
+  const isOnTheme = cardRoles
+    ? (c: Card): boolean => {
+        const roles = cardRoles.get(c.name.toLowerCase());
+        return roles ? roles.themes.length > 0 : false;
+      }
+    : (() => {
+        const themes = identifyThemes(deck);
+        const themeNames = themes.map((t) =>
+          typeof t === "object" && t !== null && "name" in t
+            ? (t as ThemeResult).name
+            : String(t)
+        );
+        return (c: Card): boolean => themeNames.some((tn) => _cardFitsTheme(c, tn));
+      })();
+
+  const isLegendaryOrGod = (c: Card): boolean => {
+    if (cardRoles) {
+      return cardRoles.get(c.name.toLowerCase())?.isLegendaryOrGod ?? false;
+    }
+    const tl = c.type_line.toLowerCase();
+    return tl.includes("legendary") || tl.includes("god");
+  };
 
   const candidates = deck.mainboard.filter(
     (c) =>
@@ -1783,19 +1904,20 @@ export function _findCut(
       c.oracle_text.length > _MIN_ORACLE_TEXT_FOR_CUT &&
       !isOnTheme(c) &&
       !isCommander(c) &&
-      !_isWeakCategoryCard(c, weakLabels),
+      !isLegendaryOrGod(c) &&
+      !_isWeakCategoryCard(c, weakLabels, cardRoles?.get(c.name.toLowerCase())),
   );
 
   // If no suitable candidates, explain why
   if (candidates.length === 0) {
     const nonLands = deck.mainboard.filter((c) => !isLand(c));
-    if (nonLands.every((c) => isCommander(c) || isOnTheme(c))) {
-      return [null, "All non-lands are commanders or on-theme"];
+    if (nonLands.every((c) => isCommander(c) || isOnTheme(c) || isLegendaryOrGod(c))) {
+      return [null, "All non-lands are commanders, legendary, or on-theme"];
     }
     return [null, "No suitable cuts found"];
   }
 
-  // Prefer replacing expensive cards of the same broad type
+  // Prefer replacing cards of the same broad type
   const incomingType = incoming.type_line.toLowerCase();
   const broadTypes = [
     "creature",
@@ -1812,7 +1934,7 @@ export function _findCut(
   );
 
   const pool = sameType.length > 0 ? sameType : candidates;
-  // Sort by CMC descending — prefer cutting high-cost dead weight
-  pool.sort((a, b) => b.cmc - a.cmc);
+  // Sort by CMC ascending — prefer cutting cheap filler rather than expensive payoffs
+  pool.sort((a, b) => a.cmc - b.cmc);
   return [pool[0], null];
 }

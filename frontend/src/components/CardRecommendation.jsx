@@ -1,5 +1,6 @@
 import CardTooltip from './CardTooltip'
 import TagTooltip from './TagTooltip'
+import TooltipWrapper from './shared/TooltipWrapper'
 import { CATEGORY_COLORS, CATEGORY_TOOLTIPS, PRICE_TIER_COLORS, PRICE_TIER_TOOLTIPS } from '../constants/improvementMaps'
 
 const BORDER_CLASSES = {
@@ -19,21 +20,28 @@ const BORDER_CLASSES = {
  * @param {string} [reason] - Explanation text
  * @param {'default'|'danger'|'success'} [variant] - Border color variant
  */
-export default function CardRecommendation({ card, owned, category, priceTier, reason, variant = 'default' }) {
+export default function CardRecommendation({ card, owned, inDecks, category, priceTier, reason, variant = 'default' }) {
   const borderClass = BORDER_CLASSES[variant] ?? BORDER_CLASSES.default
-  const hasTags = owned || category || priceTier
+  const hasTags = owned || inDecks?.length || category || priceTier
 
   return (
     <div className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border ${borderClass} rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150`}>
       <span className="text-[var(--color-success)] text-sm font-bold mt-0.5">+</span>
       <div className="flex-1">
-        <span className="text-[var(--color-text)] font-semibold text-sm">
-          <CardTooltip cardName={card}>{card}</CardTooltip>
+        <span className="text-[var(--color-text)] font-semibold text-sm block">
+          <CardTooltip cardName={card} triggerClassName="block w-full">{card}</CardTooltip>
         </span>
         {hasTags && (
           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
             {owned && (
               <span className="text-[9px] text-[var(--color-success)]">✓ owned</span>
+            )}
+            {inDecks?.length > 0 && (
+              <TooltipWrapper content={inDecks.length === 1 ? `In: ${inDecks[0]}` : `In: ${inDecks.join(', ')}`}>
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">
+                  in a deck
+                </span>
+              </TooltipWrapper>
             )}
             {category && (
               <TagTooltip

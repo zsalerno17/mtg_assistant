@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function TooltipWrapper({ content, children }) {
   const [show, setShow] = useState(false)
@@ -25,20 +26,21 @@ export default function TooltipWrapper({ content, children }) {
       <span onMouseEnter={handleMouseEnter} onMouseLeave={() => setShow(false)}>
         {children}
       </span>
-      {show && (
+      {show && createPortal(
         <div
           style={{
             position: 'fixed',
             top: `${position.top}px`,
             left: `${position.left}px`,
             transform: 'translateY(-25%)',
-            zIndex: 9999,
+            zIndex: 999999,
             pointerEvents: 'none',
           }}
           className="px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl text-xs text-[var(--color-text)]"
         >
           <div className="max-w-xs whitespace-normal">{content}</div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

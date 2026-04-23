@@ -297,19 +297,12 @@ export function validateStrategyCards(
 export async function getImprovementSuggestions(
   deck: Deck,
   analysis: AnalysisDict,
-  collectionCards: { name: string }[],
   allowedSets?: string[],
 ): Promise<{ content: Record<string, unknown>; ai_enhanced: boolean }> {
   const context = deckContext(deck, analysis);
-  const owned = collectionCards.length
-    ? collectionCards
-        .slice(0, 300)
-        .map((c) => c.name)
-        .join(", ")
-    : "Not provided";
 
   const setConstraint = allowedSets?.length
-    ? `\nSET RESTRICTION: The player wants suggestions ONLY from these sets: ${allowedSets.join(", ")}. Do NOT recommend cards from any other set, even if they would be stronger upgrades. Only suggest cards the player already owns from those sets (listed above).\n`
+    ? `\nSET RESTRICTION: The player wants suggestions ONLY from these sets: ${allowedSets.join(", ")}. Do NOT recommend cards from any other set, even if they would be stronger upgrades.\n`
     : "";
 
   // Build a plain-English list of weak categories so Gemini knows what NOT to cut
@@ -319,13 +312,11 @@ export async function getImprovementSuggestions(
     : "";
 
   const prompt = `
-Suggest improvements for this Commander deck. Prioritise cards the player already owns.
+Suggest improvements for this Commander deck. Suggest the best cards from any Magic set.
 Return ONLY a valid JSON object — no markdown, no explanation outside the JSON.
 
 ${context}
 
-Cards the player owns (from their collection):
-${owned}
 ${setConstraint}
 IMPORTANT RULES:
 - urgent_fixes: cards to ADD that fix a critical gap (e.g. deck has 4 ramp but needs 10). No paired cut needed. Do NOT list cards already in the decklist above.
@@ -334,6 +325,8 @@ IMPORTANT RULES:
 - Limit each category to the top 8 most impactful suggestions, ordered by priority.
 - CRITICAL: Base ALL synergy reasoning strictly on the commander's actual oracle text provided above. Do NOT hallucinate card abilities or invent interactions that are not supported by the oracle text. If a card produces Treasure tokens but the commander does not interact with Treasure tokens, do not claim there is a Treasure synergy.
 ${weakCategoryLine ? `- CRITICAL: ${weakCategoryLine}. Cutting a card that fills a flagged weakness makes the deck worse, not better. Only suggest cuts from categories where the deck is already meeting or exceeding the recommended count.` : ""}
+- NEVER suggest cutting a legendary permanent or a god card. These are key payoffs or the deck's strategic identity and should never be the cut side of a swap.
+- When selecting a card to cut, prefer cheap utility cards that are doing the least work for the deck's specific strategy. High-value combat payoffs, commanders, and theme payoffs are not cut candidates even if they lack draw or ramp text.
 
 Return this exact JSON structure:
 {
