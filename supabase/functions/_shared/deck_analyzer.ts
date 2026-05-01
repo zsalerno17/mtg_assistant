@@ -1333,15 +1333,15 @@ function _cardFitsTheme(card: Card, theme: string): boolean {
         "proliferate",
         "modular",
         "evolve",
-        // Amplifier / multiplier effects (e.g. Corpsejack Menace, Doubling Season)
+        // Multiplier effects — Corpsejack Menace: "twice that many +1/+1 counters are put on it"
+        "twice that many +1/+1 counters",
+        // Broad counter doublers — Doubling Season, Vorinclex: "twice that many of those counters"
         "twice that many of those counters",
-        // Additive amplifiers (e.g. Hardened Scales, Conclave Mentor, Branching Evolution)
+        // Additive amplifiers — Hardened Scales, Conclave Mentor, Branching Evolution
+        "that many plus one +1/+1",
         "one additional +1/+1 counter",
-        "that many plus one of those counters",
-        // Broad doubling (e.g. Vorinclex, Monstrous Raider)
-        "double the number of each kind of counter",
-        // Counter-placement triggers (e.g. Bramble Sovereign variants)
-        "+1/+1 counters would be placed",
+        // Placement triggers — "+1/+1 counters would be put on" (actual Scryfall wording)
+        "+1/+1 counters would be put",
       ].some((kw) => oracle.includes(kw));
     case "Enchantress":
       return [
