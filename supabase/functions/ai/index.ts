@@ -5,6 +5,7 @@ import { requireAllowedUser, getTokenFromRequest, AuthError } from "../_shared/a
 import { getDeck } from "../_shared/moxfield.ts";
 import {
   analyzeDeck,
+  buildCardRoles,
   findCollectionImprovements,
   scenariosFallback,
   identifyWeaknesses,
@@ -34,6 +35,21 @@ function jsonResponse(data: unknown, req: Request, status = 200): Response {
 
 function errorResponse(status: number, detail: string, req: Request): Response {
   return jsonResponse({ detail }, req, status);
+}
+
+/** Extract card names from a cached strategy JSON string (strategy_v4 format). */
+function extractKeyCardNames(cached: string | null): string[] {
+  if (!cached) return [];
+  try {
+    const parsed = JSON.parse(cached) as Record<string, unknown>;
+    const keyCards = parsed.key_cards;
+    if (!Array.isArray(keyCards)) return [];
+    return keyCards
+      .map((kc: unknown) => (typeof kc === "object" && kc !== null ? (kc as Record<string, unknown>).name : null))
+      .filter((name): name is string => typeof name === "string" && name.length > 0);
+  } catch {
+    return [];
+  }
 }
 
 /** Reconstruct a Deck object from the Supabase decks cache. */
@@ -231,6 +247,7 @@ async function handleImprovements(
 
   const deck = await loadDeck(moxfieldId);
   const analysis = analyzeDeck(deck);
+  const cardRoles = buildCardRoles(deck);
 
   // Compute weakness list once — used for weakness-aware cut selection and swap validation
   const weaknesses = identifyWeaknesses(
@@ -258,7 +275,13 @@ async function handleImprovements(
       })
     : collectionCards;
 
-  const result = await getImprovementSuggestions(deck, analysis as unknown as Record<string, unknown>, allowedSets);
+  const strategyCached = await getCached(sb, moxfieldId, "strategy_v4");
+  const result = await getImprovementSuggestions(
+    deck,
+    analysis as unknown as Record<string, unknown>,
+    allowedSets,
+    extractKeyCardNames(strategyCached),
+  );
 
   // --- Post-process: validate swaps, merge legacy formats, add owned flags ---
   const content = result.content as Record<string, unknown>;
@@ -423,9 +446,13 @@ async function handleImprovements(
     const cutName = ((swap.cut as string) || "").toLowerCase();
     const addName = ((swap.add as string) || "").toLowerCase();
     if (!mainboardLower.has(cutName) || mainboardLower.has(addName)) continue;
-    // Skip if the cut card belongs to a weak category (would make the deck worse)
     const cutCard = deck.mainboard.find((c) => c.name.toLowerCase() === cutName);
     if (cutCard && _isWeakCategoryCard(cutCard, weakLabels)) continue;
+    // Never cut a legendary/god — mirrors the guard in _findCut
+    const cutTypeLine = (cutCard?.type_line ?? "").toLowerCase();
+    if (cutTypeLine.includes("legendary") || cutTypeLine.includes("god")) continue;
+    // Never cut an on-theme card
+    if (cutCard && (cardRoles.get(cutName)?.themes.length ?? 0) > 0) continue;
     // Skip if the add card was already promoted into a swap
     if (promotedCardNames.has(addName)) continue;
     swap.owned = ownedLower.has(addName);
@@ -639,6 +666,7 @@ async function handleSuggestions(
 
   const deck = await loadDeck(moxfieldId);
   const analysis = analyzeDeck(deck);
+  const cardRoles = buildCardRoles(deck);
   const weaknesses = identifyWeaknesses(
     deck,
     analysis.strategy as string | undefined,
@@ -721,7 +749,13 @@ async function handleSuggestions(
 
     // Pass empty collection — Gemini suggests on merit (no ownership bias = shorter prompt, faster).
     // Ownership is stamped below from ownedLower after Gemini responds.
-    const result = await getImprovementSuggestions(deck, analysis as unknown as Record<string, unknown>, allowedSets);
+    const suggestionsStrategyCached = await getCached(sb, moxfieldId, "strategy_v4");
+    const result = await getImprovementSuggestions(
+      deck,
+      analysis as unknown as Record<string, unknown>,
+      allowedSets,
+      extractKeyCardNames(suggestionsStrategyCached),
+    );
     aiEnhanced = result.ai_enhanced;
 
     if (result.ai_enhanced) {
@@ -740,6 +774,11 @@ async function handleSuggestions(
         if (!mainboardLower.has(cutName) || mainboardLower.has(addName)) continue;
         const cutCard = deck.mainboard.find((c) => c.name.toLowerCase() === cutName);
         if (cutCard && _isWeakCategoryCard(cutCard, weakLabels)) continue;
+        // Never cut a legendary/god — mirrors the guard in _findCut
+        const cutTypeLine = (cutCard?.type_line ?? "").toLowerCase();
+        if (cutTypeLine.includes("legendary") || cutTypeLine.includes("god")) continue;
+        // Never cut an on-theme card
+        if (cutCard && (cardRoles.get(cutName)?.themes.length ?? 0) > 0) continue;
         if (seenAI.has(addName)) continue;
         swap.owned = ownedLower.has(addName);
         swaps.push({ ...swap, source: "ai" });

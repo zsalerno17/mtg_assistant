@@ -298,6 +298,7 @@ export async function getImprovementSuggestions(
   deck: Deck,
   analysis: AnalysisDict,
   allowedSets?: string[],
+  keyCards?: string[],
 ): Promise<{ content: Record<string, unknown>; ai_enhanced: boolean }> {
   const context = deckContext(deck, analysis);
 
@@ -309,6 +310,10 @@ export async function getImprovementSuggestions(
   const rawWeaknesses = (analysis.weaknesses ?? []) as Array<{ label: string } | string>;
   const weakCategoryLine = rawWeaknesses.length
     ? `The deck has these flagged weaknesses (DO NOT suggest cutting cards that fill these roles): ${rawWeaknesses.map((w) => (typeof w === "object" ? w.label : w)).join("; ")}`
+    : "";
+
+  const keyCardsLine = keyCards?.length
+    ? `- CRITICAL: The following cards have been identified as KEY to this deck's strategy — NEVER suggest cutting any of them: ${keyCards.join(", ")}.`
     : "";
 
   const prompt = `
@@ -325,6 +330,7 @@ IMPORTANT RULES:
 - Limit each category to the top 8 most impactful suggestions, ordered by priority.
 - CRITICAL: Base ALL synergy reasoning strictly on the commander's actual oracle text provided above. Do NOT hallucinate card abilities or invent interactions that are not supported by the oracle text. If a card produces Treasure tokens but the commander does not interact with Treasure tokens, do not claim there is a Treasure synergy.
 ${weakCategoryLine ? `- CRITICAL: ${weakCategoryLine}. Cutting a card that fills a flagged weakness makes the deck worse, not better. Only suggest cuts from categories where the deck is already meeting or exceeding the recommended count.` : ""}
+${keyCardsLine}
 - NEVER suggest cutting a legendary permanent or a god card. These are key payoffs or the deck's strategic identity and should never be the cut side of a swap.
 - When selecting a card to cut, prefer cheap utility cards that are doing the least work for the deck's specific strategy. High-value combat payoffs, commanders, and theme payoffs are not cut candidates even if they lack draw or ramp text.
 
