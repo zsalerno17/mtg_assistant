@@ -224,7 +224,7 @@ export function analyzeDeck(deck: Deck): DeckAnalysis {
   if (deck.partner) commanders.push(deck.partner.name);
 
   const strategy = classifyStrategy(deck);
-  const powerLevel = calculatePowerLevel(deck);
+  const powerLevel = calculatePowerLevel(deck, themes);
 
   // Recalculate weaknesses with dynamic thresholds
   const weaknesses = identifyWeaknesses(deck, strategy, powerLevel);
@@ -1109,6 +1109,7 @@ const _HIGH_POWER_COMMANDERS = new Set([
 
 const _STRONG_COMMANDERS = new Set([
   "yisan, the wanderer bard", "edgar markov", "atraxa, praetors' voice",
+  "atraxa, grand unifier",
   "breya, etherium shaper", "zur the enchanter", "the gitrog monster",
 ]);
 
@@ -1120,7 +1121,10 @@ export function getDeckBracket(powerLevel: number): { bracket: number; bracket_l
   return { bracket: 4, bracket_label: "cEDH" };
 }
 
-export function calculatePowerLevel(deck: Deck): number {
+export function calculatePowerLevel(
+  deck: Deck,
+  themes: ThemeResult[] = [],
+): number {
   const allCards = getAllCards(deck);
   const avgCmc = calculateAverageCmc(allCards);
 
@@ -1167,8 +1171,9 @@ export function calculatePowerLevel(deck: Deck): number {
   if (avgCmc <= 2.5) score += 1.0;
   else if (avgCmc >= 4.0) score -= 1.0;
 
-  // Card draw density
-  if (draw >= 12) score += 0.5;
+  // Card draw density — gradient so synergy decks with 10-11 draw aren't cliff-penalized
+  if (draw >= 14) score += 0.5;
+  else if (draw >= 10) score += 0.25;
 
   // Interaction density
   if (interaction >= 15) score += 0.5;
@@ -1176,16 +1181,30 @@ export function calculatePowerLevel(deck: Deck): number {
   // Low-interaction penalty (goldfish/pure combo with no answers)
   if (interaction < 8) score -= 0.5;
 
-  // Commander power signals
-  const commanderBonus = (name: string | undefined): number => {
-    if (!name) return 0;
-    const n = name.toLowerCase();
+  // Theme coherence bonus — a focused synergy deck earns credit for card density,
+  // not just for running fast mana and tutors
+  let themeBonus = 0;
+  for (const theme of themes) {
+    const threshold = _THEME_THRESHOLDS[theme.name] ?? 8;
+    if (theme.count >= threshold * 2.0) themeBonus += 0.75;
+    else if (theme.count >= threshold * 1.5) themeBonus += 0.5;
+  }
+  score += Math.min(themeBonus, 1.5);
+
+  // Commander power signals — name list first, then oracle text fallback
+  // for commanders not in the hardcoded lists (e.g. lesser-known counter/proliferate commanders)
+  const commanderBonus = (card: Card | null | undefined): number => {
+    if (!card) return 0;
+    const n = card.name.toLowerCase();
     if (_HIGH_POWER_COMMANDERS.has(n)) return 1.5;
     if (_STRONG_COMMANDERS.has(n)) return 0.75;
+    const oracle = card.oracle_text.toLowerCase();
+    if (oracle.includes("proliferate")) return 0.5;
+    if (oracle.includes("put a +1/+1 counter") || oracle.includes("+1/+1 counter on each")) return 0.5;
     return 0;
   };
-  score += commanderBonus(deck.commander?.name);
-  score += commanderBonus(deck.partner?.name);
+  score += commanderBonus(deck.commander);
+  score += commanderBonus(deck.partner);
 
   return Math.max(1, Math.min(10, Math.round(score)));
 }
