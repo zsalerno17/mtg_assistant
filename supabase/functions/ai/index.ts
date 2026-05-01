@@ -157,18 +157,19 @@ async function setCached(
 // ---------------------------------------------------------------------------
 
 async function handleStrategy(
-  body: { moxfield_id?: string },
+  body: { moxfield_id?: string; force?: boolean },
   req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
   if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
+  const force = body.force ?? false;
 
   const sb = getServiceClient();
 
   // Load deck first so we can validate card references on both cache hits and misses
   const deck = await loadDeck(moxfieldId);
 
-  const cached = await getCached(sb, moxfieldId, "strategy_v4");
+  const cached = !force && await getCached(sb, moxfieldId, "strategy_v4");
   if (cached) {
     try {
       const strategy = validateStrategyCards(JSON.parse(cached), deck.mainboard);
@@ -602,13 +603,14 @@ async function handleCollectionUpgrades(
 // or both. Replaces the separate /improvements and /collection-upgrades routes.
 
 async function handleSuggestions(
-  body: { moxfield_id?: string; mode?: string; allowed_sets?: string[] },
+  body: { moxfield_id?: string; mode?: string; allowed_sets?: string[]; force?: boolean },
   userId: string,
   userClient: ReturnType<typeof getUserClient>,
   req: Request,
 ): Promise<Response> {
   const moxfieldId = body.moxfield_id;
   if (!moxfieldId) return errorResponse(400, "Missing 'moxfield_id'", req);
+  const force = body.force ?? false;
 
   const mode = (["collection", "any"].includes(body.mode || "")
     ? body.mode
@@ -619,7 +621,7 @@ async function handleSuggestions(
   const setsKey = allowedSets ? `:${allowedSets.slice().sort().join(",")}` : "";
   const cacheKey = `suggestions:${moxfieldId}:${userId}:${mode}${setsKey}`;
 
-  const cached = await getCached(sb, cacheKey, "suggestions_v4");
+  const cached = !force && await getCached(sb, cacheKey, "suggestions_v4");
   if (cached) {
     try {
       const parsed = JSON.parse(cached);

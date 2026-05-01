@@ -863,8 +863,8 @@ function GamePhasesAccordion({ phases, cardMap }) {
   )
 }
 
-function StrategyTab({ deckId, cardMap = new Map() }) {
-  const { data: raw, loading, error } = useDataFetch(() => api.getStrategy(deckId), [deckId])
+function StrategyTab({ deckId, cardMap = new Map(), refreshKey = 0 }) {
+  const { data: raw, loading, error } = useDataFetch(() => api.getStrategy(deckId, { force: refreshKey > 0 }), [deckId, refreshKey])
   const data = raw?.strategy
   const aiEnhanced = raw?.ai_enhanced ?? false
 
@@ -987,7 +987,7 @@ const AI_LOADING_MESSAGES = [
   "Almost ready to tap out...",
 ]
 
-function DeckImprovementsTab({ deckId }) {
+function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
   const [mode, setMode] = useState('collection')
   const [selectedSets, setSelectedSets] = useState([])
   const [appliedSets, setAppliedSets] = useState([])
@@ -1029,12 +1029,12 @@ function DeckImprovementsTab({ deckId }) {
     setLoading(true)
     setError(null)
     setRaw(null)
-    api.getDeckImprovements(deckId, mode, appliedSets)
+    api.getDeckImprovements(deckId, mode, appliedSets, { force: refreshKey > 0 })
       .then(setRaw)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckId, mode, appliedKey])
+  }, [deckId, mode, appliedKey, refreshKey])
 
   const data = raw?.suggestions
   const aiEnhanced = raw?.ai_enhanced ?? false
@@ -1854,6 +1854,7 @@ export default function DeckPage() {
   const [loadError, setLoadError] = useState(null)
   const [isCached, setIsCached] = useState(false)
   const [reanalyzing, setReanalyzing] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Source platform ('moxfield' or 'archidekt') passed through navigate state
   const source = location.state?.source || 'moxfield'
@@ -1882,6 +1883,7 @@ export default function DeckPage() {
       .then((result) => {
         setAnalysis(result.analysis)
         setIsCached(false)
+        setRefreshKey(k => k + 1)
       })
       .catch((err) => setLoadError(err.message))
       .finally(() => setReanalyzing(false))
@@ -2086,11 +2088,11 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Strategy' && (
-            <StrategyTab deckId={deckId} cardMap={new Map((deck?.mainboard || []).map(c => [c.name, c]))} />
+            <StrategyTab deckId={deckId} cardMap={new Map((deck?.mainboard || []).map(c => [c.name, c]))} refreshKey={refreshKey} />
           )}
 
           {activeTab === 'Deck Improvements' && (
-            <DeckImprovementsTab deckId={deckId} />
+            <DeckImprovementsTab deckId={deckId} refreshKey={refreshKey} />
           )}
 
           {activeTab === 'Scenarios' && (

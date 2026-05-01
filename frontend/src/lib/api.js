@@ -117,8 +117,8 @@ export const api = {
     edgeFetch('decks', '/analyze', { method: 'POST', body: JSON.stringify({ moxfield_id, force, source }) }),
 
   /** Get Gemini strategy advice for a deck. */
-  getStrategy: (moxfield_id) =>
-    edgeFetch('ai', '/strategy', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
+  getStrategy: (moxfield_id, { force = false } = {}) =>
+    edgeFetch('ai', '/strategy', { method: 'POST', body: JSON.stringify({ moxfield_id, ...(force ? { force } : {}) }) }),
 
   /** Get Gemini improvement suggestions (cross-referenced with user's collection). */
   getImprovements: (moxfield_id, allowedSets = []) =>
@@ -129,8 +129,8 @@ export const api = {
     edgeFetch('ai', '/collection-upgrades', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
 
   /** Get unified deck improvement suggestions (mode: 'collection' | 'any' | 'both'). */
-  getDeckImprovements: (moxfield_id, mode = 'collection', allowedSets = []) =>
-    edgeFetch('ai', '/suggestions', { method: 'POST', body: JSON.stringify({ moxfield_id, mode, ...(allowedSets.length ? { allowed_sets: allowedSets } : {}) }) }),
+  getDeckImprovements: (moxfield_id, mode = 'collection', allowedSets = [], { force = false } = {}) =>
+    edgeFetch('ai', '/suggestions', { method: 'POST', body: JSON.stringify({ moxfield_id, mode, ...(allowedSets.length ? { allowed_sets: allowedSets } : {}), ...(force ? { force } : {}) }) }),
 
   /** Get the authenticated user's profile (username, avatar_url). */
   getProfile: () =>
