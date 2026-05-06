@@ -74,7 +74,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { deckId, userGoals } = body;
+    const { deckId, userGoals, allowed_sets } = body;
 
     if (!deckId || typeof deckId !== "string") {
       return errorResponse(400, "Missing or invalid deckId", req);
@@ -83,6 +83,9 @@ serve(async (req) => {
     if (!userGoals || typeof userGoals !== "object") {
       return errorResponse(400, "Missing or invalid userGoals", req);
     }
+
+    // Parse allowed_sets filter
+    const allowedSets: string[] = Array.isArray(allowed_sets) ? allowed_sets : [];
 
     // Validate userGoals structure
     const goals: UserGoals = {
@@ -127,7 +130,23 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[upgrade-path] Found collection with ${collection.length} cards`);
+    // Apply set filter to collection if specified
+    const filteredCollection = allowedSets.length > 0
+      ? collection.filter((c) => allowedSets.includes(c.set_code || ""))
+      : collection;
+
+    if (filteredCollection.length === 0 && allowedSets.length > 0) {
+      return errorResponse(
+        400,
+        `No cards found in your collection from the selected sets: ${allowedSets.join(", ")}`,
+        req
+      );
+    }
+
+    console.log(
+      `[upgrade-path] Found collection with ${collection.length} cards` +
+      (allowedSets.length > 0 ? ` (filtered to ${filteredCollection.length} from ${allowedSets.join(", ")})` : "")
+    );
 
     // 3. Build card usage map to track which decks cards are in
     const usageMap = await buildCardUsageMap(userSb, user.userId);
@@ -148,7 +167,7 @@ serve(async (req) => {
     );
 
     // 5. Build upgrade path
-    const upgradePath = buildUpgradePath(deck, collection, goals, currentAnalysis);
+    const upgradePath = buildUpgradePath(deck, filteredCollection, goals, currentAnalysis);
     
     // 6. Stamp in_decks on all cardIn objects
     for (const phase of upgradePath.phases) {

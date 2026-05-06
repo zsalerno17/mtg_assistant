@@ -633,13 +633,16 @@ export function countDraw(cards: Card[]): number {
     "draw an additional",
   ];
   let count = 0;
+  const matchedCards: string[] = [];
   for (const card of cards) {
     if (isLand(card)) continue;
     const oracle = card.oracle_text.toLowerCase();
     if (drawPhrases.some((p) => oracle.includes(p))) {
       count += card.quantity;
+      matchedCards.push(card.name);
     }
   }
+  console.log(`[DEBUG countDraw] Total count: ${count}, matched cards:`, matchedCards.slice(0, 5));
   return count;
 }
 
@@ -1391,6 +1394,8 @@ export function explainPowerLevel(
   const draw = countDraw(allCards);
   const interaction = countInteraction(allCards);
 
+  console.log(`[DEBUG explainPowerLevel] Card Draw count: ${draw}`);
+
   // Split tutors into premium and generic
   let premiumTutors = 0;
   let genericTutors = 0;
@@ -1514,14 +1519,25 @@ export function explainPowerLevel(
   });
 
   // Card draw
+  const drawPhrases = [
+    "draw a card",
+    "draw cards",
+    "draw two",
+    "draw three",
+    "draw x ",
+    "draw that many",
+    "draw an additional",
+  ];
   const drawCards: string[] = [];
   for (const card of allCards) {
     if (isLand(card)) continue;
     const oracle = card.oracle_text.toLowerCase();
-    if (oracle.includes("draw") && !oracle.includes("drawback")) {
+    if (drawPhrases.some((p) => oracle.includes(p))) {
       drawCards.push(card.name);
     }
   }
+  console.log(`[DEBUG Card Draw] drawCards.length: ${drawCards.length}, draw count: ${draw}, cards:`, drawCards.slice(0, 5));
+  
   let drawValue = 0;
   let drawDesc = "";
   if (draw >= 14) {
@@ -1534,6 +1550,7 @@ export function explainPowerLevel(
     drawValue = 0;
     drawDesc = `${draw} sources (needs improvement)`;
   }
+  console.log(`[DEBUG Card Draw] Final drawValue: ${drawValue}, desc: ${drawDesc}`);
   factors.push({
     category: "Card Draw",
     value: drawValue,

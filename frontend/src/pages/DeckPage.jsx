@@ -1104,7 +1104,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
     setUpgradePath(null)
     
     try {
-      const path = await api.buildUpgradePath(deckId, goals)
+      const path = await api.buildUpgradePath(deckId, goals, appliedSets)
       setUpgradePath(path)
     } catch (err) {
       console.error('Failed to build upgrade path:', err)
