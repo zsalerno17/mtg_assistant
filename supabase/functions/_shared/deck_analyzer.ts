@@ -139,6 +139,8 @@ export interface DeckAnalysis {
   themes: ThemeResult[];
   theme_names: string[];
   weaknesses: WeaknessResult[];
+  power_breakdown: PowerLevelBreakdown;
+  win_conditions: WinCondition[];
   verdict: string;
 }
 
@@ -197,12 +199,87 @@ export interface ScenarioResult {
   verdict: string;
 }
 
+export interface PowerLevelFactor {
+  category: string;
+  value: number;
+  max_contribution: number;
+  description: string;
+  cards?: string[]; // Card names contributing to this factor
+  card_scores?: { [cardName: string]: number }; // Individual card contributions
+}
+
+export interface PowerLevelBreakdown {
+  total: number;
+  rounded: number;
+  bracket: number;
+  bracket_label: string;
+  factors: PowerLevelFactor[];
+  next_bracket_threshold?: {
+    target_bracket: number;
+    target_power: number;
+    gap: number;
+    suggestions: string[];
+  };
+}
+
+export interface PowerDelta {
+  before: number;
+  after: number;
+  change: number;
+  factors_changed: string[];
+}
+
+export interface WinCondition {
+  type: "combo" | "combat" | "alternate_wincon" | "value_grind";
+  description: string;
+  cards: string[];
+  reliability: "primary" | "secondary" | "backup";
+}
+
+export interface UserGoals {
+  targetPowerLevel?: number;           // Target power level (1-10)
+  budgetConstraint?: number;            // Budget in USD
+  themeEmphasis?: string[];             // Themes to prioritize (e.g., ["Tokens", "Aristocrats"])
+  style?: "casual" | "competitive" | "thematic" | "budget"; // Playstyle preference
+}
+
+export interface UpgradePhase {
+  phaseNumber: number;
+  title: string;
+  description: string;
+  estimatedCost: number;
+  powerGain: number;
+  targetPower: number;
+  swaps: Array<{
+    cardOut: Card;
+    cardIn: Card;
+    reason: string;
+    cost: number;
+    powerDelta: PowerDelta;
+  }>;
+  additions?: Array<{
+    cardIn: Card;
+    reason: string;
+    cost: number;
+    powerDelta: PowerDelta;
+  }>;
+}
+
+export interface UpgradePath {
+  currentPower: number;
+  targetPower: number;
+  totalBudget: number;
+  phases: UpgradePhase[];
+  summary: string;
+}
+
 export type ImprovementSuggestion = [
-  Card,
-  Card | null,
-  string,
-  number,
-  string | null
+  Card,                // add
+  Card | null,         // cut
+  string,              // reason
+  number,              // score
+  string | null,       // neverCutReason
+  PowerDelta | null,   // power impact (NEW)
 ];
 
 export interface CardRoles {
@@ -224,7 +301,11 @@ export function analyzeDeck(deck: Deck): DeckAnalysis {
   if (deck.partner) commanders.push(deck.partner.name);
 
   const strategy = classifyStrategy(deck);
-  const powerLevel = calculatePowerLevel(deck, themes);
+  
+  // Get detailed power breakdown first
+  const powerBreakdown = explainPowerLevel(deck, themes);
+  console.log(`[analyzeDeck] powerBreakdown has ${powerBreakdown.factors.length} factors`);
+  const powerLevel = powerBreakdown.rounded; // Use rounded value from detailed breakdown
 
   // Recalculate weaknesses with dynamic thresholds
   const weaknesses = identifyWeaknesses(deck, strategy, powerLevel);
@@ -256,6 +337,8 @@ export function analyzeDeck(deck: Deck): DeckAnalysis {
     themes,
     theme_names: themes.map((t) => t.name),
     weaknesses,
+    power_breakdown: powerBreakdown,
+    win_conditions: identifyWinConditions(deck, themes),
   };
 
   return {
@@ -296,13 +379,22 @@ export function findCollectionImprovements(
     if (result) {
       const [reason, score] = result;
       const [cut, neverCutReason] = _findCut(deck, colCard, weaknesses, cardRoles);
-      suggestions.push([colCard, cut, reason, score, neverCutReason]);
+      
+      // Calculate power delta for this suggestion
+      const powerDelta = calculatePowerDelta(deck, colCard, cut, themes);
+      
+      suggestions.push([colCard, cut, reason, score, neverCutReason, powerDelta]);
     }
   }
 
-  // Sort by score descending, then return top 20
-  suggestions.sort((a, b) => b[3] - a[3]);
-  return suggestions.slice(0, 20);
+  // Sort by power delta descending (prioritize highest impact), then by score
+  suggestions.sort((a, b) => {
+    const deltaA = a[5]?.change ?? 0;
+    const deltaB = b[5]?.change ?? 0;
+    if (deltaB !== deltaA) return deltaB - deltaA; // Highest power delta first
+    return b[3] - a[3]; // Then by score
+  });
+  return suggestions.slice(0, 50); // Increased from 20 to 50 for upgrade path building
 }
 
 export function scenariosFallback(
@@ -687,6 +779,82 @@ const _FAST_MANA_NAMES = new Set([
 const _FAST_MANA_LAND_NAMES = new Set([
   "ancient tomb", "city of traitors", "gemstone caverns", "cabal coffers",
 ]);
+
+// ─── Known Commander Combos ───────────────────────────────────────────────────
+// Two-card infinite combos commonly seen in Commander. Map piece → enabling pieces.
+
+const KNOWN_COMBOS: Record<string, string[]> = {
+  // Infinite mana combos
+  "isochron scepter": ["dramatic reversal"],
+  "dramatic reversal": ["isochron scepter"],
+  "kiki-jiki, mirror breaker": ["zealous conscripts", "deceiver exarch", "pestermite", "corridor monitor"],
+  "zealous conscripts": ["kiki-jiki, mirror breaker"],
+  "deceiver exarch": ["kiki-jiki, mirror breaker", "splinter twin"],
+  "pestermite": ["kiki-jiki, mirror breaker", "splinter twin"],
+  "corridor monitor": ["kiki-jiki, mirror breaker"],
+  "splinter twin": ["deceiver exarch", "pestermite"],
+  "pili-pala": ["grand architect"],
+  "grand architect": ["pili-pala"],
+  "basalt monolith": ["rings of brighthearth", "power artifact", "forsaken monument"],
+  "rings of brighthearth": ["basalt monolith", "grim monolith"],
+  "power artifact": ["basalt monolith", "grim monolith"],
+  "grim monolith": ["rings of brighthearth", "power artifact"],
+  "pemmin's aura": ["incubation druid", "priest of titania", "elvish archdruid"],
+  "freed from the real": ["incubation druid", "priest of titania", "elvish archdruid"],
+  "deadeye navigator": ["peregrine drake", "palinchron", "cloud of faeries"],
+  "peregrine drake": ["deadeye navigator"],
+  "palinchron": ["deadeye navigator"],
+  "cloud of faeries": ["deadeye navigator"],
+  
+  // Infinite creature combos
+  "mikaeus, the unhallowed": ["walking ballista", "triskelion"],
+  "walking ballista": ["mikaeus, the unhallowed", "heliod, sun-crowned"],
+  "triskelion": ["mikaeus, the unhallowed"],
+  "heliod, sun-crowned": ["walking ballista"],
+  "nim deathmantle": ["ashnod's altar"],
+  "ashnod's altar": ["nim deathmantle"],
+  
+  // Infinite damage/lifegain
+  "exquisite blood": ["sanguine bond", "vito, thorn of the dusk rose"],
+  "sanguine bond": ["exquisite blood"],
+  "vito, thorn of the dusk rose": ["exquisite blood"],
+  
+  // Infinite storm/ETB
+  "ghostly flicker": ["archaeomancer", "mnemonic wall"],
+  "archaeomancer": ["ghostly flicker", "displace"],
+  "mnemonic wall": ["ghostly flicker", "displace"],
+  "displace": ["archaeomancer", "mnemonic wall"],
+  
+  // Thoracle wins
+  "thassa's oracle": ["demonic consultation", "tainted pact"],
+  "demonic consultation": ["thassa's oracle", "laboratory maniac"],
+  "tainted pact": ["thassa's oracle", "laboratory maniac"],
+  "laboratory maniac": ["demonic consultation", "tainted pact"],
+  
+  // Time/turn combos
+  "time warp": ["archaeomancer", "eternal witness"],
+  "eternal witness": ["time warp", "temporal manipulation"],
+  "temporal manipulation": ["archaeomancer", "eternal witness"],
+  
+  // Food Chain combo
+  "food chain": ["misthollow griffin", "eternal scourge", "squee, the immortal"],
+  "misthollow griffin": ["food chain"],
+  "eternal scourge": ["food chain"],
+  "squee, the immortal": ["food chain"],
+  
+  // Doomsday piles
+  "doomsday": ["thassa's oracle", "laboratory maniac"],
+  
+  // Underworld Breach combos
+  "underworld breach": ["brain freeze", "wheel of fortune"],
+  "brain freeze": ["underworld breach"],
+  
+  // Worldgorger Dragon combo
+  "worldgorger dragon": ["animate dead", "dance of the dead", "necromancy"],
+  "animate dead": ["worldgorger dragon"],
+  "dance of the dead": ["worldgorger dragon"],
+  "necromancy": ["worldgorger dragon"],
+};
 
 export function countFastMana(cards: Card[]): number {
   let count = 0;
@@ -1209,6 +1377,803 @@ export function calculatePowerLevel(
   return Math.max(1, Math.min(10, Math.round(score)));
 }
 
+// ─── Power Level Breakdown (Phase 1) ─────────────────────────────────────────
+
+export function explainPowerLevel(
+  deck: Deck,
+  themes: ThemeResult[] = [],
+): PowerLevelBreakdown {
+  const allCards = getAllCards(deck);
+  const avgCmc = calculateAverageCmc(allCards);
+
+  const fastMana = countFastMana(allCards);
+  const counters = countCounterspells(allCards);
+  const draw = countDraw(allCards);
+  const interaction = countInteraction(allCards);
+
+  // Split tutors into premium and generic
+  let premiumTutors = 0;
+  let genericTutors = 0;
+  const premiumTutorCards: string[] = [];
+  const genericTutorCards: string[] = [];
+  for (const card of allCards) {
+    if (isLand(card)) continue;
+    const nameLower = card.name.toLowerCase();
+    const oracle = card.oracle_text.toLowerCase();
+    if (_PREMIUM_TUTOR_NAMES.has(nameLower)) {
+      premiumTutors += card.quantity;
+      premiumTutorCards.push(card.name);
+    } else if (oracle.includes("search your library")) {
+      if (
+        oracle.includes("land") &&
+        !["card", "creature", "instant", "sorcery", "artifact", "enchantment"].some(
+          (kw) => oracle.includes(kw),
+        )
+      ) {
+        continue;
+      }
+      genericTutors += card.quantity;
+      genericTutorCards.push(card.name);
+    }
+  }
+
+  // Calculate each factor explicitly
+  const factors: PowerLevelFactor[] = [];
+
+  // Base
+  factors.push({
+    category: "Base",
+    value: 3.0,
+    max_contribution: 3.0,
+    description: "Starting baseline for all decks",
+  });
+
+  // Fast mana
+  const fastManaCards: string[] = [];
+  const fastManaScores: { [name: string]: number } = {};
+  for (const card of allCards) {
+    if (isLand(card)) continue;
+    const oracle = card.oracle_text.toLowerCase();
+    if (card.cmc <= 1 && (oracle.includes("add {") || oracle.includes("add mana"))) {
+      fastManaCards.push(card.name);
+      // Each fast mana piece contributes +0.5, capped at 2.0 total
+      fastManaScores[card.name] = 0.5;
+    }
+  }
+  const fastManaValue = Math.min(fastMana * 0.5, 2.0);
+  factors.push({
+    category: "Fast Mana",
+    value: fastManaValue,
+    max_contribution: 2.0,
+    description: `${fastMana} pieces (Sol Ring, Mana Crypt, Mox Diamond, etc.)`,
+    cards: fastManaCards,
+    card_scores: fastManaScores,
+  });
+
+  // Tutors
+  const tutorValue = Math.min(premiumTutors * 0.5, 2.5) + Math.min(genericTutors * 0.2, 1.0);
+  const tutorScores: { [name: string]: number } = {};
+  for (const card of premiumTutorCards) {
+    tutorScores[card] = 0.5; // Premium tutors contribute +0.5 each
+  }
+  for (const card of genericTutorCards) {
+    tutorScores[card] = 0.2; // Generic tutors contribute +0.2 each
+  }
+  factors.push({
+    category: "Tutors",
+    value: tutorValue,
+    max_contribution: 3.5,
+    description: `${premiumTutors} premium, ${genericTutors} generic`,
+    cards: [...premiumTutorCards, ...genericTutorCards],
+    card_scores: tutorScores,
+  });
+
+  // Counterspells
+  const counterCards: string[] = [];
+  const counterScores: { [name: string]: number } = {};
+  for (const card of allCards) {
+    if (isLand(card)) continue;
+    const oracle = card.oracle_text.toLowerCase();
+    if (
+      oracle.includes("counter target") &&
+      (oracle.includes("spell") || oracle.includes("ability"))
+    ) {
+      counterCards.push(card.name);
+      // Each counterspell contributes +0.3, capped at 1.5 total
+      counterScores[card.name] = 0.3;
+    }
+  }
+  const counterValue = Math.min(counters * 0.3, 1.5);
+  factors.push({
+    category: "Counterspells",
+    value: counterValue,
+    max_contribution: 1.5,
+    description: `${counters} counterspells`,
+    cards: counterCards,
+    card_scores: counterScores,
+  });
+
+  // CMC efficiency
+  let cmcValue = 0;
+  let cmcDesc = "";
+  if (avgCmc <= 2.5) {
+    cmcValue = 1.0;
+    cmcDesc = `Avg CMC ${avgCmc.toFixed(1)} (very efficient)`;
+  } else if (avgCmc >= 4.0) {
+    cmcValue = -1.0;
+    cmcDesc = `Avg CMC ${avgCmc.toFixed(1)} (slow/expensive)`;
+  } else {
+    cmcValue = 0;
+    cmcDesc = `Avg CMC ${avgCmc.toFixed(1)} (balanced)`;
+  }
+  factors.push({
+    category: "CMC Efficiency",
+    value: cmcValue,
+    max_contribution: 1.0,
+    description: cmcDesc,
+  });
+
+  // Card draw
+  const drawCards: string[] = [];
+  for (const card of allCards) {
+    if (isLand(card)) continue;
+    const oracle = card.oracle_text.toLowerCase();
+    if (oracle.includes("draw") && !oracle.includes("drawback")) {
+      drawCards.push(card.name);
+    }
+  }
+  let drawValue = 0;
+  let drawDesc = "";
+  if (draw >= 14) {
+    drawValue = 0.5;
+    drawDesc = `${draw} sources (excellent density)`;
+  } else if (draw >= 10) {
+    drawValue = 0.25;
+    drawDesc = `${draw} sources (good density)`;
+  } else {
+    drawValue = 0;
+    drawDesc = `${draw} sources (needs improvement)`;
+  }
+  factors.push({
+    category: "Card Draw",
+    value: drawValue,
+    max_contribution: 0.5,
+    description: drawDesc,
+    cards: drawCards.slice(0, 20), // Limit to first 20 to avoid excessive list
+    // No card_scores - this is a threshold bonus, not per-card
+  });
+
+  // Interaction
+  const interactionCards: string[] = [];
+  for (const card of allCards) {
+    if (isLand(card)) continue;
+    const oracle = card.oracle_text.toLowerCase();
+    const typeLine = card.type_line.toLowerCase();
+    if (
+      oracle.includes("destroy") ||
+      oracle.includes("exile") ||
+      oracle.includes("counter target") ||
+      oracle.includes("return") ||
+      (typeLine.includes("instant") && oracle.includes("damage"))
+    ) {
+      interactionCards.push(card.name);
+    }
+  }
+  // Use interactionCards length for scoring to match what we display
+  const interactionCount = interactionCards.length;
+  let interactionValue = 0;
+  let interactionDesc = "";
+  if (interactionCount >= 15) {
+    interactionValue = 0.5;
+    interactionDesc = `${interactionCount} pieces (excellent)`;
+  } else if (interactionCount < 8) {
+    interactionValue = -0.5;
+    interactionDesc = `${interactionCount} pieces (dangerously low)`;
+  } else {
+    interactionValue = 0;
+    interactionDesc = `${interactionCount} pieces (adequate)`;
+  }
+  factors.push({
+    category: "Interaction",
+    value: interactionValue,
+    max_contribution: 0.5,
+    description: interactionDesc,
+    cards: interactionCards.slice(0, 20),
+    // No card_scores - this is a threshold bonus, not per-card
+  });
+
+  // Theme coherence
+  let themeBonus = 0;
+  const themeDescriptions: string[] = [];
+  const themeCards: string[] = [];
+  
+  for (const theme of themes) {
+    const threshold = _THEME_THRESHOLDS[theme.name] ?? 8;
+    let themeBonusValue = 0;
+    
+    if (theme.count >= threshold * 2.0) {
+      themeBonusValue = 0.75;
+      themeDescriptions.push(`${theme.name} (${theme.count} cards)`);
+      const cardsToShow = theme.cards.slice(0, 10);
+      themeCards.push(...cardsToShow);
+      themeBonus += themeBonusValue;
+    } else if (theme.count >= threshold * 1.5) {
+      themeBonusValue = 0.5;
+      themeDescriptions.push(`${theme.name} (${theme.count} cards)`);
+      const cardsToShow = theme.cards.slice(0, 10);
+      themeCards.push(...cardsToShow);
+      themeBonus += themeBonusValue;
+    }
+  }
+  themeBonus = Math.min(themeBonus, 1.5);
+  factors.push({
+    category: "Theme Coherence",
+    value: themeBonus,
+    max_contribution: 1.5,
+    description: themeDescriptions.length > 0 ? themeDescriptions.join(", ") : "No focused themes detected",
+    cards: themeCards,
+    // No card_scores - threshold-based bonus, not per-card
+  });
+
+  // Commander power
+  const commanderBonus = (card: Card | null | undefined): [number, string] => {
+    if (!card) return [0, ""];
+    const n = card.name.toLowerCase();
+    if (_HIGH_POWER_COMMANDERS.has(n)) return [1.5, `${card.name} (cEDH-tier commander)`];
+    if (_STRONG_COMMANDERS.has(n)) return [0.75, `${card.name} (strong commander)`];
+    const oracle = card.oracle_text.toLowerCase();
+    if (oracle.includes("proliferate")) return [0.5, `${card.name} (proliferate synergy)`];
+    if (oracle.includes("put a +1/+1 counter") || oracle.includes("+1/+1 counter on each")) 
+      return [0.5, `${card.name} (counter synergy)`];
+    return [0, `${card.name}`];
+  };
+  const [cmdValue, cmdDesc] = commanderBonus(deck.commander);
+  const [partnerValue, partnerDesc] = commanderBonus(deck.partner);
+  const totalCommanderValue = cmdValue + partnerValue;
+  const commanderDesc = [cmdDesc, partnerDesc].filter(d => d).join(" + ");
+  
+  // Build commander cards list and scores
+  const commanderCards: string[] = [];
+  const commanderScores: { [name: string]: number } = {};
+  if (deck.commander) {
+    commanderCards.push(deck.commander.name);
+    commanderScores[deck.commander.name] = cmdValue;
+  }
+  if (deck.partner) {
+    commanderCards.push(deck.partner.name);
+    commanderScores[deck.partner.name] = partnerValue;
+  }
+  
+  factors.push({
+    category: "Commander",
+    value: totalCommanderValue,
+    max_contribution: 3.0,
+    description: commanderDesc || "No commander detected",
+    cards: commanderCards,
+    card_scores: commanderScores,
+  });
+
+  // Calculate total
+  const total = factors.reduce((sum, f) => sum + f.value, 0);
+  const rounded = Math.max(1, Math.min(10, Math.round(total)));
+  const { bracket, bracket_label } = getDeckBracket(rounded);
+
+  // Calculate gap to next bracket
+  const bracketThresholds: Record<number, number> = { 1: 4, 2: 6, 3: 8, 4: 10 };
+  const nextBracketNum = Math.min(bracket + 1, 4);
+  const nextBracketTarget = bracketThresholds[nextBracketNum];
+  const gap = nextBracketTarget ? nextBracketTarget - total : 0;
+
+  let next_bracket_threshold;
+  if (gap > 0 && bracket < 4) {
+    const suggestions: string[] = [];
+    
+    // Analyze weakest factors
+    if (fastManaValue < 1.5) {
+      const needed = Math.ceil((1.5 - fastManaValue) / 0.5);
+      suggestions.push(`Add ${needed} fast mana piece${needed > 1 ? 's' : ''} (+${(needed * 0.5).toFixed(1)})`);
+    }
+    if (tutorValue < 2.0 && premiumTutors < 3) {
+      suggestions.push(`Add 1-2 premium tutors (+0.5-1.0)`);
+    }
+    if (avgCmc > 2.5 && bracket >= 3) {
+      suggestions.push(`Lower average CMC to ≤2.5 (+1.0)`);
+    }
+    if (drawValue < 0.5) {
+      suggestions.push(`Increase card draw to 14+ sources (+0.25-0.5)`);
+    }
+
+    next_bracket_threshold = {
+      target_bracket: nextBracketNum,
+      target_power: nextBracketTarget,
+      gap: Math.round(gap * 10) / 10,
+      suggestions,
+    };
+  }
+
+  console.log(`[explainPowerLevel] About to return ${factors.length} factors:`, factors.map(f => ({ category: f.category, hasCards: (f.cards?.length ?? 0) > 0 })));
+
+  return {
+    total: Math.round(total * 10) / 10,
+    rounded,
+    bracket,
+    bracket_label,
+    factors,
+    next_bracket_threshold,
+  };
+}
+
+export function calculatePowerDelta(
+  deck: Deck,
+  add: Card,
+  remove: Card | null,
+  themes: ThemeResult[] = [],
+): PowerDelta {
+  // Use explainPowerLevel to get unrounded scores for accurate delta calculation
+  const beforeBreakdown = explainPowerLevel(deck, themes);
+  const beforePower = beforeBreakdown.total;
+
+  // Create modified deck
+  const modifiedMainboard = [...deck.mainboard];
+  
+  // Remove card if specified
+  if (remove) {
+    const idx = modifiedMainboard.findIndex(c => c.name === remove.name);
+    if (idx !== -1) {
+      modifiedMainboard.splice(idx, 1);
+    }
+  }
+  
+  // Add new card
+  modifiedMainboard.push(add);
+
+  const modifiedDeck: Deck = {
+    ...deck,
+    mainboard: modifiedMainboard,
+  };
+
+  const afterBreakdown = explainPowerLevel(modifiedDeck, themes);
+  const afterPower = afterBreakdown.total;
+
+  // Detect which factors changed (simple heuristic)
+  const factors_changed: string[] = [];
+  const addOracle = add.oracle_text.toLowerCase();
+  const addType = add.type_line.toLowerCase();
+  
+  // Check fast mana
+  if (add.cmc <= 1 && (addOracle.includes("add {") || addOracle.includes("add mana"))) {
+    factors_changed.push("Fast Mana");
+  }
+  
+  // Check tutors
+  if (addOracle.includes("search your library")) {
+    factors_changed.push("Tutors");
+  }
+  
+  // Check counterspells
+  if (addOracle.includes("counter target")) {
+    factors_changed.push("Counterspells");
+  }
+  
+  // Check CMC impact
+  if (remove && Math.abs(add.cmc - remove.cmc) >= 1) {
+    factors_changed.push("CMC Efficiency");
+  }
+  
+  // Check draw
+  if (addOracle.includes("draw")) {
+    factors_changed.push("Card Draw");
+  }
+
+  return {
+    before: beforePower,
+    after: afterPower,
+    change: Math.round((afterPower - beforePower) * 10) / 10,
+    factors_changed,
+  };
+}
+
+// ─── Win Condition Detection ──────────────────────────────────────────────────
+
+/**
+ * identifyWinConditions - Detect how the deck is trying to win
+ * 
+ * Returns array of WinCondition objects with type, description, cards, and reliability.
+ * Types: combo (two-card infinites), combat (aggro/voltron/tokens), alternate_wincon (Thoracle), value_grind (fallback)
+ */
+export function identifyWinConditions(deck: Deck, themes: ThemeResult[]): WinCondition[] {
+  const allCards = getAllCards(deck);
+  const cardNameSet = new Set(allCards.map(c => c.name.toLowerCase()));
+  const winConditions: WinCondition[] = [];
+
+  // ─── 1. Detect Infinite Combos ─────────────────────────────────────────────
+  const foundCombos: Array<{ piece1: string; piece2: string }> = [];
+  
+  for (const card of allCards) {
+    const nameLower = card.name.toLowerCase();
+    const comboPartners = KNOWN_COMBOS[nameLower];
+    
+    if (comboPartners) {
+      for (const partner of comboPartners) {
+        if (cardNameSet.has(partner)) {
+          // Found a combo! Avoid duplicates by sorting names
+          const sorted = [nameLower, partner].sort();
+          const isDuplicate = foundCombos.some(
+            c => c.piece1 === sorted[0] && c.piece2 === sorted[1]
+          );
+          if (!isDuplicate) {
+            foundCombos.push({ piece1: sorted[0], piece2: sorted[1] });
+          }
+        }
+      }
+    }
+  }
+
+  // Add combo win conditions
+  for (const combo of foundCombos) {
+    const description = `Infinite combo: ${combo.piece1} + ${combo.piece2}`;
+    winConditions.push({
+      type: "combo",
+      description,
+      cards: [combo.piece1, combo.piece2],
+      reliability: foundCombos.length === 1 ? "primary" : "secondary",
+    });
+  }
+
+  // ─── 2. Detect Alternate Win Cons (Thoracle, Lab Man, etc.) ────────────────
+  const alternateWincons = [
+    "thassa's oracle",
+    "laboratory maniac",
+    "jace, wielder of mysteries",
+    "approach of the second sun",
+    "maze's end",
+    "coalition victory",
+    "felidar sovereign",
+    "helix pinnacle",
+    "mortal combat",
+  ];
+
+  for (const card of allCards) {
+    const nameLower = card.name.toLowerCase();
+    if (alternateWincons.includes(nameLower)) {
+      winConditions.push({
+        type: "alternate_wincon",
+        description: `Alternate win condition: ${card.name}`,
+        cards: [nameLower],
+        reliability: foundCombos.length > 0 ? "secondary" : "primary",
+      });
+    }
+  }
+
+  // ─── 3. Detect Combat Strategies ───────────────────────────────────────────
+  const tokenTheme = themes.find(t => t.name.toLowerCase() === "tokens");
+  const voltronTheme = themes.find(t => t.name.toLowerCase() === "voltron");
+  const tribalTheme = themes.find(t => t.name.toLowerCase() === "tribal");
+  
+  if (tokenTheme && tokenTheme.count >= 8) {
+    winConditions.push({
+      type: "combat",
+      description: `Go-wide combat with ${tokenTheme.count} token generators`,
+      cards: [],
+      reliability: foundCombos.length > 0 || winConditions.some(w => w.type === "alternate_wincon") 
+        ? "backup" 
+        : "primary",
+    });
+  }
+
+  if (voltronTheme && voltronTheme.count >= 6) {
+    winConditions.push({
+      type: "combat",
+      description: `Voltron strategy with ${voltronTheme.count} equipment/auras`,
+      cards: [],
+      reliability: foundCombos.length > 0 || winConditions.some(w => w.type === "alternate_wincon")
+        ? "backup"
+        : "primary",
+    });
+  }
+
+  if (tribalTheme && tribalTheme.count >= 15) {
+    winConditions.push({
+      type: "combat",
+      description: `Tribal combat with ${tribalTheme.count}+ synergistic creatures`,
+      cards: [],
+      reliability: foundCombos.length > 0 || winConditions.some(w => w.type === "alternate_wincon")
+        ? "backup"
+        : "primary",
+    });
+  }
+
+  // Generic aggro if we have lots of creatures but no specific theme
+  const creatureCount = allCards.filter(c => isCreature(c)).length;
+  if (creatureCount >= 25 && !tokenTheme && !tribalTheme && !voltronTheme) {
+    winConditions.push({
+      type: "combat",
+      description: `Combat damage with ${creatureCount} creatures`,
+      cards: [],
+      reliability: foundCombos.length > 0 || winConditions.some(w => w.type === "alternate_wincon")
+        ? "backup"
+        : "secondary",
+    });
+  }
+
+  // ─── 4. Value Grind (Fallback) ─────────────────────────────────────────────
+  if (winConditions.length === 0) {
+    winConditions.push({
+      type: "value_grind",
+      description: "Value-based grind — win through card advantage and superior board state",
+      cards: [],
+      reliability: "primary",
+    });
+  }
+
+  // Sort by reliability: primary > secondary > backup
+  const reliabilityOrder = { primary: 0, secondary: 1, backup: 2 };
+  winConditions.sort((a, b) => reliabilityOrder[a.reliability] - reliabilityOrder[b.reliability]);
+
+  return winConditions;
+}
+
+// ─── Upgrade Path Builder ───────────────────────────────────────────────────
+
+/**
+ * buildUpgradePath - Generate a phased upgrade plan to reach target power level
+ * 
+ * Takes user goals (target power, budget, theme emphasis) and returns a multi-phase
+ * upgrade path with swaps and additions prioritized by impact/cost ratio.
+ */
+export function buildUpgradePath(
+  deck: Deck,
+  collection: Card[] | null,
+  userGoals: UserGoals,
+  currentAnalysis: DeckAnalysis,
+): UpgradePath {
+  const currentPower = currentAnalysis.power_breakdown.rounded;
+  const targetPower = userGoals.targetPowerLevel ?? Math.min(currentPower + 2, 10);
+  const budgetConstraint = userGoals.budgetConstraint ?? 200;
+  const themeEmphasis = userGoals.themeEmphasis ?? [];
+  
+  // Find all possible upgrades from collection
+  const themes = currentAnalysis.themes;
+  const weaknesses = currentAnalysis.weaknesses;
+  const allCards = getAllCards(deck);
+  const collectionObj = collection ? { cards: collection } : null;
+  const collectionUpgrades = collectionObj ? findCollectionImprovements(deck, collectionObj) : [];
+  
+  // Score each upgrade by impact/cost ratio
+  const scoredUpgrades = collectionUpgrades.map(([cardIn, cardOut, reason, score, neverCut, powerDelta]) => {
+    // In collection mode, cards are free (already owned)
+    const cardPrice = 0;
+    const impactCostRatio = powerDelta?.change ?? 0.5; // No cost division needed since cost is 0
+    
+    // Bonus for theme emphasis
+    let themeBonus = 0;
+    if (themeEmphasis.length > 0 && reason) {
+      for (const themeName of themeEmphasis) {
+        if (reason.toLowerCase().includes(themeName.toLowerCase())) {
+          themeBonus = 0.3;
+          break;
+        }
+      }
+    }
+    
+    return {
+      cardIn,
+      cardOut,
+      reason,
+      score: score + themeBonus,
+      powerDelta: powerDelta ?? { before: currentPower, after: currentPower + 0.5, change: 0.5, factors_changed: [] },
+      cost: cardPrice,
+      impactCostRatio,
+    };
+  });
+  
+  // Sort by impact/cost ratio (bang for buck) — or just by power delta change if cost is 0
+  scoredUpgrades.sort((a, b) => b.impactCostRatio - a.impactCostRatio);
+  
+  // Build phases until we hit target power or run out of upgrades
+  const phases: UpgradePhase[] = [];
+  let accumulatedPower = currentPower;
+  let accumulatedBudget = 0;
+  let remainingUpgrades = [...scoredUpgrades];
+  let phaseNum = 1;
+  
+  const isCollectionMode = collection !== null;
+  
+  // For collection mode, group upgrades by strategic category for meaningful phases
+  if (isCollectionMode) {
+    // Categorize each upgrade
+    const categorizeUpgrade = (upgrade: typeof scoredUpgrades[0]): string => {
+      const reason = upgrade.reason.toLowerCase();
+      const factorsChanged = upgrade.powerDelta?.factors_changed || [];
+      
+      // Priority order matches typical deck-building sequence
+      if (reason.includes("ramp") || reason.includes("land")) {
+        return "mana";
+      }
+      if (reason.includes("card draw") || factorsChanged.includes("Card Draw") || factorsChanged.includes("Tutors")) {
+        return "card_advantage";
+      }
+      if (reason.includes("removal") || reason.includes("board wipe") || reason.includes("counterspell")) {
+        return "interaction";
+      }
+      if (reason.includes("combo piece") || reason.includes("deepens") || reason.includes("fits deck theme")) {
+        return "win_conditions";
+      }
+      // Default to win conditions for uncategorized
+      return "win_conditions";
+    };
+    
+    const categoryTitles: Record<string, string> = {
+      mana: "Mana Foundation",
+      card_advantage: "Card Advantage",
+      interaction: "Interaction",
+      win_conditions: "Win Conditions & Synergy",
+    };
+    
+    const categoryOrder = ["mana", "card_advantage", "interaction", "win_conditions"];
+    
+    // Group upgrades by category
+    const upgradesByCategory: Record<string, typeof scoredUpgrades> = {
+      mana: [],
+      card_advantage: [],
+      interaction: [],
+      win_conditions: [],
+    };
+    
+    for (const upgrade of scoredUpgrades) {
+      const category = categorizeUpgrade(upgrade);
+      upgradesByCategory[category].push(upgrade);
+    }
+    
+    // Track removed cards globally across all phases
+    const removedAcrossAllPhases = new Set<string>();
+    
+    // Build phases from categories (only include non-empty categories)
+    for (const category of categoryOrder) {
+      const categoryUpgrades = upgradesByCategory[category];
+      if (categoryUpgrades.length === 0) continue;
+      
+      // Remove duplicates within category AND across previous phases
+      const phaseUpgrades = [];
+      let phasePowerGain = 0;
+      
+      for (const upgrade of categoryUpgrades) {
+        // Skip if this card was already marked for removal in any previous phase
+        if (upgrade.cardOut && removedAcrossAllPhases.has(upgrade.cardOut.name)) {
+          continue;
+        }
+        
+        phaseUpgrades.push(upgrade);
+        if (upgrade.cardOut) {
+          removedAcrossAllPhases.add(upgrade.cardOut.name);
+        }
+        phasePowerGain += upgrade.powerDelta.change;
+      }
+      
+      if (phaseUpgrades.length === 0) continue;
+      
+      accumulatedPower += phasePowerGain;
+      const phaseCost = phaseUpgrades.reduce((sum, u) => sum + u.cost, 0);
+      accumulatedBudget += phaseCost;
+      
+      const phase: UpgradePhase = {
+        phaseNumber: phaseNum,
+        title: `${categoryTitles[category]}`,
+        description: `${phaseUpgrades.length} upgrade${phaseUpgrades.length > 1 ? 's' : ''} · +${phasePowerGain.toFixed(1)} power`,
+        estimatedCost: phaseCost,
+        powerGain: phasePowerGain,
+        targetPower: Math.min(accumulatedPower, targetPower),
+        swaps: phaseUpgrades.map(u => ({
+          cardOut: u.cardOut ?? { name: "Unknown", cmc: 0 } as Card,
+          cardIn: u.cardIn,
+          reason: u.reason,
+          cost: u.cost,
+          powerDelta: u.powerDelta,
+        })),
+      };
+      
+      phases.push(phase);
+      phaseNum++;
+      
+      // Stop if target power reached
+      if (accumulatedPower >= targetPower) {
+        break;
+      }
+    }
+  }
+  
+  // Budget mode: segment by budget constraint
+  while (!isCollectionMode && accumulatedPower < targetPower && remainingUpgrades.length > 0) {
+    // Budget mode: respect budget constraint
+    const phaseUpgrades = [];
+    let phaseCost = 0;
+    let phasePowerGain = 0;
+    const phaseBudget = Math.min(budgetConstraint / 3, budgetConstraint - accumulatedBudget);
+    const removedThisPhase = new Set<string>();
+    
+    for (let i = 0; i < remainingUpgrades.length; i++) {
+      const upgrade = remainingUpgrades[i];
+      
+      // Skip if this card was already marked for removal in this phase
+      if (upgrade.cardOut && removedThisPhase.has(upgrade.cardOut.name)) {
+        continue;
+      }
+      
+      if (phaseCost + upgrade.cost <= phaseBudget) {
+        phaseUpgrades.push(upgrade);
+        if (upgrade.cardOut) {
+          removedThisPhase.add(upgrade.cardOut.name);
+        }
+        phaseCost += upgrade.cost;
+        phasePowerGain += upgrade.powerDelta.change;
+        remainingUpgrades.splice(i, 1);
+        i--;
+      }
+    }
+    
+    // Stop if budget exhausted
+    if (accumulatedBudget + phaseCost >= budgetConstraint || phaseUpgrades.length === 0) {
+      break;
+    }
+    
+    accumulatedPower += phasePowerGain;
+    accumulatedBudget += phaseCost;
+    
+    const phase: UpgradePhase = {
+      phaseNumber: phaseNum,
+      title: `Phase ${phaseNum}: ${phaseUpgrades.length} Upgrade${phaseUpgrades.length > 1 ? 's' : ''}`,
+      description: `${phasePowerGain.toFixed(1)} power gain — $${phaseCost.toFixed(2)}`,
+      estimatedCost: phaseCost,
+      powerGain: phasePowerGain,
+      targetPower: Math.min(accumulatedPower, targetPower),
+      swaps: phaseUpgrades.map(u => ({
+        cardOut: u.cardOut ?? { name: "Unknown", cmc: 0 } as Card,
+        cardIn: u.cardIn,
+        reason: u.reason,
+        cost: u.cost,
+        powerDelta: u.powerDelta,
+      })),
+    };
+    
+    phases.push(phase);
+    phaseNum++;
+  }
+  
+  // Generate summary with clear messaging about whether target was reached
+  let summary: string;
+  if (phases.length === 0) {
+    summary = isCollectionMode
+      ? `No improvements found in your collection for this deck.`
+      : `No affordable upgrades available within $${budgetConstraint} budget.`;
+  } else {
+    const finalPower = Math.min(accumulatedPower, targetPower);
+    const powerGap = targetPower - accumulatedPower;
+    
+    if (accumulatedPower >= targetPower) {
+      // Target reached or exceeded
+      summary = `${phases.length} phase${phases.length > 1 ? 's' : ''} to reach power ${finalPower.toFixed(1)}`;
+    } else {
+      // Target not reached
+      summary = `${phases.length} phase${phases.length > 1 ? 's' : ''} to reach power ${finalPower.toFixed(1)} — ${powerGap > 0 ? `${powerGap.toFixed(1)} power short of target ${targetPower.toFixed(1)}` : ''}`;
+      if (isCollectionMode) {
+        summary += `. Your collection doesn't have enough high-impact cards to reach ${targetPower.toFixed(1)}.`;
+      }
+    }
+    
+    if (!isCollectionMode) {
+      summary += ` — total cost $${accumulatedBudget.toFixed(2)}`;
+    }
+  }
+  
+  return {
+    currentPower,
+    targetPower,
+    totalBudget: accumulatedBudget,
+    phases,
+    summary,
+  };
+}
+
 // ─── Dynamic Thresholds ─────────────────────────────────────────────────────
 
 const _STRATEGY_THRESHOLDS: Record<
@@ -1231,6 +2196,98 @@ export function getThresholds(
     _STRATEGY_THRESHOLDS[strategy] ?? _STRATEGY_THRESHOLDS["midrange"]
   );
 }
+
+// ─── Theme Critical Mass ─────────────────────────────────────────────────────
+// Number of cards needed for a theme to be "complete" and reliably execute its gameplan
+
+export const THEME_CRITICAL_MASS: Record<string, number> = {
+  "Tokens": 12,
+  "Aristocrats": 10,
+  "Voltron": 8,
+  "Spellslinger": 15,
+  "Graveyard": 8,
+  "Landfall": 10,
+  "+1/+1 Counters": 12,
+  "Enchantress": 12,
+  "Artifacts Matter": 15,
+  "Combat": 10,
+  "Tribal": 20,
+  "Reanimator": 8,
+  "Stax": 10,
+  "Control": 15,
+  "Combo": 8,
+  "Midrange": 12,
+};
+
+// ─── Phase 4: Strategy Depth ─────────────────────────────────────────────────
+
+/**
+ * BRACKET_GUIDANCE - Multiplayer dynamics guidance for each power bracket
+ * Helps players understand threat assessment, political considerations, and win timing
+ */
+export const BRACKET_GUIDANCE: Record<number, { label: string; political_notes: string; threat_assessment: string; win_timing: string }> = {
+  1: {
+    label: "Precon",
+    political_notes: "Casual table talk, minimal politics. Focus on learning and having fun.",
+    threat_assessment: "Board state matters most — count creatures and enchantments. Watch for commanders that grow exponentially.",
+    win_timing: "Games last 10+ turns. Take your time building up — rushing can backfire as you'll run out of gas.",
+  },
+  2: {
+    label: "Casual",
+    political_notes: "Bargaining starts here — offer deals like 'I won't attack if you don't counter my spell.' Avoid kingmaking.",
+    threat_assessment: "Track who's ahead on cards and mana. Player with most cards in hand is often the real threat.",
+    win_timing: "Close games by turn 8-10. If you're far ahead by turn 6, expect to be targeted.",
+  },
+  3: {
+    label: "Focused/Optimized",
+    political_notes: "Politics are cutthroat — alliances shift fast. Watch for players sandbagging threats to look weak.",
+    threat_assessment: "Count interaction — player with 7 cards in hand in blue? Probably has answers. Check for combo pieces in play.",
+    win_timing: "Games end turn 6-8 (Focused) or 4-6 (Optimized). Hold interaction for game-winning plays, not every threat.",
+  },
+  4: {
+    label: "cEDH",
+    political_notes: "Minimal politics — this is a race. Focus on efficient sequencing and holding up interaction.",
+    threat_assessment: "Know the meta combos. Track tutors and combo pieces. One resolved tutor often means GG next turn.",
+    win_timing: "Win on turn 2-4 or disrupt others from winning. Every turn counts — mulliganing aggressively is correct.",
+  },
+};
+
+/**
+ * ARCHETYPE_PLAYPATTERNS - How to pilot each deck archetype
+ * Provides concrete sequencing and decision-making advice
+ */
+export const ARCHETYPE_PLAYPATTERNS: Record<string, { mulligan: string; early_game: string; mid_game: string; late_game: string }> = {
+  "Aggro": {
+    mulligan: "Keep hands with 2-3 lands + early threats. Mulligan slow hands — you need to pressure early.",
+    early_game: "Deploy threats aggressively. Attack the player with the least interaction or blockers.",
+    mid_game: "If ahead, protect your board with counterspells/hexproof. If behind, pivot to disrupting the leader.",
+    late_game: "You're likely out of cards — focus on alpha strikes or rebuilding with draw engines.",
+  },
+  "Midrange": {
+    mulligan: "Keep hands with ramp + a 4-5 drop. Mulligan hands with only 6+ drops.",
+    early_game: "Ramp and draw cards. Don't overextend into board wipes.",
+    mid_game: "Deploy threats 1-2 at a time. Force opponents to use removal inefficiently.",
+    late_game: "Grind with card advantage. You should have more cards and mana than opponents.",
+  },
+  "Control": {
+    mulligan: "Keep hands with early interaction + a board wipe. Mulligan hands with only expensive spells.",
+    early_game: "Answer the biggest threats — let small stuff slide. Save countermagic for haymakers.",
+    mid_game: "Deploy your own threats once you've stabilized. Hold up interaction.",
+    late_game: "You should have answered everything — now close with a resilient wincon.",
+  },
+  "Combo": {
+    mulligan: "Aggressively mulligan for tutors, combo pieces, or protection. Combo decks want specific cards.",
+    early_game: "Ramp and dig for your combo. Don't telegraph your pieces unless necessary.",
+    mid_game: "Assemble your combo pieces. Wait for the right window — when opponents are tapped out or shields are down.",
+    late_game: "If disrupted, pivot to value plays or try again. Always have a backup plan.",
+  },
+  "Stax": {
+    mulligan: "Keep hands with early stax pieces (Rule of Law, Trinisphere, etc.) + lands. Mulligan slow hands.",
+    early_game: "Deploy stax pieces that slow everyone down. Prioritize pieces that hurt your opponents more than you.",
+    mid_game: "Lock the game down. Your opponents should struggle to cast spells while you grind them out.",
+    late_game: "Close with incremental advantage — you've slowed the game to a crawl.",
+  },
+};
 
 // ─── Theme & Weakness Detection ───────────────────────────────────────────────
 
@@ -1806,6 +2863,64 @@ function _evaluateCard(
       reason = `Fits deck theme: ${themeName}`;
       baseScore = card.cmc <= 4 ? 0.9 : 0.7;
       break;
+    }
+  }
+
+  // ─── Combo Enablement (NEW - Phase 2) ─────────────────────────────────────
+  // Check if this card completes any known two-card combo
+  const cardNameLower = card.name.toLowerCase();
+  const comboPartners = KNOWN_COMBOS[cardNameLower];
+  if (comboPartners && comboPartners.length > 0) {
+    // This card is part of known combos - score it higher as it enables win conditions
+    const partnerDisplay = comboPartners.slice(0, 2).join(", ");
+    reason = `Combo piece — pairs with ${partnerDisplay}${comboPartners.length > 2 ? ", ..." : ""}`;
+    baseScore = Math.max(baseScore, 0.85);
+  }
+
+  // ─── Theme Deepening (NEW - Phase 2) ───────────────────────────────────────
+  // Check if this card deepens an existing theme toward critical mass
+  for (const theme of themes) {
+    const themeName = theme.name;
+    const currentCount = theme.count || 0;
+    const criticalMass = THEME_CRITICAL_MASS[themeName];
+    
+    if (criticalMass && currentCount < criticalMass) {
+      // Theme exists but hasn't reached critical mass yet
+      const gap = criticalMass - currentCount;
+      
+      // Check if this card fits the theme (simple keyword matching)
+      const themeKeywords: Record<string, string[]> = {
+        "Tokens": ["token", "create", "populate"],
+        "Aristocrats": ["sacrifice", "dies", "death", "when .* dies"],
+        "Voltron": ["equip", "aura", "attach", "equipped"],
+        "Spellslinger": ["instant or sorcery", "whenever you cast", "prowess"],
+        "Graveyard": ["graveyard", "flashback", "unearth", "reanimate"],
+        "Landfall": ["landfall", "land enters"],
+        "+1/+1 Counters": ["+1/+1 counter", "proliferate", "doubling season"],
+        "Enchantress": ["enchantment", "constellation"],
+        "Artifacts Matter": ["artifact", "affinity"],
+        "Combat": ["attacking", "combat damage", "menace", "first strike"],
+      };
+      
+      const keywords = themeKeywords[themeName] || [];
+      const matchesTheme = keywords.some(kw => {
+        const regex = new RegExp(kw, "i");
+        return regex.test(oracle) || regex.test(typeLine);
+      });
+      
+      if (matchesTheme) {
+        const oldReason = reason;
+        reason = `Deepens ${themeName} theme (${currentCount}/${criticalMass} → critical mass)`;
+        // Higher score if close to critical mass
+        const deepeningScore = gap <= 3 ? 0.8 : gap <= 6 ? 0.7 : 0.6;
+        baseScore = Math.max(baseScore, deepeningScore);
+        
+        // If we already had a reason (e.g., fixes weakness), combine them
+        if (oldReason && !oldReason.includes("Deepens")) {
+          reason = `${oldReason} + deepens ${themeName} theme`;
+          baseScore = Math.min(1.0, baseScore + 0.1);
+        }
+      }
     }
   }
 

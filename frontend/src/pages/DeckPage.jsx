@@ -11,11 +11,12 @@ import TagTooltip from '../components/TagTooltip'
 import EmptyState from '../components/EmptyState'
 import CardRecommendation from '../components/CardRecommendation'
 import TooltipWrapper from '../components/shared/TooltipWrapper'
+import { PowerBreakdownChart, PowerDeltaBadge, WinConditions, BracketBanner, DirectionUI, UpgradePath } from '../components/shared'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useDataFetch } from '../hooks/useDataFetch'
 import { useExpandable } from '../hooks/useExpandable'
 import { CATEGORY_COLORS, CATEGORY_TOOLTIPS, PRICE_TIER_COLORS, PRICE_TIER_TOOLTIPS } from '../constants/improvementMaps'
-import { LayoutGrid, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft, Wand2, Axe, Skull } from 'lucide-react'
+import { LayoutGrid, ScrollText, TrendingUp, MessageSquare, AlertTriangle, Check, ChevronDown, ChevronLeft, Wand2, Axe, Skull, Filter } from 'lucide-react'
 
 function OverviewIcon() { return <LayoutGrid className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
 function StrategyIcon() { return <ScrollText className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden="true" /> }
@@ -376,6 +377,11 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         </div>
       )}
 
+      {/* ── Win Conditions ── (NEW - Phase 2) */}
+      {analysis.win_conditions && analysis.win_conditions.length > 0 && (
+        <WinConditions winConditions={analysis.win_conditions} />
+      )}
+
       {/* ── Mobile: Weaknesses SECOND (Direction B) ── */}
       <div className="md:hidden">
         {renderWeaknesses()}
@@ -731,6 +737,17 @@ function OverviewTab({ deck, analysis, onTabChange }) {
         )
       })()}
 
+      {/* ── Power Breakdown ── (MOVED HERE after Interaction Coverage per user feedback) */}
+      {analysis.power_breakdown && (
+        <div>
+          <SectionLabel className="mb-3">Power Level Breakdown</SectionLabel>
+          <p className="text-[var(--color-text-muted)] text-xs mb-3">
+            Power = Base (3.0) + Fast Mana + Tutors + CMC Efficiency + Draw + Interaction + Theme Coherence + Commander Quality + Counterspells. Final score is rounded and capped at 1-10.
+          </p>
+          <PowerBreakdownChart powerBreakdown={analysis.power_breakdown} />
+        </div>
+      )}
+
       {/* ── What else can you do? (Differentiator section) ── */}
       <div className="border-t border-[var(--color-border)] pt-5">
         <SectionLabel className="mb-3">Explore Further</SectionLabel>
@@ -863,7 +880,7 @@ function GamePhasesAccordion({ phases, cardMap }) {
   )
 }
 
-function StrategyTab({ deckId, cardMap = new Map(), refreshKey = 0 }) {
+function StrategyTab({ deckId, analysis, cardMap = new Map(), refreshKey = 0 }) {
   const { data: raw, loading, error } = useDataFetch(() => api.getStrategy(deckId, { force: refreshKey > 0 }), [deckId, refreshKey])
   const data = raw?.strategy
   const aiEnhanced = raw?.ai_enhanced ?? false
@@ -884,6 +901,11 @@ function StrategyTab({ deckId, cardMap = new Map(), refreshKey = 0 }) {
   return (
     <div className="space-y-6">
       <AiSourceBadge aiEnhanced={aiEnhanced} />
+
+      {/* ── Bracket Banner (NEW - Phase 4) ── */}
+      {analysis?.bracket && analysis?.bracket_label && (
+        <BracketBanner bracket={analysis.bracket} bracketLabel={analysis.bracket_label} />
+      )}
 
       {/* Game Plan */}
       {data.game_plan && (
@@ -992,6 +1014,10 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
   const [selectedSets, setSelectedSets] = useState([])
   const [appliedSets, setAppliedSets] = useState([])
   const [availableSets, setAvailableSets] = useState([])
+  
+  // NEW - Phase 3: User goals for upgrade path
+  const [userGoals, setUserGoals] = useState(null)
+  const [upgradePath, setUpgradePath] = useState(null)
 
   // Fetch collection sets to populate the set picker (only relevant for any/both modes)
   useEffect(() => {
@@ -1072,101 +1098,123 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
     )
   }
 
+  // Handler for when user sets goals (Phase 3)
+  const handleGoalsChange = async (goals) => {
+    setUserGoals(goals)
+    setUpgradePath(null)
+    
+    try {
+      const path = await api.buildUpgradePath(deckId, goals)
+      setUpgradePath(path)
+    } catch (err) {
+      console.error('Failed to build upgrade path:', err)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* Mode toggle */}
-      <div>
-        <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">Show suggestions from</p>
-        <div className="inline-flex rounded-lg border border-[var(--color-border)] overflow-hidden">
-          {IMPROVEMENT_MODES.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setMode(value)}
-              className={`px-4 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                mode === value
-                  ? 'bg-[var(--color-primary)] text-white'
-                  : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+      {/* Unified Filters Section */}
+      <div className="border border-[var(--color-border)] rounded-xl p-5 bg-[var(--color-surface)]/80 space-y-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Filter className="w-4 h-4 text-[var(--color-primary)]" />
+          <h3 className="font-heading text-[var(--color-text)] text-2xs font-semibold uppercase tracking-widest">
+            Filters & Options
+          </h3>
         </div>
-        {mode === 'collection' && (
-          <p className="text-[var(--color-text-muted)] text-xs mt-2">Cards you already own that would improve this deck. Fast, rule-based, no AI.</p>
-        )}
-        {mode === 'any' && (
-          <p className="text-[var(--color-text-muted)] text-xs mt-2">AI-powered suggestions from any card in Magic. Marks cards you already own.</p>
-        )}
-      </div>
 
-      {/* Set filter — restrict suggestions to cards from specific sets */}
-      {availableSets.length > 0 && (
+        {/* Mode toggle */}
         <div>
-          <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">
-            Filter by Set{mode === 'any' && <span className="normal-case tracking-normal ml-1 text-[var(--color-text-muted)] opacity-60">(hint only — AI may not match perfectly)</span>}
-          </p>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">Suggestion Source</p>
+          <div className="inline-flex rounded-lg border border-[var(--color-border)] overflow-hidden">
+            {IMPROVEMENT_MODES.map(({ value, label }) => (
               <button
-                ref={triggerRef}
-                type="button"
-                onClick={openSetDropdown}
-                className="flex items-center gap-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg pl-3 pr-2.5 py-1.5 text-sm text-[var(--color-text)] cursor-pointer hover:border-[var(--color-primary)]/50 transition-colors w-64"
+                key={value}
+                onClick={() => setMode(value)}
+                className={`px-4 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                  mode === value
+                    ? 'bg-[var(--color-primary)] text-white'
+                    : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                }`}
               >
-                <span className="text-xs text-[var(--color-text-muted)] flex-1 text-left truncate">
-                  {appliedSets.length === 0 ? 'Select sets…' : `${appliedSets.length} set${appliedSets.length > 1 ? 's' : ''} applied`}
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)] transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                {label}
               </button>
+            ))}
+          </div>
+          {mode === 'collection' && (
+            <p className="text-[var(--color-text-muted)] text-xs mt-2">Cards you already own that would improve this deck. Fast, rule-based, no AI.</p>
+          )}
+          {mode === 'any' && (
+            <p className="text-[var(--color-text-muted)] text-xs mt-2">AI-powered suggestions from any card in Magic. Marks cards you already own.</p>
+          )}
+        </div>
 
-              {dropdownOpen && createPortal(
-                <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onMouseDown={closeDropdown} />
-                  <div style={{ ...dropdownStyle, zIndex: 9999, width: 320 }} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-2">
-                    <input
-                      autoFocus
-                      type="text"
-                      placeholder="Search sets…"
-                      value={setSearch}
-                      onChange={e => setSetSearch(e.target.value)}
-                      onMouseDown={e => e.stopPropagation()}
-                      className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] mb-2"
-                    />
-                    <div className="max-h-56 overflow-y-auto space-y-0.5 mb-2">
-                      {availableSets
-                        .filter(({ name, code }) =>
-                          !setSearch || name.toLowerCase().includes(setSearch.toLowerCase()) || code.toLowerCase().includes(setSearch.toLowerCase())
-                        )
-                        .map(({ code, name }) => (
-                          <label key={code} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-[var(--color-border)]/40 select-none">
-                            <input
-                              type="checkbox"
-                              checked={selectedSets.includes(code)}
-                              onChange={() => toggleSet(code)}
-                              onMouseDown={e => e.stopPropagation()}
-                              className="accent-[var(--color-primary)] cursor-pointer"
-                            />
-                            <span className="text-sm text-[var(--color-text)]">{name}</span>
-                          </label>
-                        ))
-                      }
-                    </div>
-                    <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-border)]">
-                      <button
+        {/* Set filter — restrict suggestions to cards from specific sets */}
+        {availableSets.length > 0 && (
+          <div>
+            <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">
+              Filter by Set{mode === 'any' && <span className="normal-case tracking-normal ml-1 text-[var(--color-text-muted)] opacity-60">(hint only — AI may not match perfectly)</span>}
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <button
+                  ref={triggerRef}
+                  type="button"
+                  onClick={openSetDropdown}
+                  className="flex items-center gap-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg pl-3 pr-2.5 py-1.5 text-sm text-[var(--color-text)] cursor-pointer hover:border-[var(--color-primary)]/50 transition-colors w-64"
+                >
+                  <span className="text-xs text-[var(--color-text-muted)] flex-1 text-left truncate">
+                    {appliedSets.length === 0 ? 'Select sets…' : `${appliedSets.length} set${appliedSets.length > 1 ? 's' : ''} applied`}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)] transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {dropdownOpen && createPortal(
+                  <>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onMouseDown={closeDropdown} />
+                    <div style={{ ...dropdownStyle, zIndex: 9999, width: 320 }} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Search sets…"
+                        value={setSearch}
+                        onChange={e => setSetSearch(e.target.value)}
                         onMouseDown={e => e.stopPropagation()}
-                        onClick={applyFilter}
-                        disabled={!filterChanged}
-                        className="text-xs px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-default"
-                      >
-                        Apply
-                      </button>
-                      <button
-                        onMouseDown={e => e.stopPropagation()}
-                        onClick={clearFilter}
-                        className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
-                      >
-                        Clear
+                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] mb-2"
+                      />
+                      <div className="max-h-56 overflow-y-auto space-y-0.5 mb-2">
+                        {availableSets
+                          .filter(({ name, code }) =>
+                            !setSearch || name.toLowerCase().includes(setSearch.toLowerCase()) || code.toLowerCase().includes(setSearch.toLowerCase())
+                          )
+                          .map(({ code, name }) => (
+                            <label key={code} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-[var(--color-border)]/40 select-none">
+                              <input
+                                type="checkbox"
+                                checked={selectedSets.includes(code)}
+                                onChange={() => toggleSet(code)}
+                                onMouseDown={e => e.stopPropagation()}
+                                className="accent-[var(--color-primary)] cursor-pointer"
+                              />
+                              <span className="text-sm text-[var(--color-text)]">{name}</span>
+                            </label>
+                          ))
+                        }
+                      </div>
+                      <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-border)]">
+                        <button
+                          onMouseDown={e => e.stopPropagation()}
+                          onClick={applyFilter}
+                          disabled={!filterChanged}
+                          className="text-xs px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-default"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          onMouseDown={e => e.stopPropagation()}
+                          onClick={clearFilter}
+                          className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+                        >
+                          Clear
                       </button>
                     </div>
                   </div>
@@ -1187,6 +1235,21 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
           </div>
         </div>
       )}
+
+        {/* Direction UI - Phase 3: User goals for upgrade paths */}
+        {mode === 'collection' && hasCollection && (
+          <div className="pt-4 border-t border-[var(--color-border)]">
+            <DirectionUI
+              currentPower={analysis?.power_breakdown?.rounded || 5}
+              themes={raw?.themes || []}
+              onGoalsChange={handleGoalsChange}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Upgrade Path - Phase 3: Phased upgrade plan */}
+      {upgradePath && <UpgradePath upgradePath={upgradePath} />}
 
       {loading && mode === 'any' ? (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
@@ -1254,6 +1317,7 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
                       <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">in a deck</span>
                     </TooltipWrapper>
                   )}
+                  {swap.power_delta && <PowerDeltaBadge powerDelta={swap.power_delta} size="sm" />}
                   {swap.priority === 'critical' && (
                     <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-danger)]/10 text-[var(--color-danger)]">fixes weakness</span>
                   )}
@@ -1291,7 +1355,7 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
               <p className="text-[var(--color-text-muted)] text-xs mb-3">No direct cut identified — find an underperforming card to remove.</p>
               <div className="space-y-2">
                 {visible('additions', data.additions).map((card, i) => (
-                  <CardRecommendation key={i} card={card.card} owned={card.owned} inDecks={card.in_decks} category={card.category} priceTier={card.price_tier} reason={card.reason} />
+                  <CardRecommendation key={i} card={card.card} owned={card.owned} inDecks={card.in_decks} category={card.category} priceTier={card.price_tier} reason={card.reason} powerDelta={card.power_delta} />
                 ))}
               </div>
               {renderShowMore('additions', data.additions.length)}
@@ -1309,7 +1373,7 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
                 <p className="text-[var(--color-text-muted)] text-xs mb-3">You already own these — no cut is paired. Find a card to swap out.</p>
                 <div className="space-y-2">
                   {visible('ownedAdditions', ownedAdditions).map((card, i) => (
-                    <CardRecommendation key={i} card={card.card} owned inDecks={card.in_decks} category={card.category} priceTier={card.price_tier} reason={card.reason} />
+                    <CardRecommendation key={i} card={card.card} owned inDecks={card.in_decks} category={card.category} priceTier={card.price_tier} reason={card.reason} powerDelta={card.power_delta} />
                   ))}
                 </div>
                 {renderShowMore('ownedAdditions', ownedAdditions.length)}
@@ -1321,7 +1385,7 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
                 <p className="text-[var(--color-text-muted)] text-xs mb-3">No cut is paired — find a card in your deck that isn't filling a needed role to remove.</p>
                 <div className="space-y-2">
                   {visible('toAcquire', toAcquire).map((card, i) => (
-                    <CardRecommendation key={i} card={card.card} category={card.category} priceTier={card.price_tier} reason={card.reason} />
+                    <CardRecommendation key={i} card={card.card} category={card.category} priceTier={card.price_tier} reason={card.reason} powerDelta={card.power_delta} />
                   ))}
                 </div>
                 {renderShowMore('toAcquire', toAcquire.length)}
@@ -2088,7 +2152,12 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Strategy' && (
-            <StrategyTab deckId={deckId} cardMap={new Map((deck?.mainboard || []).map(c => [c.name, c]))} refreshKey={refreshKey} />
+            <StrategyTab 
+              deckId={deckId} 
+              analysis={analysis}
+              cardMap={new Map((deck?.mainboard || []).map(c => [c.name, c]))} 
+              refreshKey={refreshKey} 
+            />
           )}
 
           {activeTab === 'Deck Improvements' && (

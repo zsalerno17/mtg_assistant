@@ -48,6 +48,777 @@ The mtg-assistant app provides **solid foundational deck analysis** with a clean
 - ✅ **Good:** Theme badges with hover tooltips explaining each archetype
 - ⚠️ **Confusing:** "Collection Upgrades" tab loads both collection-owned cards AND AI improvements, but the tab name suggests only owned cards
 - ⚠️ **Missing:** No export to Moxfield (add all suggestions as "Considering" board or similar)
+
+---
+
+## May 2026 Deep Dive: Strategy Analysis, Improvements, and Power Transparency
+
+**Review Date:** May 5, 2026  
+**Reviewer:** MTG Specialist Agent  
+**Focus:** User feedback on surface-level strategy, generic improvements, and unclear power changes
+
+### Context
+
+User reported three specific issues:
+1. **Strategy analysis feels surface-level** — possibly AI context limitations
+2. **Improvements are too generic** — need user-driven strategy goals (e.g., "build toward +1/+1 counters")
+3. **Power level changes are invisible** — when upgrading, users don't know why power changes
+
+This review analyzes the current implementation and provides **MTG-domain-specific** and **technical recommendations**.
+
+---
+
+## Issue 1: Surface-Level Strategy Analysis
+
+### What's Happening
+
+**Current flow:**
+1. User loads deck → system detects themes, calculates power level, identifies weaknesses
+2. Strategy tab calls `getStrategyAdvice()` with deck + analysis context
+3. Gemini receives: full decklist, commander oracle text, themes, weaknesses, basic stats
+4. Gemini returns: game plan, key cards, phase-by-phase tips, mulligan criteria, matchup advice
+
+**Problem:** The strategy advice is accurate but **generic**. It correctly identifies the deck's themes and commander synergies, but doesn't provide **Commander-specific depth**:
+- No multiplayer threat assessment ("which opponents to target first based on board state")
+- No power-level-calibrated play patterns ("at Bracket 3, you need to win by turn 8-10 — prioritize setup over reactive plays")
+- No archetype-specific sequencing ("tokens decks should bait board wipes with small boards before committing")
+- Fallback strategy (when AI is unavailable) is essentially useless — just fills template strings
+
+### Root Causes
+
+#### 1.1 AI Prompt Lacks Commander-Specific Context
+
+**File:** `supabase/functions/_shared/gemini.ts` (line 515-570, `getStrategyAdvice`)
+
+**What Gemini receives:**
+```
+Commander: Edgar Markov
+Strategy: tokens
+Power Level: 7/10 (Bracket 3 – Focused)
+Themes: Tokens, Aristocrats
+Weaknesses: Low card draw (8 — recommend 10+ for tokens)
+[... full decklist ...]
+```
+
+**What's missing:**
+- **Bracket-specific expectations:** "At Bracket 3, games typically end turns 8-10. Your strategy should aim to either win by turn 8 or have enough interaction to stop opponents who try."
+- **Archetype play patterns:** "Tokens decks win through wide board presence. Early game: ramp and deploy repeatable generators. Mid-game: bait board wipes with small boards. Late game: deploy anthem + go-wide for lethal."
+- **Win condition clarity:** Themes are detected ("Tokens", "Aristocrats") but the AI doesn't know if this is a go-wide combat deck, an aristocrats drain deck, or a combo deck with token synergies
+- **Meta context:** No guidance about what this deck will face at Bracket 3 (other focused decks, some fast mana, efficient interaction)
+
+**Recommendation:** Add bracket-specific and archetype-specific guidance to the AI prompt.
+
+**Example enhancement:**
+```typescript
+const bracketGuidance = {
+  1: "Precon-level games (turns 12+). Opponents play on curve with minimal interaction. Focus on synergy over speed.",
+  2: "Casual games (turns 10-12). Some tutors and fast mana, but generally fair Magic. Value engines matter more than explosive turns.",
+  3: "Focused games (turns 8-10). Opponents can threaten wins by turn 8. You need a clear plan to either win first or stop them.",
+  4: "cEDH games (turns 3-6). Fast mana and premium tutors are mandatory. Stack-based interaction required. Goldfishing is suicide.",
+}[analysis.bracket];
+
+const archetypeGuidance = {
+  tokens: "Tokens decks win through wide board presence and anthem effects. Prioritize repeatable token generators over one-shot effects. Bait board wipes with small boards before committing. Answer opposing combo decks with targeted removal, not counterspells (unless playing blue).",
+  combo: "Combo decks aim to assemble a two-or-three-card win condition. Prioritize tutors, card draw, and protection. Mulligan aggressively for combo pieces + protection. Against interaction-heavy decks, wait for them to tap out or force through multiple answers.",
+  // ... etc.
+}[analysis.strategy];
+
+const prompt = `
+${deckContext(deck, analysis)}
+
+POWER LEVEL CONTEXT: This deck is Bracket ${analysis.bracket}. ${bracketGuidance}
+
+ARCHETYPE GUIDANCE: ${archetypeGuidance}
+
+When providing strategy advice:
+- Reference actual cards in the decklist (don't invent cards that aren't there)
+- Calibrate advice to Bracket ${analysis.bracket} — assume opponents have similar speed and interaction density
+- For mulligan criteria, account for 100-card singleton variance (you won't always see your best cards)
+- For matchup tips, focus on the most common strategies at this bracket
+`;
+```
+
+#### 1.2 Win Condition Detection is Missing
+
+**Current theme detection** (file: `deck_analyzer.ts`, line 1376-1424, `identifyThemes`):
+- Scans oracle text for keyword patterns (e.g., "creature token" → Tokens theme)
+- Checks density thresholds (≥8 cards for most themes, with ≥8% of non-lands)
+- Returns list of themes with card examples
+
+**What it doesn't detect:**
+- **Combo win conditions:** Two-card infinites (e.g., Isochron Scepter + Dramatic Reversal), three-card engines
+- **Combat strategies:** Voltron (single huge threat), go-wide (tokens + anthems), extra combats
+- **Alternate win cons:** Thoracle piles, Labman effects, "you win the game" cards
+
+**Why this matters for strategy:**
+A deck with "Tokens" and "Aristocrats" themes could win via:
+1. Go-wide combat (tokens + anthems like Coat of Arms)
+2. Aristocrats drain (Blood Artist loops with sac outlets)
+3. Combo (Nim Deathmantle + Ashnod's Altar + token generator)
+
+**Without knowing which**, the AI can't give specific sequencing advice.
+
+**Recommendation:** Add rule-based win condition inference.
+
+**Implementation sketch:**
+```typescript
+export interface WinCondition {
+  type: 'combo' | 'combat' | 'alternate' | 'value';
+  description: string;
+  cards: string[];
+  reliability: 'primary' | 'secondary' | 'backup';
+}
+
+export function identifyWinConditions(
+  deck: Deck,
+  themes: ThemeResult[]
+): WinCondition[] {
+  const allCards = getAllCards(deck);
+  const winCons: WinCondition[] = [];
+  
+  // Detect two-card infinites
+  const comboMap = KNOWN_COMBOS; // { "Isochron Scepter": ["Dramatic Reversal"], ... }
+  for (const card of allCards) {
+    if (comboMap[card.name]) {
+      const partners = comboMap[card.name];
+      const hasPartner = partners.some(p => hasCard(deck, p));
+      if (hasPartner) {
+        winCons.push({
+          type: 'combo',
+          description: `Infinite mana with ${card.name} + partner`,
+          cards: [card.name, ...partners.filter(p => hasCard(deck, p))],
+          reliability: 'primary',
+        });
+      }
+    }
+  }
+  
+  // Detect combat strategies
+  if (themes.some(t => t.name === 'Tokens')) {
+    const anthems = allCards.filter(c => 
+      c.oracle_text.toLowerCase().includes('creatures you control get +')
+    );
+    if (anthems.length >= 2) {
+      winCons.push({
+        type: 'combat',
+        description: 'Go-wide with tokens + anthem effects',
+        cards: anthems.map(c => c.name),
+        reliability: 'primary',
+      });
+    }
+  }
+  
+  // Detect Thoracle piles
+  if (hasCard(deck, "Thassa's Oracle") || hasCard(deck, "Laboratory Maniac")) {
+    const selfMill = allCards.filter(c => 
+      c.oracle_text.toLowerCase().includes('put the top') && 
+      c.oracle_text.toLowerCase().includes('into your graveyard')
+    );
+    if (selfMill.length >= 2) {
+      winCons.push({
+        type: 'alternate',
+        description: 'Win with Thoracle/Labman after self-mill',
+        cards: ['Thassa\'s Oracle', ...selfMill.map(c => c.name)],
+        reliability: 'primary',
+      });
+    }
+  }
+  
+  // Default: value grind
+  if (winCons.length === 0) {
+    winCons.push({
+      type: 'value',
+      description: 'Overwhelm through card advantage and synergy payoffs',
+      cards: [],
+      reliability: 'primary',
+    });
+  }
+  
+  return winCons;
+}
+```
+
+Pass this to Gemini:
+```
+Detected win conditions:
+1. Go-wide with tokens + anthem effects (Coat of Arms, Cathars' Crusade)
+2. Aristocrats drain (Blood Artist + sac outlets)
+
+Focus strategy advice on assembling and protecting these win conditions.
+```
+
+#### 1.3 Fallback Strategy is Useless
+
+**File:** `gemini.ts` (line 460-510, `fallbackStrategy`)
+
+When Gemini is unavailable (rate limit, API error), the fallback returns:
+```json
+{
+  "game_plan": "This deck is built around Edgar Markov and focuses on Tokens. Leverage your commander's strengths...",
+  "early_game": "Prioritize ramp and fixing. With 10 ramp sources, you need to see at least one per opening hand.",
+  "mulligan": "With an average CMC of 3.2, keep hands with at least 3 lands and 1-2 ramp sources."
+}
+```
+
+**This is essentially useless.** It's all template text that doesn't tell players anything they don't already know.
+
+**Recommendation:** Use rule-based heuristics instead of templates.
+
+**Example:**
+```typescript
+function fallbackStrategy(deck: Deck, analysis: AnalysisDict): Record<string, unknown> {
+  const strategy = analysis.strategy ?? 'midrange';
+  const powerLevel = analysis.power_level ?? 5;
+  const themes = analysis.theme_names ?? [];
+  const winCons = identifyWinConditions(deck, themes);
+  
+  // Get archetype-specific boilerplate
+  const archetypeGuide = STRATEGY_GUIDES[strategy];
+  
+  // Build key cards from themes + win cons
+  const keyCards = [
+    ...winCons.flatMap(wc => wc.cards),
+    ...themes.slice(0, 2).flatMap(t => t.cards.slice(0, 3)), // Top 3 cards per primary theme
+  ].map(name => ({
+    name,
+    role: explainCardRole(name, winCons, themes), // Rule-based role description
+  }));
+  
+  return {
+    game_plan: `${archetypeGuide.overview} Win via: ${winCons.map(wc => wc.description).join(' or ')}.`,
+    win_conditions: winCons.map(wc => ({ name: wc.type, description: wc.description })),
+    key_cards: keyCards,
+    early_game: archetypeGuide.earlyGame,
+    mid_game: archetypeGuide.midGame,
+    late_game: archetypeGuide.lateGame,
+    mulligan: archetypeGuide.mulligan,
+    matchup_tips: BRACKET_MATCHUPS[analysis.bracket ?? 2],
+  };
+}
+```
+
+**This requires:** Curated strategy guides per archetype (one-time work, stored as constants).
+
+---
+
+## Issue 2: Generic Improvements (No User-Driven Strategy Goals)
+
+### What's Happening
+
+**Current improvement flow:**
+
+**Collection mode** (file: `deck_analyzer.ts`, line 267-307, `findCollectionImprovements`):
+1. Detect weaknesses (low ramp, low draw, etc.)
+2. For each collection card, check if it fills a weakness or fits a theme
+3. Find a cut (prefer off-theme, low-oracle-text, cheap cards)
+4. Suggest the swap with reason ("Adds ramp — deck needs more ramp")
+
+**AI mode** (file: `gemini.ts`, line 347-440, `getImprovementSuggestions`):
+1. Send deck context + weaknesses + key cards to Gemini
+2. Ask for urgent_fixes (cards to add with no cut), swaps (cut→add pairs), additions (general upgrades)
+3. Gemini returns suggestions with reasons
+
+**Problem:** Both modes are **reactive gap-filling**. They fix weaknesses, but don't help users **build toward a strategy**.
+
+**Example user scenario:**
+- Deck has 8 cards with "+1/+1 counter" text (just barely detected as a theme)
+- User owns Ozolith, Branching Evolution, Hardened Scales (all premium counter synergy cards)
+- System doesn't suggest them because deck has no weakness in those categories
+- User wants to **deepen the counter theme** but has no way to tell the app
+
+**What's missing:**
+- **Theme deepening:** "You have 8 counter cards — add these 4 to reach critical mass"
+- **Archetype pivots:** "You're split between tokens and aristocrats — commit to one"
+- **Power level targeting:** "To reach power 8, add these fast mana pieces"
+- **Proactive synergy building:** "These 3 cards would enable this combo"
+
+### Root Causes
+
+#### 2.1 Collection Mode Only Looks at Weaknesses
+
+**File:** `deck_analyzer.ts` (line 1679-1799, `_evaluateCard`)
+
+**Current logic:**
+```typescript
+function _evaluateCard(card: Card, weaknesses: WeaknessResult[], themes: ThemeResult[]): [string, number] | null {
+  const weaknessText = weaknesses.map(w => w.label).join(" ");
+  
+  let reason: string | null = null;
+  let baseScore = 0.5;
+  
+  // Check if card fills a weakness
+  if (weaknessText.includes("Low ramp")) {
+    if (oracle.includes("add {") || oracle.includes("treasure token") || ...) {
+      reason = "Adds ramp (deck needs more ramp)";
+      baseScore = 0.7;
+    }
+  }
+  
+  if (weaknessText.includes("Low card draw")) { ... }
+  if (weaknessText.includes("Low removal")) { ... }
+  
+  // Check if card fits a detected theme
+  for (const themeName of themeNames) {
+    if (_cardFitsTheme(card, themeName)) {
+      reason = `Fits deck theme: ${themeName}`;
+      baseScore = 0.9;
+      break;
+    }
+  }
+  
+  return reason ? [reason, baseScore] : null;
+}
+```
+
+**What it doesn't check:**
+- **Theme deepening:** If deck has 8 counter cards (just above threshold), does this card bring it to 12 (critical mass)?
+- **Combo enablement:** Does this card complete a two-card infinite?
+- **Synergy density:** Does this card interact with multiple other cards in the deck (e.g., Doubling Season works with tokens, planeswalkers, and counters)?
+
+**Recommendation:** Add theme deepening scoring.
+
+**Implementation sketch:**
+```typescript
+function _evaluateCard(card: Card, weaknesses: WeaknessResult[], themes: ThemeResult[], deck: Deck): [string, number] | null {
+  // ... existing weakness checks ...
+  
+  // NEW: Theme deepening
+  for (const theme of themes) {
+    if (!_cardFitsTheme(card, theme.name)) continue;
+    
+    const threshold = THEME_CRITICAL_MASS[theme.name] ?? 12;
+    const currentCount = theme.count;
+    
+    // If theme is below critical mass, suggest cards that push toward it
+    if (currentCount < threshold) {
+      const gap = threshold - currentCount;
+      reason = `Deepens ${theme.name} theme (${currentCount}/${threshold} cards — needs ${gap} more for critical mass)`;
+      baseScore = 0.85; // High priority
+      break;
+    }
+    
+    // If theme is at critical mass, still suggest strong synergy pieces
+    if (_isThemeStaple(card, theme.name)) {
+      reason = `Core ${theme.name} synergy piece`;
+      baseScore = 0.75;
+      break;
+    }
+  }
+  
+  // NEW: Combo detection
+  const comboPartners = KNOWN_COMBOS[card.name];
+  if (comboPartners?.some(p => hasCard(deck, p))) {
+    reason = `Completes combo with ${comboPartners.find(p => hasCard(deck, p))}`;
+    baseScore = 0.95; // Very high priority
+  }
+  
+  return reason ? [reason, baseScore] : null;
+}
+```
+
+#### 2.2 AI Mode Has No User Goals
+
+**File:** `gemini.ts` (line 347-440, `getImprovementSuggestions`)
+
+**Current prompt:**
+```
+Suggest improvements for this Commander deck. Suggest the best cards from any Magic set.
+
+[deck context]
+
+IMPORTANT RULES:
+- urgent_fixes: cards to ADD that fix a critical gap
+- swaps: paired cut→add recommendations
+- additions: unpaired cards that improve the deck
+```
+
+**What's missing:**
+- **User intent:** Is the user trying to increase power level? Stay casual? Deepen a theme?
+- **Budget constraint:** Are they willing to buy Mana Crypt, or do they want budget options?
+- **Theme focus:** Do they want more tokens cards, or are they happy with current theme balance?
+
+**Recommendation:** Add user goals to the API and pass to Gemini.
+
+**API signature:**
+```typescript
+export async function getImprovementSuggestions(
+  deck: Deck,
+  analysis: AnalysisDict,
+  allowedSets?: string[],
+  keyCards?: string[],
+  userGoals?: {
+    targetPowerLevel?: number;
+    budgetConstraint?: 'budget' | 'mid' | 'premium' | 'unlimited';
+    themeEmphasis?: string[]; // e.g., ["Tokens", "+1/+1 Counters"]
+    style?: 'competitive' | 'casual' | 'thematic';
+  },
+): Promise<{ content: Record<string, unknown>; ai_enhanced: boolean }> {
+  const goalsContext = userGoals ? `
+USER GOALS:
+- Target power level: ${userGoals.targetPowerLevel ?? analysis.power_level} (current: ${analysis.power_level})
+- Budget: ${userGoals.budgetConstraint ?? 'any'}
+- Focus on themes: ${userGoals.themeEmphasis?.join(', ') ?? 'maintain current balance'}
+- Style: ${userGoals.style ?? 'balanced'}
+
+Prioritize suggestions that advance these goals. If targeting higher power, focus on fast mana, tutors, and efficient interaction. If emphasizing themes, suggest cards that deepen those themes even if they don't fill a weakness.
+` : '';
+  
+  const prompt = `
+${deckContext(deck, analysis)}
+${goalsContext}
+[... rest of prompt ...]
+`;
+}
+```
+
+**Frontend integration:**
+Add a "Build Goals" section to the Improvements tab:
+```jsx
+<div className="bg-surface p-4 rounded-lg">
+  <h3>What are you trying to achieve?</h3>
+  
+  <label>Target Power Level</label>
+  <select value={targetPower} onChange={e => setTargetPower(e.target.value)}>
+    <option value="">Keep current ({analysis.power_level}/10)</option>
+    <option value="6">6/10 - Casual Optimized</option>
+    <option value="7">7/10 - Focused</option>
+    <option value="8">8/10 - Highly Optimized</option>
+    <option value="9">9/10 - Near-cEDH</option>
+  </select>
+  
+  <label>Deepen these themes:</label>
+  {analysis.theme_names.map(theme => (
+    <button 
+      key={theme}
+      onClick={() => toggleTheme(theme)}
+      className={themeEmphasis.includes(theme) ? 'active' : ''}
+    >
+      {theme}
+    </button>
+  ))}
+  
+  <label>Budget</label>
+  <button onClick={() => setBudget('budget')}>Budget ($0-$5)</button>
+  <button onClick={() => setBudget('mid')}>Mid ($5-$20)</button>
+  <button onClick={() => setBudget('premium')}>Premium ($20+)</button>
+</div>
+```
+
+#### 2.3 No Upgrade Paths
+
+**What's missing:** Incremental improvement guidance.
+
+**Example user scenario:**
+- Deck is currently power 6
+- User wants to reach power 8
+- Doesn't know which changes would get them there
+
+**Recommendation:** Add power-targeted upgrade paths.
+
+**Implementation:**
+```typescript
+export interface UpgradePath {
+  from: number;
+  to: number;
+  phases: Array<{
+    name: string;
+    changes: Array<{ cut: string; add: string; reason: string }>;
+    estimated_power_after: number;
+    estimated_cost: string;
+  }>;
+}
+
+export function buildUpgradePath(
+  deck: Deck,
+  analysis: DeckAnalysis,
+  targetPower: number
+): UpgradePath {
+  const currentPower = analysis.power_level;
+  const gap = targetPower - currentPower;
+  
+  // Analyze what's holding deck back
+  const breakdown = explainPowerLevel(deck, analysis.themes);
+  const weakestFactors = breakdown.factors
+    .filter(f => f.value < f.max_contribution * 0.5)
+    .sort((a, b) => a.value - b.value);
+  
+  // Build phased upgrade plan
+  const phases = [];
+  let currentPhase = currentPower;
+  
+  for (const factor of weakestFactors) {
+    if (currentPhase >= targetPower) break;
+    
+    const improvements = suggestFactorImprovements(deck, factor.category);
+    if (improvements.length === 0) continue;
+    
+    phases.push({
+      name: `Improve ${factor.category}`,
+      changes: improvements,
+      estimated_power_after: Math.min(currentPhase + 0.5, targetPower),
+      estimated_cost: estimateCost(improvements),
+    });
+    
+    currentPhase += 0.5;
+  }
+  
+  return { from: currentPower, to: targetPower, phases };
+}
+```
+
+---
+
+## Issue 3: Power Level Changes Are Invisible
+
+### What's Happening
+
+**Current power level display:**
+- Dashboard: Shows power level as "7/10" in a column
+- Deck page (Overview tab): Shows "Power Level: 7/10 (Bracket 3 – Focused)"
+- Improvements tab: Shows suggestions but **no indication of power impact**
+
+**User experience:**
+- User sees "Add Mana Crypt" suggestion
+- Doesn't know if this would increase power level (it would, by +0.5)
+- Doesn't know if it would push them into a higher bracket
+- Doesn't know which factors contribute to their current power level
+
+**What's missing:**
+1. **Power level breakdown:** Why is my deck 7/10? Which factors contribute most?
+2. **Power delta for suggestions:** If I add this card, how does power change?
+3. **Threshold awareness:** How close am I to the next bracket?
+
+### Root Causes
+
+#### 3.1 Power Calculation is Hidden
+
+**File:** `deck_analyzer.ts` (line 1124-1230, `calculatePowerLevel`)
+
+**The function calculates:**
+```typescript
+let score = 3.0; // Base
+
+// Fast mana: +0.5 each, max +2.0
+score += Math.min(fastMana * 0.5, 2.0);
+
+// Premium tutors: +0.5 each, max +2.5
+score += Math.min(premiumTutors * 0.5, 2.5);
+
+// Generic tutors: +0.2 each, max +1.0
+score += Math.min(genericTutors * 0.2, 1.0);
+
+// Counterspells: +0.3 each, max +1.5
+score += Math.min(counters * 0.3, 1.5);
+
+// CMC efficiency
+if (avgCmc <= 2.5) score += 1.0;
+else if (avgCmc >= 4.0) score -= 1.0;
+
+// Card draw
+if (draw >= 14) score += 0.5;
+else if (draw >= 10) score += 0.25;
+
+// Interaction
+if (interaction >= 15) score += 0.5;
+if (interaction < 8) score -= 0.5;
+
+// Theme coherence: up to +1.5
+// Commander power: up to +1.5
+
+return Math.max(1, Math.min(10, Math.round(score)));
+```
+
+**Users see:** "7/10"
+
+**Users don't see:**
+- Which factors contributed most
+- What's holding the deck back
+- How close they are to thresholds (e.g., "one more tutor = 7.3 → 7")
+
+**Recommendation:** Add `explainPowerLevel()` function that breaks down the score.
+
+**Implementation:**
+```typescript
+export interface PowerLevelBreakdown {
+  total: number;
+  bracket: number;
+  bracket_label: string;
+  factors: Array<{
+    category: string;
+    value: number;
+    max_contribution: number;
+    description: string;
+  }>;
+  next_bracket_threshold?: {
+    target: number;
+    gap: number;
+    suggestions: string[];
+  };
+}
+
+export function explainPowerLevel(deck: Deck, themes: ThemeResult[]): PowerLevelBreakdown {
+  // Recalculate power level with detailed factor tracking
+  const allCards = getAllCards(deck);
+  const fastMana = countFastMana(allCards);
+  // ... [calculate all factors] ...
+  
+  const factors = [
+    { category: 'Base', value: 3.0, max_contribution: 3.0, description: 'Starting baseline' },
+    { category: 'Fast Mana', value: Math.min(fastMana * 0.5, 2.0), max_contribution: 2.0, description: `${fastMana} pieces` },
+    { category: 'Tutors', value: premiumTutors * 0.5 + genericTutors * 0.2, max_contribution: 3.5, description: `${premiumTutors} premium, ${genericTutors} generic` },
+    // ... [all other factors] ...
+  ];
+  
+  const total = factors.reduce((sum, f) => sum + f.value, 0);
+  const rounded = Math.max(1, Math.min(10, Math.round(total)));
+  const { bracket, bracket_label } = getDeckBracket(rounded);
+  
+  // Calculate gap to next bracket
+  const thresholds = { 1: 4, 2: 6, 3: 8, 4: 10 };
+  const nextThreshold = thresholds[Math.min(bracket + 1, 4)];
+  const gap = nextThreshold - total;
+  
+  return {
+    total: rounded,
+    bracket,
+    bracket_label,
+    factors,
+    next_bracket_threshold: gap > 0 ? {
+      target: nextThreshold,
+      gap,
+      suggestions: suggestPowerIncrease(deck, gap),
+    } : undefined,
+  };
+}
+```
+
+**Display as horizontal bar chart in Overview tab:**
+```
+Power Level: 7/10 (Bracket 3 – Focused)
+
+Breakdown:
+Base                 ███                3.0
+Fast Mana            █                  1.0 (2 pieces)
+Tutors               █                  0.6 (3 generic)
+Counterspells        ██                 1.2 (4 counters)
+CMC Efficiency       █                  0.5 (avg 3.2)
+Card Draw            ▌                  0.25 (11 sources)
+Theme Coherence      █                  0.75 (Tokens)
+Commander            █                  0.75 (Edgar Markov)
+                     ════════════════════════
+Total: 8.05 → rounds to 8/10
+
+To reach Bracket 4 (cEDH):
+- Add 2+ fast mana pieces (+1.0)
+- Add 1+ premium tutors (+0.5)
+- Lower avg CMC to ≤2.5 (+0.5)
+```
+
+#### 3.2 Improvement Suggestions Don't Show Power Delta
+
+**File:** Improvements are suggested but never annotated with power impact
+
+**Current display:**
+```
+Recommended Swaps:
+- Cut: Farhaven Elf → Add: Mana Crypt
+  Reason: Faster mana acceleration
+```
+
+**What users need:**
+```
+Recommended Swaps:
+- Cut: Farhaven Elf → Add: Mana Crypt
+  Reason: Faster mana acceleration (0 CMC vs. 3 CMC)
+  Power impact: +0.5 (fast mana bonus)
+  New power: 7.5/10 (Bracket 3 – Optimized)
+```
+
+**Recommendation:** Calculate power delta for every suggestion.
+
+**Implementation:**
+```typescript
+export type ImprovementSuggestion = [
+  Card,                // add
+  Card | null,         // cut
+  string,              // reason
+  number,              // score
+  string | null,       // neverCutReason
+  PowerDelta | null,   // NEW
+];
+
+interface PowerDelta {
+  before: number;
+  after: number;
+  change: number;
+  factors_changed: string[];
+}
+
+function calculatePowerDelta(deck: Deck, add: Card, remove: Card | null, themes: ThemeResult[]): PowerDelta {
+  const beforePower = calculatePowerLevel(deck, themes);
+  
+  // Create modified deck
+  const modifiedDeck = { ...deck };
+  if (remove) {
+    modifiedDeck.mainboard = deck.mainboard.filter(c => c.name !== remove.name);
+  }
+  modifiedDeck.mainboard = [...modifiedDeck.mainboard, add];
+  
+  const afterPower = calculatePowerLevel(modifiedDeck, themes);
+  
+  return {
+    before: beforePower,
+    after: afterPower,
+    change: afterPower - beforePower,
+    factors_changed: detectChangedFactors(deck, modifiedDeck),
+  };
+}
+```
+
+**Display in UI:**
+```jsx
+{suggestions.map(([add, cut, reason, score, neverCut, powerDelta]) => (
+  <div className="swap-card">
+    <div className="swap-display">
+      <span className="cut">{cut?.name}</span> → <span className="add">{add.name}</span>
+    </div>
+    <div className="reason">{reason}</div>
+    {powerDelta && powerDelta.change !== 0 && (
+      <div className="power-delta">
+        Power impact: <span className={powerDelta.change > 0 ? 'positive' : 'negative'}>
+          {powerDelta.change > 0 ? '+' : ''}{powerDelta.change.toFixed(1)}
+        </span> → {powerDelta.after}/10
+      </div>
+    )}
+  </div>
+))}
+```
+
+---
+
+## Summary: Implementation Roadmap
+
+### Phase 1 (High Priority — 1-2 weeks)
+1. ✅ **Add power level breakdown** (`explainPowerLevel()` + UI visualization)
+2. ✅ **Calculate power delta for improvement suggestions**
+3. ✅ **Add user goals to improvement flow** (target power, theme emphasis, budget)
+
+### Phase 2 (Medium Priority — 2-3 weeks)
+4. ✅ **Implement theme deepening logic** (detect partial themes, suggest completing them)
+5. ✅ **Add bracket-specific strategy guidance to AI prompts**
+6. ✅ **Build "Build Direction" UI** (let users specify goals)
+
+### Phase 3 (Lower Priority — 3-4 weeks)
+7. ✅ **Add win condition inference** (combo detection, combat strategies, alternate win cons)
+8. ✅ **Implement theme depth scoring** (primary vs. secondary themes)
+9. ✅ **Add archetype pivot detection** (commit to one theme instead of split focus)
+10. ✅ **Build rule-based fallback strategy** (not just template text)
+
+### Technical Notes
+- All new functions → `deck_analyzer.ts` (analysis engine) or `gemini.ts` (AI integration)
+- UI components → `frontend/src/components/shared/` (reusable primitives)
+- MTG-specific constants → top of file (not buried in functions)
+- Power delta calculations should be **memoized/cached** (don't recalculate on every render)
 - ⚠️ **Missing:** No price breakdown for suggested upgrades (TCGPlayer, Cardmarket)
 
 ---

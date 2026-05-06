@@ -11,6 +11,8 @@ import {
   identifyWeaknesses,
   _findCut,
   _isWeakCategoryCard,
+  calculatePowerDelta,
+  identifyThemes,
 } from "../_shared/deck_analyzer.ts";
 import {
   getStrategyAdvice,
@@ -608,12 +610,13 @@ async function handleCollectionUpgrades(
   const suggestions = findCollectionImprovements(deck, collection);
 
   const upgrades = suggestions.map(
-    ([colCard, cutCard, reason, score, neverCutReason]) => {
+    ([colCard, cutCard, reason, score, neverCutReason, powerDelta]) => {
       const entry: Record<string, unknown> = {
         add: colCard.name,
         cut: cutCard?.name ?? null,
         reason,
         score,
+        power_delta: powerDelta,
       };
       if (neverCutReason) entry.never_cut_reason = neverCutReason;
       return entry;
@@ -714,7 +717,7 @@ async function handleSuggestions(
       ),
     };
     const collectionResults = findCollectionImprovements(deck, collection);
-    for (const [colCard, cutCard, reason, score] of collectionResults) {
+    for (const [colCard, cutCard, reason, score, neverCutReason, powerDelta] of collectionResults) {
       if (cutCard) {
         swaps.push({
           cut: cutCard.name,
@@ -723,6 +726,7 @@ async function handleSuggestions(
           score,
           owned: true,
           source: "collection",
+          power_delta: powerDelta,
         });
       } else {
         additions.push({
@@ -730,6 +734,7 @@ async function handleSuggestions(
           reason,
           owned: true,
           source: "collection",
+          power_delta: powerDelta,
         });
       }
     }
@@ -768,6 +773,7 @@ async function handleSuggestions(
       // Validate AI swaps and stamp owned flag
       const rawSwaps = (content.swaps as Record<string, unknown>[]) || [];
       const seenAI = new Set<string>();
+      const themes = identifyThemes(deck);
       for (const swap of rawSwaps) {
         const cutName = ((swap.cut as string) || "").toLowerCase();
         const addName = ((swap.add as string) || "").toLowerCase();
@@ -781,6 +787,26 @@ async function handleSuggestions(
         if (cutCard && (cardRoles.get(cutName)?.themes.length ?? 0) > 0) continue;
         if (seenAI.has(addName)) continue;
         swap.owned = ownedLower.has(addName);
+        
+        // Calculate power delta if we have full card data for the add card (from collection)
+        if (cutCard) {
+          const collCard = collectionByName.get(addName);
+          if (collCard) {
+            // We have full data from collection — calculate power delta
+            const addCard = createCard({
+              name: (collCard.name as string) || "",
+              quantity: 1,
+              cmc: Number(collCard.cmc) || 0,
+              type_line: (collCard.type_line as string) || "",
+              oracle_text: (collCard.oracle_text as string) || "",
+              color_identity: (collCard.color_identity as string[]) || [],
+            });
+            const powerDelta = calculatePowerDelta(deck, [addCard], [cutCard], themes);
+            swap.power_delta = powerDelta;
+          }
+          // else: card not in collection, we'd need to fetch from Scryfall (expensive), skip for now
+        }
+        
         swaps.push({ ...swap, source: "ai" });
         seenAI.add(addName);
       }

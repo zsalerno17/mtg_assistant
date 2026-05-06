@@ -392,6 +392,9 @@ verify_jwt = false
 [functions.admin]
 verify_jwt = false
 
+[functions.upgrade-path]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

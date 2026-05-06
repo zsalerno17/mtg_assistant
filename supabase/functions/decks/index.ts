@@ -227,6 +227,7 @@ async function handleAnalyze(
 
   // Run fresh analysis
   const result = analyzeDeck(deck);
+  console.log(`[handleAnalyze] result.power_breakdown has ${result.power_breakdown?.factors?.length ?? 0} factors`);
 
   const deckUrl = buildDeckUrl(moxfieldId, source);
   const deckName = deck.name || cachedDeck.data_json?.name || moxfieldId;

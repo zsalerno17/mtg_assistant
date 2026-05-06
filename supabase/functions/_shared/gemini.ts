@@ -8,7 +8,7 @@ import {
   type GenerativeModel,
 } from "https://esm.sh/@google/generative-ai@0.21.0";
 import type { Card, Deck } from "./models.ts";
-import { getThresholds } from "./deck_analyzer.ts";
+import { getThresholds, BRACKET_GUIDANCE, ARCHETYPE_PLAYPATTERNS } from "./deck_analyzer.ts";
 
 // ---------------------------------------------------------------------------
 // Client / model setup

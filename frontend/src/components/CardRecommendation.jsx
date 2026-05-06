@@ -1,6 +1,7 @@
 import CardTooltip from './CardTooltip'
 import TagTooltip from './TagTooltip'
 import TooltipWrapper from './shared/TooltipWrapper'
+import { PowerDeltaBadge } from './shared'
 import { CATEGORY_COLORS, CATEGORY_TOOLTIPS, PRICE_TIER_COLORS, PRICE_TIER_TOOLTIPS } from '../constants/improvementMaps'
 
 const BORDER_CLASSES = {
@@ -18,11 +19,12 @@ const BORDER_CLASSES = {
  * @param {string} [category] - Category key (ramp, draw, removal, …)
  * @param {string} [priceTier] - Price tier key (budget, mid, premium)
  * @param {string} [reason] - Explanation text
+ * @param {object} [powerDelta] - Power level change { before, after, change, factors_changed }
  * @param {'default'|'danger'|'success'} [variant] - Border color variant
  */
-export default function CardRecommendation({ card, owned, inDecks, category, priceTier, reason, variant = 'default' }) {
+export default function CardRecommendation({ card, owned, inDecks, category, priceTier, reason, powerDelta, variant = 'default' }) {
   const borderClass = BORDER_CLASSES[variant] ?? BORDER_CLASSES.default
-  const hasTags = owned || inDecks?.length || category || priceTier
+  const hasTags = owned || inDecks?.length || category || priceTier || powerDelta
 
   return (
     <div className={`bg-[var(--color-surface)]/80 backdrop-blur-sm border ${borderClass} rounded-xl px-4 py-3 flex items-start gap-3 hover:-translate-y-0.5 transition-all duration-150`}>
@@ -43,6 +45,7 @@ export default function CardRecommendation({ card, owned, inDecks, category, pri
                 </span>
               </TooltipWrapper>
             )}
+            {powerDelta && <PowerDeltaBadge powerDelta={powerDelta} size="sm" />}
             {category && (
               <TagTooltip
                 tip={CATEGORY_TOOLTIPS[category] || category}
