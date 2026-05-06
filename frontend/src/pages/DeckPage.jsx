@@ -1009,7 +1009,7 @@ const AI_LOADING_MESSAGES = [
   "Almost ready to tap out...",
 ]
 
-function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
+function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
   const [mode, setMode] = useState('collection')
   const [selectedSets, setSelectedSets] = useState([])
   const [appliedSets, setAppliedSets] = useState([])
@@ -1237,7 +1237,7 @@ function DeckImprovementsTab({ deckId, refreshKey = 0 }) {
       )}
 
         {/* Direction UI - Phase 3: User goals for upgrade paths */}
-        {mode === 'collection' && hasCollection && (
+        {mode === 'collection' && hasCollection && raw && (
           <div className="pt-4 border-t border-[var(--color-border)]">
             <DirectionUI
               currentPower={analysis?.power_breakdown?.rounded || 5}
@@ -2161,7 +2161,7 @@ export default function DeckPage() {
           )}
 
           {activeTab === 'Deck Improvements' && (
-            <DeckImprovementsTab deckId={deckId} refreshKey={refreshKey} />
+            <DeckImprovementsTab deckId={deckId} analysis={analysis} refreshKey={refreshKey} />
           )}
 
           {activeTab === 'Scenarios' && (

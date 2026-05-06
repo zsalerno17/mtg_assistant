@@ -13,7 +13,7 @@ export default function DirectionUI({ currentPower, themes, onGoalsChange }) {
     themeEmphasis: [],
     style: 'casual',
   });
-  const [hasChanges, setHasChanges] = useState(false);
+  const [hasChanges, setHasChanges] = useState(true); // Start enabled to allow initial plan generation
 
   const updateGoal = (key, value) => {
     const newGoals = { ...goals, [key]: value };
