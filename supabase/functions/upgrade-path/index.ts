@@ -5,6 +5,7 @@ import { getServiceClient, getUserClient } from "../_shared/supabase.ts";
 import { getDeck } from "../_shared/moxfield.ts";
 import { analyzeDeck, buildUpgradePath, type UserGoals } from "../_shared/deck_analyzer.ts";
 import { createCard, type Card, type Deck } from "../_shared/models.ts";
+import { buildCardUsageMap } from "../_shared/deck_usage.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -128,14 +129,36 @@ serve(async (req) => {
 
     console.log(`[upgrade-path] Found collection with ${collection.length} cards`);
 
-    // 3. Analyze deck to get current state
+    // 3. Build card usage map to track which decks cards are in
+    const usageMap = await buildCardUsageMap(userSb, user.userId);
+    
+    // Helper: get deck names a card is already in (excluding the current deck)
+    const getInDecks = (cardName: string): string[] => {
+      const entry = usageMap.get(cardName.toLowerCase());
+      if (!entry) return [];
+      return entry.decks
+        .filter((d: { deck_name: string }) => d.deck_name !== deck.name)
+        .map((d: { deck_name: string }) => d.deck_name);
+    };
+
+    // 4. Analyze deck to get current state
     const currentAnalysis = analyzeDeck(deck);
     console.log(
       `[upgrade-path] Current deck power: ${currentAnalysis.power_breakdown.rounded}/10 (${currentAnalysis.bracket_label})`
     );
 
-    // 4. Build upgrade path
+    // 5. Build upgrade path
     const upgradePath = buildUpgradePath(deck, collection, goals, currentAnalysis);
+    
+    // 6. Stamp in_decks on all cardIn objects
+    for (const phase of upgradePath.phases) {
+      for (const swap of phase.swaps) {
+        const inDecks = getInDecks(swap.cardIn.name);
+        if (inDecks.length > 0) {
+          swap.cardIn.in_decks = inDecks;
+        }
+      }
+    }
 
     console.log(
       `[upgrade-path] Built path: ${upgradePath.phases.length} phases, $${upgradePath.totalBudget.toFixed(2)}, ${upgradePath.currentPower} → ${upgradePath.targetPower}`

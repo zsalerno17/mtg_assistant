@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, TrendingUp, DollarSign, Zap, ArrowRight } from 'lucide-react';
 import CardTooltip from '../CardTooltip';
 import PowerDeltaBadge from './PowerDeltaBadge';
+import TooltipWrapper from './TooltipWrapper';
 
 /**
  * UpgradePath - Displays phased upgrade plan with cost and power gain breakdown
@@ -149,6 +150,11 @@ export default function UpgradePath({ upgradePath }) {
                                       {swap.cardIn.name}
                                     </span>
                                   </CardTooltip>
+                                  {swap.cardIn.in_decks?.length > 0 && (
+                                    <TooltipWrapper content={swap.cardIn.in_decks.length === 1 ? `In: ${swap.cardIn.in_decks[0]}` : `In: ${swap.cardIn.in_decks.join(', ')}`}>
+                                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">in a deck</span>
+                                    </TooltipWrapper>
+                                  )}
                                 </div>
                                 <p className="text-xs text-[var(--color-text-muted)]">{swap.reason}</p>
                               </div>
