@@ -1010,16 +1010,31 @@ const AI_LOADING_MESSAGES = [
 ]
 
 function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
-  const [mode, setMode] = useState('collection')
-  const [selectedSets, setSelectedSets] = useState([])
-  const [appliedSets, setAppliedSets] = useState([])
-  const [availableSets, setAvailableSets] = useState([])
+  // Pending filters (what user has selected but not applied yet)
+  const [pendingMode, setPendingMode] = useState('collection')
+  const [pendingSets, setPendingSets] = useState([])
+  const [pendingGoals, setPendingGoals] = useState({
+    targetPowerLevel: Math.min((analysis?.power_breakdown?.rounded || 5) + 2, 10),
+    budgetConstraint: 100,
+    themeEmphasis: [],
+    style: 'casual',
+  })
   
-  // NEW - Phase 3: User goals for upgrade path
-  const [userGoals, setUserGoals] = useState(null)
+  // Applied filters (what's currently displayed)
+  const [appliedMode, setAppliedMode] = useState(null)
+  const [appliedSets, setAppliedSets] = useState([])
+  const [appliedGoals, setAppliedGoals] = useState(null)
+  
+  // UI state
+  const [availableSets, setAvailableSets] = useState([])
+  const [raw, setRaw] = useState(null)
   const [upgradePath, setUpgradePath] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
+  const [hasCollection, setHasCollection] = useState(true)
 
-  // Fetch collection sets to populate the set picker (only relevant for any/both modes)
+  // Fetch collection sets to populate the set picker
   useEffect(() => {
     Promise.all([
       api.getCollection(),
@@ -1032,39 +1047,28 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
         .map(code => ({ code, name: setNameMap.get(code) || code }))
         .sort((a, b) => a.name.localeCompare(b.name))
       setAvailableSets(sets)
-    }).catch(() => {}) // non-critical — set picker just won't appear
+      setHasCollection(cards.length > 0)
+    }).catch(() => {})
   }, [])
-
-  const appliedKey = appliedSets.join(',')
-  const [raw, setRaw] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
 
   // Rotate loading messages during AI fetch
   useEffect(() => {
-    if (!loading || mode !== 'any') return
+    if (!loading || appliedMode !== 'any') return
     setLoadingMsgIdx(0)
     const interval = setInterval(() => {
       setLoadingMsgIdx(prev => (prev + 1) % AI_LOADING_MESSAGES.length)
     }, 2500)
     return () => clearInterval(interval)
-  }, [loading, mode])
-
-  useEffect(() => {
-    setLoading(true)
-    setError(null)
-    setRaw(null)
-    api.getDeckImprovements(deckId, mode, appliedSets, { force: refreshKey > 0 })
-      .then(setRaw)
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckId, mode, appliedKey, refreshKey])
+  }, [loading, appliedMode])
+  
+  // Check if filters have changed
+  const hasFilterChanges = 
+    pendingMode !== appliedMode ||
+    pendingSets.sort().join(',') !== appliedSets.sort().join(',') ||
+    JSON.stringify(pendingGoals) !== JSON.stringify(appliedGoals)
 
   const data = raw?.suggestions
   const aiEnhanced = raw?.ai_enhanced ?? false
-  const hasCollection = raw?.has_collection ?? true
   const { expanded, toggle, visible } = useExpandable(5)
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -1073,12 +1077,9 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
   const triggerRef = useRef(null)
 
   const toggleSet = (code) =>
-    setSelectedSets(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code])
+    setPendingSets(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code])
   const closeDropdown = () => { setDropdownOpen(false); setSetSearch('') }
-  const applyFilter = () => { setAppliedSets([...selectedSets]); closeDropdown() }
-  const clearFilter = () => { setSelectedSets([]); setAppliedSets([]); closeDropdown() }
-  const filterChanged = [...selectedSets].sort().join(',') !== [...appliedSets].sort().join(',')
-
+  
   function openSetDropdown() {
     if (!triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
@@ -1098,16 +1099,103 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
     )
   }
 
-  // Handler for when user sets goals (Phase 3)
-  const handleGoalsChange = async (goals) => {
-    setUserGoals(goals)
+  // Unified apply handler: fetch improvements AND build upgrade path
+  const applyFilters = async () => {
+    setLoading(true)
+    setError(null)
+    setRaw(null)
     setUpgradePath(null)
     
+    setAppliedMode(pendingMode)
+    setAppliedSets([...pendingSets])
+    setAppliedGoals({ ...pendingGoals })
+    
     try {
-      const path = await api.buildUpgradePath(deckId, goals, appliedSets)
-      setUpgradePath(path)
+      // 1. Fetch improvements (collection or AI)
+      const improvements = await api.getDeckImprovements(deckId, pendingMode, pendingSets, { force: refreshKey > 0 })
+      setRaw(improvements)
+      setHasCollection(improvements?.has_collection ?? true)
+      
+      // 2. Build upgrade path
+      if (pendingMode === 'collection') {
+        // Collection mode: use backend buildUpgradePath
+        const path = await api.buildUpgradePath(deckId, pendingGoals, pendingSets)
+        setUpgradePath(path)
+      } else {
+        // Any card mode: build path from AI suggestions
+        const path = buildUpgradePathFromAI(improvements, pendingGoals, analysis)
+        setUpgradePath(path)
+      }
     } catch (err) {
-      console.error('Failed to build upgrade path:', err)
+      setError(err.message)
+      console.error('Failed to apply filters:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  // Build a phased upgrade path from AI suggestions
+  const buildUpgradePathFromAI = (improvements, goals, currentAnalysis) => {
+    const swaps = improvements?.suggestions?.swaps || []
+    if (swaps.length === 0) {
+      return {
+        currentPower: currentAnalysis?.power_breakdown?.rounded || 5,
+        targetPower: goals.targetPowerLevel || 7,
+        totalBudget: 0,
+        summary: 'No AI suggestions available',
+        phases: [],
+      }
+    }
+    
+    // Group swaps by category
+    const categories = {
+      'Mana Foundation': ['Ramp', 'Land', 'Mana Rock'],
+      'Card Advantage': ['Draw', 'Card Advantage'],
+      'Interaction': ['Removal', 'Interaction', 'Protection'],
+      'Win Conditions': ['Wincon', 'Finisher', 'Combo'],
+    }
+    
+    const phases = []
+    let phaseNum = 1
+    let accumulatedPower = currentAnalysis?.power_breakdown?.rounded || 5
+    
+    for (const [title, categoryKeys] of Object.entries(categories)) {
+      const phaseSwaps = swaps.filter(s => 
+        categoryKeys.some(key => (s.category || '').toLowerCase().includes(key.toLowerCase()))
+      ).slice(0, 10) // Max 10 per phase
+      
+      if (phaseSwaps.length === 0) continue
+      
+      const powerGain = phaseSwaps.reduce((sum, s) => sum + (s.power_delta?.change || 0), 0)
+      const estimatedCost = phaseSwaps.reduce((sum, s) => sum + (s.estimated_price || 0), 0)
+      
+      phases.push({
+        phaseNumber: phaseNum++,
+        title,
+        powerGain,
+        estimatedCost,
+        swaps: phaseSwaps.map(s => ({
+          cardOut: { name: s.remove || 'Unknown' },
+          cardIn: { name: s.add || 'Unknown', in_decks: s.in_decks },
+          reason: s.reason || '',
+          powerDelta: s.power_delta,
+          cost: s.estimated_price || 0,
+        })),
+      })
+      
+      accumulatedPower += powerGain
+      if (accumulatedPower >= goals.targetPowerLevel) break
+    }
+    
+    const totalBudget = phases.reduce((sum, p) => sum + p.estimatedCost, 0)
+    const finalPower = Math.min(accumulatedPower, 10)
+    
+    return {
+      currentPower: currentAnalysis?.power_breakdown?.rounded || 5,
+      targetPower: goals.targetPowerLevel || 7,
+      totalBudget,
+      summary: `${phases.length} phases to reach power ${finalPower}${finalPower < goals.targetPowerLevel ? ` — ${(goals.targetPowerLevel - finalPower).toFixed(1)} power short of target ${goals.targetPowerLevel}` : ''}`,
+      phases,
     }
   }
 
@@ -1152,7 +1240,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
         {availableSets.length > 0 && (
           <div>
             <p className="font-heading text-[var(--color-text-muted)] text-2xs uppercase tracking-widest mb-2">
-              Filter by Set{mode === 'any' && <span className="normal-case tracking-normal ml-1 text-[var(--color-text-muted)] opacity-60">(hint only — AI may not match perfectly)</span>}
+              Filter by Set{pendingMode === 'any' && <span className="normal-case tracking-normal ml-1 text-[var(--color-text-muted)] opacity-60">(hint only — AI may not match perfectly)</span>}
             </p>
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -1163,7 +1251,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
                   className="flex items-center gap-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg pl-3 pr-2.5 py-1.5 text-sm text-[var(--color-text)] cursor-pointer hover:border-[var(--color-primary)]/50 transition-colors w-64"
                 >
                   <span className="text-xs text-[var(--color-text-muted)] flex-1 text-left truncate">
-                    {appliedSets.length === 0 ? 'Select sets…' : `${appliedSets.length} set${appliedSets.length > 1 ? 's' : ''} applied`}
+                    {pendingSets.length === 0 ? 'Select sets…' : `${pendingSets.length} set${pendingSets.length > 1 ? 's' : ''} selected`}
                   </span>
                   <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)] transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -1190,7 +1278,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
                             <label key={code} className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-[var(--color-border)]/40 select-none">
                               <input
                                 type="checkbox"
-                                checked={selectedSets.includes(code)}
+                                checked={pendingSets.includes(code)}
                                 onChange={() => toggleSet(code)}
                                 onMouseDown={e => e.stopPropagation()}
                                 className="accent-[var(--color-primary)] cursor-pointer"
@@ -1200,32 +1288,15 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
                           ))
                         }
                       </div>
-                      <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-border)]">
-                        <button
-                          onMouseDown={e => e.stopPropagation()}
-                          onClick={applyFilter}
-                          disabled={!filterChanged}
-                          className="text-xs px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-default"
-                        >
-                          Apply
-                        </button>
-                        <button
-                          onMouseDown={e => e.stopPropagation()}
-                          onClick={clearFilter}
-                          className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
-                        >
-                          Clear
-                      </button>
                     </div>
-                  </div>
-                </>,
+                  </>,
                 document.body
               )}
             </div>
 
-            {appliedSets.length > 0 && (
-              <div className="flex items-center flex-wrap gap-1.5">
-                {appliedSets.map(code => (
+            {pendingSets.length > 0 && (
+              <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                {pendingSets.map(code => (
                   <span key={code} className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] font-medium">
                     {availableSets.find(s => s.code === code)?.name || code}
                   </span>
@@ -1237,21 +1308,40 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
       )}
 
         {/* Direction UI - Phase 3: User goals for upgrade paths */}
-        {mode === 'collection' && hasCollection && raw && (
-          <div className="pt-4 border-t border-[var(--color-border)]">
-            <DirectionUI
-              currentPower={analysis?.power_breakdown?.rounded || 5}
-              themes={raw?.themes || []}
-              onGoalsChange={handleGoalsChange}
-            />
-          </div>
-        )}
+        <div className="pt-4 border-t border-[var(--color-border)]">
+          <DirectionUI
+            currentPower={analysis?.power_breakdown?.rounded || 5}
+            themes={raw?.themes || []}
+            goals={pendingGoals}
+            onGoalsChange={setPendingGoals}
+          />
+        </div>
+
+        {/* Unified Apply Button */}
+        <div className="pt-4 border-t border-[var(--color-border)]">
+          <button
+            onClick={applyFilters}
+            disabled={loading || !hasFilterChanges}
+            className="w-full px-4 py-3 bg-[var(--color-primary)] text-white rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity cursor-pointer flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Analyzing...</span>
+              </>
+            ) : hasFilterChanges ? (
+              'Apply Filters & Build Plan'
+            ) : (
+              'No Changes'
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Upgrade Path - Phase 3: Phased upgrade plan */}
       {upgradePath && <UpgradePath upgradePath={upgradePath} />}
 
-      {loading && mode === 'any' ? (
+      {loading && appliedMode === 'any' ? (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
           <div className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
           <div className="text-center space-y-3 max-w-xs">
@@ -1937,6 +2027,10 @@ export default function DeckPage() {
         setDeck(fetchResult.data)
         setAnalysis(analyzeResult.analysis)
         setIsCached(analyzeResult.cached === true)
+        // Signal dashboard to refresh if analysis was fresh (not cached)
+        if (analyzeResult.cached === false) {
+          sessionStorage.setItem('deck_analysis_updated', 'true')
+        }
       })
       .catch((err) => setLoadError(err.message))
   }, [deckId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -1948,6 +2042,8 @@ export default function DeckPage() {
         setAnalysis(result.analysis)
         setIsCached(false)
         setRefreshKey(k => k + 1)
+        // Signal dashboard to refresh since we just completed fresh analysis
+        sessionStorage.setItem('deck_analysis_updated', 'true')
       })
       .catch((err) => setLoadError(err.message))
       .finally(() => setReanalyzing(false))

@@ -1,12 +1,29 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { api } from '../lib/api'
 import { getDeckBracket } from '../lib/deckUtils'
 import { useAuth } from '../context/AuthContext'
 import CardTooltip from '../components/CardTooltip'
-import { Eye, LoaderCircle, ClipboardCheck, Swords, Trash2 } from 'lucide-react'
+import { Eye, LoaderCircle, ClipboardCheck, Swords, Trash2, RefreshCw } from 'lucide-react'
 import PageTransition from '../components/PageTransition'
+
+// Format timestamp as relative time (e.g., "2 days ago", "3 hours ago")
+function formatRelativeTime(timestamp) {
+  if (!timestamp) return null
+  const now = new Date()
+  const then = new Date(timestamp)
+  const diffMs = now - then
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHr = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHr / 24)
+  
+  if (diffDay > 0) return `${diffDay}d ago`
+  if (diffHr > 0) return `${diffHr}h ago`
+  if (diffMin > 0) return `${diffMin}m ago`
+  return 'Just now'
+}
 
 function ImportModal({ onClose, onImported }) {
   const [url, setUrl] = useState('')
@@ -192,11 +209,13 @@ function DeckRowSkeleton() {
   )
 }
 
-function StatusBadge({ analyzed }) {
+function StatusBadge({ analyzed, analyzedAt }) {
+  const relativeTime = formatRelativeTime(analyzedAt)
+  
   return analyzed ? (
     <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-emerald-500/[0.12] text-emerald-500 border border-emerald-500/25 whitespace-nowrap font-semibold">
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
-      Analyzed
+      Analyzed{relativeTime && ` · ${relativeTime}`}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)] whitespace-nowrap font-semibold">
@@ -241,7 +260,7 @@ function DeckCard({ item, onAnalyze, analyzingId, onArchive }) {
       )}
 
       {/* Status */}
-      <StatusBadge analyzed={item.analyzed} />
+      <StatusBadge analyzed={item.analyzed} analyzedAt={item.analyzed_at} />
 
       {/* Footer actions - left: source platform link + archive, right: Analyze/View */}
       <div className="mt-auto pt-1 flex items-center justify-between">
@@ -269,18 +288,35 @@ function DeckCard({ item, onAnalyze, analyzingId, onArchive }) {
         </div>
 
         {/* Right: Action button */}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           {item.analyzed ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                navigate(`/deck/${item.moxfield_id}`)
-              }}
-              className="btn btn-secondary btn-sm"
-            >
-              <Eye className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
-              View
-            </button>
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigate(`/deck/${item.moxfield_id}`)
+                }}
+                className="btn btn-secondary btn-sm"
+              >
+                <Eye className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                View
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onAnalyze(item.moxfield_id, item.source || 'moxfield', true)
+                }}
+                disabled={!!analyzingId}
+                className="btn btn-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors"
+                title="Re-analyze deck"
+              >
+                {isAnalyzing ? (
+                  <LoaderCircle className="w-3 h-3 animate-spin" strokeWidth={2} aria-hidden="true" />
+                ) : (
+                  <RefreshCw className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                )}
+              </button>
+            </>
           ) : (
             <button
               onClick={(e) => {
@@ -437,7 +473,7 @@ function DeckTableRow({ item, onAnalyze, analyzingId, onArchive, index = 0 }) {
       </td>
       {/* Status */}
       <td>
-        <StatusBadge analyzed={item.analyzed} />
+        <StatusBadge analyzed={item.analyzed} analyzedAt={item.analyzed_at} />
       </td>
       {/* Power Level */}
       <td>
@@ -457,13 +493,27 @@ function DeckTableRow({ item, onAnalyze, analyzingId, onArchive, index = 0 }) {
       <td className="text-right">
         <div className="flex items-center justify-end gap-2">
           {item.analyzed ? (
-            <button
-              onClick={() => navigate(`/deck/${item.moxfield_id}`)}
-              className="btn btn-secondary btn-sm"
-            >
-              <Eye className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
-              View
-            </button>
+            <>
+              <button
+                onClick={() => navigate(`/deck/${item.moxfield_id}`)}
+                className="btn btn-secondary btn-sm"
+              >
+                <Eye className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
+                View
+              </button>
+              <button
+                onClick={() => onAnalyze(item.moxfield_id, item.source || 'moxfield', true)}
+                disabled={!!analyzingId}
+                className="btn btn-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors"
+                title="Re-analyze deck"
+              >
+                {isAnalyzing ? (
+                  <LoaderCircle className="w-3.5 h-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
+                )}
+              </button>
+            </>
           ) : (
             <button
               onClick={() => onAnalyze(item.moxfield_id, item.source || 'moxfield')}
@@ -541,6 +591,7 @@ function CollectionSummaryWidget({ summary, loading }) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { session } = useAuth()
   const [decks, setDecks] = useState([])
   const [decksLoading, setDecksLoading] = useState(true)
@@ -608,6 +659,23 @@ export default function DashboardPage() {
       })
   }, [session?.user?.id, session?.access_token])
 
+  // Auto-refresh when returning from deck page that completed fresh analysis
+  useEffect(() => {
+    if (!session?.access_token) return
+    
+    // Skip refresh if already loading to avoid double-fetch
+    if (decksLoading) return
+    
+    const shouldRefresh = sessionStorage.getItem('deck_analysis_updated')
+    if (shouldRefresh === 'true') {
+      console.log('[DashboardPage] Detected stale cache, auto-refreshing deck library...')
+      sessionStorage.removeItem('deck_analysis_updated')
+      setDecksLoading(true)
+      const gen = ++loadGenRef.current
+      loadDecks(gen)
+    }
+  }, [location.pathname, session?.access_token])
+
   const handleImported = () => {
     setShowImportModal(false)
     setDecksLoading(true)
@@ -633,12 +701,31 @@ export default function DashboardPage() {
     }
   }
 
-  const handleAnalyze = async (moxfieldId, source = 'moxfield') => {
+  const handleAnalyze = async (moxfieldId, source = 'moxfield', isReanalyze = false) => {
     setAnalyzingId(moxfieldId)
     setAnalyzeError(null)
     try {
-      const result = await api.analyzeDeck(moxfieldId, { source })
-      navigate(`/deck/${moxfieldId}`, { state: { analysis: result.analysis, source } })
+      const result = await api.analyzeDeck(moxfieldId, { source, force: isReanalyze })
+      
+      if (isReanalyze) {
+        // Update local state with fresh analysis data
+        setDecks(prev => prev.map(d => 
+          d.moxfield_id === moxfieldId 
+            ? {
+                ...d,
+                analyzed: true,
+                analyzed_at: new Date().toISOString(),
+                power_level: result.analysis.power_level,
+                themes: result.analysis.themes || [],
+                verdict: result.analysis.verdict,
+              }
+            : d
+        ))
+        setAnalyzingId(null)
+      } else {
+        // First-time analysis - navigate to deck page
+        navigate(`/deck/${moxfieldId}`, { state: { analysis: result.analysis, source } })
+      }
     } catch (err) {
       setAnalyzeError(err.message)
       setAnalyzingId(null)

@@ -6,24 +6,10 @@ import SelectField from './SelectField';
  * DirectionUI - User goals input for upgrade path planning
  * Allows users to set target power level, budget, theme emphasis, and playstyle
  */
-export default function DirectionUI({ currentPower, themes, onGoalsChange }) {
-  const [goals, setGoals] = useState({
-    targetPowerLevel: Math.min(currentPower + 2, 10),
-    budgetConstraint: 100,
-    themeEmphasis: [],
-    style: 'casual',
-  });
-  const [hasChanges, setHasChanges] = useState(true); // Start enabled to allow initial plan generation
-
+export default function DirectionUI({ currentPower, themes, goals, onGoalsChange }) {
   const updateGoal = (key, value) => {
     const newGoals = { ...goals, [key]: value };
-    setGoals(newGoals);
-    setHasChanges(true);
-  };
-  
-  const applyChanges = () => {
-    onGoalsChange?.(goals);
-    setHasChanges(false);
+    onGoalsChange(newGoals);
   };
 
   const toggleTheme = (themeName) => {
@@ -127,17 +113,6 @@ export default function DirectionUI({ currentPower, themes, onGoalsChange }) {
           <option value="thematic">Thematic — Flavor and synergy over power</option>
           <option value="budget">Budget — Maximum value per dollar</option>
         </SelectField>
-      </div>
-      
-      {/* Apply Button */}
-      <div className="pt-3 border-t border-[var(--color-border)]">
-        <button
-          onClick={applyChanges}
-          disabled={!hasChanges}
-          className="w-full px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity cursor-pointer"
-        >
-          {hasChanges ? 'Apply & Build Upgrade Path' : 'No Changes'}
-        </button>
       </div>
     </div>
   );

@@ -395,9 +395,18 @@ export default function LeaguePage() {
     const streakLeader = [...enriched].filter(m => (m.maxStreak || 0) > 0).sort((a, b) => b.maxStreak - a.maxStreak)[0]
     const commanderLeader = [...enriched].filter(m => (m.uniqueCommanders || 0) > 0).sort((a, b) => b.uniqueCommanders - a.uniqueCommanders)[0]
     const avgLeader = [...enriched].filter(m => m.avgPlacement != null).sort((a, b) => a.avgPlacement - b.avgPlacement)[0]
-    const deckLeader = [...enriched].filter(m => m.bestDeck).sort((a, b) => (b.bestDeck.wins / b.bestDeck.games) - (a.bestDeck.wins / a.bestDeck.games))[0]
-    if (!streakLeader && !commanderLeader && !avgLeader && !deckLeader) return null
-    return { streakLeader, commanderLeader, avgLeader, deckLeader }
+    const winRateLeader = standings
+      .filter(m => (m.games_played || 0) >= 2)
+      .map(m => ({
+        name: m.superstar_name,
+        member_id: m.member_id,
+        wins: m.wins || 0,
+        gamesPlayed: m.games_played || 0,
+        winRate: (m.wins || 0) / (m.games_played || 1)
+      }))
+      .sort((a, b) => b.winRate - a.winRate)[0]
+    if (!streakLeader && !commanderLeader && !avgLeader && !winRateLeader) return null
+    return { streakLeader, commanderLeader, avgLeader, winRateLeader }
   }, [games, standings, seasonStats])
 
   // Bonus award counts per member, derived from game results
@@ -1068,17 +1077,17 @@ export default function LeaguePage() {
                       <div className="text-sm text-[var(--color-text-muted)] mt-1">{seasonHighlights.commanderLeader.name}</div>
                     </div>
                   )}
-                  {seasonHighlights.deckLeader && (
+                  {seasonHighlights.winRateLeader && (
                     <div className="bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Target className="w-4 h-4 text-[var(--color-secondary)]" aria-hidden="true" />
                         <span className="text-xs font-medium text-[var(--color-text-muted)]">Best Winrate</span>
                       </div>
                       <div className="text-2xl font-brand font-bold text-[var(--color-text)]">
-                        {Math.round(seasonHighlights.deckLeader.bestDeck.wins / seasonHighlights.deckLeader.bestDeck.games * 100)}%
+                        {Math.round(seasonHighlights.winRateLeader.winRate * 100)}%
                       </div>
-                      <div className="text-sm text-[var(--color-text-muted)] mt-0.5">{seasonHighlights.deckLeader.name}</div>
-                      <div className="text-xs text-[var(--color-text-muted)]/60 mt-0.5 truncate">{seasonHighlights.deckLeader.bestDeck.name}</div>
+                      <div className="text-sm text-[var(--color-text-muted)] mt-0.5">{seasonHighlights.winRateLeader.name}</div>
+                      <div className="text-xs text-[var(--color-text-muted)]/60 mt-0.5">{seasonHighlights.winRateLeader.wins} of {seasonHighlights.winRateLeader.gamesPlayed} skirmishes</div>
                     </div>
                   )}
                   {seasonHighlights.avgLeader && seasonHighlights.avgLeader.avgPlacement != null && (
