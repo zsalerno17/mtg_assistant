@@ -1086,7 +1086,12 @@ async function getStandings(
   }
 
   const standings = Array.from(standingsMap.values()).sort(
-    (a, b) => b.total_points - a.total_points || b.wins - a.wins,
+    (a, b) => 
+      b.total_points - a.total_points ||
+      b.wins - a.wins ||
+      b.second_places - a.second_places ||
+      b.third_places - a.third_places ||
+      (b.entrance_bonuses + b.first_bloods + b.last_stands) - (a.entrance_bonuses + a.first_bloods + a.last_stands)
   );
 
   return jsonResponse({ standings }, req);

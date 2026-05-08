@@ -473,22 +473,6 @@ export default function LeaguePage() {
       .map(a => AWARD_TO_VOTE[a.id])
   }, [league])
 
-  function getH2H(memberId1, memberId2) {
-    let wins1 = 0, wins2 = 0
-    for (const game of games) {
-      const results = game.league_game_results || []
-      const r1 = results.find(r => r.member_id === memberId1)
-      const r2 = results.find(r => r.member_id === memberId2)
-      if (r1 && r2) {
-        if (r1.placement < r2.placement) wins1++
-        else if (r2.placement < r1.placement) wins2++
-      }
-    }
-    if (wins1 === 0 && wins2 === 0) return null
-    return { wins1, wins2 }
-  }
-
-
   function getSeasonTimeRemaining() {
     if (!league?.season_end) return null
     const end = new Date(league.season_end)
@@ -1030,15 +1014,6 @@ export default function LeaguePage() {
                         {member.superstar_name}
                       </span>
                       {idx === 0 && <span className="ml-2 text-xs text-[var(--color-secondary)] font-medium">Leader</span>}
-                      {idx > 0 && standings[idx - 1].total_points === member.total_points && (() => {
-                        const h2h = getH2H(member.member_id, standings[idx - 1].member_id)
-                        if (!h2h) return null
-                        return (
-                          <span className={`ml-2 text-xs font-medium ${h2h.wins1 > h2h.wins2 ? 'text-[var(--color-success)]' : h2h.wins1 < h2h.wins2 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'}`} title={`H2H vs ${standings[idx - 1].superstar_name}`}>
-                            H2H {h2h.wins1}-{h2h.wins2}
-                          </span>
-                        )
-                      })()}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="text-lg font-bold text-[var(--color-primary)]">{member.total_points}</span>
@@ -1074,6 +1049,12 @@ export default function LeaguePage() {
                 <SwordsIcon className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3" />
                 <div className="font-brand text-lg font-bold text-[var(--color-text)] mb-1">The season awaits.</div>
                 <div>Log your first skirmish to stake your claim.</div>
+              </div>
+            )}
+
+            {standings.length > 0 && (
+              <div className="mt-3 px-4 py-2 bg-[var(--color-surface)]/40 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
+                <strong className="text-[var(--color-text)]">Tie Breakers:</strong> Points → Wins → 2nd Place Finishes → 3rd Place Finishes → Bonus Awards
               </div>
             )}
             </div>
