@@ -820,6 +820,40 @@ export default function LeaguePage() {
             )}
           </div>
 
+          {/* Victory Condition / Description */}
+          {(league.scoring_config?.victory_condition || league.description) && (
+            <div className="bg-[var(--color-surface)]/60 border border-[var(--color-border)] rounded-lg p-4 mb-4">
+              {(() => {
+                const vc = league.scoring_config?.victory_condition
+                console.log('Victory condition debug:', { vc, season_end: league.season_end, full_scoring_config: league.scoring_config })
+                let victoryText = ''
+                if (vc?.type === 'threshold') {
+                  victoryText = `First to ${vc.points} points wins`
+                } else if (vc?.type === 'skirmish_count') {
+                  victoryText = `Most points after ${vc.count} skirmishes wins`
+                } else if (vc?.type === 'time_period' && league.season_end) {
+                  victoryText = `Most points by ${new Date(league.season_end).toLocaleDateString()} wins`
+                }
+                
+                return (
+                  <div className="space-y-2">
+                    {victoryText && (
+                      <div className="text-sm">
+                        <span className="font-medium text-[var(--color-text)]">Victory Condition:</span>{' '}
+                        <span className="text-[var(--color-text-muted)]">{victoryText}</span>
+                      </div>
+                    )}
+                    {league.description && (
+                      <div className="text-sm text-[var(--color-text-muted)] whitespace-pre-wrap border-t border-[var(--color-border)] pt-2">
+                        {league.description}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+
           {/* Buttons */}
           <div className="flex flex-wrap items-center gap-3">
             {isCreator && (
@@ -1182,16 +1216,44 @@ export default function LeaguePage() {
                   <tbody className="divide-y divide-[var(--color-border)]">
                     {games.map((game, index) => {
                       const sorted = (game.league_game_results || []).slice().sort((a, b) => a.placement - b.placement)
+                      
+                      // Build member_id -> name lookup from results
+                      const memberIdToName = {}
+                      sorted.forEach(r => {
+                        memberIdToName[r.member_id] = r.league_members?.superstar_name
+                      })
+                      
+                      // Old-style awards (backward compatibility)
                       const entranceWinner = sorted.find(r => r.earned_entrance_bonus)
                       const firstBloodWinner = sorted.find(r => r.earned_first_blood)
                       const spicyWinner = game.spicy_play_winner_id
                         ? (sorted.find(r => String(r.member_id) === String(game.spicy_play_winner_id)) || null)
                         : null
-                      const gameAwards = [
+                      
+                      const legacyAwards = [
                         entranceWinner && { label: 'Entrance', name: entranceWinner.league_members?.superstar_name, color: 'text-[var(--color-secondary)]' },
                         firstBloodWinner && { label: 'First Blood', name: firstBloodWinner.league_members?.superstar_name, color: 'text-red-400' },
                         spicyWinner && { label: 'Spicy Play', name: spicyWinner.league_members?.superstar_name, color: 'text-orange-400' },
-                        ].filter(Boolean)
+                      ].filter(Boolean)
+                      
+                      // New configurable awards from custom_bonus_winners
+                      const customAwards = []
+                      if (game.custom_bonus_winners && typeof game.custom_bonus_winners === 'object') {
+                        const bonusAwardsConfig = league?.scoring_config?.bonus_awards || []
+                        for (const [awardId, winnerId] of Object.entries(game.custom_bonus_winners)) {
+                          const award = bonusAwardsConfig.find(a => a.id === awardId)
+                          const winnerName = memberIdToName[winnerId]
+                          if (award && winnerName) {
+                            customAwards.push({
+                              label: award.title,
+                              name: winnerName,
+                              color: 'text-[var(--color-primary)]'
+                            })
+                          }
+                        }
+                      }
+                      
+                      const gameAwards = [...legacyAwards, ...customAwards]
                       return (
                         <Fragment key={game.id}>
                           <motion.tr
