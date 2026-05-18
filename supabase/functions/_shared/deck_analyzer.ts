@@ -387,14 +387,20 @@ export function findCollectionImprovements(
     }
   }
 
-  // Sort by power delta descending (prioritize highest impact), then by score
+  // Sort by power delta descending (prioritize highest impact), then by score, then alphabetically
   suggestions.sort((a, b) => {
     const deltaA = a[5]?.change ?? 0;
     const deltaB = b[5]?.change ?? 0;
     if (deltaB !== deltaA) return deltaB - deltaA; // Highest power delta first
-    return b[3] - a[3]; // Then by score
+    const scoreA = a[3];
+    const scoreB = b[3];
+    if (scoreB !== scoreA) return scoreB - scoreA; // Then by score
+    return a[0].name.localeCompare(b[0].name); // Finally alphabetically for stability
   });
-  return suggestions.slice(0, 50); // Increased from 20 to 50 for upgrade path building
+  
+  // Return all suggestions (no arbitrary limit) — filters define scope
+  // Sanity cap at 1000 to prevent pathological cases
+  return suggestions.slice(0, 1000);
 }
 
 export function scenariosFallback(
@@ -2042,6 +2048,15 @@ export function buildUpgradePath(
       upgradesByCategory[category].push(upgrade);
     }
     
+    // Debug logging: show total candidates and per-category breakdown
+    console.log(`[buildUpgradePath] Total candidates: ${scoredUpgrades.length}`);
+    console.log(`[buildUpgradePath] Category breakdown:`, {
+      mana: upgradesByCategory.mana.length,
+      card_advantage: upgradesByCategory.card_advantage.length,
+      interaction: upgradesByCategory.interaction.length,
+      win_conditions: upgradesByCategory.win_conditions.length,
+    });
+    
     // Track removed cards globally across all phases
     const removedAcrossAllPhases = new Set<string>();
     
@@ -2092,10 +2107,8 @@ export function buildUpgradePath(
       phases.push(phase);
       phaseNum++;
       
-      // Stop if target power reached
-      if (accumulatedPower >= targetPower) {
-        break;
-      }
+      // Don't stop early — build all category phases to show complete upgrade options
+      // Users can see full possibilities regardless of where target is reached
     }
   }
   
@@ -2181,6 +2194,9 @@ export function buildUpgradePath(
       summary += ` — total cost $${accumulatedBudget.toFixed(2)}`;
     }
   }
+  
+  // Debug logging: final power calculation
+  console.log(`[buildUpgradePath] Final result: ${phases.length} phases, ${currentPower} → ${Math.min(accumulatedPower, targetPower).toFixed(1)} power (target: ${targetPower})`);
   
   return {
     currentPower,
