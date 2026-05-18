@@ -1217,9 +1217,9 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
             {IMPROVEMENT_MODES.map(({ value, label }) => (
               <button
                 key={value}
-                onClick={() => setMode(value)}
+                onClick={() => setPendingMode(value)}
                 className={`px-4 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                  mode === value
+                  pendingMode === value
                     ? 'bg-[var(--color-primary)] text-white'
                     : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                 }`}
@@ -1228,10 +1228,10 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
               </button>
             ))}
           </div>
-          {mode === 'collection' && (
+          {pendingMode === 'collection' && (
             <p className="text-[var(--color-text-muted)] text-xs mt-2">Cards you already own that would improve this deck. Fast, rule-based, no AI.</p>
           )}
-          {mode === 'any' && (
+          {pendingMode === 'any' && (
             <p className="text-[var(--color-text-muted)] text-xs mt-2">AI-powered suggestions from any card in Magic. Marks cards you already own.</p>
           )}
         </div>
@@ -1360,7 +1360,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
       {error && <p className="text-[var(--color-danger)] text-sm">{error}</p>}
 
       {/* No collection empty state for collection mode */}
-      {!loading && !error && mode === 'collection' && !hasCollection && (
+      {!loading && !error && appliedMode === 'collection' && !hasCollection && (
         <EmptyState
           iconNode={<ImprovementsIcon />}
           title="No collection uploaded"
@@ -1369,7 +1369,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
               Upload your Moxfield collection CSV on the{' '}
               <Link to="/collection" className="text-[var(--color-secondary)] hover:underline">Collection page</Link>
               {' '}to see upgrade suggestions from cards you already own, or switch to{' '}
-              <button onClick={() => setMode('any')} className="text-[var(--color-secondary)] hover:underline cursor-pointer">Any Card</button>
+              <button onClick={() => setPendingMode('any')} className="text-[var(--color-secondary)] hover:underline cursor-pointer">Any Card</button>
               {' '}for AI-powered suggestions.
             </span>
           }
@@ -1377,14 +1377,14 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
       )}
 
       {!loading && !error && data && hasCollection && (<>
-      {(mode === 'any' || mode === 'both') && <AiSourceBadge aiEnhanced={aiEnhanced} />}
+      {(appliedMode === 'any' || appliedMode === 'both') && <AiSourceBadge aiEnhanced={aiEnhanced} />}
 
       {/* Recommended Swaps */}
       {data.swaps?.length > 0 && (
         <div>
           <SectionLabel className="mb-1">Recommended Swaps</SectionLabel>
           <p className="text-[var(--color-text-muted)] text-xs mb-3">
-            {mode === 'collection'
+            {appliedMode === 'collection'
               ? 'Cards you own that would replace weaker options in this deck.'
               : 'Concrete cut → add pairs. Owned cards appear first.'}
           </p>
@@ -1438,7 +1438,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
 
       {/* Cards to Add — unpaired additions, split by ownership in any-card mode */}
       {data.additions?.length > 0 && (() => {
-        if (mode === 'collection') {
+        if (appliedMode === 'collection') {
           return (
             <div>
               <SectionLabel className="mb-1">Additional Options</SectionLabel>
@@ -1492,7 +1492,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
           iconClassName="text-[var(--color-success)]"
           title="Deck looks solid!"
           description={
-            mode === 'collection'
+            appliedMode === 'collection'
               ? "No obvious upgrades found in your collection for this deck."
               : "No improvements identified."
           }

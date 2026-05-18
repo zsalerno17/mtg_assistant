@@ -168,12 +168,14 @@ async function handleAnalyze(
   }
 
   // Check for existing analysis (user-scoped — user client)
+  // Order by created_at DESC to always get the most recent if duplicates exist
   const { data: existingRows } = await userClient
     .from("analyses")
-    .select("id, result_json, deck_updated_at")
+    .select("id, result_json, deck_updated_at, created_at")
     .eq("user_id", userId)
     .eq("deck_id", moxfieldId)
-    .eq("source", source);
+    .eq("source", source)
+    .order("created_at", { ascending: false });
 
   const existing = existingRows?.[0] ?? null;
 
