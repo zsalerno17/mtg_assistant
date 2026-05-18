@@ -2017,6 +2017,12 @@ export default function DeckPage() {
     : `https://www.moxfield.com/decks/${deckId}`
 
   useEffect(() => {
+    // Signal dashboard to refetch when we leave this page, ensuring it has latest data
+    // This handles cases where we navigate here with stale cached data via location.state
+    if (analysis) {
+      sessionStorage.setItem('deck_analysis_updated', 'true')
+    }
+    
     if (deck && analysis) return // already have data from navigate state
     // Load deck data by fetching + analyzing (both will use cache)
     Promise.all([
