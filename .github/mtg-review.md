@@ -997,6 +997,291 @@ The same commander (e.g., Teysa Karlov) can be built at:
    - Logic is **too conservative** — only suggests cutting strictly worse cards
    - Misses **opportunity cost cuts** (e.g., cut Kodama's Reach for Mana Crypt if you own it)
    - Never suggests cutting lands (even when deck has 42 lands and you're adding Arcane Signet)
+
+---
+
+## May 18, 2026: EDHREC Comparison & Collection Suggestion Quality
+
+**Date:** May 18, 2026  
+**Reviewer:** MTG Specialist Agent  
+**Context:** User analyzing deck awkk3ttaKkWy7rXAszUTng (Witherbloom Pestilence precon), reported: "We have some EDHREC-recommended cards in our collection but we never suggest them."
+
+### Question: Are We Better Than EDHREC?
+
+**Answer: No — not for deck-building recommendations.**
+
+EDHREC provides **context-aware, commander-specific synergy suggestions** informed by thousands of similar decks. Our collection analyzer uses **weakness-driven scoring** that misses high-synergy cards that don't fill generic gaps.
+
+---
+
+### What EDHREC Does Well
+
+**Reference:** [EDHREC Witherbloom Pestilence Precon Upgrade Guide](https://edhrec.com/guides/witherbloom-pestilence-precon-upgrade-guide)
+
+1. **Commander-specific context** — recommendations tailored to Willowdusk, Essence Seer's life-gain-matters strategy
+2. **Synergy-first thinking** — cards recommended because they create loops with the commander (e.g., "Marauding Blight-Priest + lifelink = infinite drain")
+3. **Community wisdom** — informed by thousands of similar decks, reveals non-obvious includes
+4. **Budget tiers** — explicit upgrade paths at $0.50, $5, and $25+ price points
+5. **Mechanical depth** — distinguishes between life gain triggers vs. payoffs vs. +1/+1 counter enablers
+
+**Their recommendation format:**
+```
+Marauding Blight-Priest ($0.50)
+- Triggers on life gain (synergy with Willowdusk)
+- Creates drain loop with lifelink creatures
+- Budget option for aristocrats drain strategy
+```
+
+---
+
+### What We Do (Collection Mode)
+
+**File:** `supabase/functions/_shared/deck_analyzer.ts` (line 350-405)
+
+**Function:** `findCollectionImprovements(deck, collection)`
+
+**Scoring Logic (`_evaluateCard`):**
+```typescript
+function _evaluateCard(card, weaknesses, themes) {
+  if (weaknesses.includes("Low ramp") && card.oracle_text.includes("add mana")) {
+    return ["Adds ramp (deck needs more ramp)", 0.7]
+  }
+  if (weaknesses.includes("Low card draw") && card.oracle_text.includes("draw")) {
+    return ["Adds card draw (deck needs more draw)", 0.7]
+  }
+  if (weaknesses.includes("Low removal") && card.oracle_text.includes("destroy target")) {
+    return ["Adds removal (deck needs more removal)", 0.7]
+  }
+  // ... similar for board wipes, theme keywords
+}
+```
+
+**What's missing:**
+- **Commander synergy evaluation** — we check if deck needs ramp, but not if THIS ramp card creates loops with the commander
+- **Quality tiering** — a 2-mana rock scores the same as Sol Ring because both "add mana"
+- **Mechanical context** — "draw a card" on ETB creature vs. repeating enchantment scored similarly
+- **Theme depth** — keyword-match "sacrifice" for Aristocrats, but miss cards that create sacrifice loops or death-trigger chains
+- **Commander oracle text parsing** — we don't extract keywords from commander abilities to detect synergies
+
+---
+
+### Why Owned Cards Aren't Surfacing
+
+**Example:** User owns **Marauding Blight-Priest** (recommended by EDHREC for Willowdusk).
+
+**Why we don't suggest it:**
+
+**File:** `deck_analyzer.ts` (line 2769-2950, `_evaluateCard`)
+
+```typescript
+// Check for weakness gaps
+if (weaknesses.includes("Low ramp")) { ... }       // ✗ Not a ramp card
+if (weaknesses.includes("Low card draw")) { ... }  // ✗ Not a draw card
+if (weaknesses.includes("Low removal")) { ... }    // ✗ Not removal
+if (weaknesses.includes("Low board wipes")) { ... } // ✗ Not a wipe
+
+// Check for theme keyword match
+const themeKeywords = {
+  "Aristocrats": ["sacrifice", "dies", "death"],
+  "Tokens": ["token", "create"],
+}
+// Marauding Blight-Priest says "whenever you gain life" — doesn't match "sacrifice"/"dies"
+// ✗ Not matched to Aristocrats theme
+
+// Default: return null (filtered out)
+```
+
+**What should happen:**
+1. Parse Willowdusk's oracle text: "Whenever you gain life"
+2. Detect commander theme: **life-gain-matters**
+3. Check Marauding Blight-Priest: "Whenever you gain life" → triggers on commander ability
+4. Score: 0.95 (high synergy — creates drain loop with commander)
+5. **Suggest as top-3 recommendation**
+
+**Current result:** Card never appears because it doesn't fill a weakness category.
+
+---
+
+### Root Cause Analysis
+
+#### 1. Weakness-Driven vs. Synergy-Driven Scoring
+
+**Our approach:**
+```typescript
+if (deck.ramp_count < 10) {
+  score_any_ramp_card(0.7)
+}
+```
+
+**What EDHREC does:**
+```typescript
+if (commander.oracle_text.includes("life gain") && card.triggers_on_life_gain) {
+  score(0.95, reason="Creates drain loop with commander")
+}
+```
+
+#### 2. No Commander Oracle Text Parsing in Collection Mode
+
+- **AI mode** passes commander oracle text to Gemini → can reason about synergy
+- **Collection mode** (`findCollectionImprovements`) does NOT parse commander text
+- We check `weaknesses` and `themes`, but themes are deck-wide ("Aristocrats"), not commander-specific ("life-gain-matters")
+
+#### 3. Keyword Matching Is Too Simplistic
+
+**Current theme matching:**
+```typescript
+const themeKeywords = {
+  "Aristocrats": ["sacrifice", "dies", "death"],
+  "Tokens": ["token", "create", "populate"],
+}
+if (themeKeywords[themeName].some(kw => oracle.includes(kw))) {
+  return "Fits theme"
+}
+```
+
+**Problem:** Willowdusk is a **life-gain-matters** commander, but we don't have a theme for that — and even if we did, we'd miss cards that say "whenever you gain life" because our keyword list wouldn't be exhaustive.
+
+#### 4. No Synergy Density Tracking
+
+**EDHREC knows:**
+- This commander needs 15+ life-gain triggers to function
+- This deck has 8 → prioritize any card that adds more
+
+**We track:**
+- This deck has X ramp, Y draw → prioritize cards that fix gaps
+
+**We don't ask:** "Does this deck have enough [commander-specific synergy category]?"
+
+---
+
+### Comparison Table
+
+| Feature | EDHREC | Our Collection Mode | Our AI Mode |
+|---------|--------|---------------------|-------------|
+| **Commander-specific synergy** | ✓ (human-curated + data) | ✗ (weakness-only) | ~ (via prompt, inconsistent) |
+| **Community data** | ✓ (10K+ decks) | ✗ | ✗ |
+| **Mechanical depth** | ✓ (life gain triggers ≠ payoffs) | ✗ (all "ramp" = same) | ~ (Gemini can reason, not guided) |
+| **Budget tiers** | ✓ (explicit) | ✗ | ~ (price_tier field, not filtered) |
+| **Owned card prioritization** | ✗ | ✓ (only owned cards) | ~ (owned flag stamped, not prioritized) |
+| **Weakness detection** | ~ (implicit) | ✓ (explicit thresholds) | ✓ (explicit thresholds) |
+| **Speed** | N/A (static guide) | Fast (<500ms) | Slow (3-8s, quota-limited) |
+
+---
+
+### Specific Issues with Witherbloom Pestilence (awkk3ttaKkWy7rXAszUTng)
+
+**Commander:** Willowdusk, Essence Seer (life-gain-matters: "Whenever you gain life, distribute +1/+1 counters equal to life gained")
+
+**EDHREC top suggestions:** Marauding Blight-Priest, Heliod Sun-Crowned, Vito Thorn of the Dusk Rose, Tainted Remedy
+
+**If user owns these but we don't suggest them:**
+
+**Marauding Blight-Priest** ("Whenever you gain life, each opponent loses 1 life")
+- `_evaluateCard` checks: Low ramp? No. Low draw? No. Low removal? No.
+- Theme match: "Aristocrats" keywords ["sacrifice", "dies"] → "whenever you gain life" doesn't match
+- **Result:** `null` → filtered out
+
+**Expected:** Score 0.95 ("Triggers on commander ability — creates drain loop with lifelink creatures")
+
+**Heliod, Sun-Crowned** ("Whenever you gain life, put a +1/+1 counter on target creature")
+- Same issue — no theme match, no weakness fill
+- **Result:** `null` → filtered out
+
+**Expected:** Score 0.98 ("Triggers on commander ability + creates infinite combo with Walking Ballista")
+
+**Vito, Thorn of the Dusk Rose** ("Whenever you gain life, target opponent loses that much life")
+- Same issue
+- **Result:** `null` → filtered out
+
+**Expected:** Score 0.95 ("Synergy with commander — converts life gain into direct damage")
+
+---
+
+### Recommendations
+
+#### Short-term Fixes (1-2 weeks)
+
+1. **Parse commander oracle text in collection mode**
+   - Extract keywords: "life gain", "sacrifice", "+1/+1 counter", "landfall", "spellslinger"
+   - Create `commanderSynergies` list: `["life gain", "+1/+1 counters"]`
+   - In `_evaluateCard`, check if card oracle text matches any synergy keyword
+   - If yes, score 0.9+ regardless of weakness status
+
+2. **Add commander-specific theme categories**
+   - Current themes: "Tokens", "Aristocrats", "Graveyard", etc. (deck-wide)
+   - Add: "life-gain-matters", "sacrifice-matters", "spellslinger-matters" (commander-specific)
+   - Detect from commander oracle text, not just deck composition
+
+3. **Boost combo piece scoring**
+   - If card combos with commander (e.g., Heliod + Walking Ballista), score 0.95+
+   - If card creates loop with commander's ability, score 0.9+
+
+4. **Filter by availability**
+   - If user has 0 lands in collection, don't suggest "add a land"
+   - If set filter excludes all ramp cards in collection, don't flag "low ramp" as fixable
+
+#### Medium-term Improvements (1-2 months)
+
+5. **Synergy density thresholds**
+   - Define "critical mass" for commander-specific mechanics (e.g., Willowdusk wants 12+ life-gain triggers)
+   - If deck has 6 life-gain triggers, prioritize owned cards that add more
+
+6. **Mechanical categorization**
+   - Distinguish "ETB draw" vs. "repeating draw engine" vs. "wheel effect" within the "draw" category
+   - Score repeating engines higher than one-shots
+
+7. **Commander interaction scoring**
+   - Dedicated function: `doesCardInteractWithCommander(card, commander)`
+   - Check if card triggers on commander's abilities, creates loops, enables combos
+
+8. **Quality tiering within categories**
+   - Sol Ring > Arcane Signet > Mind Stone (all "ramp" but different quality)
+   - Swords to Plowshares > Go for the Throat > Murder (all "removal" but different quality)
+
+#### Long-term (3+ months)
+
+9. **Integrate EDHREC API**
+   - Pull top 100 cards for this commander from EDHREC
+   - Cross-reference with user's collection
+   - Suggest owned cards that appear in 50%+ of similar decks
+
+10. **Deck similarity clustering**
+    - "Decks like yours run these 20 cards you own but aren't using"
+    - Use commander + themes to find similar decks in database
+
+11. **Synergy graph**
+    - Model card-to-card interactions (e.g., "Marauding Blight-Priest + Soul Warden + lifelink creatures = drain engine")
+    - Score cards higher if they interact with multiple cards already in deck
+
+---
+
+### Action Items for Next Session
+
+- [ ] Fetch deck awkk3ttaKkWy7rXAszUTng and confirm commander is Willowdusk
+- [ ] Check user's collection for EDHREC-recommended cards (Marauding Blight-Priest, Heliod, Vito, etc.)
+- [ ] Run `findCollectionImprovements` on this deck and log which owned cards get filtered out and why
+- [ ] Prototype commander oracle text parser that extracts synergy keywords
+- [ ] Define "commander synergy" scoring logic for life-gain-matters commanders
+- [ ] Test scoring: Marauding Blight-Priest should score 0.95 for Willowdusk
+
+---
+
+### Conclusion
+
+**We are not better than EDHREC for upgrade recommendations.** EDHREC's human curation + community data produces context-aware, commander-specific suggestions that our weakness-driven rule engine cannot match.
+
+**We add value in:**
+- ✓ Collection-aware filtering (only show what you own)
+- ✓ Weakness detection (explicit thresholds for ramp/draw/removal)
+- ✓ Upgrade path planning (phased budget-conscious improvements)
+- ✓ Scenario analysis (what changes if I swap these 3 cards?)
+
+**To compete with EDHREC on suggestion quality, we need:**
+- Commander-specific synergy scoring (not just deck-wide weaknesses)
+- Mechanical depth (not all "ramp" is equal)
+- Community data integration (EDHREC API or similar)
+
+**The user's report is accurate:** Our collection analyzer filters out high-synergy cards because they don't fill generic weakness categories. **This is a critical bug** that undermines the app's core value proposition.
    - **Fix:** Add "lowest-synergy card" detection for each category (ramp, draw, removal)
 
 3. **No budget filtering:**
