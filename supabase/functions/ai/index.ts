@@ -608,7 +608,8 @@ async function handleCollectionUpgrades(
   };
 
   // Build usage map for deck information (but include cards in decks by default for this endpoint)
-  const usageMap = await buildCardUsageMap(userClient, userId);
+  // Exclude the current deck from the map - we only want to know about OTHER decks
+  const usageMap = await buildCardUsageMap(userClient, userId, "[handleCollectionUpgrades]", moxfieldId);
   const suggestions = findCollectionImprovements(deck, collection, usageMap, true);
 
   const upgrades = suggestions.map(
@@ -651,6 +652,8 @@ async function handleSuggestions(
   const allowedSets = body.allowed_sets?.length ? body.allowed_sets : undefined;
   const includeCardsInDecks = body.include_cards_in_decks !== undefined ? body.include_cards_in_decks : true;
 
+  console.log(`[handleSuggestions] moxfield_id=${moxfieldId}, includeCardsInDecks=${includeCardsInDecks}, force=${force}`);
+
   const sb = getServiceClient();
   const setsKey = allowedSets ? `:${allowedSets.slice().sort().join(",")}` : "";
   const inDecksKey = includeCardsInDecks ? "" : ":exclude_in_decks";
@@ -684,9 +687,10 @@ async function handleSuggestions(
   const mainboardLower = new Set(deck.mainboard.map((c) => c.name.toLowerCase()));
 
   // Load collection + deck usage map in parallel
+  // Exclude the current deck from usage map (we only care about OTHER decks)
   const [{ data: colRow }, usageMap] = await Promise.all([
     userClient.from("collections").select("cards_json").eq("user_id", userId).maybeSingle(),
-    buildCardUsageMap(userClient, userId),
+    buildCardUsageMap(userClient, userId, "[handleSuggestions]", moxfieldId),
   ]);
 
   const collectionCards: Record<string, unknown>[] = colRow?.cards_json || [];

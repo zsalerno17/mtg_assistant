@@ -374,6 +374,9 @@ export function findCollectionImprovements(
     console.log(`[Commander Synergies] Detected: ${commanderSynergies.join(", ")}`);
   }
 
+  console.log(`[findCollectionImprovements] includeCardsInDecks=${includeCardsInDecks}, usageMap has ${usageMap.size} entries`);
+  let filteredCount = 0;
+
   const suggestions: ImprovementSuggestion[] = [];
 
   for (const colCard of collection.cards) {
@@ -385,6 +388,10 @@ export function findCollectionImprovements(
     
     // If includeCardsInDecks is false, skip cards that are in other decks
     if (!includeCardsInDecks && cardUsage) {
+      filteredCount++;
+      if (filteredCount <= 3) {
+        console.log(`[findCollectionImprovements] Filtered out ${colCard.name} (in ${cardUsage.decks.map(d => d.deck_name).join(', ')})`);
+      }
       continue;
     }
 
@@ -420,6 +427,10 @@ export function findCollectionImprovements(
     if (scoreB !== scoreA) return scoreB - scoreA; // Then by score
     return a[0].name.localeCompare(b[0].name); // Finally alphabetically for stability
   });
+  
+  if (!includeCardsInDecks) {
+    console.log(`[findCollectionImprovements] Filtered ${filteredCount} cards already in other decks`);
+  }
   
   // Return all suggestions (no arbitrary limit) — filters define scope
   // Sanity cap at 1000 to prevent pathological cases

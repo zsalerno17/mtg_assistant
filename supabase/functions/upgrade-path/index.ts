@@ -149,15 +149,14 @@ serve(async (req) => {
     );
 
     // 3. Build card usage map to track which decks cards are in
-    const usageMap = await buildCardUsageMap(userSb, user.userId);
+    // Exclude the current deck - we only care about OTHER decks
+    const usageMap = await buildCardUsageMap(userSb, user.userId, "[upgrade-path]", deckId);
     
-    // Helper: get deck names a card is already in (excluding the current deck)
+    // Helper: get deck names a card is already in
     const getInDecks = (cardName: string): string[] => {
       const entry = usageMap.get(cardName.toLowerCase());
       if (!entry) return [];
-      return entry.decks
-        .filter((d: { deck_name: string }) => d.deck_name !== deck.name)
-        .map((d: { deck_name: string }) => d.deck_name);
+      return entry.decks.map((d: { deck_name: string }) => d.deck_name);
     };
 
     // 4. Analyze deck to get current state

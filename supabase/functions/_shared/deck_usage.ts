@@ -23,18 +23,27 @@ export type UsageMap = Map<string, DeckUsageEntry>;
  *
  * Keys are lowercased card names for case-insensitive lookup.
  * Returns an empty map if the user has no decks.
+ * 
+ * @param excludeDeckId - Optional deck ID to exclude from the usage map (typically the current deck being analyzed)
  */
 export async function buildCardUsageMap(
   sb: SupabaseClient,
   userId: string,
-  logPrefix = "[buildCardUsageMap]"
+  logPrefix = "[buildCardUsageMap]",
+  excludeDeckId?: string
 ): Promise<UsageMap> {
   const usageMap: UsageMap = new Map();
 
-  const { data: userDecks } = await sb
+  let query = sb
     .from("user_decks")
     .select("moxfield_id, deck_name")
     .eq("user_id", userId);
+  
+  if (excludeDeckId) {
+    query = query.neq("moxfield_id", excludeDeckId);
+  }
+
+  const { data: userDecks } = await query;
 
   if (!userDecks || userDecks.length === 0) return usageMap;
 
@@ -74,7 +83,8 @@ export async function buildCardUsageMap(
   }
 
   console.log(
-    `${logPrefix} Built usage map with ${usageMap.size} unique cards from ${deckData.length} decks`
+    `${logPrefix} Built usage map with ${usageMap.size} unique cards from ${deckData.length} decks` +
+    (excludeDeckId ? ` (excluded deck: ${excludeDeckId})` : '')
   );
 
   return usageMap;
