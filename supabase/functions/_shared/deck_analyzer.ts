@@ -111,6 +111,11 @@ function _getColorFilteredExamples(
 
 // ─── Result Interfaces ───────────────────────────────────────────────────────
 
+export interface DeckUsageEntry {
+  total: number;
+  decks: Array<{ deck_name: string; quantity: number }>;
+}
+
 export interface DeckAnalysis {
   commander: string | null;
   colors: string[];
@@ -274,12 +279,13 @@ export interface UpgradePath {
 }
 
 export type ImprovementSuggestion = [
-  Card,                // add
-  Card | null,         // cut
-  string,              // reason
-  number,              // score
-  string | null,       // neverCutReason
-  PowerDelta | null,   // power impact (NEW)
+  Card,                       // add
+  Card | null,                // cut
+  string,                     // reason
+  number,                     // score
+  string | null,              // neverCutReason
+  PowerDelta | null,          // power impact
+  DeckUsageEntry | null,      // in_decks (which decks this card appears in)
 ];
 
 export interface CardRoles {
@@ -349,7 +355,9 @@ export function analyzeDeck(deck: Deck): DeckAnalysis {
 
 export function findCollectionImprovements(
   deck: Deck,
-  collection: Collection
+  collection: Collection,
+  usageMap: Map<string, DeckUsageEntry> = new Map(),
+  includeCardsInDecks: boolean = true
 ): ImprovementSuggestion[] {
   const deckNames = new Set(
     getAllCards(deck).map((c) => c.name.toLowerCase())
@@ -359,12 +367,26 @@ export function findCollectionImprovements(
   const themes = identifyThemes(deck);
   // Build per-card roles once — passed to _findCut and _isWeakCategoryCard to avoid re-scanning
   const cardRoles = buildCardRoles(deck);
+  
+  // Phase 1: Extract commander synergies for personalized suggestions
+  const commanderSynergies = extractCommanderSynergies(deck.commander);
+  if (commanderSynergies.length > 0) {
+    console.log(`[Commander Synergies] Detected: ${commanderSynergies.join(", ")}`);
+  }
 
   const suggestions: ImprovementSuggestion[] = [];
 
   for (const colCard of collection.cards) {
     // Skip if already in deck
     if (deckNames.has(colCard.name.toLowerCase())) continue;
+
+    // Check if card is in user's other decks
+    const cardUsage = usageMap.get(colCard.name.toLowerCase());
+    
+    // If includeCardsInDecks is false, skip cards that are in other decks
+    if (!includeCardsInDecks && cardUsage) {
+      continue;
+    }
 
     // Enforce color identity (colorless cards are always fine)
     const cardColors = new Set(colCard.color_identity);
@@ -375,7 +397,7 @@ export function findCollectionImprovements(
       continue;
     }
 
-    const result = _evaluateCard(colCard, weaknesses, themes);
+    const result = _evaluateCard(colCard, weaknesses, themes, commanderSynergies);
     if (result) {
       const [reason, score] = result;
       const [cut, neverCutReason] = _findCut(deck, colCard, weaknesses, cardRoles);
@@ -383,7 +405,8 @@ export function findCollectionImprovements(
       // Calculate power delta for this suggestion
       const powerDelta = calculatePowerDelta(deck, colCard, cut, themes);
       
-      suggestions.push([colCard, cut, reason, score, neverCutReason, powerDelta]);
+      // Add card usage information (which decks it's in)
+      suggestions.push([colCard, cut, reason, score, neverCutReason, powerDelta, cardUsage || null]);
     }
   }
 
@@ -818,8 +841,8 @@ const KNOWN_COMBOS: Record<string, string[]> = {
   // Infinite creature combos
   "mikaeus, the unhallowed": ["walking ballista", "triskelion"],
   "walking ballista": ["mikaeus, the unhallowed", "heliod, sun-crowned"],
-  "triskelion": ["mikaeus, the unhallowed"],
-  "heliod, sun-crowned": ["walking ballista"],
+  "triskelion": ["mikaeus, the unhallowed", "heliod, sun-crowned"],
+  "heliod, sun-crowned": ["walking ballista", "triskelion"], // Infinite +1/+1 counters + damage
   "nim deathmantle": ["ashnod's altar"],
   "ashnod's altar": ["nim deathmantle"],
   
@@ -827,6 +850,10 @@ const KNOWN_COMBOS: Record<string, string[]> = {
   "exquisite blood": ["sanguine bond", "vito, thorn of the dusk rose"],
   "sanguine bond": ["exquisite blood"],
   "vito, thorn of the dusk rose": ["exquisite blood"],
+  "marauding blight-priest": ["exquisite blood"], // Life-gain drain loop
+  
+  // Commander-specific combos (Phase 2)
+  "willowdusk, essence seer": ["spike feeder", "heliod, sun-crowned"], // Life-gain loops
   
   // Infinite storm/ETB
   "ghostly flicker": ["archaeomancer", "mnemonic wall"],
@@ -864,6 +891,133 @@ const KNOWN_COMBOS: Record<string, string[]> = {
   "dance of the dead": ["worldgorger dragon"],
   "necromancy": ["worldgorger dragon"],
 };
+
+// ─── Commander Synergy Keywords (Phase 1) ────────────────────────────────────
+// Used to detect commander synergies. Use .includes() not regex for performance.
+
+const SYNERGY_KEYWORDS: Record<string, string[]> = {
+  "life gain": [
+    "whenever you gain life",
+    "when a player gains life",
+    "if you gained life",
+    "gain life",
+    "whenever a player gains life",
+  ],
+  "sacrifice": [
+    "sacrifice a creature",
+    "sacrifice another",
+    "when this creature dies",
+    "when a creature you control dies",
+    "whenever a creature dies",
+    "whenever you sacrifice",
+  ],
+  "landfall": [
+    "landfall",
+    "whenever a land enters",
+    "when a land enters the battlefield under your control",
+  ],
+  "+1/+1 counters": [
+    "+1/+1 counter",
+    "put a +1/+1 counter",
+    "whenever a +1/+1 counter",
+    "proliferate",
+  ],
+  "tokens": [
+    "create a",
+    "create two",
+    "create three",
+    "token",
+    "populate",
+  ],
+  "artifacts": [
+    "artifact",
+    "whenever an artifact enters",
+    "affinity for artifacts",
+  ],
+  "enchantments": [
+    "enchantment",
+    "whenever an enchantment enters",
+    "constellation",
+  ],
+  "instants and sorceries": [
+    "whenever you cast an instant or sorcery",
+    "instant or sorcery spell",
+    "prowess",
+    "magecraft",
+  ],
+  "graveyard": [
+    "from your graveyard",
+    "return target card from your graveyard",
+    "flashback",
+    "unearth",
+    "reanimate",
+  ],
+  "combat damage": [
+    "whenever this creature deals combat damage",
+    "whenever a creature you control deals combat damage",
+    "combat damage to a player",
+  ],
+  "card draw": [
+    "whenever you draw a card",
+    "when you draw a card",
+    "if you've drawn two or more cards",
+  ],
+  "discard": [
+    "whenever you discard",
+    "when you discard",
+    "madness",
+  ],
+  "casting from exile": [
+    "cast spells from exile",
+    "cast cards exiled",
+    "play cards exiled",
+  ],
+};
+
+/**
+ * Extract commander synergy keywords from a commander's oracle text.
+ * Returns array of synergy categories this commander cares about.
+ * Phase 1 - Foundation for commander-specific suggestion scoring.
+ */
+export function extractCommanderSynergies(commander: Card | null): string[] {
+  if (!commander || !commander.oracle_text) return [];
+  
+  const oracleLower = commander.oracle_text.toLowerCase();
+  const found: string[] = [];
+  
+  for (const [synergy, keywords] of Object.entries(SYNERGY_KEYWORDS)) {
+    if (keywords.some(kw => oracleLower.includes(kw))) {
+      found.push(synergy);
+    }
+  }
+  
+  return found;
+}
+
+/**
+ * Detect if a card's oracle text matches any of the provided synergies.
+ * Returns array of matching synergy categories.
+ * Used for scoring collection cards against commander synergies.
+ */
+export function detectCardSynergies(card: Card, synergies: string[]): string[] {
+  if (synergies.length === 0 || !card.oracle_text) return [];
+  
+  const oracleLower = card.oracle_text.toLowerCase();
+  const typeLower = card.type_line.toLowerCase();
+  const matched: string[] = [];
+  
+  for (const synergy of synergies) {
+    const keywords = SYNERGY_KEYWORDS[synergy];
+    if (!keywords) continue;
+    
+    // Check if card's oracle text or type line matches this synergy
+    if (keywords.some(kw => oracleLower.includes(kw) || typeLower.includes(kw))) {
+      matched.push(synergy);
+    }
+  }
+  
+  return matched;
+}
 
 export function countFastMana(cards: Card[]): number {
   let count = 0;
@@ -1960,10 +2114,12 @@ export function buildUpgradePath(
   const weaknesses = currentAnalysis.weaknesses;
   const allCards = getAllCards(deck);
   const collectionObj = collection ? { cards: collection } : null;
-  const collectionUpgrades = collectionObj ? findCollectionImprovements(deck, collectionObj) : [];
+  // Note: buildUpgradePath doesn't have access to usageMap, so we pass empty map
+  // In the future, this function could accept usageMap as a parameter if needed
+  const collectionUpgrades = collectionObj ? findCollectionImprovements(deck, collectionObj, new Map(), true) : [];
   
   // Score each upgrade by impact/cost ratio
-  const scoredUpgrades = collectionUpgrades.map(([cardIn, cardOut, reason, score, neverCut, powerDelta]) => {
+  const scoredUpgrades = collectionUpgrades.map(([cardIn, cardOut, reason, score, neverCut, powerDelta, inDecks]) => {
     // In collection mode, cards are free (already owned)
     const cardPrice = 0;
     const impactCostRatio = powerDelta?.change ?? 0.5; // No cost division needed since cost is 0
@@ -2769,7 +2925,8 @@ export function generateDeckVerdict(
 function _evaluateCard(
   card: Card,
   weaknesses: WeaknessResult[],
-  themes: ThemeResult[]
+  themes: ThemeResult[],
+  commanderSynergies: string[] = [] // Phase 1: Commander synergies
 ): [string, number] | null {
   const oracle = card.oracle_text.toLowerCase();
   const typeLine = card.type_line.toLowerCase();
@@ -2785,6 +2942,25 @@ function _evaluateCard(
 
   let reason: string | null = null;
   let baseScore = 0.5;
+
+  // ─── Commander Synergy Detection (Phase 1) ────────────────────────────────
+  // Check if card triggers on commander's abilities → highest priority
+  if (commanderSynergies.length > 0) {
+    const matchedSynergies = detectCardSynergies(card, commanderSynergies);
+    if (matchedSynergies.length > 0) {
+      // Multi-synergy bonus: +0.1 for each additional synergy beyond first
+      const synergyScore = 0.9 + Math.min(0.1 * (matchedSynergies.length - 1), 0.1);
+      
+      if (matchedSynergies.length === 1) {
+        reason = `Triggers on commander ability: ${matchedSynergies[0]}`;
+      } else {
+        reason = `Multi-synergy with commander: ${matchedSynergies.join(", ")}`;
+      }
+      
+      baseScore = Math.max(baseScore, synergyScore);
+      // Don't return yet - card might also be a combo piece (even higher score)
+    }
+  }
 
   if (weaknessText.includes("Low ramp")) {
     if (

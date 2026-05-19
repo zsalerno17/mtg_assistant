@@ -152,7 +152,9 @@ export default function UpgradePath({ upgradePath }) {
                                   </CardTooltip>
                                   {swap.cardIn.in_decks?.length > 0 && (
                                     <TooltipWrapper content={swap.cardIn.in_decks.length === 1 ? `In: ${swap.cardIn.in_decks[0]}` : `In: ${swap.cardIn.in_decks.join(', ')}`}>
-                                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">in a deck</span>
+                                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">
+                                        {swap.cardIn.in_decks.length === 1 ? 'in 1 deck' : `in ${swap.cardIn.in_decks.length} decks`}
+                                      </span>
                                     </TooltipWrapper>
                                   )}
                                 </div>

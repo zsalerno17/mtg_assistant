@@ -607,16 +607,19 @@ async function handleCollectionUpgrades(
     ),
   };
 
-  const suggestions = findCollectionImprovements(deck, collection);
+  // Build usage map for deck information (but include cards in decks by default for this endpoint)
+  const usageMap = await buildCardUsageMap(userClient, userId);
+  const suggestions = findCollectionImprovements(deck, collection, usageMap, true);
 
   const upgrades = suggestions.map(
-    ([colCard, cutCard, reason, score, neverCutReason, powerDelta]) => {
+    ([colCard, cutCard, reason, score, neverCutReason, powerDelta, inDecks]) => {
       const entry: Record<string, unknown> = {
         add: colCard.name,
         cut: cutCard?.name ?? null,
         reason,
         score,
         power_delta: powerDelta,
+        in_decks: inDecks?.decks.map(d => d.deck_name) || [],
       };
       if (neverCutReason) entry.never_cut_reason = neverCutReason;
       return entry;
@@ -633,7 +636,7 @@ async function handleCollectionUpgrades(
 // or both. Replaces the separate /improvements and /collection-upgrades routes.
 
 async function handleSuggestions(
-  body: { moxfield_id?: string; mode?: string; allowed_sets?: string[]; force?: boolean },
+  body: { moxfield_id?: string; mode?: string; allowed_sets?: string[]; include_cards_in_decks?: boolean; force?: boolean },
   userId: string,
   userClient: ReturnType<typeof getUserClient>,
   req: Request,
@@ -646,10 +649,12 @@ async function handleSuggestions(
     ? body.mode
     : "collection") as "collection" | "any";
   const allowedSets = body.allowed_sets?.length ? body.allowed_sets : undefined;
+  const includeCardsInDecks = body.include_cards_in_decks !== undefined ? body.include_cards_in_decks : true;
 
   const sb = getServiceClient();
   const setsKey = allowedSets ? `:${allowedSets.slice().sort().join(",")}` : "";
-  const cacheKey = `suggestions:${moxfieldId}:${userId}:${mode}${setsKey}`;
+  const inDecksKey = includeCardsInDecks ? "" : ":exclude_in_decks";
+  const cacheKey = `suggestions:${moxfieldId}:${userId}:${mode}${setsKey}${inDecksKey}`;
 
   const cached = !force && await getCached(sb, cacheKey, "suggestions_v4");
   if (cached) {
@@ -716,8 +721,8 @@ async function handleSuggestions(
         })
       ),
     };
-    const collectionResults = findCollectionImprovements(deck, collection);
-    for (const [colCard, cutCard, reason, score, neverCutReason, powerDelta] of collectionResults) {
+    const collectionResults = findCollectionImprovements(deck, collection, usageMap, includeCardsInDecks);
+    for (const [colCard, cutCard, reason, score, neverCutReason, powerDelta, inDecks] of collectionResults) {
       if (cutCard) {
         swaps.push({
           cut: cutCard.name,
@@ -727,6 +732,7 @@ async function handleSuggestions(
           owned: true,
           source: "collection",
           power_delta: powerDelta,
+          in_decks: inDecks?.decks.map(d => d.deck_name) || [],
         });
       } else {
         additions.push({
@@ -735,6 +741,7 @@ async function handleSuggestions(
           owned: true,
           source: "collection",
           power_delta: powerDelta,
+          in_decks: inDecks?.decks.map(d => d.deck_name) || [],
         });
       }
     }

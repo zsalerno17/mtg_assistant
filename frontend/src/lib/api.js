@@ -129,8 +129,14 @@ export const api = {
     edgeFetch('ai', '/collection-upgrades', { method: 'POST', body: JSON.stringify({ moxfield_id }) }),
 
   /** Get unified deck improvement suggestions (mode: 'collection' | 'any' | 'both'). */
-  getDeckImprovements: (moxfield_id, mode = 'collection', allowedSets = [], { force = false } = {}) =>
-    edgeFetch('ai', '/suggestions', { method: 'POST', body: JSON.stringify({ moxfield_id, mode, ...(allowedSets.length ? { allowed_sets: allowedSets } : {}), ...(force ? { force } : {}) }) }),
+  getDeckImprovements: (moxfield_id, mode = 'collection', allowedSets = [], { force = false, include_cards_in_decks = true } = {}) =>
+    edgeFetch('ai', '/suggestions', { method: 'POST', body: JSON.stringify({ 
+      moxfield_id, 
+      mode, 
+      ...(allowedSets.length ? { allowed_sets: allowedSets } : {}), 
+      ...(force ? { force } : {}),
+      include_cards_in_decks 
+    }) }),
 
   /** Build a phased upgrade path based on user goals (requires collection). */
   buildUpgradePath: (moxfield_id, userGoals, allowedSets = []) =>

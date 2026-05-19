@@ -1013,6 +1013,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
   // Pending filters (what user has selected but not applied yet)
   const [pendingMode, setPendingMode] = useState('collection')
   const [pendingSets, setPendingSets] = useState([])
+  const [pendingIncludeCardsInDecks, setPendingIncludeCardsInDecks] = useState(true)
   const [pendingGoals, setPendingGoals] = useState({
     targetPowerLevel: Math.min((analysis?.power_breakdown?.rounded || 5) + 2, 10),
     budgetConstraint: 100,
@@ -1023,6 +1024,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
   // Applied filters (what's currently displayed)
   const [appliedMode, setAppliedMode] = useState(null)
   const [appliedSets, setAppliedSets] = useState([])
+  const [appliedIncludeCardsInDecks, setAppliedIncludeCardsInDecks] = useState(true)
   const [appliedGoals, setAppliedGoals] = useState(null)
   
   // UI state
@@ -1065,6 +1067,7 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
   const hasFilterChanges = 
     pendingMode !== appliedMode ||
     pendingSets.sort().join(',') !== appliedSets.sort().join(',') ||
+    pendingIncludeCardsInDecks !== appliedIncludeCardsInDecks ||
     JSON.stringify(pendingGoals) !== JSON.stringify(appliedGoals)
 
   const data = raw?.suggestions
@@ -1108,11 +1111,15 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
     
     setAppliedMode(pendingMode)
     setAppliedSets([...pendingSets])
+    setAppliedIncludeCardsInDecks(pendingIncludeCardsInDecks)
     setAppliedGoals({ ...pendingGoals })
     
     try {
       // 1. Fetch improvements (collection or AI)
-      const improvements = await api.getDeckImprovements(deckId, pendingMode, pendingSets, { force: refreshKey > 0 })
+      const improvements = await api.getDeckImprovements(deckId, pendingMode, pendingSets, { 
+        force: refreshKey > 0,
+        include_cards_in_decks: pendingIncludeCardsInDecks 
+      })
       setRaw(improvements)
       setHasCollection(improvements?.has_collection ?? true)
       
@@ -1234,6 +1241,24 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
           {pendingMode === 'any' && (
             <p className="text-[var(--color-text-muted)] text-xs mt-2">AI-powered suggestions from any card in Magic. Marks cards you already own.</p>
           )}
+        </div>
+
+        {/* Include cards in decks toggle */}
+        <div>
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={pendingIncludeCardsInDecks}
+              onChange={(e) => setPendingIncludeCardsInDecks(e.target.checked)}
+              className="mt-0.5 accent-[var(--color-primary)] cursor-pointer"
+            />
+            <div>
+              <p className="text-sm text-[var(--color-text)] font-medium">Include cards from my other decks</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                When unchecked, only suggests cards that aren't already in your other decks. Useful if you don't want to move cards between decks.
+              </p>
+            </div>
+          </label>
         </div>
 
         {/* Set filter — restrict suggestions to cards from specific sets */}
@@ -1404,7 +1429,9 @@ function DeckImprovementsTab({ deckId, analysis, refreshKey = 0 }) {
                   )}
                   {swap.in_decks?.length > 0 && (
                     <TooltipWrapper content={swap.in_decks.length === 1 ? `In: ${swap.in_decks[0]}` : `In: ${swap.in_decks.join(', ')}`}>
-                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">in a deck</span>
+                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">
+                        {swap.in_decks.length === 1 ? 'in 1 deck' : `in ${swap.in_decks.length} decks`}
+                      </span>
                     </TooltipWrapper>
                   )}
                   {swap.power_delta && <PowerDeltaBadge powerDelta={swap.power_delta} size="sm" />}

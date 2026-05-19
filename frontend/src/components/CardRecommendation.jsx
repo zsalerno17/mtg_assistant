@@ -41,7 +41,7 @@ export default function CardRecommendation({ card, owned, inDecks, category, pri
             {inDecks?.length > 0 && (
               <TooltipWrapper content={inDecks.length === 1 ? `In: ${inDecks[0]}` : `In: ${inDecks.join(', ')}`}>
                 <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-[var(--color-warning)]/10 text-[var(--color-warning)] cursor-help">
-                  in a deck
+                  {inDecks.length === 1 ? 'in 1 deck' : `in ${inDecks.length} decks`}
                 </span>
               </TooltipWrapper>
             )}
