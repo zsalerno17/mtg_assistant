@@ -28,7 +28,7 @@ serve(async (req) => {
     const sb = getUserClient(token);
     const { data } = await sb
       .from("analyses")
-      .select("id, deck_id, deck_name, moxfield_url, deck_updated_at, result_json, created_at")
+      .select("id, deck_id, deck_name, moxfield_url, deck_updated_at, result_json, created_at, updated_at")
       .eq("user_id", user.userId)
       .order("created_at", { ascending: false })
       .range(offset, offset + pageSize - 1);
